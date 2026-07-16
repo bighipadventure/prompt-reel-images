@@ -432,6 +432,12 @@
 
 </div>
 
+<!-- 投稿送信専用: 隠しiframe + フォーム(fetchのCORS/401問題を回避するため通常のform送信を使う) -->
+<iframe name="hiddenPostFrame" style="display:none;"></iframe>
+<form id="hiddenPostForm" method="POST" target="hiddenPostFrame" style="display:none;">
+  <input type="hidden" name="payload" id="hiddenPayloadField">
+</form>
+
 <script>
   // ▼▼▼ ここをデプロイしたウェブアプリのURLに書き換えてください ▼▼▼
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbxNsk0jrPHQLQE9akiT5OiM7iKG-VohCAUPErea_dd3JFLjBj4xBXi_lKkVRaEFyQQn/exec';
@@ -692,17 +698,28 @@
         tags: selectedTags
       };
 
-      // GAS Webアプリはクロスオリジンからのfetchで応答をCORSブロックされることがあるため、
-      // mode:'no-cors' で送信する。応答内容(成功/失敗)は読めなくなるが、
-      // リクエスト自体はGoogle側に届き、保存処理は実行される。
-      await fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // プリフライト回避のためtext/plainで送信
-        body: JSON.stringify(payload)
+      // fetchでのPOSTはGAS側で401やCORSブロックが起きやすいため、
+      // 隠しiframe宛ての通常フォーム送信で行う(ページ遷移と同じ扱いになり回避できる)。
+      const hiddenForm = document.getElementById('hiddenPostForm');
+      const hiddenFrame = document.querySelector('iframe[name="hiddenPostFrame"]');
+      document.getElementById('hiddenPayloadField').value = JSON.stringify(payload);
+      hiddenForm.action = GAS_URL;
+
+      await new Promise(function (resolve) {
+        let done = false;
+        function finish() {
+          if (done) return;
+          done = true;
+          hiddenFrame.removeEventListener('load', finish);
+          resolve();
+        }
+        hiddenFrame.addEventListener('load', finish);
+        // iframeのloadイベントが発火しない場合の保険(最大20秒待つ)
+        setTimeout(finish, 20000);
+        hiddenForm.submit();
       });
 
-      statusText.textContent = '投稿しました(反映まで数秒かかる場合があります)';
+      statusText.textContent = '投稿しました';
       imageInput.value = '';
       previewWrap.style.display = 'none';
       dropzoneLabel.textContent = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
@@ -714,8 +731,6 @@
       selectedTags = [];
       renderChips();
 
-      // 画像アップロード・保存が完了するまで少し待ってから一覧を再取得
-      await new Promise(function (resolve) { setTimeout(resolve, 2500); });
       await loadPosts();
     } catch (err) {
       statusText.textContent = '投稿に失敗しました(通信エラー)';
