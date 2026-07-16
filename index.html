@@ -47,22 +47,20 @@
 
   /* ---- タブ ---- */
   .tabs{
-    display:flex; gap: 4px;
+    display:flex; gap: 8px;
     margin: 26px 0 24px;
-    border-bottom: 1px solid var(--line);
   }
   .tab-btn{
-    font-family: 'Noto Sans JP', sans-serif;
     font-size: 15px;
-    background: none;
+    background: var(--surface);
     color: var(--ink-dim);
-    border: none;
-    padding: 10px 18px;
+    border: 1px solid var(--line);
+    padding: 9px 22px;
+    border-radius: 8px;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
   }
-  .tab-btn.active{ color: var(--ink); border-bottom-color: var(--accent); }
+  .tab-btn:hover{ color: var(--ink); }
+  .tab-btn.active{ background: var(--accent); color: #fff; border-color: var(--accent); }
   .tab-panel{ display:none; }
   .tab-panel.active{ display:block; }
 
@@ -288,6 +286,8 @@
     flex-shrink: 0; background: var(--surface-2);
   }
   .row-thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
+  .row-thumb{ position: relative; }
+  img.img-failed{ opacity: 0.25; }
   .row-body{ flex:1; min-width:0; display:flex; flex-direction: column; gap: 7px; }
   .row-title{
     font-size: 15px; font-weight: 700; white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
@@ -582,6 +582,7 @@
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
     document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'browse') renderList();
   }
   document.querySelectorAll('.tab-btn').forEach(function (btn) {
     btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
@@ -700,7 +701,7 @@
       rebuildTagUI();
       rebuildPostTagCloud();
       rebuildDatalists();
-      renderList();
+      if (document.getElementById('tab-browse').classList.contains('active')) renderList();
       statusText.textContent = '';
     } catch (err) {
       statusText.textContent = '読み込みに失敗しました';
@@ -957,6 +958,8 @@
   const emptyState = document.getElementById('emptyState');
   const postCount = document.getElementById('postCount');
 
+  list.addEventListener('error', handleImageError, true);
+
   function passesTagFilter(post) {
     const tags = post.tags || [];
     const includeTags = Object.keys(tagStates).filter(function (t) { return tagStates[t] === 'include'; });
@@ -1045,7 +1048,7 @@
       return '' +
         '<div class="row" data-id="' + p.id + '">' +
           '<div class="row-main">' +
-            '<div class="row-thumb"><img src="' + escapeHtml(p.imageUrl) + '" loading="lazy" alt="サムネイル"></div>' +
+            '<div class="row-thumb">' + imageTag(p.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
             '<div class="row-body">' +
               '<div class="row-title">' + title + '</div>' +
               '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span></div>' +
@@ -1075,6 +1078,8 @@
   const modalOverlay = document.getElementById('modalOverlay');
   const modalBody = document.getElementById('modalBody');
 
+  modalBody.addEventListener('error', handleImageError, true);
+
   function openModal(p) {
     const settingsEntries = SETTINGS_FIELDS
       .filter(function (f) { return p.settings && p.settings[f.key]; })
@@ -1088,9 +1093,9 @@
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + (p.author ? escapeHtml(p.author) : '匿名') + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-image"><img src="' + escapeHtml(p.imageUrl) + '" alt="生成画像"></div>' +
+      '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
       '<div class="modal-actions">' +
-        '<button class="btn-ghost" type="button" id="downloadBtn">画像をダウンロード</button>' +
+        '<button class="btn-ghost" type="button" id="downloadBtn">オリジナルサイズでダウンロード</button>' +
         '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
       '</div>' +
       '<div class="detail-block">' +
@@ -1202,19 +1207,32 @@
   }
 
   async function downloadImage(p) {
+    const id = driveFileId(p.imageUrl);
     const filename = p.title || ('image_' + p.id);
+    const originalUrl = id ? ('https://lh3.googleusercontent.com/d/' + id + '=s0') : p.imageUrl;
     try {
-      const res = await fetch(p.imageUrl);
+      const res = await fetch(originalUrl);
+      if (!res.ok) throw new Error('status ' + res.status);
       const blob = await res.blob();
-      const ext = blob.type === 'image/jpeg' ? '.jpg' : (blob.type === 'image/webp' ? '.webp' : '.png');
+      const ext = blob.type === 'image/jpeg' ? '.jpg' : (blob.type === 'image/webp' ? '.webp' : (blob.type === 'image/png' ? '.png' : ''));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = filename + ext;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      window.open(p.imageUrl, '_blank');
+      console.error(err);
+      if (id) {
+        const a = document.createElement('a');
+        a.href = 'https://drive.google.com/uc?export=download&id=' + id;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
     }
 
     p.downloadCount = (Number(p.downloadCount) || 0) + 1;
@@ -1227,6 +1245,50 @@
       }
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  function driveFileId(url) {
+    if (!url) return '';
+    let m = String(url).match(/[?&]id=([^&]+)/);
+    if (m) return m[1];
+    m = String(url).match(/\/d\/([^/=?&]+)/);
+    if (m) return m[1];
+    return '';
+  }
+
+  function imageTag(url, opts) {
+    opts = opts || {};
+    const id = driveFileId(url);
+    const size = opts.size || 'w1000';
+    const src = id ? ('https://drive.google.com/thumbnail?id=' + id + '&sz=' + size) : url;
+    return '<img src="' + escapeHtml(src) + '"' +
+      (opts.className ? ' class="' + opts.className + '"' : '') +
+      (opts.lazy ? ' loading="lazy"' : '') +
+      ' alt="' + escapeHtml(opts.alt || '') + '"' +
+      ' data-fileid="' + escapeHtml(id) + '"' +
+      ' data-size="' + escapeHtml(size) + '"' +
+      ' data-retry="0">';
+  }
+
+  function handleImageError(e) {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || !img.dataset || img.dataset.fileid === undefined) return;
+    const id = img.dataset.fileid;
+    if (!id) return;
+    const size = img.dataset.size || 'w1000';
+    const retry = Number(img.dataset.retry || '0');
+    if (retry < 2) {
+      img.dataset.retry = String(retry + 1);
+      setTimeout(function () {
+        img.src = 'https://drive.google.com/thumbnail?id=' + id + '&sz=' + size + '&r=' + Date.now();
+      }, 500 * (retry + 1));
+    } else if (retry === 2) {
+      img.dataset.retry = '3';
+      img.src = 'https://lh3.googleusercontent.com/d/' + id + '=' + size;
+    } else if (retry === 3) {
+      img.dataset.retry = '4';
+      img.classList.add('img-failed');
     }
   }
 
