@@ -432,12 +432,6 @@
 
 </div>
 
-<!-- 投稿送信専用: 隠しiframe + フォーム(fetchのCORS/401問題を回避するため通常のform送信を使う) -->
-<iframe name="hiddenPostFrame" style="display:none;"></iframe>
-<form id="hiddenPostForm" method="POST" target="hiddenPostFrame" style="display:none;">
-  <input type="hidden" name="payload" id="hiddenPayloadField">
-</form>
-
 <script>
   // ▼▼▼ ここをデプロイしたウェブアプリのURLに書き換えてください ▼▼▼
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbxNsk0jrPHQLQE9akiT5OiM7iKG-VohCAUPErea_dd3JFLjBj4xBXi_lKkVRaEFyQQn/exec';
@@ -698,26 +692,15 @@
         tags: selectedTags
       };
 
-      // fetchでのPOSTはGAS側で401やCORSブロックが起きやすいため、
-      // 隠しiframe宛ての通常フォーム送信で行う(ページ遷移と同じ扱いになり回避できる)。
-      const hiddenForm = document.getElementById('hiddenPostForm');
-      const hiddenFrame = document.querySelector('iframe[name="hiddenPostFrame"]');
-      document.getElementById('hiddenPayloadField').value = JSON.stringify(payload);
-      hiddenForm.action = GAS_URL;
-
-      await new Promise(function (resolve) {
-        let done = false;
-        function finish() {
-          if (done) return;
-          done = true;
-          hiddenFrame.removeEventListener('load', finish);
-          resolve();
-        }
-        hiddenFrame.addEventListener('load', finish);
-        // iframeのloadイベントが発火しない場合の保険(最大20秒待つ)
-        setTimeout(finish, 20000);
-        hiddenForm.submit();
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
       });
+      const result = await res.json();
+      if (!result.success) {
+        throw new Error(result.error || '不明なエラー');
+      }
 
       statusText.textContent = '投稿しました';
       imageInput.value = '';
@@ -733,7 +716,7 @@
 
       await loadPosts();
     } catch (err) {
-      statusText.textContent = '投稿に失敗しました(通信エラー)';
+      statusText.textContent = '投稿に失敗しました: ' + (err.message || err);
       console.error(err);
     } finally {
       submitBtn.disabled = false;
