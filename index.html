@@ -279,6 +279,16 @@
 
   /* ---- 一覧(1投稿1行) ---- */
   .list{ display:flex; flex-direction: column; gap: 8px; }
+  .list.panel-mode{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 6px;
+  }
+  .list.panel-mode .row{ border-radius: 8px; }
+  .list.panel-mode .row-main{ padding:0; }
+  .list.panel-mode .row-thumb{ width:100%; height:0; padding-top:100%; position:relative; border-radius:8px; }
+  .list.panel-mode .row-thumb img{ position:absolute; inset:0; width:100%; height:100%; }
+  .list.panel-mode .row-body, .list.panel-mode .row-meta{ display:none; }
   .row{
     background: var(--surface);
     border: 1px solid var(--line);
@@ -431,6 +441,27 @@
   .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
   .modal-counts .like-btn .heart{ font-size: 20px; }
   .modal-counts .count-badge{ font-size: 15px; }
+
+  /* ---- はじめてガイド ---- */
+  .guide-step{ display:flex; gap:14px; margin-bottom:18px; }
+  .guide-step:last-child{ margin-bottom:0; }
+  .guide-step .num{
+    flex:0 0 26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .guide-step .body{ flex:1; font-size:13.5px; line-height:1.8; }
+  .guide-step .body strong{ color:var(--ink); }
+  .guide-note{
+    background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--ink-dim); line-height:1.7; margin-top:8px;
+  }
+  .guide-warn{
+    background: var(--danger-dim); border: 1px solid var(--danger); border-left: 3px solid var(--danger);
+    border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--ink); line-height:1.7; margin-top:8px;
+  }
+  .guide-warn strong{ color: var(--danger); }
+  .guide-source{ font-size:11.5px; color:var(--ink-dim); margin-top:6px; }
+  .guide-source a{ color: var(--accent); }
 </style>
 </head>
 <body>
@@ -445,6 +476,7 @@
   <nav class="tabs">
     <button class="tab-btn active" data-tab="post">投稿</button>
     <button class="tab-btn" data-tab="browse">投稿一覧</button>
+    <button class="tab-btn" data-tab="guide">はじめてガイド</button>
   </nav>
 
   <!-- ============ 投稿タブ ============ -->
@@ -503,7 +535,7 @@
       </div>
       <div class="search-row">
         <span class="label" style="margin-left:0;">含むタグの条件</span>
-        <div class="mode-toggle">
+        <div class="mode-toggle" id="matchModeToggle">
           <button type="button" data-mode="AND" class="active">AND</button>
           <button type="button" data-mode="OR">OR</button>
         </div>
@@ -527,10 +559,142 @@
 
     <div class="toolbar">
       <span class="count" id="postCount"></span>
+      <div class="mode-toggle" id="viewModeToggle">
+        <button type="button" data-view="list" class="active">リスト表示</button>
+        <button type="button" data-view="panel">パネル表示</button>
+      </div>
     </div>
 
     <div class="list" id="list"></div>
     <div class="empty" id="emptyState" style="display:none;">条件に一致する投稿がありません。</div>
+  </div>
+
+  <!-- ============ はじめてガイド タブ ============ -->
+  <div class="tab-panel" id="tab-guide">
+    <section class="panel">
+      <h2>準備するもの</h2>
+      <div class="guide-step">
+        <div class="body">
+          Windowsパソコン(できればNVIDIA GeForceのグラフィックボード搭載機)。VRAM 8GB以上あると快適。空き容量は数十GB単位で余裕を見ておく。画像生成は自分のパソコンの中だけで完結するので、アカウント登録や課金は不要。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 1. Stability Matrix を用意する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          「Stability Matrix」という無料アプリを使うと、画像生成用のソフト(Forge Neoなど)やモデルをまとめて管理できて楽。GitHubの配布ページから <strong>StabilityMatrix-win-x64.zip</strong> のようなWindows用ファイルをダウンロードする。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          ダウンロードしたzipを右クリック→「すべて展開」で解凍し、出てきたフォルダを好きな場所に置く。
+          <div class="guide-warn"><strong>注意:</strong> 置き場所のフォルダ名・パスに日本語やスペースを含めないこと(例: <code>C:\SDtools</code> のような英数字のみのシンプルな場所)。日本語パスが原因のエラーが非常に多い。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          中にある <strong>StabilityMatrix.exe</strong> をダブルクリックして起動。グラフィックボードのスペックチェックで問題がなければ、利用規約に同意して先へ進む。「Portableモード」のチェックは基本つけたままでOK。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 2. Forge Neo をインストールする</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          Stability Matrix内でインストールするパッケージの一覧から <strong>「Stable Diffusion WebUI Forge - Neo」</strong> を選んでインストールする。これが現在の主流バージョンで、古い「Forge」や「Automatic1111」は更新が止まっているため、これから始めるなら基本的にForge Neoを選べば間違いない。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          かなり大きなファイルを大量にダウンロードするので、セットアップ完了までそこそこ時間がかかる。待っている間にSTEP3のモデル探しを進めておくとよい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 3. モデル(Checkpoint)をダウンロードして配置する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          「モデル(Checkpoint)」は絵柄の元になるファイルで、これがないと画像生成はできない。特にこだわりがなければ、現在ローカル環境で主流の<strong>SDXL系</strong>のモデル、またはその後継として注目されている<strong>Anima系</strong>のモデルのどちらかを選ぶのが無難。
+          <div class="guide-note">初心者向けの定番として、SDXL系なら「WAI-illustrious-SDXL」系統、Anima系なら「WAI-Anima」系統がよく挙げられる。よく分からなければ、それぞれの最新バージョンをダウンロードすればOK。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          ダウンロードしたモデルファイルは、Stability Matrixをインストールしたフォルダの中の <strong>Data → Models → StableDiffusion</strong> フォルダに入れる。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 4. Forge Neo を起動する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          Stability Matrix側でForge Neoの「Launch」ボタンを押すと、少し待ってからブラウザで画像生成用の画面(WebUI)が自動で開く。
+        </div>
+      </div>
+      <div class="guide-warn">
+        <strong>重要:</strong> Stability MatrixとブラウザのWebUIは「本体とテレビ画面」のような関係。ブラウザにWebUIが表示されても、裏側で処理をしているのはStability Matrixなので、WebUIを使っている間はStability Matrixのウィンドウを閉じないこと。閉じると生成が止まってしまう。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 5. はじめての画像生成</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          画面上部の「Checkpoint」欄で、STEP3で配置したモデルを選択する。もし一覧に出てこない場合は、モデル一覧の更新ボタンを押すか、WebUIを再読み込みしてみる。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          「Prompt(プロンプト)」欄に描きたいものを表す単語を入力し、生成ボタンを押すだけで画像ができあがる。うまくいかない絵柄は「Negative prompt(除外したい要素)」欄に入れると避けやすくなる。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>初心者が特につまずきやすい点(Checkpoint / LoRA まわり)</h2>
+      <div class="guide-step">
+        <div class="body">
+          <strong>Checkpointと「土台」が合わないと絵が崩れる。</strong>
+          <div class="guide-note">
+            LoRA(追加の絵柄・キャラクター用の小さな学習データ)は、使っているCheckpointの「土台となるアーキテクチャ」(SDXL系かAnima系かなど)に対応したものを選ぶ必要がある。SDXL用のLoRAをAnima系のCheckpointに使う、といった組み合わせは基本的に噛み合わず、絵が崩れたり全く効かなかったりする。LoRAをダウンロードするときは、対応アーキテクチャの表記を必ず確認する。
+          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>ファイルを置いただけでは一覧に出てこないことがある。</strong>
+          <div class="guide-note">
+            LoRAもCheckpoint同様、Data → Models フォルダ内の該当フォルダ(LoRAなら「Lora」フォルダなど)に置く。置いた直後はWebUI側の一覧に反映されていないことがあるので、モデル一覧の更新ボタンを押すか、WebUIを再読み込みして反映させる。
+          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>迷ったら「新しいCheckpoint」から。</strong>
+          <div class="guide-note">
+            古い「Forge」や「Automatic1111」向けの解説記事もネット上には多く残っているが、これから新しく始める場合はForge Neoのような現行バージョンを使い、そこに対応したCheckpoint・LoRAで揃えるのが無難。
+          </div>
+        </div>
+      </div>
+      <div class="guide-source">
+        参考: <a href="https://wikiwiki.jp/sd_toshiaki/%E5%88%9D%E3%82%81%E3%81%A6%E3%81%AEforge%20neo" target="_blank" rel="noopener">としあきdiffusion Wiki* - 初めてのforge neo</a>
+      </div>
+    </section>
   </div>
 
 </div>
@@ -604,6 +768,7 @@
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: 'include' | 'exclude' }
   let matchMode = 'AND';
+  let viewMode = 'list';
 
   const SORT_FIELDS = [
     { key: 'date',          label: '日時' },
@@ -1070,11 +1235,20 @@
     renderList();
   });
 
-  document.querySelectorAll('.mode-toggle button').forEach(function (btn) {
+  document.querySelectorAll('#matchModeToggle button').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      document.querySelectorAll('.mode-toggle button').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('#matchModeToggle button').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
       matchMode = btn.dataset.mode;
+      renderList();
+    });
+  });
+
+  document.querySelectorAll('#viewModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#viewModeToggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      viewMode = btn.dataset.view;
       renderList();
     });
   });
@@ -1383,6 +1557,7 @@
 
     filtered.sort(compareByKeys);
 
+    list.classList.toggle('panel-mode', viewMode === 'panel');
     postCount.textContent = filtered.length + ' 件';
     emptyState.style.display = filtered.length ? 'none' : 'block';
 
