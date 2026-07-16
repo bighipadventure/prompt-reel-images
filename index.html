@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Reel — 画像&プロンプト共有</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14162B;
+    --surface: #1D2044;
+    --surface-2: #262A57;
+    --ink: #F1EFEA;
+    --ink-dim: #9497B8;
+    --accent: #E8A33D;
+    --accent-dim: #6B5730;
+    --line: #363a6e;
+    --danger: #E85A5A;
+    --danger-dim: #5A2A2A;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 80px;
+  }
+  .wrap{ max-width: 980px; margin: 0 auto; }
+
+  header{ margin-bottom: 24px; }
+  header .eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  header h1{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 34px;
+    margin: 6px 0 4px;
+    letter-spacing: -0.01em;
+  }
+  header p{ color: var(--ink-dim); margin: 0; font-size: 14px; }
+
+  /* ---- タブ ---- */
+  .tabs{
+    display:flex; gap: 4px;
+    margin: 26px 0 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab-btn{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    background: none;
+    color: var(--ink-dim);
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab-btn.active{ color: var(--ink); border-bottom-color: var(--accent); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* ---- 投稿フォーム ---- */
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .panel h2{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    margin: 0 0 16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .panel h2::before{
+    content:'';
+    width:8px; height:8px;
+    background: var(--accent);
+    border-radius: 2px;
+    display:inline-block;
+  }
+
+  label.field-label{
+    display:block;
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin: 18px 0 6px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  label.field-label:first-of-type{ margin-top: 0; }
+
+  /* ドロップゾーン */
+  .dropzone{
+    width:100%;
+    background: var(--surface-2);
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    color: var(--ink-dim);
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .dropzone.drag-over{ border-color: var(--accent); background: rgba(232,163,61,0.08); color: var(--accent); }
+  .dropzone input{ display:none; }
+  .dropzone .preview{
+    margin-top: 14px; display:flex; justify-content:center;
+  }
+  .dropzone .preview img{
+    max-height: 160px; border-radius: 8px; border: 1px solid var(--line);
+  }
+
+  input[type="text"], input[type="number"]{
+    width:100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13.5px;
+  }
+  textarea{
+    width:100%;
+    min-height: 90px;
+    resize: vertical;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  textarea:focus, input:focus, select:focus{
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* 設定グリッド */
+  .settings-toggle{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    background: none; border: 1px solid var(--accent-dim);
+    border-radius: 8px; padding: 8px 14px; margin-top: 18px; cursor: pointer;
+  }
+  .settings-grid{
+    display:none;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+    padding: 16px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  .settings-grid.open{ display:grid; }
+  .settings-grid .field label{
+    display:block; font-size: 11px; color: var(--ink-dim);
+    font-family: 'JetBrains Mono', monospace; margin-bottom: 5px;
+  }
+  .settings-grid .field input{ font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  .tag-row{ display:flex; gap:8px; flex-wrap: wrap; }
+  select{
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--ink);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  select{ flex: 1 1 160px; }
+  .tag-row input[type="text"]{ flex: 1 1 160px; width:auto; }
+
+  button{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: transform .1s ease, opacity .15s ease;
+  }
+  button:active{ transform: scale(0.97); }
+  .btn-ghost{
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn-ghost:hover{ border-color: var(--accent); color: var(--accent); }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 12px; min-height: 20px; }
+  .chip{
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 5px 10px 5px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .chip button{
+    background:none; border:none; color: var(--accent);
+    padding:0; font-size:14px; line-height:1; cursor:pointer;
+  }
+
+  .submit-row{ margin-top: 22px; display:flex; align-items:center; gap:14px; }
+  .btn-submit{
+    background: var(--accent);
+    color: #1a1300;
+    font-weight: 600;
+    padding: 11px 22px;
+  }
+  .btn-submit:hover{ opacity: 0.9; }
+  .btn-submit:disabled{ opacity: 0.5; cursor: default; }
+  .status{ font-size: 12px; color: var(--ink-dim); font-family: 'JetBrains Mono', monospace; }
+
+  /* ---- 閲覧タブ:検索バー ---- */
+  .search-panel{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .search-row{ display:flex; align-items:center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-row:last-child{ margin-bottom: 0; }
+  .search-row .label{
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim);
+    min-width: 90px;
+  }
+  .mode-toggle{ display:flex; border: 1px solid var(--line); border-radius: 8px; overflow:hidden; }
+  .mode-toggle button{
+    background: var(--surface-2); color: var(--ink-dim); border-radius:0; padding: 6px 12px;
+  }
+  .mode-toggle button.active{ background: var(--accent); color: #1a1300; }
+
+  .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
+  .tag-pill{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .tag-pill.state-include{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger); }
+  .clear-tags{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
+
+  .toolbar{
+    display:flex; justify-content: space-between; align-items:center;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+  }
+  .count{ color: var(--ink-dim); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ---- 一覧(1投稿1行) ---- */
+  .list{ display:flex; flex-direction: column; gap: 10px; }
+  .row{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .row-main{
+    display:flex; align-items:center; gap: 16px;
+    padding: 10px 16px;
+  }
+  .row-thumb{
+    width: 56px; height: 56px; border-radius: 8px; overflow:hidden;
+    flex-shrink: 0; background: var(--surface-2);
+  }
+  .row-thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
+  .row-info{ flex:1; min-width:0; }
+  .row-title{
+    font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+  }
+  .row-meta{
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-dim); margin-top: 3px;
+    display:flex; gap: 12px; flex-wrap: wrap;
+  }
+  .row-tags{ display:flex; gap:6px; flex-wrap:wrap; max-width: 220px; }
+  .row-tags .tag{
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    background: var(--surface-2); color: var(--accent);
+    padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent-dim);
+  }
+  .row-caret{ color: var(--ink-dim); font-size: 12px; transition: transform .15s ease; flex-shrink:0; }
+  .row.open .row-caret{ transform: rotate(90deg); }
+
+  .row-detail{ display:none; padding: 18px 20px 22px; border-top: 1px solid var(--line); }
+  .row.open .row-detail{ display:block; }
+  .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
+  .detail-image{ flex: 0 0 260px; }
+  .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
+  .detail-text{ flex: 1 1 320px; min-width: 260px; }
+  .detail-block{ margin-bottom: 16px; }
+  .detail-block .label{
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim);
+    margin-bottom: 5px; letter-spacing: 0.05em;
+  }
+  .detail-block .value{
+    font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    background: var(--surface-2); border-radius: 8px; padding: 10px 12px; border: 1px solid var(--line);
+  }
+  .settings-table{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+    gap: 8px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  }
+  .settings-table div span{ color: var(--ink-dim); display:block; font-size:10.5px; }
+
+  .empty{
+    text-align:center; color: var(--ink-dim);
+    padding: 60px 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">shared reel · friends only</div>
+    <h1>Prompt Reel</h1>
+    <p>画像とStable Diffusionの生成設定をセットで記録・共有するボードです。</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="post">投稿</button>
+    <button class="tab-btn" data-tab="browse">閲覧</button>
+  </nav>
+
+  <!-- ============ 投稿タブ ============ -->
+  <div class="tab-panel active" id="tab-post">
+    <section class="panel">
+      <h2>新規投稿</h2>
+
+      <label class="field-label">画像</label>
+      <div class="dropzone" id="dropzone">
+        <span id="dropzoneLabel">ここに画像をドラッグ&ドロップ、またはクリックして選択</span>
+        <div class="preview" id="previewWrap" style="display:none;"><img id="previewImg" alt="プレビュー"></div>
+        <input type="file" id="imageInput" accept="image/*">
+      </div>
+
+      <label class="field-label">投稿タイトル</label>
+      <input type="text" id="titleInput" placeholder="例: 桜並木の少女">
+
+      <label class="field-label">投稿者(空欄で匿名)</label>
+      <input type="text" id="authorInput" placeholder="匿名">
+
+      <label class="field-label">プロンプト</label>
+      <textarea id="promptInput" placeholder="Positive prompt"></textarea>
+
+      <label class="field-label">ネガティブプロンプト</label>
+      <textarea id="negativeInput" placeholder="Negative prompt"></textarea>
+
+      <button class="settings-toggle" type="button" id="settingsToggleBtn">▸ 設定関係を入力(任意)</button>
+      <div class="settings-grid" id="settingsGrid"></div>
+
+      <label class="field-label">タグ</label>
+      <div class="tag-row">
+        <select id="existingTagSelect">
+          <option value="">既存のタグから選ぶ…</option>
+        </select>
+        <button class="btn-ghost" id="addExistingTagBtn" type="button">追加</button>
+      </div>
+      <div class="tag-row" style="margin-top:8px;">
+        <input type="text" id="newTagInput" placeholder="新しいタグを入力して追加">
+        <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
+      </div>
+      <div class="chips" id="selectedTags"></div>
+
+      <div class="submit-row">
+        <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
+        <span class="status" id="statusText"></span>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 閲覧タブ ============ -->
+  <div class="tab-panel" id="tab-browse">
+
+    <div class="search-panel">
+      <div class="search-row">
+        <span class="label">並び順</span>
+        <select id="sortSelect">
+          <option value="new">新着順</option>
+          <option value="old">古い順</option>
+        </select>
+        <span class="label" style="margin-left:14px;">含むタグの条件</span>
+        <div class="mode-toggle">
+          <button type="button" data-mode="AND" class="active">AND</button>
+          <button type="button" data-mode="OR">OR</button>
+        </div>
+        <button class="clear-tags" id="clearTagsBtn" type="button">タグ選択をクリア</button>
+      </div>
+      <div class="search-row">
+        <span class="label">タグで絞込</span>
+      </div>
+      <div class="tag-cloud" id="tagCloud"></div>
+      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'JetBrains Mono',monospace;">
+        クリックで切替: 未選択 → 含む(AND/OR) → 除外(NOT) → 未選択
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <span class="count" id="postCount"></span>
+    </div>
+
+    <div class="list" id="list"></div>
+    <div class="empty" id="emptyState" style="display:none;">条件に一致する投稿がありません。</div>
+  </div>
+
+</div>
+
+<script>
+  // ▼▼▼ ここをデプロイしたウェブアプリのURLに書き換えてください ▼▼▼
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxNsk0jrPHQLQE9akiT5OiM7iKG-VohCAUPErea_dd3JFLjBj4xBXi_lKkVRaEFyQQn/exec';
+  // ▲▲▲ ───────────────────────────────────── ▲▲▲
+
+  // Stable Diffusion 設定項目の定義 (フォーム生成・詳細表示の両方で使用)
+  const SETTINGS_FIELDS = [
+    { key: 'uiPreset',      label: 'UI Preset',          type: 'text' },
+    { key: 'checkpoint',    label: 'Checkpoint',         type: 'text' },
+    { key: 'vae',           label: 'VAE / Text Encoder', type: 'text' },
+    { key: 'samplingMethod',label: 'Sampling Method',    type: 'text' },
+    { key: 'scheduleType',  label: 'Schedule Type',      type: 'text' },
+    { key: 'samplingSteps', label: 'Sampling Steps',     type: 'number' },
+    { key: 'width',         label: 'Width',              type: 'number' },
+    { key: 'height',        label: 'Height',             type: 'number' },
+    { key: 'batchCount',    label: 'Batch Count',        type: 'number' },
+    { key: 'batchSize',     label: 'Batch Size',         type: 'number' },
+    { key: 'shift',         label: 'Shift',              type: 'number' },
+    { key: 'cfgScale',      label: 'CFG Scale',          type: 'number' },
+    { key: 'seed',          label: 'Seed',               type: 'text' }
+  ];
+
+  let posts = [];
+  let selectedTags = []; // 投稿フォーム用
+  let tagStates = {};    // 閲覧タブ用 { tagName: 'include' | 'exclude' }
+  let matchMode = 'AND';
+
+  /* ---------- タブ切替 ---------- */
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ---------- 設定グリッド生成 ---------- */
+  const settingsGrid = document.getElementById('settingsGrid');
+  SETTINGS_FIELDS.forEach(function (f) {
+    const div = document.createElement('div');
+    div.className = 'field';
+    div.innerHTML = '<label>' + f.label + '</label><input type="' + f.type + '" id="set_' + f.key + '">';
+    settingsGrid.appendChild(div);
+  });
+  document.getElementById('settingsToggleBtn').addEventListener('click', function () {
+    const open = settingsGrid.classList.toggle('open');
+    this.textContent = (open ? '▾' : '▸') + ' 設定関係を入力(任意)';
+  });
+
+  function collectSettings() {
+    const result = {};
+    SETTINGS_FIELDS.forEach(function (f) {
+      const val = document.getElementById('set_' + f.key).value;
+      if (val !== '') result[f.key] = val;
+    });
+    return result;
+  }
+  function clearSettingsForm() {
+    SETTINGS_FIELDS.forEach(function (f) { document.getElementById('set_' + f.key).value = ''; });
+  }
+
+  /* ---------- ドラッグ&ドロップ ---------- */
+  const dropzone = document.getElementById('dropzone');
+  const imageInput = document.getElementById('imageInput');
+  const previewWrap = document.getElementById('previewWrap');
+  const previewImg = document.getElementById('previewImg');
+  const dropzoneLabel = document.getElementById('dropzoneLabel');
+
+  dropzone.addEventListener('click', function () { imageInput.click(); });
+  dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
+  dropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
+      imageInput.files = e.dataTransfer.files;
+      imageInput.dispatchEvent(new Event('change'));
+    }
+  });
+  imageInput.addEventListener('change', function () {
+    const file = imageInput.files[0];
+    if (!file) { previewWrap.style.display = 'none'; return; }
+    const reader = new FileReader();
+    reader.onload = function () {
+      previewImg.src = reader.result;
+      previewWrap.style.display = 'flex';
+      dropzoneLabel.textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ---------- データ読み込み ---------- */
+  const statusText = document.getElementById('statusText');
+  const existingTagSelect = document.getElementById('existingTagSelect');
+  const tagCloud = document.getElementById('tagCloud');
+
+  async function loadPosts() {
+    statusText.textContent = '読み込み中…';
+    try {
+      const res = await fetch(GAS_URL, { method: 'GET' });
+      const data = await res.json();
+      posts = data.posts || [];
+      rebuildTagUI();
+      renderList();
+      statusText.textContent = '';
+    } catch (err) {
+      statusText.textContent = '読み込みに失敗しました';
+      console.error(err);
+    }
+  }
+
+  function allUniqueTags() {
+    const set = new Set();
+    posts.forEach(function (p) { (p.tags || []).forEach(function (t) { set.add(t); }); });
+    return Array.from(set).sort();
+  }
+
+  function rebuildTagUI() {
+    const tags = allUniqueTags();
+
+    // 投稿フォームのプルダウン
+    existingTagSelect.innerHTML = '<option value="">既存のタグから選ぶ…</option>' +
+      tags.map(function (t) { return '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>'; }).join('');
+
+    // 閲覧タブのタグクラウド(既存の状態は保持しつつ、消えたタグは除外)
+    Object.keys(tagStates).forEach(function (t) { if (!tags.includes(t)) delete tagStates[t]; });
+
+    tagCloud.innerHTML = tags.map(function (t) {
+      const state = tagStates[t] || 'none';
+      const cls = state === 'include' ? 'state-include' : (state === 'exclude' ? 'state-exclude' : '');
+      const mark = state === 'include' ? '+' : (state === 'exclude' ? '−' : '');
+      return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + (mark ? mark + ' ' : '') + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:\'JetBrains Mono\',monospace;">タグはまだありません</span>';
+
+    tagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        const cur = tagStates[t] || 'none';
+        const next = cur === 'none' ? 'include' : (cur === 'include' ? 'exclude' : 'none');
+        if (next === 'none') delete tagStates[t]; else tagStates[t] = next;
+        rebuildTagUI();
+        renderList();
+      });
+    });
+  }
+
+  document.getElementById('clearTagsBtn').addEventListener('click', function () {
+    tagStates = {};
+    rebuildTagUI();
+    renderList();
+  });
+
+  document.querySelectorAll('.mode-toggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.mode-toggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      matchMode = btn.dataset.mode;
+      renderList();
+    });
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', renderList);
+
+  /* ---------- 投稿フォームのタグチップ ---------- */
+  const selectedTagsEl = document.getElementById('selectedTags');
+  function renderChips() {
+    selectedTagsEl.innerHTML = selectedTags.map(function (t, i) {
+      return '<span class="chip">' + escapeHtml(t) +
+        '<button type="button" data-idx="' + i + '">×</button></span>';
+    }).join('');
+    selectedTagsEl.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        selectedTags.splice(Number(btn.dataset.idx), 1);
+        renderChips();
+      });
+    });
+  }
+
+  document.getElementById('addExistingTagBtn').addEventListener('click', function () {
+    const v = existingTagSelect.value;
+    if (v && !selectedTags.includes(v)) { selectedTags.push(v); renderChips(); }
+    existingTagSelect.value = '';
+  });
+  document.getElementById('addNewTagBtn').addEventListener('click', function () {
+    const input = document.getElementById('newTagInput');
+    const v = input.value.trim();
+    if (v && !selectedTags.includes(v)) { selectedTags.push(v); renderChips(); }
+    input.value = '';
+  });
+  document.getElementById('newTagInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addNewTagBtn').click(); }
+  });
+
+  /* ---------- 投稿処理 ---------- */
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', async function () {
+    const submitBtn = this;
+    const file = imageInput.files[0];
+
+    if (!file) { statusText.textContent = '画像を選択してください'; return; }
+    if (GAS_URL.indexOf('ここに') === 0) { statusText.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
+
+    submitBtn.disabled = true;
+    statusText.textContent = '投稿中…';
+
+    try {
+      const base64 = await fileToBase64(file);
+      const payload = {
+        imageBase64: base64,
+        imageMime: file.type,
+        imageName: file.name,
+        title: document.getElementById('titleInput').value,
+        author: document.getElementById('authorInput').value,
+        prompt: document.getElementById('promptInput').value,
+        negativePrompt: document.getElementById('negativeInput').value,
+        settings: collectSettings(),
+        tags: selectedTags
+      };
+
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // プリフライト回避のためtext/plainで送信
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        statusText.textContent = '投稿しました';
+        imageInput.value = '';
+        previewWrap.style.display = 'none';
+        dropzoneLabel.textContent = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
+        document.getElementById('titleInput').value = '';
+        document.getElementById('authorInput').value = '';
+        document.getElementById('promptInput').value = '';
+        document.getElementById('negativeInput').value = '';
+        clearSettingsForm();
+        selectedTags = [];
+        renderChips();
+        await loadPosts();
+      } else {
+        statusText.textContent = '投稿に失敗しました: ' + (data.error || '');
+      }
+    } catch (err) {
+      statusText.textContent = '投稿に失敗しました';
+      console.error(err);
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  /* ---------- 閲覧タブ:一覧描画 ---------- */
+  const list = document.getElementById('list');
+  const emptyState = document.getElementById('emptyState');
+  const postCount = document.getElementById('postCount');
+
+  function passesTagFilter(post) {
+    const tags = post.tags || [];
+    const includeTags = Object.keys(tagStates).filter(function (t) { return tagStates[t] === 'include'; });
+    const excludeTags = Object.keys(tagStates).filter(function (t) { return tagStates[t] === 'exclude'; });
+
+    if (excludeTags.some(function (t) { return tags.includes(t); })) return false;
+
+    if (includeTags.length) {
+      const pass = matchMode === 'AND'
+        ? includeTags.every(function (t) { return tags.includes(t); })
+        : includeTags.some(function (t) { return tags.includes(t); });
+      if (!pass) return false;
+    }
+    return true;
+  }
+
+  function renderList() {
+    let filtered = posts.filter(passesTagFilter);
+
+    const sortVal = document.getElementById('sortSelect').value;
+    filtered.sort(function (a, b) {
+      const da = new Date(a.timestamp).getTime();
+      const db = new Date(b.timestamp).getTime();
+      return sortVal === 'old' ? da - db : db - da;
+    });
+
+    postCount.textContent = filtered.length + ' 件';
+    emptyState.style.display = filtered.length ? 'none' : 'block';
+
+    list.innerHTML = filtered.map(function (p) {
+      const dt = new Date(p.timestamp);
+      const dateStr = dt.getFullYear() + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' +
+        String(dt.getDate()).padStart(2, '0') + ' ' + String(dt.getHours()).padStart(2, '0') + ':' +
+        String(dt.getMinutes()).padStart(2, '0');
+
+      const title = p.title ? escapeHtml(p.title) : '(無題)';
+      const author = p.author ? escapeHtml(p.author) : '匿名';
+
+      const settingsEntries = SETTINGS_FIELDS
+        .filter(function (f) { return p.settings && p.settings[f.key]; })
+        .map(function (f) {
+          return '<div><span>' + f.label + '</span>' + escapeHtml(p.settings[f.key]) + '</div>';
+        }).join('');
+
+      return '' +
+        '<div class="row" data-id="' + p.id + '">' +
+          '<div class="row-main">' +
+            '<div class="row-thumb"><img src="' + escapeHtml(p.imageUrl) + '" loading="lazy" alt="サムネイル"></div>' +
+            '<div class="row-info">' +
+              '<div class="row-title">' + title + '</div>' +
+              '<div class="row-meta"><span>' + dateStr + '</span><span>投稿者: ' + author + '</span></div>' +
+            '</div>' +
+            '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+            '<span class="row-caret">▶</span>' +
+          '</div>' +
+          '<div class="row-detail">' +
+            '<div class="detail-grid">' +
+              '<div class="detail-image"><img src="' + escapeHtml(p.imageUrl) + '" alt="生成画像"></div>' +
+              '<div class="detail-text">' +
+                '<div class="detail-block"><div class="label">PROMPT</div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
+                '<div class="detail-block"><div class="label">NEGATIVE PROMPT</div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div></div>' +
+                (settingsEntries ? '<div class="detail-block"><div class="label">設定関係</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    list.querySelectorAll('.row').forEach(function (row) {
+      row.querySelector('.row-main').addEventListener('click', function () {
+        row.classList.toggle('open');
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  loadPosts();
+</script>
+</body>
+</html>
