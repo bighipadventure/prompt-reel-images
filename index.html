@@ -5,19 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prompt Reel — 画像&プロンプト共有</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #14162B;
-    --surface: #1D2044;
-    --surface-2: #262A57;
-    --ink: #F1EFEA;
-    --ink-dim: #9497B8;
-    --accent: #E8A33D;
-    --accent-dim: #6B5730;
-    --line: #363a6e;
-    --danger: #E85A5A;
-    --danger-dim: #5A2A2A;
+    --bg: #121212;
+    --surface: #1c1c1e;
+    --surface-2: #262629;
+    --ink: #e6e6e6;
+    --ink-dim: #9a9a9a;
+    --accent: #0096fa;
+    --accent-dim: #16344a;
+    --line: #2e2e31;
+    --danger: #ff4060;
+    --danger-dim: #3a1c25;
+    --like: #ff4060;
   }
   *{ box-sizing: border-box; }
   html,body{ margin:0; padding:0; }
@@ -32,17 +33,15 @@
 
   header{ margin-bottom: 24px; }
   header .eyebrow{
-    font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--ink-dim);
   }
   header h1{
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 34px;
-    margin: 6px 0 4px;
-    letter-spacing: -0.01em;
+    font-size: 26px;
+    font-weight: 700;
+    margin: 4px 0 4px;
+    letter-spacing: 0;
   }
   header p{ color: var(--ink-dim); margin: 0; font-size: 14px; }
 
@@ -53,7 +52,7 @@
     border-bottom: 1px solid var(--line);
   }
   .tab-btn{
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Noto Sans JP', sans-serif;
     font-size: 15px;
     background: none;
     color: var(--ink-dim);
@@ -76,14 +75,14 @@
     margin-bottom: 24px;
   }
   .panel h2{
-    font-family: 'Space Grotesk', sans-serif;
     font-size: 16px;
+    font-weight: 700;
     margin: 0 0 16px;
-    display:flex; align-items:center; gap:8px;
+    display:flex; align-items:center; gap:10px;
   }
   .panel h2::before{
     content:'';
-    width:8px; height:8px;
+    width:4px; height:16px;
     background: var(--accent);
     border-radius: 2px;
     display:inline-block;
@@ -94,8 +93,7 @@
     font-size: 12px;
     color: var(--ink-dim);
     margin: 18px 0 6px;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
   }
   label.field-label:first-of-type{ margin-top: 0; }
 
@@ -151,7 +149,7 @@
 
   /* 設定グリッド */
   .settings-toggle{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
     color: var(--accent);
     background: none; border: 1px solid var(--accent-dim);
@@ -170,9 +168,9 @@
   .settings-grid.open{ display:grid; }
   .settings-grid .field label{
     display:block; font-size: 11px; color: var(--ink-dim);
-    font-family: 'JetBrains Mono', monospace; margin-bottom: 5px;
+    font-family: 'Noto Sans JP', sans-serif; margin-bottom: 5px;
   }
-  .settings-grid .field input{ font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .settings-grid .field input{ font-family: 'Noto Sans JP', sans-serif; font-size: 13px; }
 
   .tag-row{ display:flex; gap:8px; flex-wrap: wrap; }
   select{
@@ -182,22 +180,19 @@
     padding: 9px 12px;
     color: var(--ink);
     font-size: 13px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Noto Sans JP', sans-serif;
   }
   select{ flex: 1 1 160px; }
   .tag-row input[type="text"]{ flex: 1 1 160px; width:auto; }
 
   button{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.03em;
+    font-size: 13px;
     border: none;
     border-radius: 8px;
     padding: 9px 16px;
     cursor: pointer;
-    transition: transform .1s ease, opacity .15s ease;
+    transition: opacity .15s ease, background .12s ease, border-color .12s ease;
   }
-  button:active{ transform: scale(0.97); }
   .btn-ghost{
     background: var(--surface-2);
     color: var(--ink);
@@ -211,7 +206,7 @@
     color: var(--accent);
     border-radius: 999px;
     padding: 5px 10px 5px 12px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
     display:flex; align-items:center; gap:6px;
   }
@@ -223,13 +218,13 @@
   .submit-row{ margin-top: 22px; display:flex; align-items:center; gap:14px; }
   .btn-submit{
     background: var(--accent);
-    color: #1a1300;
+    color: #fff;
     font-weight: 600;
     padding: 11px 22px;
   }
   .btn-submit:hover{ opacity: 0.9; }
   .btn-submit:disabled{ opacity: 0.5; cursor: default; }
-  .status{ font-size: 12px; color: var(--ink-dim); font-family: 'JetBrains Mono', monospace; }
+  .status{ font-size: 12px; color: var(--ink-dim); font-family: 'Noto Sans JP', sans-serif; }
 
   /* ---- 閲覧タブ:検索バー ---- */
   .search-panel{
@@ -242,18 +237,18 @@
   .search-row{ display:flex; align-items:center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
   .search-row:last-child{ margin-bottom: 0; }
   .search-row .label{
-    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim);
     min-width: 90px;
   }
   .mode-toggle{ display:flex; border: 1px solid var(--line); border-radius: 8px; overflow:hidden; }
   .mode-toggle button{
     background: var(--surface-2); color: var(--ink-dim); border-radius:0; padding: 6px 12px;
   }
-  .mode-toggle button.active{ background: var(--accent); color: #1a1300; }
+  .mode-toggle button.active{ background: var(--accent); color: #fff; }
 
   .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
   .tag-pill{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
     padding: 6px 12px;
     border-radius: 999px;
@@ -265,53 +260,56 @@
   }
   .tag-pill.state-include{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger); }
-  .clear-tags{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
+  .clear-tags{ font-family:'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
 
   .toolbar{
     display:flex; justify-content: space-between; align-items:center;
     margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
   }
-  .count{ color: var(--ink-dim); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+  .count{ color: var(--ink-dim); font-size: 12px; font-family: 'Noto Sans JP', sans-serif; }
 
   /* ---- 一覧(1投稿1行) ---- */
-  .list{ display:flex; flex-direction: column; gap: 10px; }
+  .list{ display:flex; flex-direction: column; gap: 8px; }
   .row{
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
+    transition: background .12s ease;
   }
+  .row:hover{ background: var(--surface-2); }
   .row-main{
     display:flex; align-items:center; gap: 16px;
-    padding: 10px 16px;
+    padding: 12px 16px;
   }
   .row-thumb{
-    width: 96px; height: 96px; border-radius: 8px; overflow:hidden;
+    width: 104px; height: 104px; border-radius: 8px; overflow:hidden;
     flex-shrink: 0; background: var(--surface-2);
   }
   .row-thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
-  .row-info{ flex:1; min-width:0; }
+  .row-body{ flex:1; min-width:0; display:flex; flex-direction: column; gap: 7px; }
   .row-title{
-    font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    font-size: 15px; font-weight: 700; white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
   }
   .row-meta{
-    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-dim); margin-top: 3px;
-    display:flex; gap: 12px; flex-wrap: wrap;
+    font-size: 12px; color: var(--ink-dim);
+    display:flex; gap: 14px; flex-wrap: wrap; align-items:center;
   }
-  .row-tags{ display:flex; gap:6px; flex-wrap:wrap; max-width: 220px; }
+  .row-tags{ display:flex; gap:6px; flex-wrap:wrap; }
   .row-tags .tag{
-    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
-    background: var(--surface-2); color: var(--accent);
-    padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent-dim);
+    font-size: 11.5px;
+    background: transparent; color: var(--accent);
+    padding: 2px 8px; border-radius: 4px; border: 1px solid var(--line);
   }
+  .row-tags .tag::before{ content:'#'; opacity: 0.6; margin-right: 1px; }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
   .detail-image{ flex: 0 0 260px; }
   .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
   .detail-text{ flex: 1 1 320px; min-width: 260px; }
   .detail-block{ margin-bottom: 16px; }
   .detail-block .label{
-    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim);
     margin-bottom: 5px; letter-spacing: 0.05em;
   }
   .detail-block .value{
@@ -320,13 +318,13 @@
   }
   .settings-table{
     display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
-    gap: 8px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    gap: 8px 16px; font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
   }
   .settings-table div span{ color: var(--ink-dim); display:block; font-size:10.5px; }
 
   .empty{
     text-align:center; color: var(--ink-dim);
-    padding: 60px 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    padding: 60px 20px; font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
   }
 
   /* ---- 詳細モーダル ---- */
@@ -351,9 +349,9 @@
     border: 1px solid var(--line); border-radius: 8px;
     font-size: 13px; padding: 6px 12px;
   }
-  .modal-title{ font-family:'Space Grotesk',sans-serif; font-size: 20px; margin: 0 90px 6px 0; word-break: break-word; }
+  .modal-title{ font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size: 20px; margin: 0 90px 6px 0; word-break: break-word; }
   .modal-meta{
-    font-family:'JetBrains Mono',monospace; font-size: 12px; color: var(--ink-dim);
+    font-family:'Noto Sans JP',sans-serif; font-size: 12px; color: var(--ink-dim);
     display:flex; gap: 14px; flex-wrap:wrap; margin-bottom: 12px;
   }
   .modal .row-tags{ max-width: none; margin-bottom: 16px; }
@@ -373,7 +371,7 @@
     position: fixed; inset: 0; z-index: 200;
     background: rgba(10,11,24,0.65);
     display:none; align-items:center; justify-content:center; flex-direction: column; gap: 14px;
-    font-family:'JetBrains Mono',monospace; font-size: 13px; color: var(--ink);
+    font-family:'Noto Sans JP',sans-serif; font-size: 13px; color: var(--ink);
   }
   .loading-overlay.open{ display:flex; }
   .spinner{
@@ -389,44 +387,48 @@
   /* ---- ソートチップ ---- */
   .sort-chips{ display:flex; flex-wrap:wrap; gap: 8px; }
   .sort-chip{
-    font-family:'JetBrains Mono',monospace; font-size: 12px;
+    font-family:'Noto Sans JP',sans-serif; font-size: 12px;
     padding: 6px 12px; border-radius: 999px;
     border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-dim);
     cursor: pointer; user-select: none; display:inline-flex; align-items:center; gap: 6px;
   }
   .sort-chip.active{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .sort-chip .order-badge{
-    font-size: 10px; background: var(--accent); color: #1a1300;
+    font-size: 10px; background: var(--accent); color: #fff;
     border-radius: 999px; min-width: 15px; height: 15px; padding: 0 4px;
     display:inline-flex; align-items:center; justify-content:center;
   }
 
   /* ---- カウント表示 ---- */
-  .count-badges{ display:flex; gap: 12px; align-items:center; }
+  .count-badges{ display:flex; gap: 10px; align-items:center; }
   .count-badge{
-    font-family:'JetBrains Mono',monospace; font-size: 12px; color: var(--ink-dim);
-    display:inline-flex; align-items:center; gap: 4px;
+    font-size: 13px; color: var(--ink-dim);
+    display:inline-flex; align-items:center; gap: 5px;
   }
   .like-btn{
-    background:none; border:none; padding: 0; cursor: pointer;
-    font-family:'JetBrains Mono',monospace; font-size: 12px; color: var(--ink-dim);
-    display:inline-flex; align-items:center; gap: 4px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 5px 12px 5px 10px; border-radius: 999px; cursor: pointer;
+    font-size: 13px; color: var(--ink-dim);
+    display:inline-flex; align-items:center; gap: 6px;
+    transition: color .12s ease, border-color .12s ease, background .12s ease;
   }
-  .like-btn .heart{ font-size: 14px; line-height: 1; }
-  .like-btn.liked{ color: var(--danger); }
-  .row-meta .count-badges{ margin-top: 2px; }
-  .modal-counts{ margin-bottom: 12px; }
-  .modal-counts .like-btn, .modal-counts .count-badge{ font-size: 14px; }
-  .modal-counts .like-btn .heart{ font-size: 18px; }
+  .like-btn:hover{ color: var(--like); border-color: var(--like); }
+  .like-btn .heart{ font-size: 17px; line-height: 1; }
+  .like-btn.liked{ color: var(--like); border-color: var(--like); background: var(--danger-dim); }
+  .row-meta .count-badges{ margin-top: 0; }
+  .modal-counts{ margin-bottom: 14px; }
+  .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
+  .modal-counts .like-btn .heart{ font-size: 20px; }
+  .modal-counts .count-badge{ font-size: 15px; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header>
-    <div class="eyebrow">shared reel · friends only</div>
+    <div class="eyebrow">仲間内で使う画像＆プロンプト共有ボード</div>
     <h1>Prompt Reel</h1>
-    <p>画像とStable Diffusionの生成設定をセットで記録・共有するボードです。</p>
+    <p>画像とStable Diffusionの生成設定をまとめて記録・共有できます。</p>
   </header>
 
   <nav class="tabs">
@@ -506,7 +508,7 @@
         <span class="label">タグで絞込</span>
       </div>
       <div class="tag-cloud" id="tagCloud"></div>
-      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'JetBrains Mono',monospace;">
+      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
         クリックで切替: 未選択 → 含む(AND/OR) → 除外(NOT) → 未選択
       </div>
     </div>
@@ -751,7 +753,7 @@
       const cls = state === 'include' ? 'state-include' : (state === 'exclude' ? 'state-exclude' : '');
       const mark = state === 'include' ? '+' : (state === 'exclude' ? '−' : '');
       return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + (mark ? mark + ' ' : '') + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:\'JetBrains Mono\',monospace;">タグはまだありません</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
 
     tagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
       pill.addEventListener('click', function () {
@@ -829,7 +831,7 @@
     postTagCloud.innerHTML = tags.map(function (t) {
       const cls = selectedTags.includes(t) ? ' state-include' : '';
       return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:\'JetBrains Mono\',monospace;">タグはまだありません</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
 
     postTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
       pill.addEventListener('click', function () {
@@ -1044,12 +1046,12 @@
         '<div class="row" data-id="' + p.id + '">' +
           '<div class="row-main">' +
             '<div class="row-thumb"><img src="' + escapeHtml(p.imageUrl) + '" loading="lazy" alt="サムネイル"></div>' +
-            '<div class="row-info">' +
+            '<div class="row-body">' +
               '<div class="row-title">' + title + '</div>' +
               '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span></div>' +
-              countBadgesHtml(p) +
+              '<div class="row-meta">' + countBadgesHtml(p) + '</div>' +
+              (p.tags && p.tags.length ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
             '</div>' +
-            '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
           '</div>' +
         '</div>';
     }).join('');
