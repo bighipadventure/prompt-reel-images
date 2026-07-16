@@ -529,11 +529,43 @@
   const existingTagSelect = document.getElementById('existingTagSelect');
   const tagCloud = document.getElementById('tagCloud');
 
+  // GAS WebアプリはクロスオリジンfetchだとCORSでブロックされることがあるため、
+  // <script>タグ読み込み(JSONP)で取得する。
+  function jsonpRequest(url) {
+    return new Promise(function (resolve, reject) {
+      const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const script = document.createElement('script');
+
+      const timeoutId = setTimeout(function () {
+        cleanup();
+        reject(new Error('タイムアウトしました'));
+      }, 15000);
+
+      function cleanup() {
+        delete window[callbackName];
+        script.remove();
+        clearTimeout(timeoutId);
+      }
+
+      window[callbackName] = function (data) {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = function () {
+        cleanup();
+        reject(new Error('読み込みに失敗しました'));
+      };
+
+      script.src = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=' + callbackName;
+      document.body.appendChild(script);
+    });
+  }
+
   async function loadPosts() {
     statusText.textContent = '読み込み中…';
     try {
-      const res = await fetch(GAS_URL, { method: 'GET' });
-      const data = await res.json();
+      const data = await jsonpRequest(GAS_URL);
       posts = data.posts || [];
       rebuildTagUI();
       renderList();
@@ -660,31 +692,33 @@
         tags: selectedTags
       };
 
-      const res = await fetch(GAS_URL, {
+      // GAS Webアプリはクロスオリジンからのfetchで応答をCORSブロックされることがあるため、
+      // mode:'no-cors' で送信する。応答内容(成功/失敗)は読めなくなるが、
+      // リクエスト自体はGoogle側に届き、保存処理は実行される。
+      await fetch(GAS_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // プリフライト回避のためtext/plainで送信
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
 
-      if (data.success) {
-        statusText.textContent = '投稿しました';
-        imageInput.value = '';
-        previewWrap.style.display = 'none';
-        dropzoneLabel.textContent = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
-        document.getElementById('titleInput').value = '';
-        document.getElementById('authorInput').value = '';
-        document.getElementById('promptInput').value = '';
-        document.getElementById('negativeInput').value = '';
-        clearSettingsForm();
-        selectedTags = [];
-        renderChips();
-        await loadPosts();
-      } else {
-        statusText.textContent = '投稿に失敗しました: ' + (data.error || '');
-      }
+      statusText.textContent = '投稿しました(反映まで数秒かかる場合があります)';
+      imageInput.value = '';
+      previewWrap.style.display = 'none';
+      dropzoneLabel.textContent = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
+      document.getElementById('titleInput').value = '';
+      document.getElementById('authorInput').value = '';
+      document.getElementById('promptInput').value = '';
+      document.getElementById('negativeInput').value = '';
+      clearSettingsForm();
+      selectedTags = [];
+      renderChips();
+
+      // 画像アップロード・保存が完了するまで少し待ってから一覧を再取得
+      await new Promise(function (resolve) { setTimeout(resolve, 2500); });
+      await loadPosts();
     } catch (err) {
-      statusText.textContent = '投稿に失敗しました';
+      statusText.textContent = '投稿に失敗しました(通信エラー)';
       console.error(err);
     } finally {
       submitBtn.disabled = false;
