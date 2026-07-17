@@ -260,7 +260,7 @@
   .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger); }
   .clear-tags{ font-family:'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
 
-  #postTagCloud, #tagCloud{ overflow: hidden; }
+  #postTagCloud, #tagCloud, #pTagCloud, #pBrowseTagCloud{ overflow: hidden; }
   .show-all-tags{
     margin-top: 8px;
     font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
@@ -417,13 +417,13 @@
   }
   .dl-wrap input:focus{ outline: none; }
   .dl-wrap:focus-within{ outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[list]::-webkit-calendar-picker-indicator{ display:none !important; }
   .dl-toggle{
     flex: 0 0 auto;
     display:flex; align-items:center; justify-content:center;
-    background: none; border: none; border-left: 1px solid var(--line);
-    border-radius: 0 9px 9px 0;
+    background: none; border: none;
     color: var(--ink-dim); cursor: pointer;
-    font-size: 11px; padding: 0 10px;
+    font-size: 11px; padding: 0 10px 0 4px;
   }
   .dl-toggle:hover{ color: var(--accent); }
   .search-row .dl-wrap{ flex: 1 1 150px; width: auto; }
@@ -461,6 +461,11 @@
   .like-btn .heart{ font-size: 17px; line-height: 1; }
   .like-btn.liked{ color: var(--like); border-color: var(--like); background: var(--danger-dim); }
   .row-meta .count-badges{ margin-top: 0; }
+  .row{ position: relative; }
+  .row-counts{ position: absolute; top: 10px; right: 14px; }
+  .row-counts + .row-main .row-title{ padding-right: 150px; }
+  .prompt-row .row-counts + .row-main .row-title{ padding-right: 90px; }
+  .list.panel-mode .row-counts{ display: none; }
   .modal-counts{ margin-bottom: 14px; }
   .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
   .modal-counts .like-btn .heart{ font-size: 20px; }
@@ -535,6 +540,18 @@
   }
   .linked-empty{ color: var(--ink-dim); font-size: 12.5px; font-family:'Noto Sans JP',sans-serif; padding: 6px 0 4px; }
 
+  /* ---- 管理モード ---- */
+  header{ position: relative; }
+  .admin-btn{
+    position: absolute; top: 0; right: 0;
+    background: var(--surface); color: var(--ink-dim);
+    border: 1px solid var(--line); border-radius: 8px;
+    font-size: 12px; padding: 7px 14px;
+  }
+  .admin-btn:hover{ color: var(--accent); border-color: var(--accent); }
+  .admin-btn.on{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .admin-modal-status{ font-size: 12px; color: var(--danger); min-height: 18px; margin-top: 10px; }
+
   /* ---- Q&A ---- */
   .qa-item{ border-bottom: 1px solid var(--line); padding: 16px 0; }
   .qa-item:first-of-type{ padding-top: 4px; }
@@ -552,6 +569,7 @@
     <div class="eyebrow">仲間内で使う画像＆プロンプト共有ボード</div>
     <h1>Prompt Reel</h1>
     <p>画像とStable Diffusionの生成設定をまとめて記録・共有できます。</p>
+    <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
   </header>
 
   <nav class="tabs">
@@ -776,44 +794,33 @@
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
-          画面上部のタブで画面を切り替えます。「投稿」で新しい作品を投稿し、「画像投稿一覧」「プロンプト投稿一覧」でみんなの投稿を見て、「本ツールの使い方」(このタブ)で使い方を確認できます。
+          <strong>投稿する</strong><br>
+          「投稿」タブに画像をドラッグ&amp;ドロップ →「投稿する」を押すだけ。プロンプトや設定は画像から自動入力されます。
         </div>
       </div>
       <div class="guide-step">
         <div class="num">2</div>
         <div class="body">
-          <strong>画像を投稿する</strong>: 「投稿」タブを開き、上部の切替ボタンで「画像を投稿」を選びます(初期状態でこちらが選ばれています)。ドロップゾーンに画像をドラッグ&amp;ドロップするか、クリックしてファイルを選択してください。Stable Diffusion系のツールで生成した画像なら、プロンプトや生成設定が自動で入力されます(内容は手動でも修正できます)。タイトルやタグなどを必要に応じて入力し、一番下の「投稿する」ボタンを押せば完了です。
+          <strong>見る</strong><br>
+          「画像投稿一覧」でみんなの作品をチェック。クリックで詳細が開き、プロンプトはコピーボタンでそのまま使えます。
         </div>
       </div>
       <div class="guide-step">
         <div class="num">3</div>
         <div class="body">
-          <strong>プロンプト例を投稿する</strong>: 同じ「投稿」タブの切替ボタンで「プロンプト例を投稿」を選ぶと、画像なしでプロンプトだけを作品として共有するフォームに切り替わります。入力項目は画像投稿とほぼ同じですが、画像は不要です。
+          <strong>探す</strong><br>
+          一覧上部の「並び順」チップと「絞り込み」欄、タグクリックで目当ての作品を検索できます。
         </div>
       </div>
       <div class="guide-step">
         <div class="num">4</div>
         <div class="body">
-          <strong>タグの使い方</strong>: 投稿フォームのタグ欄では、既存のタグをクリックして選択するか、新しいタグを入力して「追加」ボタンで追加できます。タグは3行目以降は隠れますが、「全て表示」ボタンを押すとすべてのタグが一覧表示されたモーダルが開き、そこから選択できます。
+          <strong>リアクションする</strong><br>
+          ♡でいいね、詳細画面からダウンロードや共有URLのコピーができます。
         </div>
       </div>
-      <div class="guide-step">
-        <div class="num">5</div>
-        <div class="body">
-          <strong>投稿を探す(絞り込み・並び替え)</strong>: 「画像投稿一覧」「プロンプト投稿一覧」タブでは、上部の「並び順」で日時やいいね数などによる並び替えができ(クリックするたびに降順→昇順→解除と切り替わります)、「絞り込み」の入力欄で投稿者名などを部分一致検索できます。タグでの絞り込みはタグをクリックしてON/OFFし、AND(すべて含む)/OR(いずれか含む)/NOT(含まない)を切り替えて使います。ここでも「全て表示」からタグ選択モーダルを開けます。
-        </div>
-      </div>
-      <div class="guide-step">
-        <div class="num">6</div>
-        <div class="body">
-          <strong>詳細を見る・いいね・ダウンロード・共有</strong>: 一覧の行(画像投稿ならサムネイル付きの行、パネル表示なら画像そのもの)をクリックすると、詳細モーダルが開きます。ハートのボタンでいいね、モーダル右上のボタンからダウンロード(画像投稿のみ)や共有URLのコピーができます。PROMPT/NEGATIVE PROMPTはそれぞれの「コピー」ボタンでクリップボードにコピーできます。
-        </div>
-      </div>
-      <div class="guide-step">
-        <div class="num">7</div>
-        <div class="body">
-          <strong>プロンプト例と画像を紐づける</strong>: 画像投稿フォームの「ベースにしたプロンプト例」でプロンプト例を選ぶと、その画像がプロンプト例の「派生作品」として表示されます(複数選択可)。「親にする投稿作品」で同じ設定の元画像を選ぶと、Seed違いなどのバリエーション画像を親の詳細下にまとめられます。どちらも任意項目なので、使わなくても投稿できます。
-        </div>
+      <div class="guide-note">
+        慣れてきたら: 画像なしの「プロンプト例」の投稿や、画像投稿時の「ベースにしたプロンプト例」「親にする投稿作品」での紐づけも使えます。詳しくは下のQ&amp;Aへ。
       </div>
     </section>
 
@@ -827,7 +834,7 @@
 
       <div class="qa-item">
         <div class="qa-q">個人情報が管理人や第三者にバレませんか？</div>
-        <div class="qa-a">投稿者名は任意入力で、空欄なら「匿名」で投稿されます。こういう仕組みなので、管理人にも、他の利用者にも個人情報やIPアドレス、Googleアカウント情報が公開されることはありません。ただし、投稿者名・タイトル・メモ・プロンプトに自分で本名や連絡先などを書けば、それは他の閲覧者にも見えます。また画像のメタデータ(生成情報)に個人的な情報が含まれる場合があるため、気になる場合は投稿前に内容を確認してください。</div>
+        <div class="qa-a">バレません。本ツールはGoogleアカウントでのログインを一切要求せず、投稿も閲覧もすべて匿名のリクエストとして処理されます。管理人側に届く(スプレッドシートに記録される)のは、あなたがフォームに入力した内容と画像そのものだけで、IPアドレスやアカウント情報を管理人が知る手段は仕組み上ありません。他の利用者に対しても同様で、投稿者名は任意入力・空欄なら「匿名」と表示されるだけです。ただし、投稿者名・タイトル・メモ・プロンプトに自分で本名や連絡先などを書けば、それは管理人にも他の閲覧者にも見えます。また画像のメタデータ(生成情報)に個人的な情報が含まれる場合があるため、気になる場合は投稿前に内容を確認してください。</div>
       </div>
 
       <div class="qa-item">
@@ -1063,6 +1070,23 @@
     <p class="tag-modal-hint">クリックでON/OFF切替</p>
     <div class="tag-cloud" id="pBrowseTagModalCloud"></div>
   </div>
+</div>
+
+<div class="modal-overlay" id="adminAuthOverlay">
+  <div class="modal" style="max-width: 420px;">
+    <button class="modal-close" type="button" id="adminAuthCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">管理画面ログイン</h3>
+    <label class="field-label">パスワード</label>
+    <input type="password" id="adminPasswordInput" placeholder="管理用パスワード">
+    <div class="admin-modal-status" id="adminAuthStatus"></div>
+    <div class="submit-row" style="margin-top:12px;">
+      <button class="btn-submit" type="button" id="adminAuthSubmitBtn">ログイン</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="adminEditOverlay">
+  <div class="modal" id="adminEditBody"></div>
 </div>
 
 <div class="modal-overlay full-image-overlay" id="fullImageOverlay">
@@ -1637,7 +1661,7 @@
     btn.type = 'button';
     btn.className = 'dl-toggle';
     btn.setAttribute('aria-label', '候補を表示');
-    btn.textContent = '▾';
+    btn.textContent = '▼';
     wrap.appendChild(btn);
 
     btn.addEventListener('click', function (e) {
@@ -2100,12 +2124,12 @@
     const author = p.author ? escapeHtml(p.author) : '匿名';
     return '' +
       '<div class="row" data-id="' + p.id + '">' +
+        '<div class="row-counts">' + countBadgesHtml(p) + '</div>' +
         '<div class="row-main">' +
           '<div class="row-thumb">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
             '<div class="row-title">' + title + '</div>' +
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span></div>' +
-            '<div class="row-meta">' + countBadgesHtml(p) + '</div>' +
             (p.tags && p.tags.length ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
           '</div>' +
         '</div>' +
@@ -2215,6 +2239,7 @@
       '<div class="modal-header">' +
         '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
         '<div class="modal-top-actions">' +
+          adminActionButtonsHtml() +
           '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>' +
           '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
@@ -2247,6 +2272,7 @@
       });
     });
     modalBody.querySelector('.like-btn').addEventListener('click', function () { toggleLike(p.id); });
+    wireAdminActionButtons(p);
     document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage(p); });
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
@@ -2318,7 +2344,7 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeAdminAuthModal(); closeAdminEditModal(); }
   });
 
   async function postAction(payload) {
@@ -2934,10 +2960,12 @@
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = p.author ? escapeHtml(p.author) : '匿名';
     const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
-    return '<div class="row prompt-row" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
+    return '<div class="row prompt-row" data-id="' + p.id + '">' +
+      '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
       '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + promptDerivedCount(p) + '件</span></div>' +
-      '<div class="row-meta">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' + tags +
+      tags +
       '</div></div></div>';
   }
 
@@ -2992,6 +3020,7 @@
       '<div class="modal-header">' +
         '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
         '<div class="modal-top-actions">' +
+          adminActionButtonsHtml() +
           '<button class="btn-ghost" type="button" id="promptShareBtn">共有</button>' +
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
@@ -3015,11 +3044,264 @@
       });
     });
     modalBody.querySelector('.modal-counts .like-btn').addEventListener('click', function () { toggleLike(p.id); });
+    wireAdminActionButtons(p);
     document.getElementById('promptShareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
     wireImageRows(document.getElementById('linkedWorks'), { detailOnly: true });
 
     modalOverlay.classList.add('open');
+  }
+
+  /* ===== ADMIN MODE ===== */
+  let adminMode = false;
+  let adminPassword = '';
+
+  const adminBtn = document.getElementById('adminBtn');
+  const adminAuthOverlay = document.getElementById('adminAuthOverlay');
+  const adminPasswordInput = document.getElementById('adminPasswordInput');
+  const adminAuthStatus = document.getElementById('adminAuthStatus');
+  const adminEditOverlay = document.getElementById('adminEditOverlay');
+  const adminEditBody = document.getElementById('adminEditBody');
+
+  function setAdminMode(on) {
+    adminMode = on;
+    if (!on) adminPassword = '';
+    adminBtn.textContent = on ? '管理モード終了' : '管理画面';
+    adminBtn.classList.toggle('on', on);
+    if (modalOverlay.classList.contains('open')) closeModal();
+  }
+
+  function openAdminAuthModal() {
+    adminPasswordInput.value = '';
+    adminAuthStatus.textContent = '';
+    adminAuthOverlay.classList.add('open');
+    adminPasswordInput.focus();
+  }
+  function closeAdminAuthModal() { adminAuthOverlay.classList.remove('open'); }
+
+  adminBtn.addEventListener('click', function () {
+    if (adminMode) setAdminMode(false); else openAdminAuthModal();
+  });
+  document.getElementById('adminAuthCloseBtn').addEventListener('click', closeAdminAuthModal);
+  adminAuthOverlay.addEventListener('click', function (e) { if (e.target === adminAuthOverlay) closeAdminAuthModal(); });
+  adminPasswordInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitAdminAuth(); });
+  document.getElementById('adminAuthSubmitBtn').addEventListener('click', submitAdminAuth);
+
+  async function submitAdminAuth() {
+    const pw = adminPasswordInput.value;
+    if (!pw) { adminAuthStatus.textContent = 'パスワードを入力してください'; return; }
+    adminAuthStatus.textContent = '';
+    showLoading('認証中...');
+    try {
+      const result = await postAction({ action: 'adminAuth', password: pw });
+      if (result && result.success) {
+        adminPassword = pw;
+        setAdminMode(true);
+        closeAdminAuthModal();
+      } else {
+        adminAuthStatus.textContent = 'パスワードが違います';
+      }
+    } catch (err) {
+      adminAuthStatus.textContent = '通信に失敗しました';
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function adminActionButtonsHtml() {
+    if (!adminMode) return '';
+    return '<button class="btn-ghost" type="button" id="adminEditBtn">編集</button>' +
+      '<button class="btn-ghost" type="button" id="adminDeleteBtn" style="color:var(--danger); border-color:var(--danger);">削除</button>';
+  }
+
+  function wireAdminActionButtons(p) {
+    const editBtn = document.getElementById('adminEditBtn');
+    const deleteBtn = document.getElementById('adminDeleteBtn');
+    if (editBtn) editBtn.addEventListener('click', function () { openAdminEdit(p); });
+    if (deleteBtn) deleteBtn.addEventListener('click', function () { adminDeletePost(p); });
+  }
+
+  function refreshAfterAdminChange() {
+    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt'; });
+    promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
+    collectDynamicKeysFromPosts();
+    rebuildTagUI();
+    rebuildPostTagCloud();
+    rebuildDatalists();
+    rebuildPromptFormTagCloud();
+    rebuildPromptBrowseTagUI();
+    if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+    if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
+  }
+
+  // ADMIN EDIT MODAL
+  let adminEditBaseIds = [];
+  let adminEditParentId = '';
+
+  function adminLinkPillsHtml(items, isSelected) {
+    if (!items.length) return '<span style="color:var(--ink-dim); font-size:12px;">候補がありません</span>';
+    return items.map(function (it) {
+      const cls = isSelected(it) ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-link-id="' + escapeHtml(String(it.id)) + '">' +
+        (it.title ? escapeHtml(it.title) : '(無題)') + '</span>';
+    }).join('');
+  }
+
+  function openAdminEdit(p) {
+    const isImage = (p.type || 'image') !== 'prompt';
+    adminEditBaseIds = basePromptIdsOf(p);
+    adminEditParentId = String(p.parentId || '');
+
+    let linkBlocks = '';
+    if (isImage) {
+      linkBlocks =
+        '<label class="field-label">ベースにしたプロンプト例(クリックで選択 / もう一度クリックで解除)</label>' +
+        '<div class="tag-cloud" id="adminBaseCloud"></div>' +
+        '<label class="field-label">親作品(クリックで選択 / もう一度クリックで解除)</label>' +
+        '<div class="tag-cloud" id="adminParentCloud"></div>';
+    }
+
+    adminEditBody.innerHTML =
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">投稿を編集</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="adminEditCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      '<label class="field-label">タイトル</label>' +
+      '<input type="text" id="adminEditTitle" value="' + escapeHtml(p.title || '') + '">' +
+      '<label class="field-label">投稿者</label>' +
+      '<input type="text" id="adminEditAuthor" value="' + escapeHtml(p.author || '') + '">' +
+      '<label class="field-label">プロンプト</label>' +
+      '<textarea id="adminEditPrompt">' + escapeHtml(p.prompt || '') + '</textarea>' +
+      '<label class="field-label">ネガティブプロンプト</label>' +
+      '<textarea id="adminEditNegative">' + escapeHtml(p.negativePrompt || '') + '</textarea>' +
+      '<label class="field-label">メモ(備考)</label>' +
+      '<textarea id="adminEditMemo">' + escapeHtml(p.memo || '') + '</textarea>' +
+      '<label class="field-label">タグ(カンマ区切り)</label>' +
+      '<input type="text" id="adminEditTags" value="' + escapeHtml((p.tags || []).join(', ')) + '">' +
+      linkBlocks +
+      '<div class="admin-modal-status" id="adminEditStatus"></div>' +
+      '<div class="submit-row">' +
+        '<button class="btn-submit" type="button" id="adminEditSaveBtn">保存する</button>' +
+      '</div>';
+
+    if (isImage) {
+      renderAdminLinkClouds(p);
+    }
+
+    document.getElementById('adminEditCloseBtn').addEventListener('click', closeAdminEditModal);
+    document.getElementById('adminEditSaveBtn').addEventListener('click', function () { saveAdminEdit(p); });
+    adminEditOverlay.classList.add('open');
+  }
+
+  function renderAdminLinkClouds(p) {
+    const baseCloud = document.getElementById('adminBaseCloud');
+    const parentCloud = document.getElementById('adminParentCloud');
+    const parentCandidates = imagePosts.filter(function (ip) {
+      return !ip.parentId && String(ip.id) !== String(p.id);
+    });
+
+    baseCloud.innerHTML = adminLinkPillsHtml(promptPosts, function (it) {
+      return adminEditBaseIds.indexOf(String(it.id)) !== -1;
+    });
+    parentCloud.innerHTML = adminLinkPillsHtml(parentCandidates, function (it) {
+      return adminEditParentId === String(it.id);
+    });
+
+    baseCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const id = pill.dataset.linkId;
+        const idx = adminEditBaseIds.indexOf(id);
+        if (idx === -1) adminEditBaseIds.push(id); else adminEditBaseIds.splice(idx, 1);
+        renderAdminLinkClouds(p);
+      });
+    });
+    parentCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const id = pill.dataset.linkId;
+        adminEditParentId = (adminEditParentId === id) ? '' : id;
+        renderAdminLinkClouds(p);
+      });
+    });
+  }
+
+  function closeAdminEditModal() {
+    adminEditOverlay.classList.remove('open');
+    adminEditBody.innerHTML = '';
+  }
+  adminEditOverlay.addEventListener('click', function (e) { if (e.target === adminEditOverlay) closeAdminEditModal(); });
+
+  async function saveAdminEdit(p) {
+    const isImage = (p.type || 'image') !== 'prompt';
+    const status = document.getElementById('adminEditStatus');
+    const tags = document.getElementById('adminEditTags').value
+      .split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+    const payload = {
+      action: 'adminUpdate',
+      password: adminPassword,
+      id: p.id,
+      title: document.getElementById('adminEditTitle').value,
+      author: document.getElementById('adminEditAuthor').value,
+      prompt: document.getElementById('adminEditPrompt').value,
+      negativePrompt: document.getElementById('adminEditNegative').value,
+      memo: document.getElementById('adminEditMemo').value,
+      tags: tags,
+      basePromptId: isImage ? adminEditBaseIds.join(',') : '',
+      parentId: isImage ? adminEditParentId : ''
+    };
+
+    status.textContent = '';
+    showLoading('保存中...');
+    try {
+      const result = await postAction(payload);
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+
+      p.title = payload.title;
+      p.author = payload.author;
+      p.prompt = payload.prompt;
+      p.negativePrompt = payload.negativePrompt;
+      p.memo = payload.memo;
+      p.tags = tags;
+      p.basePromptId = payload.basePromptId;
+      p.parentId = payload.parentId;
+
+      refreshAfterAdminChange();
+      closeAdminEditModal();
+      if (isImage) openModal(p); else openPromptModal(p);
+    } catch (err) {
+      status.textContent = '保存に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  async function adminDeletePost(p) {
+    const title = p.title || '(無題)';
+    if (!window.confirm('「' + title + '」を削除します。この操作は取り消せません。よろしいですか？')) return;
+
+    showLoading('削除中...');
+    try {
+      const result = await postAction({ action: 'adminDelete', password: adminPassword, id: p.id });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+
+      posts = posts.filter(function (x) { return String(x.id) !== String(p.id); });
+      posts.forEach(function (x) {
+        if (String(x.parentId) === String(p.id)) x.parentId = '';
+        const baseIds = basePromptIdsOf(x);
+        if (baseIds.indexOf(String(p.id)) !== -1) {
+          x.basePromptId = baseIds.filter(function (id) { return id !== String(p.id); }).join(',');
+        }
+      });
+
+      refreshAfterAdminChange();
+      closeModal();
+    } catch (err) {
+      window.alert('削除に失敗しました: ' + (err.message || err));
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
   }
 
   /* ===== INIT ===== */
