@@ -288,6 +288,7 @@
     transition: background .12s ease;
   }
   .row:hover{ background: var(--surface-2); }
+  .row.picker-selected{ border-color: var(--accent); background: var(--accent-dim); }
   .row-main{
     display:flex; align-items:center; gap: 16px;
     padding: 12px 16px;
@@ -360,13 +361,18 @@
     border: 1px solid var(--line); border-radius: 8px;
     font-size: 13px; padding: 6px 12px;
   }
-  .modal-title{ font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size: 20px; margin: 0 90px 6px 0; word-break: break-word; }
+  .modal-title{ font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size: 20px; margin: 0 0 6px 0; word-break: break-word; }
+  .modal-header{ display:flex; align-items:flex-start; justify-content:space-between; gap: 14px; }
+  .modal-header .modal-title{ flex:1; min-width:0; }
+  .modal-top-actions{ display:flex; align-items:center; gap: 8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+  .modal-top-actions .modal-close{ position:static; }
+  .modal-top-actions button.btn-ghost{ padding: 6px 12px; font-size: 12px; white-space: nowrap; }
   .modal-meta{
     font-family:'Noto Sans JP',sans-serif; font-size: 12px; color: var(--ink-dim);
     display:flex; gap: 14px; flex-wrap:wrap; margin-bottom: 12px;
   }
   .modal .row-tags{ max-width: none; margin-bottom: 16px; }
-  .modal-image{ text-align:center; }
+  .modal-image{ text-align:center; margin-top: 14px; }
   .modal-image img{ max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); }
   .modal-actions{ display:flex; gap: 10px; justify-content:center; margin: 12px 0 20px; }
   .block-head{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
@@ -394,6 +400,34 @@
 
   textarea.autogrow{ resize: none; overflow: hidden; }
   .filter-input{ flex: 1 1 150px; width: auto; }
+
+  /* ---- datalist入力欄 + プルダウンボタン ---- */
+  .dl-wrap{
+    display:inline-flex; align-items:stretch;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    width: 100%;
+  }
+  .dl-wrap input{
+    flex: 1 1 auto; min-width: 0; width: auto;
+    border: none; background: transparent;
+    border-radius: 0;
+    padding: 10px 6px 10px 12px;
+  }
+  .dl-wrap input:focus{ outline: none; }
+  .dl-wrap:focus-within{ outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dl-toggle{
+    flex: 0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    background: none; border: none; border-left: 1px solid var(--line);
+    border-radius: 0 9px 9px 0;
+    color: var(--ink-dim); cursor: pointer;
+    font-size: 11px; padding: 0 10px;
+  }
+  .dl-toggle:hover{ color: var(--accent); }
+  .search-row .dl-wrap{ flex: 1 1 150px; width: auto; }
+  .tag-row .dl-wrap{ flex: 1 1 160px; width: auto; }
 
   /* ---- ソートチップ ---- */
   .sort-chips{ display:flex; flex-wrap:wrap; gap: 8px; }
@@ -561,7 +595,7 @@
       <label class="field-label">メモ(備考)</label>
       <textarea id="memoInput" class="autogrow" placeholder="補足・備考があれば"></textarea>
 
-      <label class="field-label">ベースにしたプロンプト例(任意)</label>
+      <label class="field-label">ベースにしたプロンプト例(任意・複数選択可)</label>
       <div class="base-prompt-select">
         <button class="btn-ghost" id="pickBasePromptBtn" type="button">プロンプト例を選択</button>
         <span id="basePromptDisplay" class="base-prompt-display"></span>
@@ -738,6 +772,52 @@
     </section>
 
     <section class="panel">
+      <h2>はじめての方向け:基本の使い方</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          画面上部のタブで画面を切り替えます。「投稿」で新しい作品を投稿し、「画像投稿一覧」「プロンプト投稿一覧」でみんなの投稿を見て、「本ツールの使い方」(このタブ)で使い方を確認できます。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>画像を投稿する</strong>: 「投稿」タブを開き、上部の切替ボタンで「画像を投稿」を選びます(初期状態でこちらが選ばれています)。ドロップゾーンに画像をドラッグ&amp;ドロップするか、クリックしてファイルを選択してください。Stable Diffusion系のツールで生成した画像なら、プロンプトや生成設定が自動で入力されます(内容は手動でも修正できます)。タイトルやタグなどを必要に応じて入力し、一番下の「投稿する」ボタンを押せば完了です。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>プロンプト例を投稿する</strong>: 同じ「投稿」タブの切替ボタンで「プロンプト例を投稿」を選ぶと、画像なしでプロンプトだけを作品として共有するフォームに切り替わります。入力項目は画像投稿とほぼ同じですが、画像は不要です。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">4</div>
+        <div class="body">
+          <strong>タグの使い方</strong>: 投稿フォームのタグ欄では、既存のタグをクリックして選択するか、新しいタグを入力して「追加」ボタンで追加できます。タグは3行目以降は隠れますが、「全て表示」ボタンを押すとすべてのタグが一覧表示されたモーダルが開き、そこから選択できます。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">5</div>
+        <div class="body">
+          <strong>投稿を探す(絞り込み・並び替え)</strong>: 「画像投稿一覧」「プロンプト投稿一覧」タブでは、上部の「並び順」で日時やいいね数などによる並び替えができ(クリックするたびに降順→昇順→解除と切り替わります)、「絞り込み」の入力欄で投稿者名などを部分一致検索できます。タグでの絞り込みはタグをクリックしてON/OFFし、AND(すべて含む)/OR(いずれか含む)/NOT(含まない)を切り替えて使います。ここでも「全て表示」からタグ選択モーダルを開けます。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">6</div>
+        <div class="body">
+          <strong>詳細を見る・いいね・ダウンロード・共有</strong>: 一覧の行(画像投稿ならサムネイル付きの行、パネル表示なら画像そのもの)をクリックすると、詳細モーダルが開きます。ハートのボタンでいいね、モーダル右上のボタンからダウンロード(画像投稿のみ)や共有URLのコピーができます。PROMPT/NEGATIVE PROMPTはそれぞれの「コピー」ボタンでクリップボードにコピーできます。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">7</div>
+        <div class="body">
+          <strong>プロンプト例と画像を紐づける</strong>: 画像投稿フォームの「ベースにしたプロンプト例」でプロンプト例を選ぶと、その画像がプロンプト例の「派生作品」として表示されます(複数選択可)。「親にする投稿作品」で同じ設定の元画像を選ぶと、Seed違いなどのバリエーション画像を親の詳細下にまとめられます。どちらも任意項目なので、使わなくても投稿できます。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>よくある質問(Q&amp;A)</h2>
 
       <div class="qa-item">
@@ -747,7 +827,7 @@
 
       <div class="qa-item">
         <div class="qa-q">個人情報が管理人や第三者にバレませんか？</div>
-        <div class="qa-a">投稿者名は任意入力で、空欄なら「匿名」で投稿されます。閲覧者に対して、あなたのアカウント情報などが自動的に公開されることはありません。ただし、投稿者名・タイトル・メモ・プロンプトに自分で本名や連絡先などを書けば、それは他の閲覧者にも見えます。また画像のメタデータ(生成情報)に個人的な情報が含まれる場合があるため、気になる場合は投稿前に内容を確認してください。</div>
+        <div class="qa-a">投稿者名は任意入力で、空欄なら「匿名」で投稿されます。こういう仕組みなので、管理人にも、他の利用者にも個人情報やIPアドレス、Googleアカウント情報が公開されることはありません。ただし、投稿者名・タイトル・メモ・プロンプトに自分で本名や連絡先などを書けば、それは他の閲覧者にも見えます。また画像のメタデータ(生成情報)に個人的な情報が含まれる場合があるため、気になる場合は投稿前に内容を確認してください。</div>
       </div>
 
       <div class="qa-item">
@@ -959,6 +1039,32 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="pTagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="pTagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">タグを選択</h3>
+    <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除</p>
+    <div class="tag-cloud" id="pTagModalCloud"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pBrowseTagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="pBrowseTagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <div class="mode-toggle" id="pBrowseTagModalMatchModeToggle">
+        <button type="button" data-tagmode="AND">AND</button>
+        <button type="button" data-tagmode="OR">OR</button>
+        <button type="button" data-tagmode="NOT">NOT</button>
+      </div>
+      <button class="clear-tags" type="button" id="clearPBrowseTagsModalBtn">タグ選択をクリア</button>
+    </div>
+    <p class="tag-modal-hint">クリックでON/OFF切替</p>
+    <div class="tag-cloud" id="pBrowseTagModalCloud"></div>
+  </div>
+</div>
+
 <div class="modal-overlay full-image-overlay" id="fullImageOverlay">
   <div class="full-image-inner">
     <button class="modal-close" type="button" id="fullImageCloseBtn">✕ 閉じる</button>
@@ -974,9 +1080,10 @@
   <div class="modal">
     <button class="modal-close" type="button" id="basePromptModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">ベースにするプロンプト例を選択</h3>
+    <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除(複数選択可)</p>
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
       <input type="text" id="basePromptSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
-      <button class="btn-ghost" id="clearBasePromptBtn" type="button">紐づけなしにする</button>
+      <button class="btn-ghost" id="clearBasePromptBtn" type="button">すべて解除</button>
     </div>
     <div class="sort-chips" id="basePromptSortChips" style="margin-bottom:14px;"></div>
     <div class="list" id="basePromptList"></div>
@@ -1061,8 +1168,12 @@
   let pSelectedTags = [];
   let pTagStates = {};
   let pTagMatchMode = 'AND';
-  let selectedBasePromptId = '';
+  let selectedBasePromptIds = [];
   let selectedParentId = '';
+
+  function basePromptIdsOf(post) {
+    return String((post && post.basePromptId) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+  }
 
   const PROMPT_SORT_FIELDS = [
     { key: 'date',       label: '日時' },
@@ -1129,6 +1240,7 @@
       div.className = 'field';
       div.innerHTML = '<label>' + escapeHtml(f.label) + '</label><input type="text" id="' + f.id + '" list="' + dlId + '">';
       settingsGrid.appendChild(div);
+      attachDatalistDropdown(document.getElementById(f.id));
       if (!document.getElementById(dlId)) {
         const dl = document.createElement('datalist');
         dl.id = dlId;
@@ -1508,29 +1620,48 @@
     });
   }
 
-  // datalist付きinputは、既に文字が入っている状態で再度プルダウンを開くと
-  // ブラウザがその文字に前方一致する候補だけに絞ってしまうため、
-  // フォーカス中は一時的に空にして全候補を表示し、何も入力し直さなければ元の値に戻す。
-  document.addEventListener('focusin', function (e) {
-    const el = e.target;
-    if (el.tagName === 'INPUT' && el.hasAttribute('list')) {
-      el.dataset.dlPrev = el.value;
-      el.dataset.dlTouched = '';
-      el.value = '';
-    }
-  });
-  document.addEventListener('input', function (e) {
-    const el = e.target;
-    if (el.tagName === 'INPUT' && el.hasAttribute('list')) el.dataset.dlTouched = '1';
-  });
-  document.addEventListener('focusout', function (e) {
-    const el = e.target;
-    if (el.tagName === 'INPUT' && el.hasAttribute('list') && el.dataset.dlPrev !== undefined) {
-      if (!el.dataset.dlTouched) el.value = el.dataset.dlPrev;
-      delete el.dataset.dlPrev;
-      delete el.dataset.dlTouched;
-    }
-  });
+  // datalist付きinputは、入力済みの文字列があると候補が前方一致等で絞られてしまう。
+  // それ自体は検索として便利なので維持しつつ、追記・修正・削除ができるよう
+  // フォーカスしただけでは値をクリアしない。全候補を見たいときは、
+  // 入力欄と同じ枠内にあるプルダウンボタンを押すと一時的に空にして全候補を表示する。
+  function attachDatalistDropdown(input) {
+    if (!input || input.dataset.dlWrapped) return;
+    input.dataset.dlWrapped = '1';
+
+    const wrap = document.createElement('span');
+    wrap.className = 'dl-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dl-toggle';
+    btn.setAttribute('aria-label', '候補を表示');
+    btn.textContent = '▾';
+    wrap.appendChild(btn);
+
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      input.dataset.dlPrev = input.value;
+      input.value = '';
+      input.focus();
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      if (typeof input.showPicker === 'function') {
+        try { input.showPicker(); } catch (err) {}
+      }
+    });
+
+    input.addEventListener('blur', function () {
+      if (input.dataset.dlPrev !== undefined) {
+        if (input.value === '') input.value = input.dataset.dlPrev;
+        delete input.dataset.dlPrev;
+      }
+    });
+  }
+
+  function attachDatalistDropdowns(root) {
+    (root || document).querySelectorAll('input[list]').forEach(attachDatalistDropdown);
+  }
 
   function allUniqueTags() {
     const set = new Set();
@@ -1820,7 +1951,7 @@
         settings: collectSettings(),
         tags: selectedTags,
         type: 'image',
-        basePromptId: selectedBasePromptId,
+        basePromptId: selectedBasePromptIds.join(','),
         parentId: selectedParentId
       };
 
@@ -1847,7 +1978,7 @@
       clearSettingsForm();
       selectedTags = [];
       renderChips();
-      selectedBasePromptId = '';
+      selectedBasePromptIds = [];
       renderBasePromptDisplay();
       selectedParentId = '';
       renderParentDisplay();
@@ -2052,13 +2183,16 @@
           return '<div><span>' + escapeHtml(k) + '</span>' + escapeHtml(p.settings[k]) + '</div>';
         }).join('');
 
-    const basePrompt = p.basePromptId
-      ? promptPosts.find(function (pp) { return String(pp.id) === String(p.basePromptId); })
-      : null;
-    const baseBlock = basePrompt
+    const baseIds = basePromptIdsOf(p);
+    const baseList = baseIds
+      .map(function (id) { return promptPosts.find(function (pp) { return String(pp.id) === String(id); }); })
+      .filter(Boolean);
+    const baseBlock = baseList.length
       ? '<div class="detail-block"><div class="label">ベースにしたプロンプト例</div>' +
-          '<div class="value"><a href="#" class="base-prompt-link" data-prompt-id="' + escapeHtml(String(basePrompt.id)) + '">' +
-          (basePrompt.title ? escapeHtml(basePrompt.title) : '(無題)') + '</a></div></div>'
+          '<div class="value">' + baseList.map(function (bp) {
+            return '<a href="#" class="base-prompt-link" data-prompt-id="' + escapeHtml(String(bp.id)) + '" style="display:inline-block; margin: 0 10px 4px 0;">' +
+              (bp.title ? escapeHtml(bp.title) : '(無題)') + '</a>';
+          }).join('') + '</div></div>'
       : '';
 
     const parent = p.parentId
@@ -2078,16 +2212,18 @@
       : '';
 
     modalBody.innerHTML = '' +
-      '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
-      '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
+        '<div class="modal-top-actions">' +
+          '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>' +
+          '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
+          '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
+        '</div>' +
+      '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + (p.author ? escapeHtml(p.author) : '匿名') + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
-      '<div class="modal-actions">' +
-        '<button class="btn-ghost" type="button" id="downloadBtn">オリジナルサイズでダウンロード</button>' +
-        '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
-      '</div>' +
       baseBlock +
       parentBlock +
       '<div class="detail-block">' +
@@ -2115,14 +2251,13 @@
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
-    const baseLink = modalBody.querySelector('.base-prompt-link');
-    if (baseLink) {
+    modalBody.querySelectorAll('.base-prompt-link').forEach(function (baseLink) {
       baseLink.addEventListener('click', function (e) {
         e.preventDefault();
         const bp = promptPosts.find(function (pp) { return String(pp.id) === String(baseLink.dataset.promptId); });
         if (bp) { switchTab('promptBrowse'); openPromptModal(bp); }
       });
-    }
+    });
 
     const parentLink = modalBody.querySelector('.parent-post-link');
     if (parentLink) {
@@ -2183,7 +2318,7 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); }
   });
 
   async function postAction(payload) {
@@ -2393,6 +2528,7 @@
       return '<div class="field"><label>' + escapeHtml(f.label) + '</label>' +
         '<input type="text" id="pset_' + f.key + '" list="dl_set_' + f.key + '"></div>';
     }).join('');
+    attachDatalistDropdowns(grid);
   }
   function collectPromptSettings() {
     const r = {};
@@ -2441,7 +2577,31 @@
     if (e.key === 'Enter') { e.preventDefault(); document.getElementById('pAddNewTagBtn').click(); }
   });
   document.getElementById('pClearTagsBtn').addEventListener('click', function () { pSelectedTags = []; renderPromptChips(); });
-  pShowAllTagsBtn.addEventListener('click', function () { pTagCloud.style.maxHeight = ''; this.style.display = 'none'; });
+
+  /* ---------- タグ選択モーダル(プロンプト投稿フォーム用) ---------- */
+  const pTagModalOverlay = document.getElementById('pTagModalOverlay');
+  const pTagModalCloud = document.getElementById('pTagModalCloud');
+
+  function renderPTagModalCloud() {
+    const tags = allUniquePromptTags();
+    pTagModalCloud.innerHTML = tags.map(function (t) {
+      const cls = pSelectedTags.includes(t) ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+
+    pTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        toggleSelectedPromptTag(pill.dataset.tag);
+        renderPTagModalCloud();
+      });
+    });
+  }
+  function openPTagModal() { renderPTagModalCloud(); pTagModalOverlay.classList.add('open'); }
+  function closePTagModal() { pTagModalOverlay.classList.remove('open'); }
+
+  pShowAllTagsBtn.addEventListener('click', openPTagModal);
+  document.getElementById('pTagModalCloseBtn').addEventListener('click', closePTagModal);
+  pTagModalOverlay.addEventListener('click', function (e) { if (e.target === pTagModalOverlay) closePTagModal(); });
 
   // PROMPT FORM: 投稿
   document.getElementById('pSubmitBtn').addEventListener('click', async function () {
@@ -2534,10 +2694,20 @@
   function renderBasePromptDisplay() {
     const el = document.getElementById('basePromptDisplay');
     if (!el) return;
-    const p = selectedBasePromptId ? promptPosts.find(function (x) { return String(x.id) === String(selectedBasePromptId); }) : null;
-    if (!p) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
-    el.innerHTML = '<span class="chip">' + (p.title ? escapeHtml(p.title) : '(無題)') + '<button type="button" id="clearBaseInline">×</button></span>';
-    document.getElementById('clearBaseInline').addEventListener('click', function () { selectedBasePromptId = ''; renderBasePromptDisplay(); });
+    const items = selectedBasePromptIds
+      .map(function (id) { return promptPosts.find(function (x) { return String(x.id) === String(id); }); })
+      .filter(Boolean);
+    if (!items.length) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
+    el.innerHTML = items.map(function (p, i) {
+      return '<span class="chip">' + (p.title ? escapeHtml(p.title) : '(無題)') + '<button type="button" data-clear-base="' + i + '">×</button></span>';
+    }).join('');
+    el.querySelectorAll('[data-clear-base]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const p = items[Number(btn.dataset.clearBase)];
+        selectedBasePromptIds = selectedBasePromptIds.filter(function (id) { return String(id) !== String(p.id); });
+        renderBasePromptDisplay();
+      });
+    });
   }
   function renderBasePromptList(q) {
     q = (q || '').trim().toLowerCase();
@@ -2552,22 +2722,28 @@
       const title = p.title ? escapeHtml(p.title) : '(無題)';
       const author = p.author ? escapeHtml(p.author) : '匿名';
       const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
-      return '<div class="row prompt-row" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
-        '<div class="row-title">' + title + '</div>' +
-        '<div class="prompt-snippet">' + escapeHtml((p.prompt || '').slice(0, 120)) + '</div>' +
+      const selected = selectedBasePromptIds.some(function (id) { return String(id) === String(p.id); });
+      return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
+        '<div class="row-title">' + (selected ? '✓ ' : '') + title + '</div>' +
         '<div class="row-meta"><span>投稿者: ' + author + '</span></div>' + tags +
         '</div></div></div>';
     }).join('');
     basePromptListEl.querySelectorAll('.row').forEach(function (row) {
       row.addEventListener('click', function () {
-        selectedBasePromptId = row.dataset.id;
-        const bp = promptPosts.find(function (x) { return String(x.id) === String(selectedBasePromptId); });
-        if (bp) {
-          (bp.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
-          renderChips();
+        const id = row.dataset.id;
+        const idx = selectedBasePromptIds.findIndex(function (x) { return String(x) === String(id); });
+        if (idx === -1) {
+          selectedBasePromptIds.push(id);
+          const bp = promptPosts.find(function (x) { return String(x.id) === String(id); });
+          if (bp) {
+            (bp.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+            renderChips();
+          }
+        } else {
+          selectedBasePromptIds.splice(idx, 1);
         }
         renderBasePromptDisplay();
-        closeBasePromptModal();
+        renderBasePromptList(document.getElementById('basePromptSearch').value);
       });
     });
   }
@@ -2585,7 +2761,7 @@
   document.getElementById('basePromptModalCloseBtn').addEventListener('click', closeBasePromptModal);
   basePromptModalOverlay.addEventListener('click', function (e) { if (e.target === basePromptModalOverlay) closeBasePromptModal(); });
   document.getElementById('basePromptSearch').addEventListener('input', function () { renderBasePromptList(this.value); });
-  document.getElementById('clearBasePromptBtn').addEventListener('click', function () { selectedBasePromptId = ''; renderBasePromptDisplay(); closeBasePromptModal(); });
+  document.getElementById('clearBasePromptBtn').addEventListener('click', function () { selectedBasePromptIds = []; renderBasePromptDisplay(); renderBasePromptList(document.getElementById('basePromptSearch').value); });
 
   // PARENT POST PICKER
   const parentModalOverlay = document.getElementById('parentModalOverlay');
@@ -2678,15 +2854,14 @@
   });
 
   function syncPromptTagMatchModeButtons() {
-    document.querySelectorAll('#pTagMatchModeToggle button').forEach(function (b) {
+    document.querySelectorAll('#pTagMatchModeToggle button, #pBrowseTagModalMatchModeToggle button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.tagmode === pTagMatchMode);
     });
   }
-  document.querySelectorAll('#pTagMatchModeToggle button').forEach(function (btn) {
+  document.querySelectorAll('#pTagMatchModeToggle button, #pBrowseTagModalMatchModeToggle button').forEach(function (btn) {
     btn.addEventListener('click', function () { pTagMatchMode = btn.dataset.tagmode; syncPromptTagMatchModeButtons(); renderPromptList(); });
   });
   document.getElementById('pClearBrowseTagsBtn').addEventListener('click', function () { pTagStates = {}; rebuildPromptBrowseTagUI(); renderPromptList(); });
-  pShowAllBrowseTagsBtn.addEventListener('click', function () { pBrowseTagCloud.style.maxHeight = ''; this.style.display = 'none'; });
 
   function rebuildPromptBrowseTagUI() {
     const tags = allUniquePromptTags();
@@ -2707,6 +2882,40 @@
   }
   function applyPromptBrowseTagClamp() { applyTagCloudClamp(pBrowseTagCloud, pShowAllBrowseTagsBtn, 2); }
 
+  /* ---------- タグ選択モーダル(プロンプト投稿一覧タブ用) ---------- */
+  const pBrowseTagModalOverlay = document.getElementById('pBrowseTagModalOverlay');
+  const pBrowseTagModalCloud = document.getElementById('pBrowseTagModalCloud');
+
+  function renderPBrowseTagModalCloud() {
+    const tags = allUniquePromptTags();
+    pBrowseTagModalCloud.innerHTML = tags.map(function (t) {
+      const cls = pTagStates[t] ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+
+    pBrowseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (pTagStates[t]) delete pTagStates[t]; else pTagStates[t] = true;
+        rebuildPromptBrowseTagUI();
+        renderPBrowseTagModalCloud();
+        renderPromptList();
+      });
+    });
+  }
+  function openPBrowseTagModal() { renderPBrowseTagModalCloud(); pBrowseTagModalOverlay.classList.add('open'); }
+  function closePBrowseTagModal() { pBrowseTagModalOverlay.classList.remove('open'); }
+
+  pShowAllBrowseTagsBtn.addEventListener('click', openPBrowseTagModal);
+  document.getElementById('pBrowseTagModalCloseBtn').addEventListener('click', closePBrowseTagModal);
+  pBrowseTagModalOverlay.addEventListener('click', function (e) { if (e.target === pBrowseTagModalOverlay) closePBrowseTagModal(); });
+  document.getElementById('clearPBrowseTagsModalBtn').addEventListener('click', function () {
+    pTagStates = {};
+    rebuildPromptBrowseTagUI();
+    renderPBrowseTagModalCloud();
+    renderPromptList();
+  });
+
   function passesPromptTagFilter(post) {
     const tags = post.tags || [];
     const selected = Object.keys(pTagStates).filter(function (t) { return pTagStates[t]; });
@@ -2718,16 +2927,15 @@
   }
 
   function promptDerivedCount(p) {
-    return imagePosts.filter(function (ip) { return String(ip.basePromptId) === String(p.id) && !ip.parentId; }).length;
+    return imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1 && !ip.parentId; }).length;
   }
 
   function promptRowHtml(p) {
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = p.author ? escapeHtml(p.author) : '匿名';
-    const snippet = p.prompt ? '<div class="prompt-snippet">' + escapeHtml(p.prompt.slice(0, 140)) + '</div>' : '';
     const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
     return '<div class="row prompt-row" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
-      '<div class="row-title">' + title + '</div>' + snippet +
+      '<div class="row-title">' + title + '</div>' +
       '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + promptDerivedCount(p) + '件</span></div>' +
       '<div class="row-meta">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' + tags +
       '</div></div></div>';
@@ -2774,15 +2982,20 @@
 
   function openPromptModal(p) {
     const settingsEntries = settingsEntriesHtml(p);
-    const linked = imagePosts.filter(function (ip) { return String(ip.basePromptId) === String(p.id) && !ip.parentId; });
+    const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1 && !ip.parentId; });
     linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const linkedHtml = linked.length
       ? linked.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('')
       : '<div class="linked-empty">まだこのプロンプト例をベースにした投稿はありません。</div>';
 
     modalBody.innerHTML = '' +
-      '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
-      '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
+        '<div class="modal-top-actions">' +
+          '<button class="btn-ghost" type="button" id="promptShareBtn">共有</button>' +
+          '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
+        '</div>' +
+      '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + (p.author ? escapeHtml(p.author) : '匿名') + '</span><span>プロンプト例</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
@@ -2790,7 +3003,6 @@
       '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div></div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
-      '<div class="modal-actions"><button class="btn-ghost" type="button" id="promptShareBtn">共有</button></div>' +
       '<div class="linked-works-head">このプロンプト例をベースにした投稿作品 (' + linked.length + '件)</div>' +
       '<div class="list" id="linkedWorks">' + linkedHtml + '</div>';
 
@@ -2812,6 +3024,7 @@
 
   /* ===== INIT ===== */
   buildPromptSettingsGrid();
+  attachDatalistDropdowns(document);
   renderPromptSortChips();
   syncPromptTagMatchModeButtons();
   renderBasePromptDisplay();
