@@ -125,7 +125,7 @@
   }
   .preview-clear:hover{ color: var(--danger); border-color: var(--danger); }
   .dropzone .preview img{
-    max-height: 160px; border-radius: 8px; border: 1px solid var(--line);
+    max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line);
   }
 
   input[type="text"], input[type="number"]{
@@ -634,6 +634,7 @@
     border-radius:6px; font-size:11px; padding:3px 8px;
   }
   .comment-form{ border-top:1px solid var(--line); margin-top:18px; padding-top:18px; }
+  .comment-form-top{ border-top:none; margin-top:0; padding-top:0; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:4px; }
 
   /* ---- Q&A ---- */
   .qa-item{ border-bottom: 1px solid var(--line); padding: 16px 0; }
@@ -683,11 +684,11 @@
       </div>
 
       <label class="field-label">投稿タイトル</label>
-      <input type="text" id="titleInput" placeholder="例: 桜並木の少女">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="titleInput" placeholder="例: 桜並木の少女">
 
       <div class="author-field">
         <label class="field-label">投稿者(空欄で匿名)</label>
-        <input type="text" id="authorInput" list="dl_author" placeholder="匿名">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="authorInput" list="dl_author" placeholder="匿名">
       </div>
 
       <label class="field-label">プロンプト</label>
@@ -721,7 +722,7 @@
       <div class="tag-cloud" id="postTagCloud"></div>
       <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button>
       <div class="tag-row" style="margin-top:10px;">
-        <input type="text" id="newTagInput" placeholder="新しいタグを入力して追加">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" placeholder="新しいタグを入力して追加">
         <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="selectedTags"></div>
@@ -737,11 +738,11 @@
       <h2>プロンプト例を投稿</h2>
 
       <label class="field-label">タイトル</label>
-      <input type="text" id="pTitleInput" placeholder="例: オリジナルキャラ○○の基本プロンプト">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pTitleInput" placeholder="例: オリジナルキャラ○○の基本プロンプト">
 
       <div class="author-field">
         <label class="field-label">投稿者(空欄で匿名)</label>
-        <input type="text" id="pAuthorInput" list="dl_author" placeholder="匿名">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pAuthorInput" list="dl_author" placeholder="匿名">
       </div>
 
       <label class="field-label">プロンプト</label>
@@ -763,7 +764,7 @@
       <div class="tag-cloud" id="pTagCloud"></div>
       <button class="show-all-tags" type="button" id="pShowAllTagsBtn" style="display:none;">全て表示</button>
       <div class="tag-row" style="margin-top:10px;">
-        <input type="text" id="pNewTagInput" placeholder="新しいタグを入力して追加">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pNewTagInput" placeholder="新しいタグを入力して追加">
         <button class="btn-ghost" id="pAddNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="pSelectedTags"></div>
@@ -786,9 +787,9 @@
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
-        <input type="text" class="filter-input" id="filterAuthor" list="dl_author" placeholder="投稿者">
-        <input type="text" class="filter-input" id="filterUiPreset" list="dl_set_uiPreset" placeholder="UI Preset">
-        <input type="text" class="filter-input" id="filterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterUiPreset" list="dl_set_uiPreset" placeholder="UI Preset">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
         <button class="clear-tags" id="clearFiltersBtn" type="button">絞り込みをクリア</button>
       </div>
       <div class="search-row">
@@ -829,8 +830,8 @@
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
-        <input type="text" class="filter-input" id="pFilterAuthor" list="dl_author" placeholder="投稿者">
-        <input type="text" class="filter-input" id="pFilterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="pFilterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="pFilterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
         <button class="clear-tags" id="pClearFiltersBtn" type="button">絞り込みをクリア</button>
       </div>
       <div class="search-row">
@@ -962,7 +963,7 @@
       <h2>管理人へ連絡する</h2>
       <p style="font-size:13.5px; color:var(--ink-dim); line-height:1.8; margin-bottom:14px;">削除依頼・不具合の報告・ご要望などを管理人へ送れます。返信はできませんので、連絡先が必要な場合は本文に記載してください(任意)。</p>
       <label class="field-label">お名前・連絡先(任意)</label>
-      <input type="text" id="contactName" placeholder="任意(空欄でも送信できます)">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="contactName" placeholder="任意(空欄でも送信できます)">
       <label class="field-label">メッセージ</label>
       <textarea id="contactMessage" class="autogrow" placeholder="ご用件をご記入ください"></textarea>
       <div class="submit-row">
@@ -1178,7 +1179,7 @@
     <button class="modal-close" type="button" id="adminAuthCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">管理画面ログイン</h3>
     <label class="field-label">パスワード</label>
-    <input type="password" id="adminPasswordInput" placeholder="管理用パスワード">
+    <input type="password" id="adminPasswordInput" placeholder="管理用パスワード" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <div class="admin-modal-status" id="adminAuthStatus"></div>
     <div class="submit-row" style="margin-top:12px;">
       <button class="btn-submit" type="button" id="adminAuthSubmitBtn">ログイン</button>
@@ -1211,7 +1212,7 @@
     <h3 class="modal-title" style="margin-right:90px;">ベースにするプロンプト例を選択</h3>
     <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除(複数選択可)</p>
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" id="basePromptSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="basePromptSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
       <button class="btn-ghost" id="clearBasePromptBtn" type="button">すべて解除</button>
     </div>
     <div class="sort-chips" id="basePromptSortChips" style="margin-bottom:14px;"></div>
@@ -1225,7 +1226,7 @@
     <button class="modal-close" type="button" id="parentModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">親にする投稿作品を選択</h3>
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" id="parentSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="parentSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
       <button class="btn-ghost" id="clearParentBtn" type="button">紐づけなしにする</button>
     </div>
     <div class="sort-chips" id="parentSortChips" style="margin-bottom:14px;"></div>
@@ -1370,7 +1371,7 @@
       const dlId = 'dl_' + f.id;
       const div = document.createElement('div');
       div.className = 'field';
-      div.innerHTML = '<label>' + escapeHtml(f.label) + '</label><input type="text" id="' + f.id + '" list="' + dlId + '">';
+      div.innerHTML = '<label>' + escapeHtml(f.label) + '</label><input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="' + f.id + '" list="' + dlId + '">';
       settingsGrid.appendChild(div);
       attachDatalistDropdown(document.getElementById(f.id));
       if (!document.getElementById(dlId)) {
@@ -2764,7 +2765,7 @@
     const grid = document.getElementById('pSettingsGrid');
     grid.innerHTML = SETTINGS_FIELDS.map(function (f) {
       return '<div class="field"><label>' + escapeHtml(f.label) + '</label>' +
-        '<input type="text" id="pset_' + f.key + '" list="dl_set_' + f.key + '"></div>';
+        '<input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pset_' + f.key + '" list="dl_set_' + f.key + '"></div>';
     }).join('');
     attachDatalistDropdowns(grid);
   }
@@ -2948,7 +2949,7 @@
     const items = selectedBasePromptIds
       .map(function (id) { return promptPosts.find(function (x) { return String(x.id) === String(id); }); })
       .filter(Boolean);
-    if (!items.length) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
+    if (!items.length) { el.innerHTML = ''; return; }
     el.innerHTML = items.map(function (p, i) {
       return '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" data-clear-base="' + i + '">×</button></span>';
     }).join('');
@@ -3023,7 +3024,7 @@
     const el = document.getElementById('parentDisplay');
     if (!el) return;
     const p = selectedParentId ? imagePosts.find(function (x) { return String(x.id) === String(selectedParentId); }) : null;
-    if (!p) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
+    if (!p) { el.innerHTML = ''; return; }
     el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="clearParentInline">×</button></span>';
     document.getElementById('clearParentInline').addEventListener('click', function () { selectedParentId = ''; renderParentDisplay(); });
   }
@@ -3379,7 +3380,7 @@
 
   function openCommentModal(p) {
     const authorNameField = options.author
-      ? '<label class="field-label">お名前(任意)</label><input type="text" id="commentNameInput" placeholder="匿名で投稿できます">'
+      ? '<label class="field-label">お名前(任意)</label><input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="commentNameInput" placeholder="匿名で投稿できます">'
       : '';
     commentModalBody.innerHTML = '' +
       '<div class="modal-header">' +
@@ -3387,8 +3388,7 @@
         '<div class="modal-top-actions"><button class="modal-close" type="button" id="commentCloseBtn">✕ 閉じる</button></div>' +
       '</div>' +
       '<div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:14px;">「' + (p.title ? escapeHtml(p.title) : '(無題)') + '」への感想・コメント</div>' +
-      '<div class="comment-list" id="commentListEl"></div>' +
-      '<div class="comment-form">' +
+      '<div class="comment-form comment-form-top">' +
         authorNameField +
         '<label class="field-label">コメント</label>' +
         '<textarea id="commentBodyInput" placeholder="感想やアレンジのアイデアなど"></textarea>' +
@@ -3396,7 +3396,8 @@
           '<button class="btn-submit" type="button" id="commentSubmitBtn">コメントする</button>' +
           '<span class="status" id="commentStatus"></span>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      '<div class="comment-list" id="commentListEl"></div>';
 
     renderCommentList(p.id);
     document.getElementById('commentCloseBtn').addEventListener('click', closeCommentModal);
