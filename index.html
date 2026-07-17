@@ -6,6 +6,22 @@
 <title>Prompt Reel — 画像&プロンプト共有</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="icon" id="faviconLink" href="">
+<script>
+  // 同階層の images フォルダに favicon.(拡張子問わず) があれば、それをファビコンとして使用する
+  (function () {
+    var exts = ['ico', 'png', 'svg', 'webp', 'jpg', 'jpeg', 'gif', 'avif'];
+    var link = document.getElementById('faviconLink');
+    (function tryNext(i) {
+      if (i >= exts.length || !link) return;
+      var url = 'images/favicon.' + exts[i];
+      var img = new Image();
+      img.onload = function () { link.setAttribute('href', url); };
+      img.onerror = function () { tryNext(i + 1); };
+      img.src = url;
+    })(0);
+  })();
+</script>
 <style>
   :root{
     --bg: #121212;
@@ -98,20 +114,45 @@
   /* ドロップゾーン */
   .dropzone{
     width:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height: 260px;
     background: var(--surface-2);
-    border: 1.5px dashed var(--line);
-    border-radius: 10px;
-    padding: 22px;
+    border: 2px dashed var(--line);
+    border-radius: 14px;
+    padding: 32px 24px;
     color: var(--ink-dim);
-    font-size: 13px;
     text-align: center;
     cursor: pointer;
-    transition: border-color .15s ease, background .15s ease;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
   }
-  .dropzone.drag-over{ border-color: var(--accent); background: rgba(232,163,61,0.08); color: var(--accent); }
+  .dropzone:hover{ border-color: var(--accent); background: rgba(232,163,61,0.05); }
+  .dropzone .dz-icon{
+    width: 60px; height: 60px; margin-bottom: 16px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius: 50%;
+    background: var(--accent-dim); color: var(--accent);
+    transition: transform .15s ease;
+  }
+  .dropzone:hover .dz-icon{ transform: scale(1.08); }
+  .dropzone .dz-icon svg{ width: 30px; height: 30px; }
+  .dropzone .dz-title{ font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+  .dropzone .dz-sub{ font-size: 12.5px; color: var(--ink-dim); line-height: 1.6; }
+  .dropzone .dz-sub .dz-browse{ color: var(--accent); text-decoration: underline; }
+  .dropzone.drag-over{
+    border-color: var(--accent);
+    border-style: solid;
+    background: rgba(232,163,61,0.12);
+    color: var(--accent);
+  }
+  .dropzone.drag-over .dz-icon{ transform: scale(1.08); }
+  /* 画像あり: エリアを詰めて画像を主役に、案内は上に小さく残す */
+  .dropzone.has-image{ min-height: 0; padding: 16px; }
+  .dropzone.has-image .dz-icon{ display:none; }
+  .dropzone.has-image .dz-title{ font-size: 13px; font-weight: 500; color: var(--ink-dim); margin-bottom: 0; }
+  .dropzone.has-image .dz-sub{ display:none; }
   .dropzone input{ display:none; }
   .dropzone .preview{
-    margin-top: 14px; display:flex; justify-content:center;
+    margin-top: 16px; display:flex; justify-content:center; width:100%;
   }
   .preview-frame{ position: relative; display:inline-block; }
   .preview-clear{
@@ -678,7 +719,15 @@
 
       <label class="field-label">画像</label>
       <div class="dropzone" id="dropzone">
-        <span id="dropzoneLabel">ここに画像をドラッグ&ドロップ、またはクリックして選択</span>
+        <div class="dz-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+        </div>
+        <div class="dz-title" id="dropzoneLabel">ここに画像をドラッグ&ドロップ</div>
+        <div class="dz-sub" id="dropzoneSub">または<span class="dz-browse">クリックしてファイルを選択</span><br>PNG / JPEG / WebP の生成情報を自動で読み取ります</div>
         <div class="preview" id="previewWrap" style="display:none;"><span class="preview-frame"><img id="previewImg" alt="プレビュー"><button class="preview-clear" type="button" id="clearImageBtn" title="画像を取り消す">✕</button></span></div>
         <input type="file" id="imageInput">
       </div>
@@ -1412,24 +1461,34 @@
   rebuildSettingsGrid();
 
   /* ---------- ドラッグ&ドロップ ---------- */
-  const DROPZONE_LABEL_DEFAULT = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
-  const DROPZONE_LABEL_EDIT = 'ここに画像をドラッグ&ドロップすると差し替え(そのままなら現在の画像を維持)';
+  const DROPZONE_LABEL_DEFAULT = 'ここに画像をドラッグ&ドロップ';
+  const DROPZONE_LABEL_EDIT = 'ドラッグ&ドロップで画像を差し替え';
   const dropzone = document.getElementById('dropzone');
   const imageInput = document.getElementById('imageInput');
   const previewWrap = document.getElementById('previewWrap');
   const previewImg = document.getElementById('previewImg');
   const dropzoneLabel = document.getElementById('dropzoneLabel');
 
+  // hasImage: プレビュー画像が表示されているか。editing: 編集で現画像を維持中か
+  function setDropzoneState(hasImage, editing) {
+    dropzone.classList.toggle('has-image', hasImage);
+    if (hasImage) {
+      dropzoneLabel.textContent = editing ? DROPZONE_LABEL_EDIT : 'クリックまたはドロップで画像を変更';
+    } else {
+      dropzoneLabel.textContent = DROPZONE_LABEL_DEFAULT;
+    }
+  }
+
   function clearSelectedImage() {
     imageInput.value = '';
     if (adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt' && adminEditingPost.imageUrl) {
       previewImg.src = imageSrcFor(adminEditingPost.imageUrl, 'w320');
-      previewWrap.style.display = '';
-      dropzoneLabel.textContent = DROPZONE_LABEL_EDIT;
+      previewWrap.style.display = 'flex';
+      setDropzoneState(true, true);
     } else {
       previewImg.src = '';
       previewWrap.style.display = 'none';
-      dropzoneLabel.textContent = DROPZONE_LABEL_DEFAULT;
+      setDropzoneState(false, false);
     }
   }
   document.getElementById('clearImageBtn').addEventListener('click', function (e) {
@@ -1450,12 +1509,12 @@
   });
   imageInput.addEventListener('change', function () {
     const file = imageInput.files[0];
-    if (!file) { previewWrap.style.display = 'none'; return; }
+    if (!file) { previewWrap.style.display = 'none'; setDropzoneState(false, false); return; }
     const reader = new FileReader();
     reader.onload = function () {
       previewImg.src = reader.result;
       previewWrap.style.display = 'flex';
-      dropzoneLabel.textContent = file.name;
+      setDropzoneState(true, false);
     };
     reader.readAsDataURL(file);
     readImageMetadata(file);
@@ -2101,7 +2160,7 @@
     imageInput.value = '';
     previewImg.src = '';
     previewWrap.style.display = 'none';
-    dropzoneLabel.textContent = DROPZONE_LABEL_DEFAULT;
+    setDropzoneState(false, false);
     document.getElementById('titleInput').value = '';
     document.getElementById('authorInput').value = '';
     document.getElementById('promptInput').value = '';
