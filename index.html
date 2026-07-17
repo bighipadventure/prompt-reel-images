@@ -451,7 +451,8 @@
   }
   .guide-warn strong{ color: var(--danger); }
   .guide-source{ font-size:11.5px; color:var(--ink-dim); margin-top:6px; }
-  .guide-source a{ color: var(--accent); }
+  a{ color: var(--accent); text-decoration: none; }
+  a:hover{ text-decoration: underline; }
 
   /* ---- パネル表示・フルスクリーン画像モーダル ---- */
   .list.panel-mode{
@@ -1745,8 +1746,12 @@
         item.style.gridRowEnd = 'span ' + span;
       }
 
-      if (img.complete && img.naturalWidth) applySpan();
-      else img.addEventListener('load', applySpan, { once: true });
+      if (img.complete && img.naturalWidth) {
+        applySpan();
+      } else {
+        img.addEventListener('load', applySpan, { once: true });
+        img.addEventListener('error', applySpan, { once: true });
+      }
     });
   }
 
@@ -1948,10 +1953,12 @@
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(err);
+      console.error('CORS制限等により直接フェッチできなかったため、フォールバックダウンロードを実行します:', err);
       if (id) {
         const a = document.createElement('a');
         a.href = 'https://drive.google.com/uc?export=download&id=' + id;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
         a.download = filename;
         document.body.appendChild(a);
         a.click();
