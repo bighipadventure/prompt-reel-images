@@ -1,0 +1,2823 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Reel — 画像&プロンプト共有</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #121212;
+    --surface: #1c1c1e;
+    --surface-2: #262629;
+    --ink: #e6e6e6;
+    --ink-dim: #9a9a9a;
+    --accent: #0096fa;
+    --accent-dim: #16344a;
+    --line: #2e2e31;
+    --danger: #ff4060;
+    --danger-dim: #3a1c25;
+    --like: #ff4060;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 80px;
+  }
+  .wrap{ max-width: 980px; margin: 0 auto; }
+
+  header{ margin-bottom: 24px; }
+  header .eyebrow{
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-dim);
+  }
+  header h1{
+    font-size: 26px;
+    font-weight: 700;
+    margin: 4px 0 4px;
+    letter-spacing: 0;
+  }
+  header p{ color: var(--ink-dim); margin: 0; font-size: 14px; }
+
+  /* ---- タブ ---- */
+  .tabs{
+    display:flex; gap: 8px;
+    margin: 26px 0 24px;
+  }
+  .tab-btn{
+    font-size: 15px;
+    background: var(--surface);
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    padding: 9px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .tab-btn:hover{ color: var(--ink); }
+  .tab-btn.active{ background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* ---- 投稿フォーム ---- */
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .panel h2{
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 16px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .panel h2::before{
+    content:'';
+    width:4px; height:16px;
+    background: var(--accent);
+    border-radius: 2px;
+    display:inline-block;
+  }
+
+  label.field-label{
+    display:block;
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin: 18px 0 6px;
+    letter-spacing: 0;
+  }
+  label.field-label:first-of-type{ margin-top: 0; }
+
+  /* ドロップゾーン */
+  .dropzone{
+    width:100%;
+    background: var(--surface-2);
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    color: var(--ink-dim);
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .dropzone.drag-over{ border-color: var(--accent); background: rgba(232,163,61,0.08); color: var(--accent); }
+  .dropzone input{ display:none; }
+  .dropzone .preview{
+    margin-top: 14px; display:flex; justify-content:center;
+  }
+  .dropzone .preview img{
+    max-height: 160px; border-radius: 8px; border: 1px solid var(--line);
+  }
+
+  input[type="text"], input[type="number"]{
+    width:100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13.5px;
+  }
+  textarea{
+    width:100%;
+    min-height: 90px;
+    resize: vertical;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  textarea:focus, input:focus, select:focus{
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* 設定グリッド */
+  .settings-toggle{
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    color: var(--accent);
+    background: none; border: 1px solid var(--accent-dim);
+    border-radius: 8px; padding: 8px 14px; margin-top: 18px; cursor: pointer;
+  }
+  .settings-grid{
+    display:none;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+    padding: 16px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  .settings-grid.open{ display:grid; }
+  .settings-grid .field label{
+    display:block; font-size: 11px; color: var(--ink-dim);
+    font-family: 'Noto Sans JP', sans-serif; margin-bottom: 5px;
+  }
+  .settings-grid .field input{ font-family: 'Noto Sans JP', sans-serif; font-size: 13px; }
+
+  .tag-row{ display:flex; gap:8px; flex-wrap: wrap; }
+  select{
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--ink);
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  select{ flex: 1 1 160px; }
+  .tag-row input[type="text"]{ flex: 1 1 160px; width:auto; }
+
+  button{
+    font-size: 13px;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: opacity .15s ease, background .12s ease, border-color .12s ease;
+  }
+  .btn-ghost{
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn-ghost:hover{ border-color: var(--accent); color: var(--accent); }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 12px; min-height: 20px; }
+  .chip{
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 5px 10px 5px 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .chip button{
+    background:none; border:none; color: var(--accent);
+    padding:0; font-size:14px; line-height:1; cursor:pointer;
+  }
+
+  .submit-row{ margin-top: 22px; display:flex; align-items:center; gap:14px; }
+  .btn-submit{
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    padding: 11px 22px;
+  }
+  .btn-submit:hover{ opacity: 0.9; }
+  .btn-submit:disabled{ opacity: 0.5; cursor: default; }
+  .status{ font-size: 12px; color: var(--ink-dim); font-family: 'Noto Sans JP', sans-serif; }
+
+  /* ---- 閲覧タブ:検索バー ---- */
+  .search-panel{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .search-row{ display:flex; align-items:center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-row:last-child{ margin-bottom: 0; }
+  .search-row .label{
+    font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim);
+    min-width: 90px;
+  }
+  .mode-toggle{ display:flex; border: 1px solid var(--line); border-radius: 8px; overflow:hidden; }
+  .mode-toggle button{
+    background: var(--surface-2); color: var(--ink-dim); border-radius:0; padding: 6px 12px;
+  }
+  .mode-toggle button.active{ background: var(--accent); color: #fff; }
+
+  .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
+  .tag-pill{
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .tag-pill.state-include{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger); }
+  .clear-tags{ font-family:'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
+
+  #postTagCloud, #tagCloud{ overflow: hidden; }
+  .show-all-tags{
+    margin-top: 8px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
+    background: var(--surface-2); color: var(--accent);
+    border: 1px solid var(--accent-dim); border-radius: 8px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  .show-all-tags:hover{ border-color: var(--accent); }
+  .tag-modal-hint{ font-size: 12px; color: var(--ink-dim); font-family:'Noto Sans JP',sans-serif; margin: 0 0 14px; }
+
+  .toolbar{
+    display:flex; justify-content: space-between; align-items:center;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+  }
+  .count{ color: var(--ink-dim); font-size: 12px; font-family: 'Noto Sans JP', sans-serif; }
+
+  /* ---- 一覧(1投稿1行) ---- */
+  .list{ display:flex; flex-direction: column; gap: 8px; }
+  .row{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background .12s ease;
+  }
+  .row:hover{ background: var(--surface-2); }
+  .row-main{
+    display:flex; align-items:center; gap: 16px;
+    padding: 12px 16px;
+  }
+  .row-thumb{
+    width: 104px; height: 104px; border-radius: 8px; overflow:hidden;
+    flex-shrink: 0; background: var(--surface-2);
+  }
+  .row-thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
+  .row-thumb{ position: relative; }
+  img.img-failed{ opacity: 0.25; }
+  .row-body{ flex:1; min-width:0; display:flex; flex-direction: column; gap: 7px; }
+  .row-title{
+    font-size: 15px; font-weight: 700; white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+  }
+  .row-meta{
+    font-size: 12px; color: var(--ink-dim);
+    display:flex; gap: 14px; flex-wrap: wrap; align-items:center;
+  }
+  .row-tags{ display:flex; gap:6px; flex-wrap:wrap; }
+  .row-tags .tag{
+    font-size: 11.5px;
+    background: transparent; color: var(--accent);
+    padding: 2px 8px; border-radius: 4px; border: 1px solid var(--line);
+  }
+  .row-tags .tag::before{ content:'#'; opacity: 0.6; margin-right: 1px; }
+  .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
+  .detail-image{ flex: 0 0 260px; }
+  .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
+  .detail-text{ flex: 1 1 320px; min-width: 260px; }
+  .detail-block{ margin-bottom: 16px; }
+  .detail-block .label{
+    font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim);
+    margin-bottom: 5px; letter-spacing: 0.05em;
+  }
+  .detail-block .value{
+    font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    background: var(--surface-2); border-radius: 8px; padding: 10px 12px; border: 1px solid var(--line);
+  }
+  .settings-table{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+    gap: 8px 16px; font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
+  }
+  .settings-table div span{ color: var(--ink-dim); display:block; font-size:10.5px; }
+
+  .empty{
+    text-align:center; color: var(--ink-dim);
+    padding: 60px 20px; font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
+  }
+
+  /* ---- 詳細モーダル ---- */
+  .modal-overlay{
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(10,11,24,0.78);
+    display:none; align-items: flex-start; justify-content: center;
+    padding: 40px 16px; overflow-y: auto;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    max-width: 860px; width: 100%;
+    padding: 22px 24px 26px;
+    position: relative;
+  }
+  .modal-close{
+    position: absolute; top: 14px; right: 14px;
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13px; padding: 6px 12px;
+  }
+  .modal-title{ font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size: 20px; margin: 0 90px 6px 0; word-break: break-word; }
+  .modal-meta{
+    font-family:'Noto Sans JP',sans-serif; font-size: 12px; color: var(--ink-dim);
+    display:flex; gap: 14px; flex-wrap:wrap; margin-bottom: 12px;
+  }
+  .modal .row-tags{ max-width: none; margin-bottom: 16px; }
+  .modal-image{ text-align:center; }
+  .modal-image img{ max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); }
+  .modal-actions{ display:flex; gap: 10px; justify-content:center; margin: 12px 0 20px; }
+  .block-head{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+  .block-head .label{ margin-bottom: 0; }
+  .btn-copy{
+    background: var(--surface-2); color: var(--accent);
+    border: 1px solid var(--accent-dim); padding: 4px 12px; font-size: 11px;
+  }
+  .btn-copy:hover{ border-color: var(--accent); }
+
+  /* ---- 読み込みオーバーレイ ---- */
+  .loading-overlay{
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,11,24,0.65);
+    display:none; align-items:center; justify-content:center; flex-direction: column; gap: 14px;
+    font-family:'Noto Sans JP',sans-serif; font-size: 13px; color: var(--ink);
+  }
+  .loading-overlay.open{ display:flex; }
+  .spinner{
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid var(--line); border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  textarea.autogrow{ resize: none; overflow: hidden; }
+  .filter-input{ flex: 1 1 150px; width: auto; }
+
+  /* ---- ソートチップ ---- */
+  .sort-chips{ display:flex; flex-wrap:wrap; gap: 8px; }
+  .sort-chip{
+    font-family:'Noto Sans JP',sans-serif; font-size: 12px;
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-dim);
+    cursor: pointer; user-select: none; display:inline-flex; align-items:center; gap: 6px;
+  }
+  .sort-chip.active{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .sort-chip .order-badge{
+    font-size: 10px; background: var(--accent); color: #fff;
+    border-radius: 999px; min-width: 15px; height: 15px; padding: 0 4px;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+
+  /* ---- カウント表示 ---- */
+  .count-badges{ display:flex; gap: 10px; align-items:center; }
+  .count-badge{
+    font-size: 13px; color: var(--ink-dim);
+    display:inline-flex; align-items:center; gap: 5px;
+  }
+  .like-btn{
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 5px 12px 5px 10px; border-radius: 999px; cursor: pointer;
+    font-size: 13px; color: var(--ink-dim);
+    display:inline-flex; align-items:center; gap: 6px;
+    transition: color .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .like-btn:hover{ color: var(--like); border-color: var(--like); }
+  .like-btn .heart{ font-size: 17px; line-height: 1; }
+  .like-btn.liked{ color: var(--like); border-color: var(--like); background: var(--danger-dim); }
+  .row-meta .count-badges{ margin-top: 0; }
+  .modal-counts{ margin-bottom: 14px; }
+  .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
+  .modal-counts .like-btn .heart{ font-size: 20px; }
+  .modal-counts .count-badge{ font-size: 15px; }
+
+  /* ---- はじめてガイド ---- */
+  .guide-step{ display:flex; gap:14px; margin-bottom:18px; }
+  .guide-step:last-child{ margin-bottom:0; }
+  .guide-step .num{
+    flex:0 0 26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .guide-step .body{ flex:1; font-size:13.5px; line-height:1.8; }
+  .guide-step .body strong{ color:var(--ink); }
+  .guide-note{
+    background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--ink-dim); line-height:1.7; margin-top:8px;
+  }
+  .guide-warn{
+    background: var(--danger-dim); border: 1px solid var(--danger); border-left: 3px solid var(--danger);
+    border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--ink); line-height:1.7; margin-top:8px;
+  }
+  .guide-warn strong{ color: var(--danger); }
+  .guide-source{ font-size:11.5px; color:var(--ink-dim); margin-top:6px; }
+  a{ color: var(--accent); text-decoration: none; }
+  a:hover{ text-decoration: underline; }
+
+  /* ---- パネル表示・フルスクリーン画像モーダル ---- */
+  .list.panel-mode{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-auto-rows: 8px;
+    grid-auto-flow: dense;
+    gap: 6px;
+  }
+  .list.panel-mode .row{
+    grid-row-end: span 26;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  .list.panel-mode .row-main{ padding:0; display:block; height:100%; }
+  .list.panel-mode .row-thumb{ width:100%; height:100%; border-radius:0; background: var(--surface-2); }
+  .list.panel-mode .row-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .list.panel-mode .row-body, .list.panel-mode .row-meta{ display:none; }
+
+  .full-image-overlay{ padding:0; align-items:stretch; justify-content:stretch; }
+  .full-image-inner{ position:relative; width:100%; height:100%; display:flex; flex-direction:column; }
+  .full-image-wrap{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding: 56px 16px 8px; }
+  .full-image-wrap img{ max-width:100%; max-height:100%; object-fit:contain; border-radius: 6px; }
+  .full-image-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding: 12px 16px 22px; }
+
+  /* ---- 投稿モード切替 / プロンプト連携 ---- */
+  .post-mode-toggle{ width: max-content; margin-bottom: 22px; }
+  .base-prompt-select{ display:flex; align-items:center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  .base-prompt-display .base-none{ color: var(--ink-dim); font-size: 12px; font-family:'Noto Sans JP',sans-serif; }
+  .base-prompt-display .chip button{ font-size: 14px; }
+
+  .prompt-row .row-main{ align-items: flex-start; }
+  .prompt-snippet{
+    font-size: 12.5px; color: var(--ink-dim); line-height: 1.6;
+    max-height: 3.2em; overflow: hidden; white-space: pre-wrap; word-break: break-word;
+  }
+  .row-derived{ color: var(--accent); }
+
+  .base-prompt-link{ font-weight: 500; word-break: break-word; }
+  .linked-works-head{
+    font-size: 13px; font-weight: 700; margin: 24px 0 12px;
+    display:flex; align-items:center; gap: 8px;
+  }
+  .linked-works-head::before{
+    content:''; width:4px; height:15px; background: var(--accent); border-radius:2px; display:inline-block;
+  }
+  .linked-empty{ color: var(--ink-dim); font-size: 12.5px; font-family:'Noto Sans JP',sans-serif; padding: 6px 0 4px; }
+
+  /* ---- Q&A ---- */
+  .qa-item{ border-bottom: 1px solid var(--line); padding: 16px 0; }
+  .qa-item:first-of-type{ padding-top: 4px; }
+  .qa-item:last-child{ border-bottom: none; padding-bottom: 0; }
+  .qa-q{ font-weight: 700; font-size: 14px; margin-bottom: 9px; display:flex; gap: 8px; line-height:1.6; }
+  .qa-q::before{ content:'Q.'; color: var(--accent); font-weight: 900; }
+  .qa-a{ font-size: 13.5px; line-height: 1.8; color: var(--ink-dim); display:flex; gap: 8px; }
+  .qa-a::before{ content:'A.'; color: var(--ink); font-weight: 900; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">仲間内で使う画像＆プロンプト共有ボード</div>
+    <h1>Prompt Reel</h1>
+    <p>画像とStable Diffusionの生成設定をまとめて記録・共有できます。</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="post">投稿</button>
+    <button class="tab-btn" data-tab="browse">画像投稿一覧</button>
+    <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
+    <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
+    <button class="tab-btn" data-tab="guide">はじめてガイド</button>
+  </nav>
+
+  <!-- ============ 投稿タブ ============ -->
+  <div class="tab-panel active" id="tab-post">
+
+    <div class="mode-toggle post-mode-toggle" id="postModeToggle">
+      <button type="button" data-postmode="image" class="active">画像を投稿</button>
+      <button type="button" data-postmode="prompt">プロンプト例を投稿</button>
+    </div>
+
+    <section class="panel" id="imagePostForm">
+      <h2>画像を投稿</h2>
+
+      <label class="field-label">画像</label>
+      <div class="dropzone" id="dropzone">
+        <span id="dropzoneLabel">ここに画像をドラッグ&ドロップ、またはクリックして選択</span>
+        <div class="preview" id="previewWrap" style="display:none;"><img id="previewImg" alt="プレビュー"></div>
+        <input type="file" id="imageInput">
+      </div>
+
+      <label class="field-label">投稿タイトル</label>
+      <input type="text" id="titleInput" placeholder="例: 桜並木の少女">
+
+      <label class="field-label">投稿者(空欄で匿名)</label>
+      <input type="text" id="authorInput" list="dl_author" placeholder="匿名">
+
+      <label class="field-label">プロンプト</label>
+      <textarea id="promptInput" class="autogrow" placeholder="Positive prompt"></textarea>
+
+      <label class="field-label">ネガティブプロンプト</label>
+      <textarea id="negativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
+
+      <label class="field-label">メモ(備考)</label>
+      <textarea id="memoInput" class="autogrow" placeholder="補足・備考があれば"></textarea>
+
+      <label class="field-label">ベースにしたプロンプト例(任意)</label>
+      <div class="base-prompt-select">
+        <button class="btn-ghost" id="pickBasePromptBtn" type="button">プロンプト例を選択</button>
+        <span id="basePromptDisplay" class="base-prompt-display"></span>
+      </div>
+
+      <label class="field-label">親にする投稿作品(任意 / 同じ設定のバリエーションを投稿するとき)</label>
+      <div class="base-prompt-select">
+        <button class="btn-ghost" id="pickParentBtn" type="button">親作品を選択</button>
+        <span id="parentDisplay" class="base-prompt-display"></span>
+      </div>
+
+      <label class="field-label">生成設定(任意 / 画像ドロップで自動入力)</label>
+      <div class="settings-grid open" id="settingsGrid"></div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
+        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
+        <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
+      </div>
+      <div class="tag-cloud" id="postTagCloud"></div>
+      <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button>
+      <div class="tag-row" style="margin-top:10px;">
+        <input type="text" id="newTagInput" placeholder="新しいタグを入力して追加">
+        <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
+      </div>
+      <div class="chips" id="selectedTags"></div>
+
+      <div class="submit-row">
+        <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
+        <span class="status" id="statusText"></span>
+      </div>
+    </section>
+
+    <section class="panel" id="promptPostForm" style="display:none;">
+      <h2>プロンプト例を投稿</h2>
+
+      <label class="field-label">タイトル</label>
+      <input type="text" id="pTitleInput" placeholder="例: オリジナルキャラ○○の基本プロンプト">
+
+      <label class="field-label">投稿者(空欄で匿名)</label>
+      <input type="text" id="pAuthorInput" list="dl_author" placeholder="匿名">
+
+      <label class="field-label">プロンプト</label>
+      <textarea id="pPromptInput" class="autogrow" placeholder="Positive prompt"></textarea>
+
+      <label class="field-label">ネガティブプロンプト</label>
+      <textarea id="pNegativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
+
+      <label class="field-label">メモ(備考)</label>
+      <textarea id="pMemoInput" class="autogrow" placeholder="使い方・意図・相性のよいモデルなど"></textarea>
+
+      <label class="field-label">生成時の自分の環境(任意)</label>
+      <div class="settings-grid open" id="pSettingsGrid"></div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
+        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
+        <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
+      </div>
+      <div class="tag-cloud" id="pTagCloud"></div>
+      <button class="show-all-tags" type="button" id="pShowAllTagsBtn" style="display:none;">全て表示</button>
+      <div class="tag-row" style="margin-top:10px;">
+        <input type="text" id="pNewTagInput" placeholder="新しいタグを入力して追加">
+        <button class="btn-ghost" id="pAddNewTagBtn" type="button">追加</button>
+      </div>
+      <div class="chips" id="pSelectedTags"></div>
+
+      <div class="submit-row">
+        <button class="btn-submit" id="pSubmitBtn" type="button">投稿する</button>
+        <span class="status" id="pStatusText"></span>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 閲覧タブ ============ -->
+  <div class="tab-panel" id="tab-browse">
+
+    <div class="search-panel">
+      <div class="search-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="sortChips"></div>
+      </div>
+      <div class="search-row">
+        <span class="label">絞り込み</span>
+        <input type="text" class="filter-input" id="filterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" class="filter-input" id="filterUiPreset" list="dl_set_uiPreset" placeholder="UI Preset">
+        <input type="text" class="filter-input" id="filterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
+        <button class="clear-tags" id="clearFiltersBtn" type="button">絞り込みをクリア</button>
+      </div>
+      <div class="search-row">
+        <span class="label" style="margin-left:0;">タグで絞込</span>
+        <div class="mode-toggle" id="tagMatchModeToggle">
+          <button type="button" data-tagmode="AND" class="active">AND</button>
+          <button type="button" data-tagmode="OR">OR</button>
+          <button type="button" data-tagmode="NOT">NOT</button>
+        </div>
+        <button class="clear-tags" id="clearTagsBtn" type="button">タグ選択をクリア</button>
+      </div>
+      <div class="tag-cloud" id="tagCloud"></div>
+      <button class="show-all-tags" type="button" id="showAllBrowseTagsBtn" style="display:none;">全て表示</button>
+      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
+        タグはクリックでON/OFF切替。ON中のタグ同士の絞り込み方はAND/OR/NOTで指定(例: ANDをONにしてタグを複数ONにすると、それらすべてを含む投稿だけを表示)。
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <span class="count" id="postCount"></span>
+      <div class="mode-toggle" id="viewModeToggle">
+        <button type="button" data-view="list" class="active">リスト表示</button>
+        <button type="button" data-view="panel">パネル表示</button>
+      </div>
+    </div>
+
+    <div class="list" id="list"></div>
+    <div class="empty" id="emptyState" style="display:none;">条件に一致する投稿がありません。</div>
+  </div>
+
+  <!-- ============ プロンプト投稿一覧タブ ============ -->
+  <div class="tab-panel" id="tab-promptBrowse">
+
+    <div class="search-panel">
+      <div class="search-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="pSortChips"></div>
+      </div>
+      <div class="search-row">
+        <span class="label">絞り込み</span>
+        <input type="text" class="filter-input" id="pFilterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" class="filter-input" id="pFilterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
+        <button class="clear-tags" id="pClearFiltersBtn" type="button">絞り込みをクリア</button>
+      </div>
+      <div class="search-row">
+        <span class="label" style="margin-left:0;">タグで絞込</span>
+        <div class="mode-toggle" id="pTagMatchModeToggle">
+          <button type="button" data-tagmode="AND" class="active">AND</button>
+          <button type="button" data-tagmode="OR">OR</button>
+          <button type="button" data-tagmode="NOT">NOT</button>
+        </div>
+        <button class="clear-tags" id="pClearBrowseTagsBtn" type="button">タグ選択をクリア</button>
+      </div>
+      <div class="tag-cloud" id="pBrowseTagCloud"></div>
+      <button class="show-all-tags" type="button" id="pShowAllBrowseTagsBtn" style="display:none;">全て表示</button>
+      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
+        投稿されたプロンプト例の一覧です。例を開くと、その例をベースにして投稿された画像作品がその下にまとめて表示されます。
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <span class="count" id="pPostCount"></span>
+    </div>
+
+    <div class="list" id="pList"></div>
+    <div class="empty" id="pEmptyState" style="display:none;">条件に一致するプロンプト投稿がありません。</div>
+  </div>
+
+  <!-- ============ 本ツールの使い方タブ ============ -->
+  <div class="tab-panel" id="tab-usage">
+    <section class="panel">
+      <h2>このツールでできること</h2>
+      <div class="guide-step">
+        <div class="body">
+          Stable Diffusionなどで生成した<strong>画像</strong>と、その<strong>プロンプトや生成設定</strong>を記録・共有し、仲間内で情報交換するためのボードです。投稿は大きく2種類あります。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body"><strong>画像投稿</strong>: 生成した画像に、プロンプト・生成設定・タグ・メモを付けて共有します。「画像投稿一覧」タブに並びます。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body"><strong>プロンプト例の投稿</strong>: 自分で考えたオリジナルキャラやシチュエーションのプロンプトを、1つの「作品」として共有します。「プロンプト投稿一覧」タブに並びます。</div>
+      </div>
+      <div class="guide-note">
+        画像を投稿するときに「ベースにしたプロンプト例」を選んでおくと、その画像とプロンプト例が紐づきます。プロンプト例の詳細を開くと、それをベースに作られた画像作品が一覧で表示されるので、プロンプト例をタグのように使って作品を探せます。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>よくある質問(Q&amp;A)</h2>
+
+      <div class="qa-item">
+        <div class="qa-q">投稿した作品(画像・プロンプト例)は削除できますか？</div>
+        <div class="qa-a">投稿者自身による削除機能はありません。削除は管理人のみが対応できるため、消したい投稿がある場合は管理人へ削除依頼を出してください。依頼の際は、どの投稿かが分かるようにタイトルや共有URLを添えてもらえると確実です。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">個人情報が管理人や第三者にバレませんか？</div>
+        <div class="qa-a">投稿者名は任意入力で、空欄なら「匿名」で投稿されます。閲覧者に対して、あなたのアカウント情報などが自動的に公開されることはありません。ただし、投稿者名・タイトル・メモ・プロンプトに自分で本名や連絡先などを書けば、それは他の閲覧者にも見えます。また画像のメタデータ(生成情報)に個人的な情報が含まれる場合があるため、気になる場合は投稿前に内容を確認してください。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">画像投稿とプロンプト例の投稿は何が違いますか？</div>
+        <div class="qa-a">画像投稿は「生成した画像そのもの」を共有する機能です。プロンプト例の投稿は「自分で考えたプロンプト」を作品として共有する機能で、画像は添付しません。画像を投稿するときに、参考にしたプロンプト例を「ベース」として紐づけられます。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">プロンプト例をベースにした画像は、どうやって探しますか？</div>
+        <div class="qa-a">「プロンプト投稿一覧」でプロンプト例を開くと、その例をベースにして投稿された画像作品が、詳細の下に一覧で表示されます。逆に画像の詳細を開いたときは「ベースにしたプロンプト例」からその例へジャンプできます。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">同じ設定で生成した画像が何枚もあります。全部投稿してもいいですか？</div>
+        <div class="qa-a">はい。ただし一覧が同じような作品であふれないように「親子紐づけ」を使ってください。まず1枚を普通に投稿し、2枚目以降は画像投稿フォームの「親にする投稿作品」でその作品を選んで投稿します。子になった作品は画像投稿一覧には表示されず、親の詳細を開くと「この作品のバリエーション」として下に一覧表示され、クリックで詳細を見られます。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">画像をドロップしたらプロンプトや設定が勝手に入りました。なぜですか？</div>
+        <div class="qa-a">Stable Diffusion系のツールが画像に埋め込む生成情報(PNGのparametersやJPEG/WebPのUserComment)を自動で読み取り、フォームに反映しています。内容は手動で修正してから投稿できます。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">投稿した内容は後から編集できますか？</div>
+        <div class="qa-a">投稿後の編集機能はありません。内容を直したい場合は、投稿し直すか、管理人へ相談してください。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">「いいね」は何回でも押せますか？</div>
+        <div class="qa-a">1つの投稿につき、同じ端末・ブラウザからは1回までです(もう一度押すと取り消せます)。いいね済みかどうかはお使いのブラウザに記録されるため、別の端末やブラウザからは別カウントになります。</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ はじめてガイド タブ ============ -->
+  <div class="tab-panel" id="tab-guide">
+    <section class="panel">
+      <h2>準備するもの</h2>
+      <div class="guide-step">
+        <div class="body">
+          Windowsパソコン(できればNVIDIA GeForceのグラフィックボード搭載機)。VRAM 8GB以上あると快適。空き容量は数十GB単位で余裕を見ておく。画像生成は自分のパソコンの中だけで完結するので、アカウント登録や課金は不要。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 1. Stability Matrix を用意する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          「Stability Matrix」という無料アプリを使うと、画像生成用のソフト(Forge Neoなど)やモデルをまとめて管理できて楽。公式サイト(<a href="https://lykos.ai/" target="_blank" rel="noopener">https://lykos.ai/</a>)、またはGitHubの配布ページ(<a href="https://github.com/LykosAI/StabilityMatrix/releases" target="_blank" rel="noopener">https://github.com/LykosAI/StabilityMatrix/releases</a>)から <strong>StabilityMatrix-win-x64.zip</strong> のようなWindows用ファイルをダウンロードする。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          ダウンロードしたzipを右クリック→「すべて展開」で解凍し、出てきたフォルダを好きな場所に置く。
+          <div class="guide-warn"><strong>注意:</strong> 置き場所のフォルダ名・パスに日本語やスペースを含めないこと(例: <code>C:\SDtools</code> のような英数字のみのシンプルな場所)。日本語パスが原因のエラーが非常に多い。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          中にある <strong>StabilityMatrix.exe</strong> をダブルクリックして起動。グラフィックボードのスペックチェックで問題がなければ、利用規約に同意して先へ進む。「Portableモード」のチェックは基本つけたままでOK。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 2. Forge Neo をインストールする</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          Stability Matrix内でインストールするパッケージの一覧から <strong>「Stable Diffusion WebUI Forge - Neo」</strong> を選んでインストールする。これが現在の主流バージョンで、古い「Forge」や「Automatic1111」は更新が止まっているため、これから始めるなら基本的にForge Neoを選べば間違いない。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          かなり大きなファイルを大量にダウンロードするので、セットアップ完了までそこそこ時間がかかる。待っている間にSTEP3のモデル探しを進めておくとよい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 3. モデル(Checkpoint)をダウンロードして配置する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          「モデル(Checkpoint)」は絵柄の元になるファイルで、これがないと画像生成はできない。モデルは主に<strong>Civitai</strong>(<a href="https://civitai.com/" target="_blank" rel="noopener">https://civitai.com/</a>)というサイトで配布されており、会員登録なしでもダウンロードできる。特にこだわりがなければ、現在ローカル環境で主流の<strong>SDXL系</strong>のモデル、またはその後継として注目されている<strong>Anima系</strong>のモデルのどちらかを選ぶのが無難。
+          <div class="guide-note">初心者向けの定番として、SDXL系なら「WAI-illustrious-SDXL」系統(Civitai: <a href="https://civitai.com/models/827184" target="_blank" rel="noopener">https://civitai.com/models/827184</a>)、Anima系なら「WAI-Anima」系統(Civitai: <a href="https://civitai.com/models/2544636" target="_blank" rel="noopener">https://civitai.com/models/2544636</a>)がよく挙げられる。よく分からなければ、それぞれの最新バージョンをダウンロードすればOK。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          ダウンロードしたモデルファイルは、Stability Matrixをインストールしたフォルダの中の <strong>Data → Models → StableDiffusion</strong> フォルダに入れる。
+          <div class="guide-warn"><strong>注意(Anima系を選んだ場合):</strong> Anima系はCheckpoint本体だけでなく、テキストエンコーダーやVAEなど別途用意が必要なファイルがある場合がある。モデルの配布ページの説明をよく読み、指示された追加ファイルも忘れずにダウンロードして、それぞれ対応するフォルダに配置すること。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 4. Forge Neo を起動する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          Stability Matrix側でForge Neoの「Launch」ボタンを押すと、少し待ってからブラウザで画像生成用の画面(WebUI)が自動で開く。
+        </div>
+      </div>
+      <div class="guide-warn">
+        <strong>重要:</strong> Stability MatrixとブラウザのWebUIは「本体とテレビ画面」のような関係。ブラウザにWebUIが表示されても、裏側で処理をしているのはStability Matrixなので、WebUIを使っている間はStability Matrixのウィンドウを閉じないこと。閉じると生成が止まってしまう。
+      </div>
+      <div class="guide-note">初回起動時はPyTorchなど追加の部品を裏側でダウンロード・準備するため、ブラウザ画面が開くまで、また最初の1枚目の画像が生成されるまでにも数分〜十数分かかることがある。フリーズしたように見えても、進行状況(ログ)が動いていれば待っていればOK。</div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 5. はじめての画像生成</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          画面上部の「Checkpoint」欄で、STEP3で配置したモデルを選択する。もし一覧に出てこない場合は、モデル一覧の更新ボタンを押すか、WebUIを再読み込みしてみる。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          「Prompt(プロンプト)」欄に描きたいものを表す単語を入力し、生成ボタンを押すだけで画像ができあがる。うまくいかない絵柄は「Negative prompt(除外したい要素)」欄に入れると避けやすくなる。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>初心者が特につまずきやすい点(Checkpoint / LoRA まわり)</h2>
+      <div class="guide-step">
+        <div class="body">
+          <strong>Checkpointと「土台」が合わないと絵が崩れる。</strong>
+          <div class="guide-note">
+            LoRA(追加の絵柄・キャラクター用の小さな学習データ)は、使っているCheckpointの「土台となるアーキテクチャ」(SDXL系かAnima系かなど)に対応したものを選ぶ必要がある。SDXL用のLoRAをAnima系のCheckpointに使う、といった組み合わせは基本的に噛み合わず、絵が崩れたり全く効かなかったりする。LoRAをダウンロードするときは、対応アーキテクチャの表記を必ず確認する。
+          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>ファイルを置いただけでは一覧に出てこないことがある。</strong>
+          <div class="guide-note">
+            LoRAもCheckpoint同様、Data → Models フォルダ内の該当フォルダ(LoRAなら「Lora」フォルダなど)に置く。置いた直後はWebUI側の一覧に反映されていないことがあるので、モデル一覧の更新ボタンを押すか、WebUIを再読み込みして反映させる。
+          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>迷ったら「新しいCheckpoint」から。</strong>
+          <div class="guide-note">
+            古い「Forge」や「Automatic1111」向けの解説記事もネット上には多く残っているが、これから新しく始める場合はForge Neoのような現行バージョンを使い、そこに対応したCheckpoint・LoRAで揃えるのが無難。
+          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>Anima系はプロンプトの書き方のクセが違う。</strong>
+          <div class="guide-note">
+            SDXL系のプロンプトの感覚のまま使うとうまく効かないことがある。Animaでは、カンマの後に半角スペースを入れる、単語の区切りにアンダースコア(_)を使わない、といった独自のルールがあるとされる。SDXL系からAnima系に乗り換えたときにタグが効かなくなったと感じたら、まずこの書き方の違いを疑うとよい。
+          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>生成が極端に遅い・途中で止まる場合はVRAM不足かも。</strong>
+          <div class="guide-note">
+            グラフィックボードのVRAMが少ない環境(8GB未満など)では、そのままの設定だと生成が非常に遅くなったり、エラーで止まったりすることがある。起動オプションに省メモリ向けの設定(低VRAM向けのモード)を追加できる場合があるので、極端に遅い・落ちるときは調べてみるとよい。まずは生成する画像の解像度(Width/Height)を下げてみるのも手軽な対策。
+          </div>
+        </div>
+      </div>
+      <div class="guide-source">
+        参考: <a href="https://wikiwiki.jp/sd_toshiaki/%E5%88%9D%E3%82%81%E3%81%A6%E3%81%AEforge%20neo" target="_blank" rel="noopener">としあきdiffusion Wiki* - 初めてのforge neo</a>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<div class="modal-overlay" id="tagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="tagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">タグを選択</h3>
+    <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除</p>
+    <div class="tag-cloud" id="tagModalCloud"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="browseTagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="browseTagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <div class="mode-toggle" id="browseTagModalMatchModeToggle">
+        <button type="button" data-tagmode="AND">AND</button>
+        <button type="button" data-tagmode="OR">OR</button>
+        <button type="button" data-tagmode="NOT">NOT</button>
+      </div>
+      <button class="clear-tags" type="button" id="clearBrowseTagsModalBtn">タグ選択をクリア</button>
+    </div>
+    <p class="tag-modal-hint">クリックでON/OFF切替</p>
+    <div class="tag-cloud" id="browseTagModalCloud"></div>
+  </div>
+</div>
+
+<div class="modal-overlay full-image-overlay" id="fullImageOverlay">
+  <div class="full-image-inner">
+    <button class="modal-close" type="button" id="fullImageCloseBtn">✕ 閉じる</button>
+    <div class="full-image-wrap"><img id="fullImageImg" alt="画像"></div>
+    <div class="full-image-actions">
+      <button class="btn-ghost" type="button" id="fullImageDetailBtn">詳細を表示</button>
+      <button class="btn-ghost" type="button" id="fullImageDownloadBtn">オリジナル画像をダウンロード</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="basePromptModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="basePromptModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">ベースにするプロンプト例を選択</h3>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <input type="text" id="basePromptSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
+      <button class="btn-ghost" id="clearBasePromptBtn" type="button">紐づけなしにする</button>
+    </div>
+    <div class="sort-chips" id="basePromptSortChips" style="margin-bottom:14px;"></div>
+    <div class="list" id="basePromptList"></div>
+    <div class="empty" id="basePromptEmpty" style="display:none;">プロンプト投稿がまだありません。先に「プロンプト例を投稿」してください。</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="parentModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="parentModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">親にする投稿作品を選択</h3>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <input type="text" id="parentSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
+      <button class="btn-ghost" id="clearParentBtn" type="button">紐づけなしにする</button>
+    </div>
+    <div class="sort-chips" id="parentSortChips" style="margin-bottom:14px;"></div>
+    <div class="list" id="parentList"></div>
+    <div class="empty" id="parentEmpty" style="display:none;">画像投稿がまだありません。</div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span id="loadingText">読み込み中...</span>
+</div>
+
+<datalist id="dl_author"></datalist>
+
+<script>
+  // ▼▼▼ ここをデプロイしたウェブアプリのURLに書き換えてください ▼▼▼
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxNsk0jrPHQLQE9akiT5OiM7iKG-VohCAUPErea_dd3JFLjBj4xBXi_lKkVRaEFyQQn/exec';
+  // ▲▲▲ ───────────────────────────────────── ▲▲▲
+
+  // Stable Diffusion 設定項目の定義 (フォーム生成・詳細表示の両方で使用)
+  const SETTINGS_FIELDS = [
+    { key: 'uiPreset',          label: 'UI Preset',           type: 'text' },
+    { key: 'checkpoint',        label: 'Checkpoint',          type: 'text' },
+    { key: 'modelHash',         label: 'Model hash',          type: 'text' },
+    { key: 'vae',               label: 'VAE',                 type: 'text' },
+    { key: 'textEncoder',       label: 'Text Encoder',        type: 'text' },
+    { key: 'samplingMethod',    label: 'Sampling Method',     type: 'text' },
+    { key: 'scheduleType',      label: 'Schedule Type',       type: 'text' },
+    { key: 'samplingSteps',     label: 'Sampling Steps',      type: 'number' },
+    { key: 'width',             label: 'Width',               type: 'number' },
+    { key: 'height',            label: 'Height',              type: 'number' },
+    { key: 'batchCount',        label: 'Batch Count',         type: 'number' },
+    { key: 'batchSize',         label: 'Batch Size',          type: 'number' },
+    { key: 'shift',             label: 'Shift',               type: 'number' },
+    { key: 'cfgScale',          label: 'CFG Scale',           type: 'number' },
+    { key: 'seed',              label: 'Seed',                type: 'text' },
+    { key: 'rng',               label: 'RNG',                 type: 'text' },
+    { key: 'betaScheduleAlpha', label: 'Beta schedule alpha', type: 'text' },
+    { key: 'betaScheduleBeta',  label: 'Beta schedule beta',  type: 'text' },
+    { key: 'version',           label: 'Version',             type: 'text' }
+  ];
+
+  const PARAM_KEY_MAP = {
+    'Steps': 'samplingSteps',
+    'Sampler': 'samplingMethod',
+    'Schedule type': 'scheduleType',
+    'CFG scale': 'cfgScale',
+    'Shift': 'shift',
+    'Seed': 'seed',
+    'Model': 'checkpoint',
+    'Model hash': 'modelHash',
+    'Module 1': 'vae',
+    'Module 2': 'textEncoder',
+    'RNG': 'rng',
+    'Beta schedule alpha': 'betaScheduleAlpha',
+    'Beta schedule beta': 'betaScheduleBeta',
+    'Version': 'version'
+  };
+
+  let posts = [];
+  let imagePosts = [];
+  let promptPosts = [];
+  let selectedTags = []; // 投稿フォーム用
+  let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
+  let tagMatchMode = 'AND'; // ONにしたタグ同士の絞り込み方: AND / OR / NOT
+  let viewMode = 'list';
+
+  let pSelectedTags = [];
+  let pTagStates = {};
+  let pTagMatchMode = 'AND';
+  let selectedBasePromptId = '';
+  let selectedParentId = '';
+
+  const PROMPT_SORT_FIELDS = [
+    { key: 'date',       label: '日時' },
+    { key: 'likeCount',  label: 'いいね' },
+    { key: 'author',     label: '投稿者' },
+    { key: 'checkpoint', label: 'Checkpoint' }
+  ];
+  let pSortKeys = [{ field: 'date', dir: 'desc' }];
+
+  const SORT_FIELDS = [
+    { key: 'date',          label: '日時' },
+    { key: 'likeCount',     label: 'いいね' },
+    { key: 'downloadCount', label: 'ダウンロード' },
+    { key: 'author',        label: '投稿者' },
+    { key: 'uiPreset',      label: 'UI Preset' },
+    { key: 'checkpoint',    label: 'Checkpoint' }
+  ];
+  let sortKeys = [{ field: 'date', dir: 'desc' }]; // クリック順=優先順位
+
+  let likedPosts = {};
+  try { likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}'); } catch (e) { likedPosts = {}; }
+  function saveLiked() {
+    try { localStorage.setItem('likedPosts', JSON.stringify(likedPosts)); } catch (e) {}
+  }
+
+  /* ---------- タブ切替 ---------- */
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'browse') { renderList(); applyBrowseTagClamp(); }
+    if (name === 'promptBrowse') { renderPromptList(); applyPromptBrowseTagClamp(); }
+    if (name === 'post') { applyPostTagClamp(); if (currentPostMode() === 'prompt') applyPromptFormTagClamp(); }
+  }
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
+  });
+
+  /* ---------- 設定グリッド生成 ---------- */
+  const settingsGrid = document.getElementById('settingsGrid');
+  let dynamicSettingKeys = [];
+
+  function allSettingsFields() {
+    const base = SETTINGS_FIELDS.map(function (f) { return { key: f.key, label: f.label, id: 'set_' + f.key }; });
+    const dyn = dynamicSettingKeys.map(function (k, i) { return { key: k, label: k, id: 'setx_' + i }; });
+    return base.concat(dyn);
+  }
+
+  function currentSettingsValues() {
+    const vals = {};
+    allSettingsFields().forEach(function (f) {
+      const el = document.getElementById(f.id);
+      if (el && el.value !== '') vals[f.key] = el.value;
+    });
+    return vals;
+  }
+
+  function rebuildSettingsGrid() {
+    const keep = currentSettingsValues();
+    settingsGrid.innerHTML = '';
+    allSettingsFields().forEach(function (f) {
+      const dlId = 'dl_' + f.id;
+      const div = document.createElement('div');
+      div.className = 'field';
+      div.innerHTML = '<label>' + escapeHtml(f.label) + '</label><input type="text" id="' + f.id + '" list="' + dlId + '">';
+      settingsGrid.appendChild(div);
+      if (!document.getElementById(dlId)) {
+        const dl = document.createElement('datalist');
+        dl.id = dlId;
+        document.body.appendChild(dl);
+      }
+    });
+    allSettingsFields().forEach(function (f) {
+      if (keep[f.key] !== undefined) { const el = document.getElementById(f.id); if (el) el.value = keep[f.key]; }
+    });
+  }
+
+  function collectDynamicKeysFromPosts() {
+    const base = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    const set = {};
+    dynamicSettingKeys.forEach(function (k) { set[k] = true; });
+    posts.forEach(function (p) {
+      if (p.settings) Object.keys(p.settings).forEach(function (k) {
+        if (base.indexOf(k) === -1 && String(p.settings[k]) !== '') set[k] = true;
+      });
+    });
+    dynamicSettingKeys = Object.keys(set).sort();
+  }
+
+  function collectSettings() {
+    const result = {};
+    allSettingsFields().forEach(function (f) {
+      const el = document.getElementById(f.id);
+      if (el && el.value !== '') result[f.key] = el.value;
+    });
+    return result;
+  }
+  function clearSettingsForm() {
+    allSettingsFields().forEach(function (f) { const el = document.getElementById(f.id); if (el) el.value = ''; });
+  }
+
+  rebuildSettingsGrid();
+
+  /* ---------- ドラッグ&ドロップ ---------- */
+  const dropzone = document.getElementById('dropzone');
+  const imageInput = document.getElementById('imageInput');
+  const previewWrap = document.getElementById('previewWrap');
+  const previewImg = document.getElementById('previewImg');
+  const dropzoneLabel = document.getElementById('dropzoneLabel');
+
+  dropzone.addEventListener('click', function () { imageInput.click(); });
+  dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
+  dropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
+      imageInput.files = e.dataTransfer.files;
+      imageInput.dispatchEvent(new Event('change'));
+    }
+  });
+  imageInput.addEventListener('change', function () {
+    const file = imageInput.files[0];
+    if (!file) { previewWrap.style.display = 'none'; return; }
+    const reader = new FileReader();
+    reader.onload = function () {
+      previewImg.src = reader.result;
+      previewWrap.style.display = 'flex';
+      dropzoneLabel.textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+    readImageMetadata(file);
+  });
+
+  /* ---------- 画像メタデータ(生成情報)読み取り ---------- */
+  function extractPngParameters(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const sig = [137, 80, 78, 71, 13, 10, 26, 10];
+    for (let i = 0; i < 8; i++) { if (bytes[i] !== sig[i]) return null; }
+    const utf8 = new TextDecoder('utf-8');
+    const latin = new TextDecoder('latin1');
+    let off = 8;
+    while (off + 8 <= bytes.length) {
+      const len = (bytes[off] * 16777216) + (bytes[off + 1] * 65536) + (bytes[off + 2] * 256) + bytes[off + 3];
+      const type = latin.decode(bytes.subarray(off + 4, off + 8));
+      const dataStart = off + 8;
+      const dataEnd = dataStart + len;
+      if (len < 0 || dataEnd > bytes.length) break;
+      const chunk = bytes.subarray(dataStart, dataEnd);
+      if (type === 'tEXt') {
+        const nul = chunk.indexOf(0);
+        if (nul !== -1 && latin.decode(chunk.subarray(0, nul)) === 'parameters') {
+          return utf8.decode(chunk.subarray(nul + 1));
+        }
+      } else if (type === 'iTXt') {
+        const nul = chunk.indexOf(0);
+        if (nul !== -1 && latin.decode(chunk.subarray(0, nul)) === 'parameters') {
+          const compFlag = chunk[nul + 1];
+          const z1 = chunk.indexOf(0, nul + 3);
+          if (z1 === -1) return null;
+          const z2 = chunk.indexOf(0, z1 + 1);
+          if (z2 === -1) return null;
+          if (compFlag === 0) return utf8.decode(chunk.subarray(z2 + 1));
+          return null;
+        }
+      }
+      if (type === 'IEND') break;
+      off = dataEnd + 4;
+    }
+    return null;
+  }
+
+  function decodeUnicodeUserComment(body) {
+    function score(s) { let c = 0; const n = Math.min(s.length, 40); for (let i = 0; i < n; i++) { const cc = s.charCodeAt(i); if (cc >= 0x20 && cc < 0x7f) c++; } return c; }
+    let be = '', le = '';
+    try { be = new TextDecoder('utf-16be').decode(body); } catch (e) {}
+    try { le = new TextDecoder('utf-16le').decode(body); } catch (e) {}
+    return (score(be) >= score(le) ? be : le).replace(/\u0000+$/, '');
+  }
+
+  function decodeUserComment(bytes) {
+    if (bytes.length < 8) return new TextDecoder('utf-8').decode(bytes).replace(/\u0000+$/, '') || null;
+    const prefix = new TextDecoder('latin1').decode(bytes.subarray(0, 8));
+    const body = bytes.subarray(8);
+    if (prefix.indexOf('UNICODE') === 0) return decodeUnicodeUserComment(body);
+    if (prefix.indexOf('ASCII') === 0) return new TextDecoder('utf-8').decode(body).replace(/\u0000+$/, '');
+    const bodyStr = new TextDecoder('utf-8').decode(body).replace(/\u0000+$/, '');
+    const allStr = new TextDecoder('utf-8').decode(bytes).replace(/\u0000+$/, '');
+    return bodyStr || allStr || null;
+  }
+
+  function extractExifUserComment(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const latin = new TextDecoder('latin1');
+    let tiffStart = -1;
+    if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
+      let off = 2;
+      while (off + 4 <= bytes.length) {
+        if (bytes[off] !== 0xFF) { off++; continue; }
+        let marker = bytes[off + 1];
+        while (marker === 0xFF && off + 2 < bytes.length) { off++; marker = bytes[off + 1]; }
+        if (marker === 0xD8 || marker === 0xD9 || (marker >= 0xD0 && marker <= 0xD7) || marker === 0x01) { off += 2; continue; }
+        if (marker === 0xDA) break;
+        const segLen = (bytes[off + 2] << 8) | bytes[off + 3];
+        if (segLen < 2) break;
+        if (marker === 0xE1) {
+          const p = off + 4;
+          if (p + 6 <= bytes.length && bytes[p] === 0x45 && bytes[p + 1] === 0x78 && bytes[p + 2] === 0x69 && bytes[p + 3] === 0x66 && bytes[p + 4] === 0 && bytes[p + 5] === 0) {
+            tiffStart = p + 6; break;
+          }
+        }
+        off += 2 + segLen;
+      }
+    } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+      let off = 12;
+      while (off + 8 <= bytes.length) {
+        const cc = latin.decode(bytes.subarray(off, off + 4));
+        const size = bytes[off + 4] + bytes[off + 5] * 256 + bytes[off + 6] * 65536 + bytes[off + 7] * 16777216;
+        const dataStart = off + 8;
+        if (cc === 'EXIF') {
+          let ts = dataStart;
+          if (ts + 6 <= bytes.length && bytes[ts] === 0x45 && bytes[ts + 1] === 0x78 && bytes[ts + 2] === 0x69 && bytes[ts + 3] === 0x66 && bytes[ts + 4] === 0 && bytes[ts + 5] === 0) ts += 6;
+          tiffStart = ts; break;
+        }
+        off = dataStart + size + (size % 2);
+      }
+    }
+    if (tiffStart < 0 || tiffStart + 8 > bytes.length) return null;
+    const le = bytes[tiffStart] === 0x49 && bytes[tiffStart + 1] === 0x49;
+    const be = bytes[tiffStart] === 0x4D && bytes[tiffStart + 1] === 0x4D;
+    if (!le && !be) return null;
+    function u16(o) { return le ? (bytes[o] | (bytes[o + 1] << 8)) : ((bytes[o] << 8) | bytes[o + 1]); }
+    function u32(o) { return le ? (bytes[o] + bytes[o + 1] * 256 + bytes[o + 2] * 65536 + bytes[o + 3] * 16777216) : (bytes[o] * 16777216 + bytes[o + 1] * 65536 + bytes[o + 2] * 256 + bytes[o + 3]); }
+    const TYPE_SIZE = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 };
+    function findTag(ifdOff, tag) {
+      if (ifdOff + 2 > bytes.length) return null;
+      const n = u16(ifdOff);
+      for (let i = 0; i < n; i++) { const e = ifdOff + 2 + i * 12; if (e + 12 > bytes.length) break; if (u16(e) === tag) return { type: u16(e + 2), count: u32(e + 4), valOff: e + 8 }; }
+      return null;
+    }
+    function entryBytes(entry) {
+      const size = (TYPE_SIZE[entry.type] || 1) * entry.count;
+      const dataOff = size <= 4 ? entry.valOff : tiffStart + u32(entry.valOff);
+      if (dataOff + size > bytes.length) return null;
+      return bytes.subarray(dataOff, dataOff + size);
+    }
+    const ifd0 = tiffStart + u32(tiffStart + 4);
+    const exifPtr = findTag(ifd0, 0x8769);
+    if (exifPtr) {
+      const exifIfd = tiffStart + u32(exifPtr.valOff);
+      const uc = findTag(exifIfd, 0x9286);
+      if (uc) { const b = entryBytes(uc); if (b) { const s = decodeUserComment(b); if (s) return s; } }
+    }
+    const desc = findTag(ifd0, 0x010E);
+    if (desc && desc.type === 2) { const b = entryBytes(desc); if (b) { const s = new TextDecoder('utf-8').decode(b).replace(/\u0000+$/, ''); if (s) return s; } }
+    return null;
+  }
+
+  function extractImageParameters(buffer) {
+    return extractPngParameters(buffer) || extractExifUserComment(buffer);
+  }
+
+  function parseGenerationInfo(text) {
+    const lines = text.replace(/\r/g, '').split('\n');
+    const RE = /([\w ]+):\s*("(?:\\.|[^"\\])*"|[^,]*)\s*(?:,|$)/g;
+    function countParams(line) { let c = 0; RE.lastIndex = 0; while (RE.exec(line)) c++; return c; }
+    let lastLine = lines.length ? lines[lines.length - 1].trim() : '';
+    let bodyLines;
+    if (countParams(lastLine) >= 3) { bodyLines = lines.slice(0, -1); }
+    else { bodyLines = lines.slice(); lastLine = ''; }
+
+    let prompt = '', negative = '', doneWithPrompt = false;
+    bodyLines.forEach(function (raw) {
+      let line = raw.trim();
+      if (line.indexOf('Negative prompt:') === 0) {
+        doneWithPrompt = true;
+        line = line.slice('Negative prompt:'.length).trim();
+      }
+      if (doneWithPrompt) negative += (negative ? '\n' : '') + line;
+      else prompt += (prompt ? '\n' : '') + line;
+    });
+
+    const params = {};
+    let m; RE.lastIndex = 0;
+    while ((m = RE.exec(lastLine))) {
+      let v = m[2].trim();
+      if (v.length >= 2 && v[0] === '"' && v[v.length - 1] === '"') {
+        try { v = JSON.parse(v); } catch (e) { v = v.slice(1, -1); }
+      }
+      params[m[1].trim()] = v;
+    }
+    return { prompt: prompt, negative: negative, params: params };
+  }
+
+  function applyGenerationInfo(info) {
+    let filledAny = false;
+    const promptEl = document.getElementById('promptInput');
+    const negEl = document.getElementById('negativeInput');
+    if (info.prompt) { promptEl.value = info.prompt; autoGrow(promptEl); filledAny = true; }
+    if (info.negative) { negEl.value = info.negative; autoGrow(negEl); filledAny = true; }
+
+    const values = {};
+    const consumed = { 'Size': true };
+    Object.keys(PARAM_KEY_MAP).forEach(function (pk) {
+      consumed[pk] = true;
+      if (info.params[pk] !== undefined && String(info.params[pk]) !== '') values[PARAM_KEY_MAP[pk]] = info.params[pk];
+    });
+    if (info.params['Size']) {
+      const sm = String(info.params['Size']).match(/(\d+)\s*x\s*(\d+)/i);
+      if (sm) { values.width = sm[1]; values.height = sm[2]; }
+    }
+    const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    Object.keys(info.params).forEach(function (k) {
+      if (!consumed[k] && String(info.params[k]) !== '') {
+        values[k] = info.params[k];
+        if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
+      }
+    });
+    dynamicSettingKeys.sort();
+
+    rebuildSettingsGrid();
+    rebuildDatalists();
+
+    const fields = allSettingsFields();
+    Object.keys(values).forEach(function (fk) {
+      const f = fields.find(function (x) { return x.key === fk; });
+      if (f) { const el = document.getElementById(f.id); if (el) { el.value = values[fk]; filledAny = true; } }
+    });
+    return filledAny;
+  }
+
+  function readImageMetadata(file) {
+    const mr = new FileReader();
+    mr.onload = function () {
+      try {
+        const paramText = extractImageParameters(mr.result);
+        if (!paramText) return;
+        if (applyGenerationInfo(parseGenerationInfo(paramText))) {
+          statusText.textContent = '画像から生成情報を読み込みました';
+        }
+      } catch (e) { console.error(e); }
+    };
+    mr.readAsArrayBuffer(file);
+  }
+
+  /* ---------- データ読み込み ---------- */
+  const statusText = document.getElementById('statusText');
+  const tagCloud = document.getElementById('tagCloud');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const loadingText = document.getElementById('loadingText');
+
+  function showLoading(msg) {
+    loadingText.textContent = msg || '読み込み中...';
+    loadingOverlay.classList.add('open');
+  }
+  function hideLoading() {
+    loadingOverlay.classList.remove('open');
+  }
+
+  // GAS WebアプリはクロスオリジンfetchだとCORSでブロックされることがあるため、
+  // <script>タグ読み込み(JSONP)で取得する。
+  function jsonpRequest(url) {
+    return new Promise(function (resolve, reject) {
+      const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const script = document.createElement('script');
+
+      const timeoutId = setTimeout(function () {
+        cleanup();
+        reject(new Error('タイムアウトしました'));
+      }, 15000);
+
+      function cleanup() {
+        delete window[callbackName];
+        script.remove();
+        clearTimeout(timeoutId);
+      }
+
+      window[callbackName] = function (data) {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = function () {
+        cleanup();
+        reject(new Error('読み込みに失敗しました'));
+      };
+
+      script.src = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=' + callbackName;
+      document.body.appendChild(script);
+    });
+  }
+
+  async function loadPosts() {
+    showLoading('読み込み中...');
+    try {
+      const data = await jsonpRequest(GAS_URL);
+      posts = data.posts || [];
+      imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt'; });
+      promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
+      collectDynamicKeysFromPosts();
+      rebuildSettingsGrid();
+      rebuildTagUI();
+      rebuildPostTagCloud();
+      rebuildDatalists();
+      rebuildPromptFormTagCloud();
+      renderPromptChips();
+      rebuildPromptBrowseTagUI();
+      renderBasePromptDisplay();
+      if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+      if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
+      statusText.textContent = '';
+    } catch (err) {
+      statusText.textContent = '読み込みに失敗しました';
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function sortJa(arr) {
+    return arr.sort(function (a, b) { return String(a).localeCompare(String(b), 'ja', { numeric: true }); });
+  }
+
+  function uniqueFieldValues(getter) {
+    const set = new Set();
+    posts.forEach(function (p) {
+      const v = getter(p);
+      if (v !== undefined && v !== null && String(v).trim() !== '') set.add(String(v));
+    });
+    return sortJa(Array.from(set));
+  }
+
+  function fillDatalist(id, values) {
+    const dl = document.getElementById(id);
+    if (!dl) return;
+    dl.innerHTML = values.map(function (v) { return '<option value="' + escapeHtml(v) + '"></option>'; }).join('');
+  }
+
+  function rebuildDatalists() {
+    fillDatalist('dl_author', uniqueFieldValues(function (p) { return p.author; }));
+    allSettingsFields().forEach(function (f) {
+      fillDatalist('dl_' + f.id, uniqueFieldValues(function (p) { return p.settings && p.settings[f.key]; }));
+    });
+  }
+
+  // datalist付きinputは、既に文字が入っている状態で再度プルダウンを開くと
+  // ブラウザがその文字に前方一致する候補だけに絞ってしまうため、
+  // フォーカス中は一時的に空にして全候補を表示し、何も入力し直さなければ元の値に戻す。
+  document.addEventListener('focusin', function (e) {
+    const el = e.target;
+    if (el.tagName === 'INPUT' && el.hasAttribute('list')) {
+      el.dataset.dlPrev = el.value;
+      el.dataset.dlTouched = '';
+      el.value = '';
+    }
+  });
+  document.addEventListener('input', function (e) {
+    const el = e.target;
+    if (el.tagName === 'INPUT' && el.hasAttribute('list')) el.dataset.dlTouched = '1';
+  });
+  document.addEventListener('focusout', function (e) {
+    const el = e.target;
+    if (el.tagName === 'INPUT' && el.hasAttribute('list') && el.dataset.dlPrev !== undefined) {
+      if (!el.dataset.dlTouched) el.value = el.dataset.dlPrev;
+      delete el.dataset.dlPrev;
+      delete el.dataset.dlTouched;
+    }
+  });
+
+  function allUniqueTags() {
+    const set = new Set();
+    posts.forEach(function (p) { (p.tags || []).forEach(function (t) { set.add(t); }); });
+    return sortJa(Array.from(set));
+  }
+
+  function allUniquePromptTags() {
+    return allUniqueTags();
+  }
+
+  function rebuildTagUI() {
+    const tags = allUniqueTags();
+
+    // 閲覧タブのタグクラウド(既存の状態は保持しつつ、消えたタグは除外)
+    Object.keys(tagStates).forEach(function (t) { if (!tags.includes(t)) delete tagStates[t]; });
+
+    tagCloud.innerHTML = tags.map(function (t) {
+      const cls = tagStates[t] ? 'state-include' : '';
+      return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+
+    tagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (tagStates[t]) delete tagStates[t]; else tagStates[t] = true;
+        rebuildTagUI();
+        renderList();
+      });
+    });
+
+    applyBrowseTagClamp();
+  }
+
+  document.getElementById('clearTagsBtn').addEventListener('click', function () {
+    tagStates = {};
+    rebuildTagUI();
+    renderList();
+  });
+
+  function syncTagMatchModeButtons() {
+    document.querySelectorAll('#tagMatchModeToggle button, #browseTagModalMatchModeToggle button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tagmode === tagMatchMode);
+    });
+  }
+  syncTagMatchModeButtons();
+
+  document.querySelectorAll('#tagMatchModeToggle button, #browseTagModalMatchModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tagMatchMode = btn.dataset.tagmode;
+      syncTagMatchModeButtons();
+      renderList();
+    });
+  });
+
+  document.querySelectorAll('#viewModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#viewModeToggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      viewMode = btn.dataset.view;
+      renderList();
+    });
+  });
+
+  /* ---------- 複合ソートチップ ---------- */
+  const sortChips = document.getElementById('sortChips');
+  function renderSortChips() {
+    sortChips.innerHTML = SORT_FIELDS.map(function (f) {
+      const idx = sortKeys.findIndex(function (k) { return k.field === f.key; });
+      const active = idx !== -1;
+      const dir = active ? sortKeys[idx].dir : '';
+      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
+      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' +
+        badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    }).join('');
+
+    sortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        const field = chip.dataset.field;
+        const idx = sortKeys.findIndex(function (k) { return k.field === field; });
+        if (idx === -1) {
+          sortKeys.push({ field: field, dir: 'desc' });
+        } else if (sortKeys[idx].dir === 'desc') {
+          sortKeys[idx].dir = 'asc';
+        } else {
+          sortKeys.splice(idx, 1);
+        }
+        renderSortChips();
+        renderList();
+      });
+    });
+  }
+
+  ['filterAuthor', 'filterUiPreset', 'filterCheckpoint'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', renderList);
+  });
+  document.getElementById('clearFiltersBtn').addEventListener('click', function () {
+    ['filterAuthor', 'filterUiPreset', 'filterCheckpoint'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    renderList();
+  });
+
+  /* ---------- 投稿フォームのタグ選択 ---------- */
+  const selectedTagsEl = document.getElementById('selectedTags');
+  const postTagCloud = document.getElementById('postTagCloud');
+  const showAllTagsBtn = document.getElementById('showAllTagsBtn');
+  const POST_TAG_MAX_ROWS = 2;
+  const BROWSE_TAG_MAX_ROWS = 2;
+
+  function toggleSelectedTag(t) {
+    const idx = selectedTags.indexOf(t);
+    if (idx === -1) selectedTags.push(t); else selectedTags.splice(idx, 1);
+    renderChips();
+  }
+
+  function rebuildPostTagCloud() {
+    const tags = allUniqueTags();
+    postTagCloud.innerHTML = tags.map(function (t) {
+      const cls = selectedTags.includes(t) ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+
+    postTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () { toggleSelectedTag(pill.dataset.tag); });
+    });
+    applyPostTagClamp();
+  }
+
+  function applyTagCloudClamp(container, btn, maxRows) {
+    const pills = Array.from(container.querySelectorAll('.tag-pill'));
+    container.style.maxHeight = '';
+    if (pills.length === 0) { btn.style.display = 'none'; return; }
+    const contTop = container.getBoundingClientRect().top;
+    const rows = [];
+    pills.forEach(function (p) {
+      const r = p.getBoundingClientRect();
+      const top = Math.round(r.top - contTop);
+      let row = rows.find(function (x) { return Math.abs(x.top - top) <= 2; });
+      if (!row) { row = { top: top, bottom: 0 }; rows.push(row); }
+      const bottom = Math.round(r.bottom - contTop);
+      if (bottom > row.bottom) row.bottom = bottom;
+    });
+    rows.sort(function (a, b) { return a.top - b.top; });
+    if (rows.length <= maxRows) { btn.style.display = 'none'; return; }
+    container.style.maxHeight = rows[maxRows - 1].bottom + 'px';
+    btn.style.display = '';
+  }
+
+  function applyPostTagClamp() { applyTagCloudClamp(postTagCloud, showAllTagsBtn, POST_TAG_MAX_ROWS); }
+  function applyBrowseTagClamp() { applyTagCloudClamp(tagCloud, showAllBrowseTagsBtn, BROWSE_TAG_MAX_ROWS); }
+
+  /* ---------- タグ選択モーダル(投稿フォーム用) ---------- */
+  const tagModalOverlay = document.getElementById('tagModalOverlay');
+  const tagModalCloud = document.getElementById('tagModalCloud');
+
+  function renderTagModalCloud() {
+    const tags = allUniqueTags();
+    tagModalCloud.innerHTML = tags.map(function (t) {
+      const cls = selectedTags.includes(t) ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+
+    tagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        toggleSelectedTag(pill.dataset.tag);
+        renderTagModalCloud();
+      });
+    });
+  }
+  function openTagModal() { renderTagModalCloud(); tagModalOverlay.classList.add('open'); }
+  function closeTagModal() { tagModalOverlay.classList.remove('open'); }
+
+  showAllTagsBtn.addEventListener('click', openTagModal);
+  document.getElementById('tagModalCloseBtn').addEventListener('click', closeTagModal);
+  tagModalOverlay.addEventListener('click', function (e) { if (e.target === tagModalOverlay) closeTagModal(); });
+
+  /* ---------- タグ選択モーダル(閲覧タブ用) ---------- */
+  const showAllBrowseTagsBtn = document.getElementById('showAllBrowseTagsBtn');
+  const browseTagModalOverlay = document.getElementById('browseTagModalOverlay');
+  const browseTagModalCloud = document.getElementById('browseTagModalCloud');
+
+  function renderBrowseTagModalCloud() {
+    const tags = allUniqueTags();
+    browseTagModalCloud.innerHTML = tags.map(function (t) {
+      const cls = tagStates[t] ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+
+    browseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (tagStates[t]) delete tagStates[t]; else tagStates[t] = true;
+        rebuildTagUI();
+        renderBrowseTagModalCloud();
+        renderList();
+      });
+    });
+  }
+  function openBrowseTagModal() { renderBrowseTagModalCloud(); browseTagModalOverlay.classList.add('open'); }
+  function closeBrowseTagModal() { browseTagModalOverlay.classList.remove('open'); }
+
+  showAllBrowseTagsBtn.addEventListener('click', openBrowseTagModal);
+  document.getElementById('browseTagModalCloseBtn').addEventListener('click', closeBrowseTagModal);
+  browseTagModalOverlay.addEventListener('click', function (e) { if (e.target === browseTagModalOverlay) closeBrowseTagModal(); });
+  document.getElementById('clearBrowseTagsModalBtn').addEventListener('click', function () {
+    tagStates = {};
+    rebuildTagUI();
+    renderBrowseTagModalCloud();
+    renderList();
+  });
+
+  document.getElementById('clearPostTagsBtn').addEventListener('click', function () {
+    selectedTags = [];
+    renderChips();
+  });
+
+  function renderChips() {
+    selectedTagsEl.innerHTML = selectedTags.map(function (t, i) {
+      return '<span class="chip">' + escapeHtml(t) +
+        '<button type="button" data-idx="' + i + '">×</button></span>';
+    }).join('');
+    selectedTagsEl.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        selectedTags.splice(Number(btn.dataset.idx), 1);
+        renderChips();
+      });
+    });
+    rebuildPostTagCloud();
+  }
+
+  document.getElementById('addNewTagBtn').addEventListener('click', function () {
+    const input = document.getElementById('newTagInput');
+    const v = input.value.trim();
+    if (v && !selectedTags.includes(v)) { selectedTags.push(v); renderChips(); }
+    input.value = '';
+  });
+  document.getElementById('newTagInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addNewTagBtn').click(); }
+  });
+
+  /* ---------- テキストエリア自動拡張 ---------- */
+  function autoGrow(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(ta.scrollHeight, 90) + 'px';
+  }
+  function resetAutogrow() {
+    document.querySelectorAll('textarea.autogrow').forEach(function (ta) { ta.style.height = ''; });
+  }
+  document.querySelectorAll('textarea.autogrow').forEach(function (ta) {
+    ta.addEventListener('input', function () { autoGrow(ta); });
+  });
+
+  /* ---------- 投稿処理 ---------- */
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', async function () {
+    const submitBtn = this;
+    const file = imageInput.files[0];
+
+    if (!file) { statusText.textContent = '画像を選択してください'; return; }
+    if (GAS_URL.indexOf('ここに') === 0) { statusText.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
+
+    submitBtn.disabled = true;
+    showLoading('投稿中...');
+    statusText.textContent = '';
+
+    try {
+      const base64 = await fileToBase64(file);
+      const payload = {
+        imageBase64: base64,
+        imageMime: file.type,
+        imageName: file.name,
+        title: document.getElementById('titleInput').value,
+        author: document.getElementById('authorInput').value,
+        prompt: document.getElementById('promptInput').value,
+        negativePrompt: document.getElementById('negativeInput').value,
+        memo: document.getElementById('memoInput').value,
+        settings: collectSettings(),
+        tags: selectedTags,
+        type: 'image',
+        basePromptId: selectedBasePromptId,
+        parentId: selectedParentId
+      };
+
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if (!result.success) {
+        throw new Error(result.error || '不明なエラー');
+      }
+
+      statusText.textContent = '投稿しました';
+      imageInput.value = '';
+      previewWrap.style.display = 'none';
+      dropzoneLabel.textContent = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
+      document.getElementById('titleInput').value = '';
+      document.getElementById('authorInput').value = '';
+      document.getElementById('promptInput').value = '';
+      document.getElementById('negativeInput').value = '';
+      document.getElementById('memoInput').value = '';
+      resetAutogrow();
+      clearSettingsForm();
+      selectedTags = [];
+      renderChips();
+      selectedBasePromptId = '';
+      renderBasePromptDisplay();
+      selectedParentId = '';
+      renderParentDisplay();
+
+      await loadPosts();
+      switchTab('browse');
+      const posted = posts.find(function (p) { return String(p.id) === String(result.id); });
+      if (posted) openModal(posted);
+    } catch (err) {
+      statusText.textContent = '投稿に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      submitBtn.disabled = false;
+    }
+  });
+
+  /* ---------- 閲覧タブ:一覧描画 ---------- */
+  const list = document.getElementById('list');
+  const emptyState = document.getElementById('emptyState');
+  const postCount = document.getElementById('postCount');
+
+  list.addEventListener('error', handleImageError, true);
+
+  function passesTagFilter(post) {
+    const tags = post.tags || [];
+    const selected = Object.keys(tagStates).filter(function (t) { return tagStates[t]; });
+    if (!selected.length) return true;
+
+    if (tagMatchMode === 'NOT') return !selected.some(function (t) { return tags.includes(t); });
+    return tagMatchMode === 'AND'
+      ? selected.every(function (t) { return tags.includes(t); })
+      : selected.some(function (t) { return tags.includes(t); });
+  }
+
+  function formatDateTime(ts) {
+    const dt = new Date(ts);
+    return dt.getFullYear() + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' +
+      String(dt.getDate()).padStart(2, '0') + ' ' + String(dt.getHours()).padStart(2, '0') + ':' +
+      String(dt.getMinutes()).padStart(2, '0');
+  }
+
+  function sortValueOf(p, field) {
+    if (field === 'date') return new Date(p.timestamp).getTime();
+    if (field === 'likeCount') return Number(p.likeCount) || 0;
+    if (field === 'downloadCount') return Number(p.downloadCount) || 0;
+    if (field === 'author') return p.author || '匿名';
+    return (p.settings && p.settings[field]) || '';
+  }
+
+  function compareByKeys(a, b) {
+    return compareWithKeys(a, b, sortKeys);
+  }
+
+  function compareWithKeys(a, b, keys) {
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const va = sortValueOf(a, key.field);
+      const vb = sortValueOf(b, key.field);
+      let cmp;
+      if (typeof va === 'number' && typeof vb === 'number') {
+        cmp = va - vb;
+      } else {
+        if (va === '' && vb !== '') { cmp = -1; }
+        else if (vb === '' && va !== '') { cmp = 1; }
+        else { cmp = String(va).localeCompare(String(vb), 'ja', { numeric: true }); }
+      }
+      if (cmp !== 0) return key.dir === 'desc' ? -cmp : cmp;
+    }
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  }
+
+  function countBadgesHtml(p, opts) {
+    opts = opts || {};
+    const liked = !!likedPosts[p.id];
+    let html = '<span class="count-badges">' +
+      '<button class="like-btn' + (liked ? ' liked' : '') + '" type="button" data-like="' + p.id + '">' +
+        '<span class="heart">' + (liked ? '♥' : '♡') + '</span>' +
+        '<span data-like-count="' + p.id + '">' + (Number(p.likeCount) || 0) + '</span>' +
+      '</button>';
+    if (!opts.likeOnly) {
+      html += '<span class="count-badge">⬇ <span data-dl-count="' + p.id + '">' + (Number(p.downloadCount) || 0) + '</span></span>';
+    }
+    html += '</span>';
+    return html;
+  }
+
+  function renderList() {
+    let filtered = imagePosts.filter(function (p) { return !p.parentId; }).filter(passesTagFilter);
+
+    const fAuthor = document.getElementById('filterAuthor').value.trim().toLowerCase();
+    const fUiPreset = document.getElementById('filterUiPreset').value.trim().toLowerCase();
+    const fCheckpoint = document.getElementById('filterCheckpoint').value.trim().toLowerCase();
+    filtered = filtered.filter(function (p) {
+      const author = String(p.author || '').toLowerCase();
+      const uiPreset = String((p.settings && p.settings.uiPreset) || '').toLowerCase();
+      const checkpoint = String((p.settings && p.settings.checkpoint) || '').toLowerCase();
+      if (fAuthor && author.indexOf(fAuthor) === -1) return false;
+      if (fUiPreset && uiPreset.indexOf(fUiPreset) === -1) return false;
+      if (fCheckpoint && checkpoint.indexOf(fCheckpoint) === -1) return false;
+      return true;
+    });
+
+    filtered.sort(compareByKeys);
+
+    list.classList.toggle('panel-mode', viewMode === 'panel');
+    postCount.textContent = filtered.length + ' 件';
+    emptyState.style.display = filtered.length ? 'none' : 'block';
+
+    const thumbSize = viewMode === 'panel' ? 'w640' : 'w320';
+    list.innerHTML = filtered.map(function (p) { return imageRowHtml(p, thumbSize); }).join('');
+    wireImageRows(list);
+
+    if (viewMode === 'panel') layoutPanelGrid();
+  }
+
+  function imageRowHtml(p, thumbSize) {
+    const title = p.title ? escapeHtml(p.title) : '(無題)';
+    const author = p.author ? escapeHtml(p.author) : '匿名';
+    return '' +
+      '<div class="row" data-id="' + p.id + '">' +
+        '<div class="row-main">' +
+          '<div class="row-thumb">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+          '<div class="row-body">' +
+            '<div class="row-title">' + title + '</div>' +
+            '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span></div>' +
+            '<div class="row-meta">' + countBadgesHtml(p) + '</div>' +
+            (p.tags && p.tags.length ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function wireImageRows(container, opts) {
+    opts = opts || {};
+    container.querySelectorAll('.like-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleLike(btn.dataset.like);
+      });
+    });
+    container.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        const post = posts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+        if (!post) return;
+        if (!opts.detailOnly && viewMode === 'panel') openFullImageModal(post); else openModal(post);
+      });
+    });
+  }
+
+  /* ---------- パネル表示:画像の縦横比を反映したグリッド配置 ---------- */
+  function layoutPanelGrid() {
+    const cs = getComputedStyle(list);
+    const rowUnit = parseFloat(cs.getPropertyValue('grid-auto-rows')) || 8;
+    const gap = parseFloat(cs.getPropertyValue('column-gap') || cs.getPropertyValue('gap')) || 6;
+
+    list.querySelectorAll('.row').forEach(function (item) {
+      const img = item.querySelector('img');
+      if (!img) return;
+
+      function applySpan() {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        const itemWidth = item.getBoundingClientRect().width;
+        if (!w || !h || !itemWidth) return;
+        const height = itemWidth * h / w;
+        const span = Math.max(1, Math.round((height + gap) / (rowUnit + gap)));
+        item.style.gridRowEnd = 'span ' + span;
+      }
+
+      if (img.complete && img.naturalWidth) {
+        applySpan();
+      } else {
+        img.addEventListener('load', applySpan, { once: true });
+        img.addEventListener('error', applySpan, { once: true });
+      }
+    });
+  }
+
+  let panelResizeTimer = null;
+  window.addEventListener('resize', function () {
+    if (viewMode !== 'panel') return;
+    clearTimeout(panelResizeTimer);
+    panelResizeTimer = setTimeout(layoutPanelGrid, 150);
+  });
+
+  /* ---------- 詳細モーダル ---------- */
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalBody = document.getElementById('modalBody');
+
+  modalBody.addEventListener('error', handleImageError, true);
+
+  function openModal(p) {
+    const knownKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    const settingsEntries = SETTINGS_FIELDS
+      .filter(function (f) { return p.settings && p.settings[f.key]; })
+      .map(function (f) {
+        return '<div><span>' + escapeHtml(f.label) + '</span>' + escapeHtml(p.settings[f.key]) + '</div>';
+      }).join('') +
+      (p.settings ? Object.keys(p.settings) : [])
+        .filter(function (k) { return knownKeys.indexOf(k) === -1 && String(p.settings[k]) !== ''; })
+        .map(function (k) {
+          return '<div><span>' + escapeHtml(k) + '</span>' + escapeHtml(p.settings[k]) + '</div>';
+        }).join('');
+
+    const basePrompt = p.basePromptId
+      ? promptPosts.find(function (pp) { return String(pp.id) === String(p.basePromptId); })
+      : null;
+    const baseBlock = basePrompt
+      ? '<div class="detail-block"><div class="label">ベースにしたプロンプト例</div>' +
+          '<div class="value"><a href="#" class="base-prompt-link" data-prompt-id="' + escapeHtml(String(basePrompt.id)) + '">' +
+          (basePrompt.title ? escapeHtml(basePrompt.title) : '(無題)') + '</a></div></div>'
+      : '';
+
+    const parent = p.parentId
+      ? imagePosts.find(function (ip) { return String(ip.id) === String(p.parentId); })
+      : null;
+    const parentBlock = parent
+      ? '<div class="detail-block"><div class="label">親作品</div>' +
+          '<div class="value"><a href="#" class="parent-post-link" data-post-id="' + escapeHtml(String(parent.id)) + '">' +
+          (parent.title ? escapeHtml(parent.title) : '(無題)') + '</a></div></div>'
+      : '';
+
+    const children = imagePosts.filter(function (ip) { return String(ip.parentId) === String(p.id); });
+    children.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const childrenBlock = children.length
+      ? '<div class="linked-works-head">この作品のバリエーション(' + children.length + '件)</div>' +
+        '<div class="list" id="childWorks">' + children.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
+      : '';
+
+    modalBody.innerHTML = '' +
+      '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
+      '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + (p.author ? escapeHtml(p.author) : '匿名') + '</span></div>' +
+      '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
+      '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
+      '<div class="modal-actions">' +
+        '<button class="btn-ghost" type="button" id="downloadBtn">オリジナルサイズでダウンロード</button>' +
+        '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
+      '</div>' +
+      baseBlock +
+      parentBlock +
+      '<div class="detail-block">' +
+        '<div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
+        '<div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div>' +
+      '</div>' +
+      '<div class="detail-block">' +
+        '<div class="block-head"><div class="label">NEGATIVE PROMPT</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
+        '<div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div>' +
+      '</div>' +
+      (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
+      (settingsEntries ? '<div class="detail-block"><div class="label">設定関係</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
+      childrenBlock;
+
+    modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(p[btn.dataset.copy] || '').then(function () {
+          btn.textContent = 'コピーしました';
+          setTimeout(function () { btn.textContent = 'コピー'; }, 1500);
+        });
+      });
+    });
+    modalBody.querySelector('.like-btn').addEventListener('click', function () { toggleLike(p.id); });
+    document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage(p); });
+    document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+
+    const baseLink = modalBody.querySelector('.base-prompt-link');
+    if (baseLink) {
+      baseLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        const bp = promptPosts.find(function (pp) { return String(pp.id) === String(baseLink.dataset.promptId); });
+        if (bp) { switchTab('promptBrowse'); openPromptModal(bp); }
+      });
+    }
+
+    const parentLink = modalBody.querySelector('.parent-post-link');
+    if (parentLink) {
+      parentLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        const pp = imagePosts.find(function (ip) { return String(ip.id) === String(parentLink.dataset.postId); });
+        if (pp) openModal(pp);
+      });
+    }
+
+    const childWorks = document.getElementById('childWorks');
+    if (childWorks) wireImageRows(childWorks, { detailOnly: true });
+
+    modalOverlay.classList.add('open');
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('open');
+    modalBody.innerHTML = '';
+  }
+
+  modalOverlay.addEventListener('click', function (e) {
+    if (e.target === modalOverlay) closeModal();
+  });
+
+  /* ---------- フルスクリーン画像モーダル(パネル表示用) ---------- */
+  const fullImageOverlay = document.getElementById('fullImageOverlay');
+  const fullImageImg = document.getElementById('fullImageImg');
+
+  function openFullImageModal(p) {
+    fullImageImg.src = '';
+    fullImageImg.src = imageSrcFor(p.imageUrl, 'w1000');
+    fullImageOverlay.dataset.id = p.id;
+    fullImageOverlay.classList.add('open');
+  }
+  function closeFullImageModal() {
+    fullImageOverlay.classList.remove('open');
+    fullImageImg.src = '';
+  }
+  function currentFullImagePost() {
+    return posts.find(function (p) { return String(p.id) === String(fullImageOverlay.dataset.id); });
+  }
+
+  document.getElementById('fullImageCloseBtn').addEventListener('click', closeFullImageModal);
+  fullImageOverlay.addEventListener('click', function (e) {
+    if (e.target === fullImageOverlay || e.target.classList.contains('full-image-inner') || e.target.classList.contains('full-image-wrap')) {
+      closeFullImageModal();
+    }
+  });
+  document.getElementById('fullImageDetailBtn').addEventListener('click', function () {
+    const post = currentFullImagePost();
+    closeFullImageModal();
+    if (post) openModal(post);
+  });
+  document.getElementById('fullImageDownloadBtn').addEventListener('click', function () {
+    const post = currentFullImagePost();
+    if (post) downloadImage(post);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); }
+  });
+
+  async function postAction(payload) {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  }
+
+  function updateCountUI(id) {
+    const p = posts.find(function (x) { return String(x.id) === String(id); });
+    if (!p) return;
+    const liked = !!likedPosts[id];
+    document.querySelectorAll('[data-like-count="' + id + '"]').forEach(function (el) {
+      el.textContent = Number(p.likeCount) || 0;
+    });
+    document.querySelectorAll('[data-dl-count="' + id + '"]').forEach(function (el) {
+      el.textContent = Number(p.downloadCount) || 0;
+    });
+    document.querySelectorAll('.like-btn[data-like="' + id + '"], .modal-counts .like-btn').forEach(function (btn) {
+      btn.classList.toggle('liked', liked);
+      const heart = btn.querySelector('.heart');
+      if (heart) heart.textContent = liked ? '♥' : '♡';
+    });
+  }
+
+  async function toggleLike(id) {
+    const p = posts.find(function (x) { return String(x.id) === String(id); });
+    if (!p) return;
+    const currentlyLiked = !!likedPosts[id];
+    const delta = currentlyLiked ? -1 : 1;
+
+    if (currentlyLiked) delete likedPosts[id]; else likedPosts[id] = true;
+    saveLiked();
+    p.likeCount = Math.max(0, (Number(p.likeCount) || 0) + delta);
+    updateCountUI(id);
+
+    try {
+      const result = await postAction({ action: 'like', id: id, delta: delta });
+      if (result && result.success && typeof result.likeCount === 'number') {
+        p.likeCount = result.likeCount;
+        updateCountUI(id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function sharePost(p, btn) {
+    const code = p.shareId || p.id;
+    const url = location.origin + location.pathname + '?p=' + encodeURIComponent(code);
+    navigator.clipboard.writeText(url).then(function () {
+      btn.textContent = 'URLをコピーしました';
+      setTimeout(function () { btn.textContent = '共有'; }, 1800);
+    }, function () {
+      window.prompt('この共有URLをコピーしてください', url);
+    });
+  }
+
+  function openSharedFromUrl() {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('p');
+    if (!code) return;
+    const post = posts.find(function (p) {
+      return String(p.shareId) === String(code) || String(p.id) === String(code);
+    });
+    if (post) {
+      if (post.type === 'prompt') { switchTab('promptBrowse'); openPromptModal(post); }
+      else { switchTab('browse'); openModal(post); }
+    }
+  }
+
+  async function downloadImage(p) {
+    const id = driveFileId(p.imageUrl);
+    const filename = p.title || ('image_' + p.id);
+    const originalUrl = id ? ('https://lh3.googleusercontent.com/d/' + id + '=s0') : p.imageUrl;
+    try {
+      const res = await fetch(originalUrl);
+      if (!res.ok) throw new Error('status ' + res.status);
+      const blob = await res.blob();
+      const ext = blob.type === 'image/jpeg' ? '.jpg' : (blob.type === 'image/webp' ? '.webp' : (blob.type === 'image/png' ? '.png' : ''));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename + ext;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('CORS制限等により直接フェッチできなかったため、フォールバックダウンロードを実行します:', err);
+      if (id) {
+        const a = document.createElement('a');
+        a.href = 'https://drive.google.com/uc?export=download&id=' + id;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    }
+
+    p.downloadCount = (Number(p.downloadCount) || 0) + 1;
+    updateCountUI(p.id);
+    try {
+      const result = await postAction({ action: 'download', id: p.id });
+      if (result && result.success && typeof result.downloadCount === 'number') {
+        p.downloadCount = result.downloadCount;
+        updateCountUI(p.id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function driveFileId(url) {
+    if (!url) return '';
+    let m = String(url).match(/[?&]id=([^&]+)/);
+    if (m) return m[1];
+    m = String(url).match(/\/d\/([^/=?&]+)/);
+    if (m) return m[1];
+    return '';
+  }
+
+  function imageSrcFor(url, size) {
+    const id = driveFileId(url);
+    return id ? ('https://drive.google.com/thumbnail?id=' + id + '&sz=' + size) : url;
+  }
+
+  function imageTag(url, opts) {
+    opts = opts || {};
+    const id = driveFileId(url);
+    const size = opts.size || 'w1000';
+    const src = imageSrcFor(url, size);
+    return '<img src="' + escapeHtml(src) + '"' +
+      (opts.className ? ' class="' + opts.className + '"' : '') +
+      (opts.lazy ? ' loading="lazy"' : '') +
+      ' alt="' + escapeHtml(opts.alt || '') + '"' +
+      ' data-fileid="' + escapeHtml(id) + '"' +
+      ' data-size="' + escapeHtml(size) + '"' +
+      ' data-retry="0">';
+  }
+
+  function handleImageError(e) {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || !img.dataset || img.dataset.fileid === undefined) return;
+    const id = img.dataset.fileid;
+    if (!id) return;
+    const size = img.dataset.size || 'w1000';
+    const retry = Number(img.dataset.retry || '0');
+    if (retry < 2) {
+      img.dataset.retry = String(retry + 1);
+      setTimeout(function () {
+        img.src = 'https://drive.google.com/thumbnail?id=' + id + '&sz=' + size + '&r=' + Date.now();
+      }, 500 * (retry + 1));
+    } else if (retry === 2) {
+      img.dataset.retry = '3';
+      img.src = 'https://lh3.googleusercontent.com/d/' + id + '=' + size;
+    } else if (retry === 3) {
+      img.dataset.retry = '4';
+      img.classList.add('img-failed');
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /* ===== PROMPT FEATURE ===== */
+  const pTagCloud = document.getElementById('pTagCloud');
+  const pShowAllTagsBtn = document.getElementById('pShowAllTagsBtn');
+  const pSelectedTagsEl = document.getElementById('pSelectedTags');
+  const pBrowseTagCloud = document.getElementById('pBrowseTagCloud');
+  const pShowAllBrowseTagsBtn = document.getElementById('pShowAllBrowseTagsBtn');
+  const pList = document.getElementById('pList');
+  const pEmptyState = document.getElementById('pEmptyState');
+  const pPostCount = document.getElementById('pPostCount');
+  const pSortChips = document.getElementById('pSortChips');
+
+  pList.addEventListener('error', handleImageError, true);
+
+  function currentPostMode() {
+    const b = document.querySelector('#postModeToggle button.active');
+    return b ? b.dataset.postmode : 'image';
+  }
+
+  document.querySelectorAll('#postModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#postModeToggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      const mode = btn.dataset.postmode;
+      document.getElementById('imagePostForm').style.display = mode === 'image' ? '' : 'none';
+      document.getElementById('promptPostForm').style.display = mode === 'prompt' ? '' : 'none';
+      if (mode === 'prompt') rebuildPromptFormTagCloud(); else applyPostTagClamp();
+    });
+  });
+
+  // PROMPT FORM: 生成環境グリッド
+  function buildPromptSettingsGrid() {
+    const grid = document.getElementById('pSettingsGrid');
+    grid.innerHTML = SETTINGS_FIELDS.map(function (f) {
+      return '<div class="field"><label>' + escapeHtml(f.label) + '</label>' +
+        '<input type="text" id="pset_' + f.key + '" list="dl_set_' + f.key + '"></div>';
+    }).join('');
+  }
+  function collectPromptSettings() {
+    const r = {};
+    SETTINGS_FIELDS.forEach(function (f) { const el = document.getElementById('pset_' + f.key); if (el && el.value !== '') r[f.key] = el.value; });
+    return r;
+  }
+  function clearPromptSettings() {
+    SETTINGS_FIELDS.forEach(function (f) { const el = document.getElementById('pset_' + f.key); if (el) el.value = ''; });
+  }
+
+  // PROMPT FORM: タグ
+  function toggleSelectedPromptTag(t) {
+    const idx = pSelectedTags.indexOf(t);
+    if (idx === -1) pSelectedTags.push(t); else pSelectedTags.splice(idx, 1);
+    renderPromptChips();
+  }
+  function rebuildPromptFormTagCloud() {
+    const tags = allUniquePromptTags();
+    pTagCloud.innerHTML = tags.map(function (t) {
+      const cls = pSelectedTags.includes(t) ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+    pTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () { toggleSelectedPromptTag(pill.dataset.tag); });
+    });
+    applyPromptFormTagClamp();
+  }
+  function applyPromptFormTagClamp() { applyTagCloudClamp(pTagCloud, pShowAllTagsBtn, 2); }
+  function renderPromptChips() {
+    pSelectedTagsEl.innerHTML = pSelectedTags.map(function (t, i) {
+      return '<span class="chip">' + escapeHtml(t) + '<button type="button" data-idx="' + i + '">×</button></span>';
+    }).join('');
+    pSelectedTagsEl.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () { pSelectedTags.splice(Number(btn.dataset.idx), 1); renderPromptChips(); });
+    });
+    rebuildPromptFormTagCloud();
+  }
+
+  document.getElementById('pAddNewTagBtn').addEventListener('click', function () {
+    const input = document.getElementById('pNewTagInput');
+    const v = input.value.trim();
+    if (v && !pSelectedTags.includes(v)) { pSelectedTags.push(v); renderPromptChips(); }
+    input.value = '';
+  });
+  document.getElementById('pNewTagInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('pAddNewTagBtn').click(); }
+  });
+  document.getElementById('pClearTagsBtn').addEventListener('click', function () { pSelectedTags = []; renderPromptChips(); });
+  pShowAllTagsBtn.addEventListener('click', function () { pTagCloud.style.maxHeight = ''; this.style.display = 'none'; });
+
+  // PROMPT FORM: 投稿
+  document.getElementById('pSubmitBtn').addEventListener('click', async function () {
+    const btn = this;
+    const pStatus = document.getElementById('pStatusText');
+    const promptText = document.getElementById('pPromptInput').value.trim();
+    if (!promptText) { pStatus.textContent = 'プロンプトを入力してください'; return; }
+    if (GAS_URL.indexOf('ここに') === 0) { pStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
+
+    btn.disabled = true;
+    showLoading('投稿中...');
+    pStatus.textContent = '';
+
+    try {
+      const payload = {
+        type: 'prompt',
+        title: document.getElementById('pTitleInput').value,
+        author: document.getElementById('pAuthorInput').value,
+        prompt: document.getElementById('pPromptInput').value,
+        negativePrompt: document.getElementById('pNegativeInput').value,
+        memo: document.getElementById('pMemoInput').value,
+        settings: collectPromptSettings(),
+        tags: pSelectedTags
+      };
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || '不明なエラー');
+
+      pStatus.textContent = '投稿しました';
+      document.getElementById('pTitleInput').value = '';
+      document.getElementById('pAuthorInput').value = '';
+      document.getElementById('pPromptInput').value = '';
+      document.getElementById('pNegativeInput').value = '';
+      document.getElementById('pMemoInput').value = '';
+      resetAutogrow();
+      clearPromptSettings();
+      pSelectedTags = [];
+      renderPromptChips();
+
+      await loadPosts();
+      switchTab('promptBrowse');
+      const posted = promptPosts.find(function (p) { return String(p.id) === String(result.id); });
+      if (posted) openPromptModal(posted);
+    } catch (err) {
+      document.getElementById('pStatusText').textContent = '投稿に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  });
+
+  // BASE PROMPT PICKER
+  const basePromptModalOverlay = document.getElementById('basePromptModalOverlay');
+  const basePromptListEl = document.getElementById('basePromptList');
+  const basePromptEmptyEl = document.getElementById('basePromptEmpty');
+  let basePromptSortKeys = [{ field: 'date', dir: 'desc' }];
+  let parentSortKeys = [{ field: 'date', dir: 'desc' }];
+
+  function renderPickerSortChips(container, fields, keys, onChange) {
+    container.innerHTML = fields.map(function (f) {
+      const idx = keys.findIndex(function (k) { return k.field === f.key; });
+      const active = idx !== -1;
+      const dir = active ? keys[idx].dir : '';
+      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
+      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    }).join('');
+    container.querySelectorAll('.sort-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        const field = chip.dataset.field;
+        const idx = keys.findIndex(function (k) { return k.field === field; });
+        if (idx === -1) {
+          keys.push({ field: field, dir: 'desc' });
+        } else if (keys[idx].dir === 'desc') {
+          keys[idx].dir = 'asc';
+        } else {
+          keys.splice(idx, 1);
+        }
+        renderPickerSortChips(container, fields, keys, onChange);
+        onChange();
+      });
+    });
+  }
+
+  function renderBasePromptDisplay() {
+    const el = document.getElementById('basePromptDisplay');
+    if (!el) return;
+    const p = selectedBasePromptId ? promptPosts.find(function (x) { return String(x.id) === String(selectedBasePromptId); }) : null;
+    if (!p) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
+    el.innerHTML = '<span class="chip">' + (p.title ? escapeHtml(p.title) : '(無題)') + '<button type="button" id="clearBaseInline">×</button></span>';
+    document.getElementById('clearBaseInline').addEventListener('click', function () { selectedBasePromptId = ''; renderBasePromptDisplay(); });
+  }
+  function renderBasePromptList(q) {
+    q = (q || '').trim().toLowerCase();
+    basePromptEmptyEl.style.display = promptPosts.length ? 'none' : 'block';
+    const items = promptPosts.filter(function (p) {
+      if (!q) return true;
+      const hay = (String(p.title || '') + ' ' + String(p.author || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    items.sort(function (a, b) { return compareWithKeys(a, b, basePromptSortKeys); });
+    basePromptListEl.innerHTML = items.map(function (p) {
+      const title = p.title ? escapeHtml(p.title) : '(無題)';
+      const author = p.author ? escapeHtml(p.author) : '匿名';
+      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+      return '<div class="row prompt-row" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
+        '<div class="row-title">' + title + '</div>' +
+        '<div class="prompt-snippet">' + escapeHtml((p.prompt || '').slice(0, 120)) + '</div>' +
+        '<div class="row-meta"><span>投稿者: ' + author + '</span></div>' + tags +
+        '</div></div></div>';
+    }).join('');
+    basePromptListEl.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        selectedBasePromptId = row.dataset.id;
+        const bp = promptPosts.find(function (x) { return String(x.id) === String(selectedBasePromptId); });
+        if (bp) {
+          (bp.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+          renderChips();
+        }
+        renderBasePromptDisplay();
+        closeBasePromptModal();
+      });
+    });
+  }
+  function openBasePromptModal() {
+    document.getElementById('basePromptSearch').value = '';
+    renderPickerSortChips(document.getElementById('basePromptSortChips'), PROMPT_SORT_FIELDS, basePromptSortKeys, function () {
+      renderBasePromptList(document.getElementById('basePromptSearch').value);
+    });
+    renderBasePromptList('');
+    basePromptModalOverlay.classList.add('open');
+  }
+  function closeBasePromptModal() { basePromptModalOverlay.classList.remove('open'); }
+
+  document.getElementById('pickBasePromptBtn').addEventListener('click', openBasePromptModal);
+  document.getElementById('basePromptModalCloseBtn').addEventListener('click', closeBasePromptModal);
+  basePromptModalOverlay.addEventListener('click', function (e) { if (e.target === basePromptModalOverlay) closeBasePromptModal(); });
+  document.getElementById('basePromptSearch').addEventListener('input', function () { renderBasePromptList(this.value); });
+  document.getElementById('clearBasePromptBtn').addEventListener('click', function () { selectedBasePromptId = ''; renderBasePromptDisplay(); closeBasePromptModal(); });
+
+  // PARENT POST PICKER
+  const parentModalOverlay = document.getElementById('parentModalOverlay');
+  const parentListEl = document.getElementById('parentList');
+  const parentEmptyEl = document.getElementById('parentEmpty');
+
+  function renderParentDisplay() {
+    const el = document.getElementById('parentDisplay');
+    if (!el) return;
+    const p = selectedParentId ? imagePosts.find(function (x) { return String(x.id) === String(selectedParentId); }) : null;
+    if (!p) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
+    el.innerHTML = '<span class="chip">' + (p.title ? escapeHtml(p.title) : '(無題)') + '<button type="button" id="clearParentInline">×</button></span>';
+    document.getElementById('clearParentInline').addEventListener('click', function () { selectedParentId = ''; renderParentDisplay(); });
+  }
+  function renderParentList(q) {
+    q = (q || '').trim().toLowerCase();
+    const candidates = imagePosts.filter(function (p) { return !p.parentId; });
+    parentEmptyEl.style.display = candidates.length ? 'none' : 'block';
+    const items = candidates.filter(function (p) {
+      if (!q) return true;
+      const hay = (String(p.title || '') + ' ' + String(p.author || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    items.sort(function (a, b) { return compareWithKeys(a, b, parentSortKeys); });
+    parentListEl.innerHTML = items.map(function (p) {
+      const title = p.title ? escapeHtml(p.title) : '(無題)';
+      const author = p.author ? escapeHtml(p.author) : '匿名';
+      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+      return '<div class="row" data-id="' + p.id + '"><div class="row-main">' +
+        '<div class="row-thumb">' + imageTag(p.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+        '<div class="row-body">' +
+        '<div class="row-title">' + title + '</div>' +
+        '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span></div>' + tags +
+        '</div></div></div>';
+    }).join('');
+    parentListEl.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        selectedParentId = row.dataset.id;
+        renderParentDisplay();
+        closeParentModal();
+      });
+    });
+  }
+  function openParentModal() {
+    document.getElementById('parentSearch').value = '';
+    renderPickerSortChips(document.getElementById('parentSortChips'), SORT_FIELDS, parentSortKeys, function () {
+      renderParentList(document.getElementById('parentSearch').value);
+    });
+    renderParentList('');
+    parentModalOverlay.classList.add('open');
+  }
+  function closeParentModal() { parentModalOverlay.classList.remove('open'); }
+
+  document.getElementById('pickParentBtn').addEventListener('click', openParentModal);
+  document.getElementById('parentModalCloseBtn').addEventListener('click', closeParentModal);
+  parentModalOverlay.addEventListener('click', function (e) { if (e.target === parentModalOverlay) closeParentModal(); });
+  document.getElementById('parentSearch').addEventListener('input', function () { renderParentList(this.value); });
+  document.getElementById('clearParentBtn').addEventListener('click', function () { selectedParentId = ''; renderParentDisplay(); closeParentModal(); });
+
+  // PROMPT BROWSE: ソート
+  function renderPromptSortChips() {
+    pSortChips.innerHTML = PROMPT_SORT_FIELDS.map(function (f) {
+      const idx = pSortKeys.findIndex(function (k) { return k.field === f.key; });
+      const active = idx !== -1;
+      const dir = active ? pSortKeys[idx].dir : '';
+      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
+      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    }).join('');
+    pSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        const field = chip.dataset.field;
+        const idx = pSortKeys.findIndex(function (k) { return k.field === field; });
+        if (idx === -1) pSortKeys.push({ field: field, dir: 'desc' });
+        else if (pSortKeys[idx].dir === 'desc') pSortKeys[idx].dir = 'asc';
+        else pSortKeys.splice(idx, 1);
+        renderPromptSortChips();
+        renderPromptList();
+      });
+    });
+  }
+
+  // PROMPT BROWSE: 絞り込み
+  ['pFilterAuthor', 'pFilterCheckpoint'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', renderPromptList);
+  });
+  document.getElementById('pClearFiltersBtn').addEventListener('click', function () {
+    ['pFilterAuthor', 'pFilterCheckpoint'].forEach(function (id) { document.getElementById(id).value = ''; });
+    renderPromptList();
+  });
+
+  function syncPromptTagMatchModeButtons() {
+    document.querySelectorAll('#pTagMatchModeToggle button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tagmode === pTagMatchMode);
+    });
+  }
+  document.querySelectorAll('#pTagMatchModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () { pTagMatchMode = btn.dataset.tagmode; syncPromptTagMatchModeButtons(); renderPromptList(); });
+  });
+  document.getElementById('pClearBrowseTagsBtn').addEventListener('click', function () { pTagStates = {}; rebuildPromptBrowseTagUI(); renderPromptList(); });
+  pShowAllBrowseTagsBtn.addEventListener('click', function () { pBrowseTagCloud.style.maxHeight = ''; this.style.display = 'none'; });
+
+  function rebuildPromptBrowseTagUI() {
+    const tags = allUniquePromptTags();
+    Object.keys(pTagStates).forEach(function (t) { if (!tags.includes(t)) delete pTagStates[t]; });
+    pBrowseTagCloud.innerHTML = tags.map(function (t) {
+      const cls = pTagStates[t] ? 'state-include' : '';
+      return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+    pBrowseTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (pTagStates[t]) delete pTagStates[t]; else pTagStates[t] = true;
+        rebuildPromptBrowseTagUI();
+        renderPromptList();
+      });
+    });
+    applyPromptBrowseTagClamp();
+  }
+  function applyPromptBrowseTagClamp() { applyTagCloudClamp(pBrowseTagCloud, pShowAllBrowseTagsBtn, 2); }
+
+  function passesPromptTagFilter(post) {
+    const tags = post.tags || [];
+    const selected = Object.keys(pTagStates).filter(function (t) { return pTagStates[t]; });
+    if (!selected.length) return true;
+    if (pTagMatchMode === 'NOT') return !selected.some(function (t) { return tags.includes(t); });
+    return pTagMatchMode === 'AND'
+      ? selected.every(function (t) { return tags.includes(t); })
+      : selected.some(function (t) { return tags.includes(t); });
+  }
+
+  function promptDerivedCount(p) {
+    return imagePosts.filter(function (ip) { return String(ip.basePromptId) === String(p.id) && !ip.parentId; }).length;
+  }
+
+  function promptRowHtml(p) {
+    const title = p.title ? escapeHtml(p.title) : '(無題)';
+    const author = p.author ? escapeHtml(p.author) : '匿名';
+    const snippet = p.prompt ? '<div class="prompt-snippet">' + escapeHtml(p.prompt.slice(0, 140)) + '</div>' : '';
+    const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+    return '<div class="row prompt-row" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
+      '<div class="row-title">' + title + '</div>' + snippet +
+      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + promptDerivedCount(p) + '件</span></div>' +
+      '<div class="row-meta">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' + tags +
+      '</div></div></div>';
+  }
+
+  function renderPromptList() {
+    let filtered = promptPosts.filter(passesPromptTagFilter);
+    const fAuthor = document.getElementById('pFilterAuthor').value.trim().toLowerCase();
+    const fCheckpoint = document.getElementById('pFilterCheckpoint').value.trim().toLowerCase();
+    filtered = filtered.filter(function (p) {
+      const author = String(p.author || '').toLowerCase();
+      const checkpoint = String((p.settings && p.settings.checkpoint) || '').toLowerCase();
+      if (fAuthor && author.indexOf(fAuthor) === -1) return false;
+      if (fCheckpoint && checkpoint.indexOf(fCheckpoint) === -1) return false;
+      return true;
+    });
+    filtered.sort(function (a, b) { return compareWithKeys(a, b, pSortKeys); });
+
+    pPostCount.textContent = filtered.length + ' 件';
+    pEmptyState.style.display = filtered.length ? 'none' : 'block';
+    pList.innerHTML = filtered.map(promptRowHtml).join('');
+
+    pList.querySelectorAll('.like-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.stopPropagation(); toggleLike(btn.dataset.like); });
+    });
+    pList.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        const post = promptPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+        if (post) openPromptModal(post);
+      });
+    });
+  }
+
+  // PROMPT DETAIL MODAL
+  function settingsEntriesHtml(p) {
+    const knownKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    return SETTINGS_FIELDS
+      .filter(function (f) { return p.settings && p.settings[f.key]; })
+      .map(function (f) { return '<div><span>' + escapeHtml(f.label) + '</span>' + escapeHtml(p.settings[f.key]) + '</div>'; }).join('') +
+      (p.settings ? Object.keys(p.settings) : [])
+        .filter(function (k) { return knownKeys.indexOf(k) === -1 && String(p.settings[k]) !== ''; })
+        .map(function (k) { return '<div><span>' + escapeHtml(k) + '</span>' + escapeHtml(p.settings[k]) + '</div>'; }).join('');
+  }
+
+  function openPromptModal(p) {
+    const settingsEntries = settingsEntriesHtml(p);
+    const linked = imagePosts.filter(function (ip) { return String(ip.basePromptId) === String(p.id) && !ip.parentId; });
+    linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const linkedHtml = linked.length
+      ? linked.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('')
+      : '<div class="linked-empty">まだこのプロンプト例をベースにした投稿はありません。</div>';
+
+    modalBody.innerHTML = '' +
+      '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
+      '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + (p.author ? escapeHtml(p.author) : '匿名') + '</span><span>プロンプト例</span></div>' +
+      '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
+      '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div></div>' +
+      (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
+      (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
+      '<div class="modal-actions"><button class="btn-ghost" type="button" id="promptShareBtn">共有</button></div>' +
+      '<div class="linked-works-head">このプロンプト例をベースにした投稿作品 (' + linked.length + '件)</div>' +
+      '<div class="list" id="linkedWorks">' + linkedHtml + '</div>';
+
+    modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(p[btn.dataset.copy] || '').then(function () {
+          btn.textContent = 'コピーしました';
+          setTimeout(function () { btn.textContent = 'コピー'; }, 1500);
+        });
+      });
+    });
+    modalBody.querySelector('.modal-counts .like-btn').addEventListener('click', function () { toggleLike(p.id); });
+    document.getElementById('promptShareBtn').addEventListener('click', function () { sharePost(p, this); });
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    wireImageRows(document.getElementById('linkedWorks'), { detailOnly: true });
+
+    modalOverlay.classList.add('open');
+  }
+
+  /* ===== INIT ===== */
+  buildPromptSettingsGrid();
+  renderPromptSortChips();
+  syncPromptTagMatchModeButtons();
+  renderBasePromptDisplay();
+  renderParentDisplay();
+  renderSortChips();
+  loadPosts().then(openSharedFromUrl);
+</script>
+</body>
+</html>
