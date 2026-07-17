@@ -29,7 +29,7 @@
     min-height: 100vh;
     padding: 32px 20px 80px;
   }
-  .wrap{ max-width: 980px; margin: 0 auto; }
+  .wrap{ max-width: 1600px; width: 100%; margin: 0 auto; }
 
   header{ margin-bottom: 24px; }
   header .eyebrow{
@@ -113,6 +113,17 @@
   .dropzone .preview{
     margin-top: 14px; display:flex; justify-content:center;
   }
+  .preview-frame{ position: relative; display:inline-block; }
+  .preview-clear{
+    position: absolute; top: -10px; right: -10px;
+    width: 26px; height: 26px; padding: 0;
+    border-radius: 50%;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line);
+    font-size: 13px; line-height: 1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .preview-clear:hover{ color: var(--danger); border-color: var(--danger); }
   .dropzone .preview img{
     max-height: 160px; border-radius: 8px; border: 1px solid var(--line);
   }
@@ -351,10 +362,11 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 14px;
-    max-width: 860px; width: 100%;
-    padding: 22px 24px 26px;
+    max-width: 1100px; width: 100%;
+    padding: 26px 30px 30px;
     position: relative;
   }
+  .modal-narrow{ max-width: 480px; }
   .modal-close{
     position: absolute; top: 14px; right: 14px;
     background: var(--surface-2); color: var(--ink);
@@ -401,13 +413,14 @@
   textarea.autogrow{ resize: none; overflow: hidden; }
   .filter-input{ flex: 1 1 150px; width: auto; }
 
-  /* ---- datalist入力欄 + プルダウンボタン ---- */
+  /* ---- 候補プルダウン付き入力欄 ---- */
   .dl-wrap{
     display:inline-flex; align-items:stretch;
     background: var(--surface-2);
     border: 1px solid var(--line);
     border-radius: 10px;
     width: 100%;
+    position: relative;
   }
   .dl-wrap input{
     flex: 1 1 auto; min-width: 0; width: auto;
@@ -417,7 +430,6 @@
   }
   .dl-wrap input:focus{ outline: none; }
   .dl-wrap:focus-within{ outline: 2px solid var(--accent); outline-offset: 1px; }
-  input[list]::-webkit-calendar-picker-indicator{ display:none !important; }
   .dl-toggle{
     flex: 0 0 auto;
     display:flex; align-items:center; justify-content:center;
@@ -426,6 +438,19 @@
     font-size: 11px; padding: 0 10px 0 4px;
   }
   .dl-toggle:hover{ color: var(--accent); }
+  .dl-menu{
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    max-height: 240px; overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  }
+  .dl-item{
+    padding: 9px 12px; font-size: 13px; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dl-item:hover{ background: var(--accent-dim); color: var(--accent); }
+  .dl-item-empty{ color: var(--ink-dim); cursor: default; }
+  .dl-item-empty:hover{ background: none; color: var(--ink-dim); }
   .search-row .dl-wrap{ flex: 1 1 150px; width: auto; }
   .tag-row .dl-wrap{ flex: 1 1 160px; width: auto; }
 
@@ -519,9 +544,12 @@
 
   /* ---- 投稿モード切替 / プロンプト連携 ---- */
   .post-mode-toggle{ width: max-content; margin-bottom: 22px; }
-  .base-prompt-select{ display:flex; align-items:center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
-  .base-prompt-display .base-none{ color: var(--ink-dim); font-size: 12px; font-family:'Noto Sans JP',sans-serif; }
-  .base-prompt-display .chip button{ font-size: 14px; }
+  .base-prompt-select{ display:flex; align-items:flex-start; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  .base-prompt-display{ display:flex; flex-wrap:wrap; gap:8px; flex:1 1 200px; min-width:0; }
+  .base-prompt-display .base-none{ color: var(--ink-dim); font-size: 12px; font-family:'Noto Sans JP',sans-serif; align-self:center; }
+  .base-prompt-display .chip{ max-width:100%; }
+  .base-prompt-display .chip span.chip-label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .base-prompt-display .chip button{ font-size: 14px; flex:0 0 auto; }
 
   .prompt-row .row-main{ align-items: flex-start; }
   .prompt-snippet{
@@ -550,7 +578,62 @@
   }
   .admin-btn:hover{ color: var(--accent); border-color: var(--accent); }
   .admin-btn.on{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .admin-opts-btn{ right: 116px; }
+  .opt-toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:14px; padding:12px 2px; border-bottom:1px solid var(--line);
+  }
+  .opt-toggle-row:last-of-type{ border-bottom:none; }
+  .opt-toggle-row .opt-label{ font-size:13.5px; }
+  .opt-toggle-row .opt-desc{ font-size:11px; color:var(--ink-dim); margin-top:3px; }
+  .opt-switch{
+    flex:0 0 auto; width:46px; height:26px; border-radius:999px;
+    background:var(--surface-2); border:1px solid var(--line); position:relative; cursor:pointer;
+    transition: background .15s;
+  }
+  .opt-switch::after{
+    content:''; position:absolute; top:2px; left:2px; width:20px; height:20px;
+    border-radius:50%; background:var(--ink-dim); transition: transform .15s, background .15s;
+  }
+  .opt-switch.on{ background:var(--accent-dim); border-color:var(--accent); }
+  .opt-switch.on::after{ transform:translateX(20px); background:var(--accent); }
   .admin-modal-status{ font-size: 12px; color: var(--danger); min-height: 18px; margin-top: 10px; }
+
+  /* ---- オプション機能の表示制御 ---- */
+  body.opt-no-like .sort-chip[data-field="likeCount"],
+  body.opt-no-likecount .sort-chip[data-field="likeCount"]{ display:none; }
+  body.opt-no-dlcount .sort-chip[data-field="downloadCount"]{ display:none; }
+  body.opt-no-comment .comment-toggle-btn{ display:none; }
+
+  /* ---- コメント ---- */
+  .comment-toggle-btn{
+    display:flex; align-items:center; gap:8px;
+    width:100%; text-align:left;
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 16px; font-size: 13px; font-family:'Noto Sans JP',sans-serif;
+    margin: 20px 0 4px;
+  }
+  .comment-toggle-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  .comment-toggle-btn .cmt-count{ color: var(--accent); font-weight:700; }
+  .comment-toggle-btn .cmt-arrow{ margin-left:auto; color: var(--ink-dim); font-size:11px; }
+
+  .comment-list{ display:flex; flex-direction:column; gap:12px; margin: 4px 0 20px; }
+  .comment-item{
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; position:relative;
+  }
+  .comment-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+  .comment-name{ font-weight:700; font-size:13px; }
+  .comment-date{ font-size:11px; color: var(--ink-dim); }
+  .comment-body{ font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; }
+  .comment-empty{ color: var(--ink-dim); font-size:13px; padding: 8px 0; }
+  .comment-del{
+    position:absolute; top:10px; right:10px;
+    background:none; border:1px solid var(--danger); color:var(--danger);
+    border-radius:6px; font-size:11px; padding:3px 8px;
+  }
+  .comment-form{ border-top:1px solid var(--line); margin-top:18px; padding-top:18px; }
 
   /* ---- Q&A ---- */
   .qa-item{ border-bottom: 1px solid var(--line); padding: 16px 0; }
@@ -570,6 +653,7 @@
     <h1>Prompt Reel</h1>
     <p>画像とStable Diffusionの生成設定をまとめて記録・共有できます。</p>
     <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
+    <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
   </header>
 
   <nav class="tabs">
@@ -594,15 +678,17 @@
       <label class="field-label">画像</label>
       <div class="dropzone" id="dropzone">
         <span id="dropzoneLabel">ここに画像をドラッグ&ドロップ、またはクリックして選択</span>
-        <div class="preview" id="previewWrap" style="display:none;"><img id="previewImg" alt="プレビュー"></div>
+        <div class="preview" id="previewWrap" style="display:none;"><span class="preview-frame"><img id="previewImg" alt="プレビュー"><button class="preview-clear" type="button" id="clearImageBtn" title="画像を取り消す">✕</button></span></div>
         <input type="file" id="imageInput">
       </div>
 
       <label class="field-label">投稿タイトル</label>
       <input type="text" id="titleInput" placeholder="例: 桜並木の少女">
 
-      <label class="field-label">投稿者(空欄で匿名)</label>
-      <input type="text" id="authorInput" list="dl_author" placeholder="匿名">
+      <div class="author-field">
+        <label class="field-label">投稿者(空欄で匿名)</label>
+        <input type="text" id="authorInput" list="dl_author" placeholder="匿名">
+      </div>
 
       <label class="field-label">プロンプト</label>
       <textarea id="promptInput" class="autogrow" placeholder="Positive prompt"></textarea>
@@ -642,6 +728,7 @@
 
       <div class="submit-row">
         <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
+        <button class="btn-ghost" id="cancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
         <span class="status" id="statusText"></span>
       </div>
     </section>
@@ -652,8 +739,10 @@
       <label class="field-label">タイトル</label>
       <input type="text" id="pTitleInput" placeholder="例: オリジナルキャラ○○の基本プロンプト">
 
-      <label class="field-label">投稿者(空欄で匿名)</label>
-      <input type="text" id="pAuthorInput" list="dl_author" placeholder="匿名">
+      <div class="author-field">
+        <label class="field-label">投稿者(空欄で匿名)</label>
+        <input type="text" id="pAuthorInput" list="dl_author" placeholder="匿名">
+      </div>
 
       <label class="field-label">プロンプト</label>
       <textarea id="pPromptInput" class="autogrow" placeholder="Positive prompt"></textarea>
@@ -681,6 +770,7 @@
 
       <div class="submit-row">
         <button class="btn-submit" id="pSubmitBtn" type="button">投稿する</button>
+        <button class="btn-ghost" id="pCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
         <span class="status" id="pStatusText"></span>
       </div>
     </section>
@@ -867,9 +957,20 @@
         <div class="qa-a">1つの投稿につき、同じ端末・ブラウザからは1回までです(もう一度押すと取り消せます)。いいね済みかどうかはお使いのブラウザに記録されるため、別の端末やブラウザからは別カウントになります。</div>
       </div>
     </section>
-  </div>
 
-  <!-- ============ はじめてガイド タブ ============ -->
+    <section class="panel" id="contactSection">
+      <h2>管理人へ連絡する</h2>
+      <p style="font-size:13.5px; color:var(--ink-dim); line-height:1.8; margin-bottom:14px;">削除依頼・不具合の報告・ご要望などを管理人へ送れます。返信はできませんので、連絡先が必要な場合は本文に記載してください(任意)。</p>
+      <label class="field-label">お名前・連絡先(任意)</label>
+      <input type="text" id="contactName" placeholder="任意(空欄でも送信できます)">
+      <label class="field-label">メッセージ</label>
+      <textarea id="contactMessage" class="autogrow" placeholder="ご用件をご記入ください"></textarea>
+      <div class="submit-row">
+        <button class="btn-submit" id="contactSubmitBtn" type="button">送信する</button>
+        <span class="status" id="contactStatus"></span>
+      </div>
+    </section>
+  </div>
   <div class="tab-panel" id="tab-guide">
     <section class="panel">
       <h2>準備するもの</h2>
@@ -1073,7 +1174,7 @@
 </div>
 
 <div class="modal-overlay" id="adminAuthOverlay">
-  <div class="modal" style="max-width: 420px;">
+  <div class="modal modal-narrow">
     <button class="modal-close" type="button" id="adminAuthCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">管理画面ログイン</h3>
     <label class="field-label">パスワード</label>
@@ -1085,8 +1186,12 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="adminEditOverlay">
-  <div class="modal" id="adminEditBody"></div>
+<div class="modal-overlay" id="adminOptionsOverlay">
+  <div class="modal modal-narrow" id="adminOptionsBody"></div>
+</div>
+
+<div class="modal-overlay" id="commentOverlay">
+  <div class="modal" id="commentModalBody"></div>
 </div>
 
 <div class="modal-overlay full-image-overlay" id="fullImageOverlay">
@@ -1184,6 +1289,9 @@
   let posts = [];
   let imagePosts = [];
   let promptPosts = [];
+  let allComments = [];
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true };
+  let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
   let tagMatchMode = 'AND'; // ONにしたタグ同士の絞り込み方: AND / OR / NOT
@@ -1303,11 +1411,30 @@
   rebuildSettingsGrid();
 
   /* ---------- ドラッグ&ドロップ ---------- */
+  const DROPZONE_LABEL_DEFAULT = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
+  const DROPZONE_LABEL_EDIT = 'ここに画像をドラッグ&ドロップすると差し替え(そのままなら現在の画像を維持)';
   const dropzone = document.getElementById('dropzone');
   const imageInput = document.getElementById('imageInput');
   const previewWrap = document.getElementById('previewWrap');
   const previewImg = document.getElementById('previewImg');
   const dropzoneLabel = document.getElementById('dropzoneLabel');
+
+  function clearSelectedImage() {
+    imageInput.value = '';
+    if (adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt' && adminEditingPost.imageUrl) {
+      previewImg.src = imageSrcFor(adminEditingPost.imageUrl, 'w320');
+      previewWrap.style.display = '';
+      dropzoneLabel.textContent = DROPZONE_LABEL_EDIT;
+    } else {
+      previewImg.src = '';
+      previewWrap.style.display = 'none';
+      dropzoneLabel.textContent = DROPZONE_LABEL_DEFAULT;
+    }
+  }
+  document.getElementById('clearImageBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    clearSelectedImage();
+  });
 
   dropzone.addEventListener('click', function () { imageInput.click(); });
   dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
@@ -1596,6 +1723,9 @@
     try {
       const data = await jsonpRequest(GAS_URL);
       posts = data.posts || [];
+      allComments = data.comments || [];
+      options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
+      applyOptionsToUi();
       imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt'; });
       promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
       collectDynamicKeysFromPosts();
@@ -1644,13 +1774,21 @@
     });
   }
 
-  // datalist付きinputは、入力済みの文字列があると候補が前方一致等で絞られてしまう。
-  // それ自体は検索として便利なので維持しつつ、追記・修正・削除ができるよう
-  // フォーカスしただけでは値をクリアしない。全候補を見たいときは、
-  // 入力欄と同じ枠内にあるプルダウンボタンを押すと一時的に空にして全候補を表示する。
+  // 候補付き入力欄: datalistの前方一致候補(予測変換)は使わず、
+  // ▼クリックで全候補のプルダウンメニューを表示する。手入力も可能。
+  let openDlMenu = null;
+  function closeDlMenu() {
+    if (openDlMenu) { openDlMenu.remove(); openDlMenu = null; }
+  }
+  document.addEventListener('click', function (e) {
+    if (openDlMenu && !openDlMenu.parentNode.contains(e.target)) closeDlMenu();
+  });
+
   function attachDatalistDropdown(input) {
     if (!input || input.dataset.dlWrapped) return;
     input.dataset.dlWrapped = '1';
+    input.dataset.dlList = input.getAttribute('list');
+    input.removeAttribute('list');
 
     const wrap = document.createElement('span');
     wrap.className = 'dl-wrap';
@@ -1666,20 +1804,28 @@
 
     btn.addEventListener('click', function (e) {
       e.preventDefault();
-      input.dataset.dlPrev = input.value;
-      input.value = '';
-      input.focus();
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      if (typeof input.showPicker === 'function') {
-        try { input.showPicker(); } catch (err) {}
-      }
-    });
+      e.stopPropagation();
+      if (openDlMenu && openDlMenu.parentNode === wrap) { closeDlMenu(); return; }
+      closeDlMenu();
 
-    input.addEventListener('blur', function () {
-      if (input.dataset.dlPrev !== undefined) {
-        if (input.value === '') input.value = input.dataset.dlPrev;
-        delete input.dataset.dlPrev;
-      }
+      const dl = document.getElementById(input.dataset.dlList);
+      const values = dl ? Array.from(dl.options).map(function (o) { return o.value; }) : [];
+      const menu = document.createElement('div');
+      menu.className = 'dl-menu';
+      menu.innerHTML = values.length
+        ? values.map(function (v) { return '<div class="dl-item">' + escapeHtml(v) + '</div>'; }).join('')
+        : '<div class="dl-item dl-item-empty">候補がありません</div>';
+
+      menu.querySelectorAll('.dl-item:not(.dl-item-empty)').forEach(function (item) {
+        item.addEventListener('click', function () {
+          input.value = item.textContent;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          closeDlMenu();
+        });
+      });
+
+      wrap.appendChild(menu);
+      openDlMenu = menu;
     });
   }
 
@@ -1950,23 +2096,40 @@
     });
   }
 
+  function resetImageForm() {
+    imageInput.value = '';
+    previewImg.src = '';
+    previewWrap.style.display = 'none';
+    dropzoneLabel.textContent = DROPZONE_LABEL_DEFAULT;
+    document.getElementById('titleInput').value = '';
+    document.getElementById('authorInput').value = '';
+    document.getElementById('promptInput').value = '';
+    document.getElementById('negativeInput').value = '';
+    document.getElementById('memoInput').value = '';
+    resetAutogrow();
+    clearSettingsForm();
+    selectedTags = [];
+    renderChips();
+    selectedBasePromptIds = [];
+    renderBasePromptDisplay();
+    selectedParentId = '';
+    renderParentDisplay();
+  }
+
   document.getElementById('submitBtn').addEventListener('click', async function () {
     const submitBtn = this;
     const file = imageInput.files[0];
+    const editing = isEditingImagePost();
 
-    if (!file) { statusText.textContent = '画像を選択してください'; return; }
+    if (!file && !editing) { statusText.textContent = '画像を選択してください'; return; }
     if (GAS_URL.indexOf('ここに') === 0) { statusText.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     submitBtn.disabled = true;
-    showLoading('投稿中...');
+    showLoading(editing ? '保存中...' : '投稿中...');
     statusText.textContent = '';
 
     try {
-      const base64 = await fileToBase64(file);
       const payload = {
-        imageBase64: base64,
-        imageMime: file.type,
-        imageName: file.name,
         title: document.getElementById('titleInput').value,
         author: document.getElementById('authorInput').value,
         prompt: document.getElementById('promptInput').value,
@@ -1978,6 +2141,16 @@
         basePromptId: selectedBasePromptIds.join(','),
         parentId: selectedParentId
       };
+      if (editing) {
+        payload.action = 'adminUpdate';
+        payload.password = adminPassword;
+        payload.id = adminEditingPost.id;
+      }
+      if (file) {
+        payload.imageBase64 = await fileToBase64(file);
+        payload.imageMime = file.type;
+        payload.imageName = file.name;
+      }
 
       const res = await fetch(GAS_URL, {
         method: 'POST',
@@ -1989,30 +2162,16 @@
         throw new Error(result.error || '不明なエラー');
       }
 
-      statusText.textContent = '投稿しました';
-      imageInput.value = '';
-      previewWrap.style.display = 'none';
-      dropzoneLabel.textContent = 'ここに画像をドラッグ&ドロップ、またはクリックして選択';
-      document.getElementById('titleInput').value = '';
-      document.getElementById('authorInput').value = '';
-      document.getElementById('promptInput').value = '';
-      document.getElementById('negativeInput').value = '';
-      document.getElementById('memoInput').value = '';
-      resetAutogrow();
-      clearSettingsForm();
-      selectedTags = [];
-      renderChips();
-      selectedBasePromptIds = [];
-      renderBasePromptDisplay();
-      selectedParentId = '';
-      renderParentDisplay();
+      statusText.textContent = editing ? '保存しました' : '投稿しました';
+      const targetId = editing ? adminEditingPost.id : result.id;
+      if (editing) cancelAdminEdit(); else resetImageForm();
 
       await loadPosts();
       switchTab('browse');
-      const posted = posts.find(function (p) { return String(p.id) === String(result.id); });
+      const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
       if (posted) openModal(posted);
     } catch (err) {
-      statusText.textContent = '投稿に失敗しました: ' + (err.message || err);
+      statusText.textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
       console.error(err);
     } finally {
       hideLoading();
@@ -2049,8 +2208,51 @@
     if (field === 'date') return new Date(p.timestamp).getTime();
     if (field === 'likeCount') return Number(p.likeCount) || 0;
     if (field === 'downloadCount') return Number(p.downloadCount) || 0;
-    if (field === 'author') return p.author || '匿名';
+    if (field === 'author') return authorLabel(p);
     return (p.settings && p.settings[field]) || '';
+  }
+
+  // オプションで投稿者名がオフのときは全員「匿名」
+  function authorLabel(p) {
+    if (!options.author) return '匿名';
+    return p.author ? p.author : '匿名';
+  }
+  function authorHtml(p) { return escapeHtml(authorLabel(p)); }
+
+  function applyOptionsToUi() {
+    document.body.classList.toggle('opt-no-like', !options.like);
+    document.body.classList.toggle('opt-no-likecount', !options.likeCount);
+    document.body.classList.toggle('opt-no-dlcount', !options.downloadCount);
+    document.body.classList.toggle('opt-no-comment', !options.comment);
+    document.querySelectorAll('.author-field').forEach(function (el) {
+      el.style.display = options.author ? '' : 'none';
+    });
+  }
+
+  function commentsFor(postId) {
+    return allComments
+      .filter(function (c) { return String(c.postId) === String(postId); })
+      .sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
+  }
+
+  function commentToggleHtml(p) {
+    if (!options.comment) return '';
+    const n = commentsFor(p.id).length;
+    return '<button class="comment-toggle-btn" type="button" data-comment-toggle="' + escapeHtml(String(p.id)) + '">' +
+      'コメント <span class="cmt-count">' + n + '</span> 件' +
+      '<span class="cmt-arrow">見る / 書く ▸</span>' +
+    '</button>';
+  }
+
+  function wireCommentToggle(p) {
+    if (!options.comment) return;
+    const btn = modalBody.querySelector('[data-comment-toggle]');
+    if (btn) btn.addEventListener('click', function () { openCommentModal(p); });
+  }
+
+  function wireModalLikeButton() {
+    const likeBtn = modalBody.querySelector('.modal-counts .like-btn');
+    if (likeBtn) likeBtn.addEventListener('click', function () { toggleLike(likeBtn.dataset.like); });
   }
 
   function compareByKeys(a, b) {
@@ -2078,16 +2280,22 @@
   function countBadgesHtml(p, opts) {
     opts = opts || {};
     const liked = !!likedPosts[p.id];
-    let html = '<span class="count-badges">' +
-      '<button class="like-btn' + (liked ? ' liked' : '') + '" type="button" data-like="' + p.id + '">' +
-        '<span class="heart">' + (liked ? '♥' : '♡') + '</span>' +
-        '<span data-like-count="' + p.id + '">' + (Number(p.likeCount) || 0) + '</span>' +
+    let parts = '';
+    if (options.like) {
+      const countHtml = options.likeCount
+        ? '<span data-like-count="' + p.id + '">' + (Number(p.likeCount) || 0) + '</span>'
+        : '';
+      parts += '<button class="like-btn' + (liked ? ' liked' : '') + '" type="button" data-like="' + p.id + '">' +
+        '<span class="heart">' + (liked ? '♥' : '♡') + '</span>' + countHtml +
       '</button>';
-    if (!opts.likeOnly) {
-      html += '<span class="count-badge">⬇ <span data-dl-count="' + p.id + '">' + (Number(p.downloadCount) || 0) + '</span></span>';
+    } else if (options.likeCount) {
+      parts += '<span class="count-badge">♥ <span data-like-count="' + p.id + '">' + (Number(p.likeCount) || 0) + '</span></span>';
     }
-    html += '</span>';
-    return html;
+    if (!opts.likeOnly && options.downloadCount) {
+      parts += '<span class="count-badge">⬇ <span data-dl-count="' + p.id + '">' + (Number(p.downloadCount) || 0) + '</span></span>';
+    }
+    if (!parts) return '';
+    return '<span class="count-badges">' + parts + '</span>';
   }
 
   function renderList() {
@@ -2121,7 +2329,7 @@
 
   function imageRowHtml(p, thumbSize) {
     const title = p.title ? escapeHtml(p.title) : '(無題)';
-    const author = p.author ? escapeHtml(p.author) : '匿名';
+    const author = authorHtml(p);
     return '' +
       '<div class="row" data-id="' + p.id + '">' +
         '<div class="row-counts">' + countBadgesHtml(p) + '</div>' +
@@ -2245,7 +2453,7 @@
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
-      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + (p.author ? escapeHtml(p.author) : '匿名') + '</span></div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
@@ -2261,6 +2469,7 @@
       '</div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">設定関係</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
+      commentToggleHtml(p) +
       childrenBlock;
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
@@ -2271,7 +2480,8 @@
         });
       });
     });
-    modalBody.querySelector('.like-btn').addEventListener('click', function () { toggleLike(p.id); });
+    wireModalLikeButton();
+    wireCommentToggle(p);
     wireAdminActionButtons(p);
     document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage(p); });
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
@@ -2344,7 +2554,7 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeAdminAuthModal(); closeAdminEditModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlMenu(); }
   });
 
   async function postAction(payload) {
@@ -2536,15 +2746,17 @@
     return b ? b.dataset.postmode : 'image';
   }
 
-  document.querySelectorAll('#postModeToggle button').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('#postModeToggle button').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      const mode = btn.dataset.postmode;
-      document.getElementById('imagePostForm').style.display = mode === 'image' ? '' : 'none';
-      document.getElementById('promptPostForm').style.display = mode === 'prompt' ? '' : 'none';
-      if (mode === 'prompt') rebuildPromptFormTagCloud(); else applyPostTagClamp();
+  function setPostMode(mode) {
+    document.querySelectorAll('#postModeToggle button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.postmode === mode);
     });
+    document.getElementById('imagePostForm').style.display = mode === 'image' ? '' : 'none';
+    document.getElementById('promptPostForm').style.display = mode === 'prompt' ? '' : 'none';
+    if (mode === 'prompt') rebuildPromptFormTagCloud(); else applyPostTagClamp();
+  }
+
+  document.querySelectorAll('#postModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () { setPostMode(btn.dataset.postmode); });
   });
 
   // PROMPT FORM: 生成環境グリッド
@@ -2630,15 +2842,28 @@
   pTagModalOverlay.addEventListener('click', function (e) { if (e.target === pTagModalOverlay) closePTagModal(); });
 
   // PROMPT FORM: 投稿
+  function resetPromptForm() {
+    document.getElementById('pTitleInput').value = '';
+    document.getElementById('pAuthorInput').value = '';
+    document.getElementById('pPromptInput').value = '';
+    document.getElementById('pNegativeInput').value = '';
+    document.getElementById('pMemoInput').value = '';
+    resetAutogrow();
+    clearPromptSettings();
+    pSelectedTags = [];
+    renderPromptChips();
+  }
+
   document.getElementById('pSubmitBtn').addEventListener('click', async function () {
     const btn = this;
     const pStatus = document.getElementById('pStatusText');
     const promptText = document.getElementById('pPromptInput').value.trim();
+    const editing = isEditingPromptPost();
     if (!promptText) { pStatus.textContent = 'プロンプトを入力してください'; return; }
     if (GAS_URL.indexOf('ここに') === 0) { pStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     btn.disabled = true;
-    showLoading('投稿中...');
+    showLoading(editing ? '保存中...' : '投稿中...');
     pStatus.textContent = '';
 
     try {
@@ -2652,6 +2877,13 @@
         settings: collectPromptSettings(),
         tags: pSelectedTags
       };
+      if (editing) {
+        payload.action = 'adminUpdate';
+        payload.password = adminPassword;
+        payload.id = adminEditingPost.id;
+        payload.basePromptId = '';
+        payload.parentId = '';
+      }
       const res = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -2660,23 +2892,16 @@
       const result = await res.json();
       if (!result.success) throw new Error(result.error || '不明なエラー');
 
-      pStatus.textContent = '投稿しました';
-      document.getElementById('pTitleInput').value = '';
-      document.getElementById('pAuthorInput').value = '';
-      document.getElementById('pPromptInput').value = '';
-      document.getElementById('pNegativeInput').value = '';
-      document.getElementById('pMemoInput').value = '';
-      resetAutogrow();
-      clearPromptSettings();
-      pSelectedTags = [];
-      renderPromptChips();
+      pStatus.textContent = editing ? '保存しました' : '投稿しました';
+      const targetId = editing ? adminEditingPost.id : result.id;
+      if (editing) cancelAdminEdit(); else resetPromptForm();
 
       await loadPosts();
       switchTab('promptBrowse');
-      const posted = promptPosts.find(function (p) { return String(p.id) === String(result.id); });
+      const posted = promptPosts.find(function (p) { return String(p.id) === String(targetId); });
       if (posted) openPromptModal(posted);
     } catch (err) {
-      document.getElementById('pStatusText').textContent = '投稿に失敗しました: ' + (err.message || err);
+      document.getElementById('pStatusText').textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
       console.error(err);
     } finally {
       hideLoading();
@@ -2725,7 +2950,7 @@
       .filter(Boolean);
     if (!items.length) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
     el.innerHTML = items.map(function (p, i) {
-      return '<span class="chip">' + (p.title ? escapeHtml(p.title) : '(無題)') + '<button type="button" data-clear-base="' + i + '">×</button></span>';
+      return '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" data-clear-base="' + i + '">×</button></span>';
     }).join('');
     el.querySelectorAll('[data-clear-base]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -2746,7 +2971,7 @@
     items.sort(function (a, b) { return compareWithKeys(a, b, basePromptSortKeys); });
     basePromptListEl.innerHTML = items.map(function (p) {
       const title = p.title ? escapeHtml(p.title) : '(無題)';
-      const author = p.author ? escapeHtml(p.author) : '匿名';
+      const author = authorHtml(p);
       const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
       const selected = selectedBasePromptIds.some(function (id) { return String(id) === String(p.id); });
       return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
@@ -2799,12 +3024,14 @@
     if (!el) return;
     const p = selectedParentId ? imagePosts.find(function (x) { return String(x.id) === String(selectedParentId); }) : null;
     if (!p) { el.innerHTML = '<span class="base-none">紐づけなし</span>'; return; }
-    el.innerHTML = '<span class="chip">' + (p.title ? escapeHtml(p.title) : '(無題)') + '<button type="button" id="clearParentInline">×</button></span>';
+    el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="clearParentInline">×</button></span>';
     document.getElementById('clearParentInline').addEventListener('click', function () { selectedParentId = ''; renderParentDisplay(); });
   }
   function renderParentList(q) {
     q = (q || '').trim().toLowerCase();
-    const candidates = imagePosts.filter(function (p) { return !p.parentId; });
+    const candidates = imagePosts.filter(function (p) {
+      return !p.parentId && (!adminEditingPost || String(p.id) !== String(adminEditingPost.id));
+    });
     parentEmptyEl.style.display = candidates.length ? 'none' : 'block';
     const items = candidates.filter(function (p) {
       if (!q) return true;
@@ -2814,7 +3041,7 @@
     items.sort(function (a, b) { return compareWithKeys(a, b, parentSortKeys); });
     parentListEl.innerHTML = items.map(function (p) {
       const title = p.title ? escapeHtml(p.title) : '(無題)';
-      const author = p.author ? escapeHtml(p.author) : '匿名';
+      const author = authorHtml(p);
       const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
       return '<div class="row" data-id="' + p.id + '"><div class="row-main">' +
         '<div class="row-thumb">' + imageTag(p.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
@@ -2958,7 +3185,7 @@
 
   function promptRowHtml(p) {
     const title = p.title ? escapeHtml(p.title) : '(無題)';
-    const author = p.author ? escapeHtml(p.author) : '匿名';
+    const author = authorHtml(p);
     const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
     return '<div class="row prompt-row" data-id="' + p.id + '">' +
       '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
@@ -3025,13 +3252,14 @@
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
-      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + (p.author ? escapeHtml(p.author) : '匿名') + '</span><span>プロンプト例</span></div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div></div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
+      commentToggleHtml(p) +
       '<div class="linked-works-head">このプロンプト例をベースにした投稿作品 (' + linked.length + '件)</div>' +
       '<div class="list" id="linkedWorks">' + linkedHtml + '</div>';
 
@@ -3043,7 +3271,8 @@
         });
       });
     });
-    modalBody.querySelector('.modal-counts .like-btn').addEventListener('click', function () { toggleLike(p.id); });
+    wireModalLikeButton();
+    wireCommentToggle(p);
     wireAdminActionButtons(p);
     document.getElementById('promptShareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
@@ -3060,14 +3289,15 @@
   const adminAuthOverlay = document.getElementById('adminAuthOverlay');
   const adminPasswordInput = document.getElementById('adminPasswordInput');
   const adminAuthStatus = document.getElementById('adminAuthStatus');
-  const adminEditOverlay = document.getElementById('adminEditOverlay');
-  const adminEditBody = document.getElementById('adminEditBody');
 
   function setAdminMode(on) {
     adminMode = on;
     if (!on) adminPassword = '';
     adminBtn.textContent = on ? '管理モード終了' : '管理画面';
     adminBtn.classList.toggle('on', on);
+    document.getElementById('adminOptionsBtn').style.display = on ? '' : 'none';
+    document.body.classList.toggle('admin-on', on);
+    if (!on && adminEditingPost) cancelAdminEdit();
     if (modalOverlay.classList.contains('open')) closeModal();
   }
 
@@ -3122,6 +3352,200 @@
     if (deleteBtn) deleteBtn.addEventListener('click', function () { adminDeletePost(p); });
   }
 
+  /* ===== COMMENTS (作品コメント) ===== */
+  const commentOverlay = document.getElementById('commentOverlay');
+  const commentModalBody = document.getElementById('commentModalBody');
+
+  function commentItemHtml(c) {
+    const name = c.name ? escapeHtml(c.name) : '匿名';
+    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-comment="' + escapeHtml(String(c.id)) + '">削除</button>' : '';
+    return '<div class="comment-item">' + delBtn +
+      '<div class="comment-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(c.timestamp) + '</span></div>' +
+      '<div class="comment-body">' + escapeHtml(c.body) + '</div>' +
+    '</div>';
+  }
+
+  function renderCommentList(postId) {
+    const listEl = document.getElementById('commentListEl');
+    if (!listEl) return;
+    const list = commentsFor(postId);
+    listEl.innerHTML = list.length
+      ? list.map(commentItemHtml).join('')
+      : '<div class="comment-empty">まだコメントはありません。最初のひとことを書いてみましょう。</div>';
+    listEl.querySelectorAll('[data-del-comment]').forEach(function (btn) {
+      btn.addEventListener('click', function () { adminDeleteComment(btn.dataset.delComment, postId); });
+    });
+  }
+
+  function openCommentModal(p) {
+    const authorNameField = options.author
+      ? '<label class="field-label">お名前(任意)</label><input type="text" id="commentNameInput" placeholder="匿名で投稿できます">'
+      : '';
+    commentModalBody.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">コメント</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="commentCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      '<div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:14px;">「' + (p.title ? escapeHtml(p.title) : '(無題)') + '」への感想・コメント</div>' +
+      '<div class="comment-list" id="commentListEl"></div>' +
+      '<div class="comment-form">' +
+        authorNameField +
+        '<label class="field-label">コメント</label>' +
+        '<textarea id="commentBodyInput" placeholder="感想やアレンジのアイデアなど"></textarea>' +
+        '<div class="submit-row">' +
+          '<button class="btn-submit" type="button" id="commentSubmitBtn">コメントする</button>' +
+          '<span class="status" id="commentStatus"></span>' +
+        '</div>' +
+      '</div>';
+
+    renderCommentList(p.id);
+    document.getElementById('commentCloseBtn').addEventListener('click', closeCommentModal);
+    document.getElementById('commentSubmitBtn').addEventListener('click', function () { submitComment(p); });
+    commentOverlay.classList.add('open');
+  }
+  function closeCommentModal() { commentOverlay.classList.remove('open'); }
+  commentOverlay.addEventListener('click', function (e) { if (e.target === commentOverlay) closeCommentModal(); });
+
+  async function submitComment(p) {
+    const status = document.getElementById('commentStatus');
+    const nameEl = document.getElementById('commentNameInput');
+    const bodyEl = document.getElementById('commentBodyInput');
+    const body = bodyEl.value.trim();
+    if (!body) { status.textContent = 'コメントを入力してください'; return; }
+    status.textContent = '';
+    showLoading('送信中...');
+    try {
+      const result = await postAction({
+        action: 'comment', postId: p.id,
+        name: nameEl ? nameEl.value : '', body: body
+      });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      if (result.comment) allComments.push(result.comment);
+      bodyEl.value = '';
+      status.textContent = '投稿しました';
+      renderCommentList(p.id);
+      // 詳細モーダルのコメント件数を更新
+      const toggle = modalBody.querySelector('[data-comment-toggle="' + String(p.id).replace(/"/g, '') + '"] .cmt-count');
+      if (toggle) toggle.textContent = commentsFor(p.id).length;
+    } catch (err) {
+      status.textContent = '送信に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  async function adminDeleteComment(commentId, postId) {
+    if (!window.confirm('このコメントを削除しますか？')) return;
+    showLoading('削除中...');
+    try {
+      const result = await postAction({ action: 'adminDeleteComment', password: adminPassword, id: commentId });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      allComments = allComments.filter(function (c) { return String(c.id) !== String(commentId); });
+      renderCommentList(postId);
+    } catch (err) {
+      window.alert('削除に失敗しました: ' + (err.message || err));
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  /* ===== ADMIN OPTIONS (オプション機能のオンオフ) ===== */
+  const OPTION_DEFS = [
+    { key: 'like', label: 'いいねボタン', desc: 'オフにすると全画面からいいねボタンが消えます' },
+    { key: 'likeCount', label: 'いいね数の表示', desc: 'オフにするといいね数を表示しません' },
+    { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
+    { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
+    { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になります' }
+  ];
+  const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
+  const adminOptionsBody = document.getElementById('adminOptionsBody');
+  let draftOptions = {};
+
+  function openAdminOptionsModal() {
+    draftOptions = Object.assign({}, options);
+    adminOptionsBody.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">オプション機能</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="adminOptionsCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      '<div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:8px;">オフにした機能は利用者の画面から非表示になります。</div>' +
+      OPTION_DEFS.map(function (o) {
+        return '<div class="opt-toggle-row">' +
+          '<div><div class="opt-label">' + o.label + '</div><div class="opt-desc">' + o.desc + '</div></div>' +
+          '<div class="opt-switch' + (draftOptions[o.key] ? ' on' : '') + '" data-opt="' + o.key + '"></div>' +
+        '</div>';
+      }).join('') +
+      '<div class="admin-modal-status" id="adminOptionsStatus"></div>' +
+      '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>';
+
+    adminOptionsBody.querySelectorAll('.opt-switch').forEach(function (sw) {
+      sw.addEventListener('click', function () {
+        const k = sw.dataset.opt;
+        draftOptions[k] = !draftOptions[k];
+        sw.classList.toggle('on', draftOptions[k]);
+      });
+    });
+    document.getElementById('adminOptionsCloseBtn').addEventListener('click', closeAdminOptionsModal);
+    document.getElementById('adminOptionsSaveBtn').addEventListener('click', saveAdminOptions);
+    adminOptionsOverlay.classList.add('open');
+  }
+  function closeAdminOptionsModal() { adminOptionsOverlay.classList.remove('open'); }
+  adminOptionsOverlay.addEventListener('click', function (e) { if (e.target === adminOptionsOverlay) closeAdminOptionsModal(); });
+  document.getElementById('adminOptionsBtn').addEventListener('click', openAdminOptionsModal);
+
+  async function saveAdminOptions() {
+    const status = document.getElementById('adminOptionsStatus');
+    status.textContent = '';
+    showLoading('保存中...');
+    try {
+      const result = await postAction({ action: 'adminSetOptions', password: adminPassword, options: draftOptions });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      options = Object.assign({}, DEFAULT_OPTIONS, result.options || draftOptions);
+      applyOptionsToUi();
+      renderSortChips();
+      renderPromptSortChips();
+      if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+      if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
+      closeAdminOptionsModal();
+    } catch (err) {
+      status.textContent = '保存に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  /* ===== CONTACT (管理人への連絡) ===== */
+  document.getElementById('contactSubmitBtn').addEventListener('click', async function () {
+    const btn = this;
+    const status = document.getElementById('contactStatus');
+    const msg = document.getElementById('contactMessage').value.trim();
+    if (!msg) { status.textContent = 'メッセージを入力してください'; return; }
+    status.textContent = '';
+    btn.disabled = true;
+    showLoading('送信中...');
+    try {
+      const result = await postAction({
+        action: 'contact',
+        name: document.getElementById('contactName').value,
+        message: msg
+      });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      document.getElementById('contactName').value = '';
+      document.getElementById('contactMessage').value = '';
+      resetAutogrow();
+      status.textContent = '送信しました。ありがとうございます。';
+    } catch (err) {
+      status.textContent = '送信に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  });
+
   function refreshAfterAdminChange() {
     imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt'; });
     promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
@@ -3135,146 +3559,84 @@
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
   }
 
-  // ADMIN EDIT MODAL
-  let adminEditBaseIds = [];
-  let adminEditParentId = '';
+  // ADMIN EDIT (投稿フォームを流用)
+  let adminEditingPost = null;
 
-  function adminLinkPillsHtml(items, isSelected) {
-    if (!items.length) return '<span style="color:var(--ink-dim); font-size:12px;">候補がありません</span>';
-    return items.map(function (it) {
-      const cls = isSelected(it) ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-link-id="' + escapeHtml(String(it.id)) + '">' +
-        (it.title ? escapeHtml(it.title) : '(無題)') + '</span>';
-    }).join('');
+  function isEditingImagePost() {
+    return !!adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt';
+  }
+  function isEditingPromptPost() {
+    return !!adminEditingPost && adminEditingPost.type === 'prompt';
+  }
+
+  function updateEditUi() {
+    const editingImage = isEditingImagePost();
+    const editingPrompt = isEditingPromptPost();
+    document.getElementById('submitBtn').textContent = editingImage ? '保存する' : '投稿する';
+    document.getElementById('pSubmitBtn').textContent = editingPrompt ? '保存する' : '投稿する';
+    document.getElementById('cancelEditBtn').style.display = editingImage ? '' : 'none';
+    document.getElementById('pCancelEditBtn').style.display = editingPrompt ? '' : 'none';
+    statusText.textContent = editingImage
+      ? '「' + (adminEditingPost.title || '(無題)') + '」を編集中'
+      : '';
+    document.getElementById('pStatusText').textContent = editingPrompt
+      ? '「' + (adminEditingPost.title || '(無題)') + '」を編集中'
+      : '';
   }
 
   function openAdminEdit(p) {
     const isImage = (p.type || 'image') !== 'prompt';
-    adminEditBaseIds = basePromptIdsOf(p);
-    adminEditParentId = String(p.parentId || '');
-
-    let linkBlocks = '';
-    if (isImage) {
-      linkBlocks =
-        '<label class="field-label">ベースにしたプロンプト例(クリックで選択 / もう一度クリックで解除)</label>' +
-        '<div class="tag-cloud" id="adminBaseCloud"></div>' +
-        '<label class="field-label">親作品(クリックで選択 / もう一度クリックで解除)</label>' +
-        '<div class="tag-cloud" id="adminParentCloud"></div>';
-    }
-
-    adminEditBody.innerHTML =
-      '<div class="modal-header">' +
-        '<h3 class="modal-title">投稿を編集</h3>' +
-        '<div class="modal-top-actions"><button class="modal-close" type="button" id="adminEditCloseBtn">✕ 閉じる</button></div>' +
-      '</div>' +
-      '<label class="field-label">タイトル</label>' +
-      '<input type="text" id="adminEditTitle" value="' + escapeHtml(p.title || '') + '">' +
-      '<label class="field-label">投稿者</label>' +
-      '<input type="text" id="adminEditAuthor" value="' + escapeHtml(p.author || '') + '">' +
-      '<label class="field-label">プロンプト</label>' +
-      '<textarea id="adminEditPrompt">' + escapeHtml(p.prompt || '') + '</textarea>' +
-      '<label class="field-label">ネガティブプロンプト</label>' +
-      '<textarea id="adminEditNegative">' + escapeHtml(p.negativePrompt || '') + '</textarea>' +
-      '<label class="field-label">メモ(備考)</label>' +
-      '<textarea id="adminEditMemo">' + escapeHtml(p.memo || '') + '</textarea>' +
-      '<label class="field-label">タグ(カンマ区切り)</label>' +
-      '<input type="text" id="adminEditTags" value="' + escapeHtml((p.tags || []).join(', ')) + '">' +
-      linkBlocks +
-      '<div class="admin-modal-status" id="adminEditStatus"></div>' +
-      '<div class="submit-row">' +
-        '<button class="btn-submit" type="button" id="adminEditSaveBtn">保存する</button>' +
-      '</div>';
+    adminEditingPost = p;
+    closeModal();
+    switchTab('post');
+    setPostMode(isImage ? 'image' : 'prompt');
 
     if (isImage) {
-      renderAdminLinkClouds(p);
+      document.getElementById('titleInput').value = p.title || '';
+      document.getElementById('authorInput').value = p.author || '';
+      document.getElementById('promptInput').value = p.prompt || '';
+      document.getElementById('negativeInput').value = p.negativePrompt || '';
+      document.getElementById('memoInput').value = p.memo || '';
+      allSettingsFields().forEach(function (f) {
+        const el = document.getElementById(f.id);
+        if (el) el.value = (p.settings && p.settings[f.key]) || '';
+      });
+      selectedTags = (p.tags || []).slice();
+      renderChips();
+      selectedBasePromptIds = basePromptIdsOf(p);
+      renderBasePromptDisplay();
+      selectedParentId = String(p.parentId || '');
+      renderParentDisplay();
+      clearSelectedImage();
+    } else {
+      document.getElementById('pTitleInput').value = p.title || '';
+      document.getElementById('pAuthorInput').value = p.author || '';
+      document.getElementById('pPromptInput').value = p.prompt || '';
+      document.getElementById('pNegativeInput').value = p.negativePrompt || '';
+      document.getElementById('pMemoInput').value = p.memo || '';
+      SETTINGS_FIELDS.forEach(function (f) {
+        const el = document.getElementById('pset_' + f.key);
+        if (el) el.value = (p.settings && p.settings[f.key]) || '';
+      });
+      pSelectedTags = (p.tags || []).slice();
+      renderPromptChips();
     }
 
-    document.getElementById('adminEditCloseBtn').addEventListener('click', closeAdminEditModal);
-    document.getElementById('adminEditSaveBtn').addEventListener('click', function () { saveAdminEdit(p); });
-    adminEditOverlay.classList.add('open');
+    document.querySelectorAll('textarea.autogrow').forEach(autoGrow);
+    updateEditUi();
+    window.scrollTo(0, 0);
   }
 
-  function renderAdminLinkClouds(p) {
-    const baseCloud = document.getElementById('adminBaseCloud');
-    const parentCloud = document.getElementById('adminParentCloud');
-    const parentCandidates = imagePosts.filter(function (ip) {
-      return !ip.parentId && String(ip.id) !== String(p.id);
-    });
-
-    baseCloud.innerHTML = adminLinkPillsHtml(promptPosts, function (it) {
-      return adminEditBaseIds.indexOf(String(it.id)) !== -1;
-    });
-    parentCloud.innerHTML = adminLinkPillsHtml(parentCandidates, function (it) {
-      return adminEditParentId === String(it.id);
-    });
-
-    baseCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const id = pill.dataset.linkId;
-        const idx = adminEditBaseIds.indexOf(id);
-        if (idx === -1) adminEditBaseIds.push(id); else adminEditBaseIds.splice(idx, 1);
-        renderAdminLinkClouds(p);
-      });
-    });
-    parentCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const id = pill.dataset.linkId;
-        adminEditParentId = (adminEditParentId === id) ? '' : id;
-        renderAdminLinkClouds(p);
-      });
-    });
+  function cancelAdminEdit() {
+    adminEditingPost = null;
+    resetImageForm();
+    resetPromptForm();
+    updateEditUi();
   }
 
-  function closeAdminEditModal() {
-    adminEditOverlay.classList.remove('open');
-    adminEditBody.innerHTML = '';
-  }
-  adminEditOverlay.addEventListener('click', function (e) { if (e.target === adminEditOverlay) closeAdminEditModal(); });
+  document.getElementById('cancelEditBtn').addEventListener('click', cancelAdminEdit);
+  document.getElementById('pCancelEditBtn').addEventListener('click', cancelAdminEdit);
 
-  async function saveAdminEdit(p) {
-    const isImage = (p.type || 'image') !== 'prompt';
-    const status = document.getElementById('adminEditStatus');
-    const tags = document.getElementById('adminEditTags').value
-      .split(',').map(function (t) { return t.trim(); }).filter(Boolean);
-    const payload = {
-      action: 'adminUpdate',
-      password: adminPassword,
-      id: p.id,
-      title: document.getElementById('adminEditTitle').value,
-      author: document.getElementById('adminEditAuthor').value,
-      prompt: document.getElementById('adminEditPrompt').value,
-      negativePrompt: document.getElementById('adminEditNegative').value,
-      memo: document.getElementById('adminEditMemo').value,
-      tags: tags,
-      basePromptId: isImage ? adminEditBaseIds.join(',') : '',
-      parentId: isImage ? adminEditParentId : ''
-    };
-
-    status.textContent = '';
-    showLoading('保存中...');
-    try {
-      const result = await postAction(payload);
-      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
-
-      p.title = payload.title;
-      p.author = payload.author;
-      p.prompt = payload.prompt;
-      p.negativePrompt = payload.negativePrompt;
-      p.memo = payload.memo;
-      p.tags = tags;
-      p.basePromptId = payload.basePromptId;
-      p.parentId = payload.parentId;
-
-      refreshAfterAdminChange();
-      closeAdminEditModal();
-      if (isImage) openModal(p); else openPromptModal(p);
-    } catch (err) {
-      status.textContent = '保存に失敗しました: ' + (err.message || err);
-      console.error(err);
-    } finally {
-      hideLoading();
-    }
-  }
 
   async function adminDeletePost(p) {
     const title = p.title || '(無題)';
@@ -3295,6 +3657,7 @@
       });
 
       refreshAfterAdminChange();
+      if (adminEditingPost && String(adminEditingPost.id) === String(p.id)) cancelAdminEdit();
       closeModal();
     } catch (err) {
       window.alert('削除に失敗しました: ' + (err.message || err));
