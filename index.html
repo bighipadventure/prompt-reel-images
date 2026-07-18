@@ -3703,7 +3703,11 @@
   }
   function closeRefLightbox() { refLightboxOverlay.classList.remove('open'); }
   document.getElementById('refLightboxCloseBtn').addEventListener('click', closeRefLightbox);
-  refLightboxOverlay.addEventListener('click', function (e) { if (e.target === refLightboxOverlay) closeRefLightbox(); });
+  refLightboxOverlay.addEventListener('click', function (e) {
+    if (e.target === refLightboxOverlay || e.target.classList.contains('full-image-inner') || e.target.classList.contains('full-image-wrap')) {
+      closeRefLightbox();
+    }
+  });
 
   // BOARD (掲示板)
   const boardList = document.getElementById('boardList');
