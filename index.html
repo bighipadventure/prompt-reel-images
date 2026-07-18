@@ -156,7 +156,7 @@
   }
   .preview-frame{ position: relative; display:inline-block; }
   .preview-clear{
-    position: absolute; top: -10px; right: -10px;
+    position: absolute; top: -10px; right: -10px; z-index: 2;
     width: 26px; height: 26px; padding: 0;
     border-radius: 50%;
     background: var(--surface); color: var(--ink);
@@ -166,7 +166,7 @@
   }
   .preview-clear:hover{ color: var(--danger); border-color: var(--danger); }
   .dropzone .preview img{
-    max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line);
+    max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); cursor: zoom-in;
   }
 
   input[type="text"], input[type="number"]{
@@ -584,8 +584,26 @@
   .full-image-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding: 12px 16px 22px; }
 
   /* ---- 投稿モード切替 / プロンプト連携 ---- */
-  .post-mode-toggle{ width: max-content; margin-bottom: 22px; }
-  .base-prompt-select{ display:flex; align-items:flex-start; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  .post-mode-tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 22px; }
+  .post-mode-btn{
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    padding: 9px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .post-mode-btn:hover{ color: var(--ink); }
+  .post-mode-btn.active{ background: var(--accent); color: #fff; border-color: var(--accent); }
+  .base-prompt-select{ display:flex; align-items:center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+
+  /* リクエスト参考資料: 画像投稿と同じ見た目のドロップゾーン(控えめサイズ) */
+  .dropzone.dropzone-compact{ min-height: 150px; padding: 20px; }
+  .dropzone.dropzone-compact .dz-icon{ width: 44px; height: 44px; margin-bottom: 10px; }
+  .dropzone.dropzone-compact .dz-icon svg{ width: 22px; height: 22px; }
+  .dropzone.dropzone-compact .dz-title{ font-size: 13.5px; }
+  .dropzone.dropzone-compact .dz-sub{ font-size: 11.5px; }
   .base-prompt-display{ display:flex; flex-wrap:wrap; gap:8px; flex:1 1 200px; min-width:0; }
   .base-prompt-display .base-none{ color: var(--ink-dim); font-size: 12px; font-family:'Noto Sans JP',sans-serif; align-self:center; }
   .base-prompt-display .chip{ max-width:100%; }
@@ -645,6 +663,38 @@
   body.opt-no-likecount .sort-chip[data-field="likeCount"]{ display:none; }
   body.opt-no-dlcount .sort-chip[data-field="downloadCount"]{ display:none; }
   body.opt-no-comment .comment-toggle-btn{ display:none; }
+  body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
+
+  /* ---- 参考資料アップローダ ---- */
+  .ref-uploader{ margin-top: 6px; }
+  .ref-thumbs{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+  .ref-thumb{
+    position: relative; width: 110px; height: 110px;
+  }
+  .ref-thumb img{
+    width:100%; height:100%; object-fit: cover; display:block;
+    border-radius: 10px; border: 1px solid var(--line);
+    background: var(--surface-2); cursor: zoom-in;
+  }
+  .ref-thumb .ref-remove{
+    position:absolute; top:-8px; right:-8px; z-index:2;
+    width:24px; height:24px; padding:0; border-radius:50%;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    font-size:12px; line-height:1; display:flex; align-items:center; justify-content:center;
+  }
+  .ref-thumb .ref-remove:hover{ color: var(--danger); border-color: var(--danger); }
+
+  /* ---- 参考資料ギャラリー(詳細) ---- */
+  .ref-gallery{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
+  .ref-gallery a{ display:block; width:140px; height:140px; border-radius:10px; overflow:hidden; border:1px solid var(--line); }
+  .ref-gallery img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* ---- リクエスト行 ---- */
+  .row-requested{ color: var(--accent); }
+  .request-link{ font-weight: 500; word-break: break-word; }
+
+  /* ---- 掲示板 ---- */
+  .board-item .comment-name{ color: var(--ink); }
 
   /* ---- コメント ---- */
   .comment-toggle-btn{
@@ -694,6 +744,7 @@
     <div class="eyebrow">仲間内で使う画像＆プロンプト共有ボード</div>
     <h1>Prompt Reel</h1>
     <p>画像とStable Diffusionの生成設定をまとめて記録・共有できます。</p>
+    <p>ログイン要求は一切ないため、管理者や他利用者にも完全匿名で利用できます。</p>
     <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
     <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
   </header>
@@ -702,6 +753,8 @@
     <button class="tab-btn" data-tab="post">投稿</button>
     <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
     <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
+    <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
+    <button class="tab-btn" data-tab="board">掲示板</button>
     <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
     <button class="tab-btn" data-tab="guide">はじめてガイド</button>
   </nav>
@@ -709,9 +762,10 @@
   <!-- ============ 投稿タブ ============ -->
   <div class="tab-panel" id="tab-post">
 
-    <div class="mode-toggle post-mode-toggle" id="postModeToggle">
-      <button type="button" data-postmode="image" class="active">画像を投稿</button>
-      <button type="button" data-postmode="prompt">プロンプト例を投稿</button>
+    <div class="post-mode-tabs" id="postModeToggle">
+      <button type="button" data-postmode="image" class="post-mode-btn active">画像を投稿</button>
+      <button type="button" data-postmode="prompt" class="post-mode-btn">プロンプト例を投稿</button>
+      <button type="button" data-postmode="request" class="post-mode-btn">リクエストを投稿</button>
     </div>
 
     <section class="panel" id="imagePostForm">
@@ -759,6 +813,12 @@
       <div class="base-prompt-select">
         <button class="btn-ghost" id="pickParentBtn" type="button">親作品を選択</button>
         <span id="parentDisplay" class="base-prompt-display"></span>
+      </div>
+
+      <label class="field-label">応えるリクエスト(任意 / リクエストへの回答として投稿するとき)</label>
+      <div class="base-prompt-select">
+        <button class="btn-ghost" id="pickRequestBtn" type="button">リクエストを選択</button>
+        <span id="requestDisplay" class="base-prompt-display"></span>
       </div>
 
       <label class="field-label">生成設定(任意 / 画像ドロップで自動入力)</label>
@@ -822,6 +882,42 @@
         <button class="btn-submit" id="pSubmitBtn" type="button">投稿する</button>
         <button class="btn-ghost" id="pCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
         <span class="status" id="pStatusText"></span>
+      </div>
+    </section>
+
+    <section class="panel" id="requestPostForm" style="display:none;">
+      <h2>リクエストを投稿</h2>
+
+      <label class="field-label">タイトル</label>
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="rTitleInput" placeholder="例: 夕暮れの海辺に立つ猫耳の少女">
+
+      <div class="author-field">
+        <label class="field-label">投稿者(空欄で匿名)</label>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="rAuthorInput" list="dl_author" placeholder="匿名">
+      </div>
+
+      <label class="field-label">リクエスト内容</label>
+      <textarea id="rBodyInput" class="autogrow" placeholder="どんな画像を生成してほしいか、できるだけ具体的に書いてください"></textarea>
+
+      <label class="field-label">参考資料(任意・複数可 / jpegに変換・縮小して保存されます)</label>
+      <div class="dropzone dropzone-compact" id="rDropzone">
+        <div class="dz-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+        </div>
+        <div class="dz-title">ここに画像をドラッグ&ドロップ</div>
+        <div class="dz-sub">または<span class="dz-browse">クリックしてファイルを選択</span><br>複数枚まとめて追加できます</div>
+        <input type="file" id="rRefInput" accept="image/*" multiple>
+      </div>
+      <div class="ref-thumbs" id="rRefThumbs"></div>
+
+      <div class="submit-row">
+        <button class="btn-submit" id="rSubmitBtn" type="button">投稿する</button>
+        <button class="btn-ghost" id="rCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
+        <span class="status" id="rStatusText"></span>
       </div>
     </section>
   </div>
@@ -907,6 +1003,59 @@
     <div class="empty" id="pEmptyState" style="display:none;">条件に一致するプロンプト投稿がありません。</div>
   </div>
 
+  <!-- ============ リクエスト一覧タブ ============ -->
+  <div class="tab-panel" id="tab-requestBrowse">
+
+    <div class="search-panel">
+      <div class="search-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="rSortChips"></div>
+      </div>
+      <div class="search-row">
+        <span class="label">絞り込み</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="rFilterAuthor" list="dl_author" placeholder="投稿者">
+        <button class="clear-tags" id="rClearFiltersBtn" type="button">絞り込みをクリア</button>
+      </div>
+      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
+        投稿されたリクエストの一覧です。リクエストを開くと、それに応えて投稿された画像作品がその下にまとめて表示されます。
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <span class="count" id="rPostCount"></span>
+    </div>
+
+    <div class="list" id="rList"></div>
+    <div class="empty" id="rEmptyState" style="display:none;">条件に一致するリクエストがありません。</div>
+  </div>
+
+  <!-- ============ 掲示板タブ ============ -->
+  <div class="tab-panel" id="tab-board">
+    <section class="panel">
+      <h2>掲示板</h2>
+
+      <div class="author-field">
+        <label class="field-label">お名前(任意)</label>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="boardNameInput" placeholder="匿名で投稿できます">
+      </div>
+
+      <label class="field-label">メッセージ</label>
+      <textarea id="boardBodyInput" class="autogrow" placeholder="ご自由にどうぞ"></textarea>
+
+      <div class="submit-row">
+        <button class="btn-submit" id="boardSubmitBtn" type="button">投稿する</button>
+        <span class="status" id="boardStatus"></span>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <span class="count" id="boardCount"></span>
+    </div>
+
+    <div class="comment-list" id="boardList"></div>
+    <div class="empty" id="boardEmpty" style="display:none;">まだ投稿がありません。最初のひとことを書いてみましょう。</div>
+  </div>
+
   <!-- ============ 本ツールの使い方タブ ============ -->
   <div class="tab-panel" id="tab-usage">
     <section class="panel">
@@ -969,12 +1118,12 @@
 
       <div class="qa-item">
         <div class="qa-q">投稿した作品(画像・プロンプト例)は削除できますか？</div>
-        <div class="qa-a">投稿者自身による削除機能はありません。削除は管理人のみが対応できるため、消したい投稿がある場合は管理人へ削除依頼を出してください。依頼の際は、どの投稿かが分かるようにタイトルや共有URLを添えてもらえると確実です。</div>
+        <div class="qa-a">投稿者自身による削除機能はありません。削除は管理者のみが対応できるため、消したい投稿がある場合は管理者へ削除依頼を出してください。依頼の際は、どの投稿かが分かるようにタイトルや共有URLを添えてもらえると確実です。</div>
       </div>
 
       <div class="qa-item">
-        <div class="qa-q">個人情報が管理人や第三者にバレませんか？</div>
-        <div class="qa-a">バレません。本ツールはGoogleアカウントでのログインを一切要求せず、投稿も閲覧もすべて匿名のリクエストとして処理されます。管理人側に届く(スプレッドシートに記録される)のは、あなたがフォームに入力した内容と画像そのものだけで、IPアドレスやアカウント情報を管理人が知る手段は仕組み上ありません。他の利用者に対しても同様で、投稿者名は任意入力・空欄なら「匿名」と表示されるだけです。ただし、投稿者名・タイトル・メモ・プロンプトに自分で本名や連絡先などを書けば、それは管理人にも他の閲覧者にも見えます。また画像のメタデータ(生成情報)に個人的な情報が含まれる場合があるため、気になる場合は投稿前に内容を確認してください。</div>
+        <div class="qa-q">個人情報が管理者や第三者にバレませんか？</div>
+        <div class="qa-a">バレません。本ツールはGoogleアカウントでのログインを一切要求せず、投稿も閲覧もすべて匿名のリクエストとして処理されます。管理者側に届く(スプレッドシートに記録される)のは、あなたがフォームに入力した内容と画像そのものだけで、IPアドレスやアカウント情報を管理者が知る手段は仕組み上ありません。他の利用者に対しても同様で、投稿者名は任意入力・空欄なら「匿名」と表示されるだけです。ただし、投稿者名・タイトル・メモ・プロンプトに自分で本名や連絡先などを書けば、それは管理者にも他の閲覧者にも見えます。また画像のメタデータ(生成情報)に個人的な情報が含まれる場合があるため、気になる場合は投稿前に内容を確認してください。</div>
       </div>
 
       <div class="qa-item">
@@ -999,7 +1148,7 @@
 
       <div class="qa-item">
         <div class="qa-q">投稿した内容は後から編集できますか？</div>
-        <div class="qa-a">投稿後の編集機能はありません。内容を直したい場合は、投稿し直すか、管理人へ相談してください。</div>
+        <div class="qa-a">投稿後の編集機能はありません。内容を直したい場合は、投稿し直すか、管理者へ相談してください。</div>
       </div>
 
       <div class="qa-item">
@@ -1009,8 +1158,8 @@
     </section>
 
     <section class="panel" id="contactSection">
-      <h2>管理人へ連絡する</h2>
-      <p style="font-size:13.5px; color:var(--ink-dim); line-height:1.8; margin-bottom:14px;">削除依頼・不具合の報告・ご要望などを管理人へ送れます。返信はできませんので、連絡先が必要な場合は本文に記載してください(任意)。</p>
+      <h2>管理者へ連絡する</h2>
+      <p style="font-size:13.5px; color:var(--ink-dim); line-height:1.8; margin-bottom:14px;">削除依頼・不具合の報告・ご要望などを管理者へ送れます。返信はできませんので、連絡先が必要な場合は本文に記載してください(任意)。</p>
       <label class="field-label">お名前・連絡先(任意)</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="contactName" placeholder="任意(空欄でも送信できます)">
       <label class="field-label">メッセージ</label>
@@ -1284,6 +1433,27 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="requestModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="requestModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">応えるリクエストを選択</h3>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="requestSearch" placeholder="タイトル・投稿者・内容で検索" style="flex:1 1 200px; width:auto;">
+      <button class="btn-ghost" id="clearRequestBtn" type="button">紐づけなしにする</button>
+    </div>
+    <div class="sort-chips" id="requestSortChips" style="margin-bottom:14px;"></div>
+    <div class="list" id="requestPickerList"></div>
+    <div class="empty" id="requestPickerEmpty" style="display:none;">リクエスト投稿がまだありません。</div>
+  </div>
+</div>
+
+<div class="modal-overlay full-image-overlay" id="refLightboxOverlay">
+  <div class="full-image-inner">
+    <button class="modal-close" type="button" id="refLightboxCloseBtn">✕ 閉じる</button>
+    <div class="full-image-wrap"><img id="refLightboxImg" alt="参考資料"></div>
+  </div>
+</div>
+
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <span id="loadingText">読み込み中...</span>
@@ -1339,8 +1509,10 @@
   let posts = [];
   let imagePosts = [];
   let promptPosts = [];
+  let requestPosts = [];
   let allComments = [];
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true };
+  let allBoard = [];
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
@@ -1352,6 +1524,9 @@
   let pTagMatchMode = 'AND';
   let selectedBasePromptIds = [];
   let selectedParentId = '';
+  let selectedRequestId = '';
+  let requestRefs = [];
+  let rSortKeys = [{ field: 'date', dir: 'desc' }];
 
   function basePromptIdsOf(post) {
     return String((post && post.basePromptId) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -1364,6 +1539,12 @@
     { key: 'checkpoint', label: 'Checkpoint' }
   ];
   let pSortKeys = [{ field: 'date', dir: 'desc' }];
+
+  const REQUEST_SORT_FIELDS = [
+    { key: 'date',      label: '日時' },
+    { key: 'likeCount', label: 'いいね' },
+    { key: 'author',    label: '投稿者' }
+  ];
 
   const SORT_FIELDS = [
     { key: 'date',          label: '日時' },
@@ -1388,6 +1569,8 @@
     document.getElementById('tab-' + name).classList.add('active');
     if (name === 'browse') { renderList(); applyBrowseTagClamp(); }
     if (name === 'promptBrowse') { renderPromptList(); applyPromptBrowseTagClamp(); }
+    if (name === 'requestBrowse') { renderRequestList(); }
+    if (name === 'board') { renderBoard(); }
     if (name === 'post') { applyPostTagClamp(); if (currentPostMode() === 'prompt') applyPromptFormTagClamp(); }
   }
   document.querySelectorAll('.tab-btn').forEach(function (btn) {
@@ -1494,6 +1677,10 @@
   document.getElementById('clearImageBtn').addEventListener('click', function (e) {
     e.stopPropagation();
     clearSelectedImage();
+  });
+  previewImg.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (previewImg.src) openRefLightbox(previewImg.src);
   });
 
   dropzone.addEventListener('click', function () { imageInput.click(); });
@@ -1784,10 +1971,12 @@
       const data = await jsonpRequest(GAS_URL);
       posts = data.posts || [];
       allComments = data.comments || [];
+      allBoard = data.board || [];
       options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
       applyOptionsToUi();
-      imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt'; });
+      imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request'; });
       promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
+      requestPosts = posts.filter(function (p) { return p.type === 'request'; });
       collectDynamicKeysFromPosts();
       rebuildSettingsGrid();
       rebuildTagUI();
@@ -1797,8 +1986,11 @@
       renderPromptChips();
       rebuildPromptBrowseTagUI();
       renderBasePromptDisplay();
+      renderRequestDisplay();
       if (document.getElementById('tab-browse').classList.contains('active')) renderList();
       if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
+      if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
+      if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
       statusText.textContent = '';
     } catch (err) {
       statusText.textContent = '読み込みに失敗しました';
@@ -2174,6 +2366,8 @@
     renderBasePromptDisplay();
     selectedParentId = '';
     renderParentDisplay();
+    selectedRequestId = '';
+    renderRequestDisplay();
   }
 
   document.getElementById('submitBtn').addEventListener('click', async function () {
@@ -2199,7 +2393,8 @@
         tags: selectedTags,
         type: 'image',
         basePromptId: selectedBasePromptIds.join(','),
-        parentId: selectedParentId
+        parentId: selectedParentId,
+        requestId: selectedRequestId
       };
       if (editing) {
         payload.action = 'adminUpdate';
@@ -2284,9 +2479,13 @@
     document.body.classList.toggle('opt-no-likecount', !options.likeCount);
     document.body.classList.toggle('opt-no-dlcount', !options.downloadCount);
     document.body.classList.toggle('opt-no-comment', !options.comment);
+    document.body.classList.toggle('opt-no-board', !options.board);
     document.querySelectorAll('.author-field').forEach(function (el) {
       el.style.display = options.author ? '' : 'none';
     });
+    if (!options.board && document.getElementById('tab-board').classList.contains('active')) {
+      switchTab('browse');
+    }
   }
 
   function commentsFor(postId) {
@@ -2390,6 +2589,9 @@
   function imageRowHtml(p, thumbSize) {
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
+    const uiPreset = (p.settings && p.settings.uiPreset) || '';
+    const checkpoint = (p.settings && p.settings.checkpoint) || '';
+    const tags = sortJa((p.tags || []).slice());
     return '' +
       '<div class="row" data-id="' + p.id + '">' +
         '<div class="row-counts">' + countBadgesHtml(p) + '</div>' +
@@ -2397,8 +2599,11 @@
           '<div class="row-thumb">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
             '<div class="row-title">' + title + '</div>' +
-            '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span></div>' +
-            (p.tags && p.tags.length ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+            '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span>' +
+              (uiPreset ? '<span>UI Preset: ' + escapeHtml(uiPreset) + '</span>' : '') +
+              (checkpoint ? '<span>Checkpoint: ' + escapeHtml(checkpoint) + '</span>' : '') +
+            '</div>' +
+            (tags.length ? '<div class="row-tags">' + tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -2496,6 +2701,15 @@
           (parent.title ? escapeHtml(parent.title) : '(無題)') + '</a></div></div>'
       : '';
 
+    const request = p.requestId
+      ? requestPosts.find(function (rp) { return String(rp.id) === String(p.requestId); })
+      : null;
+    const requestBlock = request
+      ? '<div class="detail-block"><div class="label">応えたリクエスト</div>' +
+          '<div class="value"><a href="#" class="request-post-link request-link" data-request-id="' + escapeHtml(String(request.id)) + '">' +
+          escapeHtml(requestLabel(request)) + '</a></div></div>'
+      : '';
+
     const children = imagePosts.filter(function (ip) { return String(ip.parentId) === String(p.id); });
     children.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const childrenBlock = children.length
@@ -2515,10 +2729,11 @@
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
-      '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
       baseBlock +
       parentBlock +
+      requestBlock +
       '<div class="detail-block">' +
         '<div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
         '<div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div>' +
@@ -2561,6 +2776,15 @@
         e.preventDefault();
         const pp = imagePosts.find(function (ip) { return String(ip.id) === String(parentLink.dataset.postId); });
         if (pp) openModal(pp);
+      });
+    }
+
+    const requestLink = modalBody.querySelector('.request-post-link');
+    if (requestLink) {
+      requestLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        const rp = requestPosts.find(function (x) { return String(x.id) === String(requestLink.dataset.requestId); });
+        if (rp) { switchTab('requestBrowse'); openRequestModal(rp); }
       });
     }
 
@@ -2614,7 +2838,7 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlMenu(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlMenu(); }
   });
 
   async function postAction(payload) {
@@ -2685,6 +2909,7 @@
     });
     if (post) {
       if (post.type === 'prompt') { switchTab('promptBrowse'); openPromptModal(post); }
+      else if (post.type === 'request') { switchTab('requestBrowse'); openRequestModal(post); }
       else { switchTab('browse'); openModal(post); }
     }
   }
@@ -2812,6 +3037,7 @@
     });
     document.getElementById('imagePostForm').style.display = mode === 'image' ? '' : 'none';
     document.getElementById('promptPostForm').style.display = mode === 'prompt' ? '' : 'none';
+    document.getElementById('requestPostForm').style.display = mode === 'request' ? '' : 'none';
     if (mode === 'prompt') rebuildPromptFormTagCloud(); else applyPostTagClamp();
   }
 
@@ -3032,7 +3258,7 @@
     basePromptListEl.innerHTML = items.map(function (p) {
       const title = p.title ? escapeHtml(p.title) : '(無題)';
       const author = authorHtml(p);
-      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
       const selected = selectedBasePromptIds.some(function (id) { return String(id) === String(p.id); });
       return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
         '<div class="row-title">' + (selected ? '✓ ' : '') + title + '</div>' +
@@ -3102,7 +3328,7 @@
     parentListEl.innerHTML = items.map(function (p) {
       const title = p.title ? escapeHtml(p.title) : '(無題)';
       const author = authorHtml(p);
-      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
       return '<div class="row" data-id="' + p.id + '"><div class="row-main">' +
         '<div class="row-thumb">' + imageTag(p.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
         '<div class="row-body">' +
@@ -3133,6 +3359,420 @@
   parentModalOverlay.addEventListener('click', function (e) { if (e.target === parentModalOverlay) closeParentModal(); });
   document.getElementById('parentSearch').addEventListener('input', function () { renderParentList(this.value); });
   document.getElementById('clearParentBtn').addEventListener('click', function () { selectedParentId = ''; renderParentDisplay(); closeParentModal(); });
+
+  /* ===== REQUEST FEATURE ===== */
+  const REF_MAX_DIM = 1280;
+  const REF_JPEG_QUALITY = 0.82;
+
+  function resizeToJpeg(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          const scale = Math.min(1, REF_MAX_DIM / Math.max(w, h));
+          w = Math.max(1, Math.round(w * scale));
+          h = Math.max(1, Math.round(h * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', REF_JPEG_QUALITY));
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const rRefThumbs = document.getElementById('rRefThumbs');
+  const rRefInput = document.getElementById('rRefInput');
+  const rDropzone = document.getElementById('rDropzone');
+
+  function renderRefThumbs() {
+    rRefThumbs.innerHTML = requestRefs.map(function (r, i) {
+      const src = r.kind === 'existing' ? imageSrcFor(r.url, 'w320') : r.dataUrl;
+      return '<div class="ref-thumb"><img src="' + escapeHtml(src) + '" alt="参考資料" data-ref-view="' + i + '">' +
+        '<button class="ref-remove" type="button" data-ref-idx="' + i + '" title="削除">✕</button></div>';
+    }).join('');
+    rRefThumbs.querySelectorAll('[data-ref-view]').forEach(function (img) {
+      img.addEventListener('click', function () {
+        const r = requestRefs[Number(img.dataset.refView)];
+        if (r) openRefLightbox(r.kind === 'existing' ? r.url : r.dataUrl);
+      });
+    });
+    rRefThumbs.querySelectorAll('[data-ref-idx]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        requestRefs.splice(Number(btn.dataset.refIdx), 1);
+        renderRefThumbs();
+      });
+    });
+  }
+
+  async function addRefFiles(fileList) {
+    const files = Array.from(fileList || []).filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    showLoading('画像を処理中...');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const dataUrl = await resizeToJpeg(files[i]);
+        requestRefs.push({ kind: 'new', dataUrl: dataUrl });
+      }
+      renderRefThumbs();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('rStatusText').textContent = '画像の処理に失敗しました';
+    } finally {
+      hideLoading();
+    }
+  }
+
+  rDropzone.addEventListener('click', function () { rRefInput.click(); });
+  rDropzone.addEventListener('dragover', function (e) { e.preventDefault(); rDropzone.classList.add('drag-over'); });
+  rDropzone.addEventListener('dragleave', function () { rDropzone.classList.remove('drag-over'); });
+  rDropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    rDropzone.classList.remove('drag-over');
+    if (e.dataTransfer && e.dataTransfer.files) addRefFiles(e.dataTransfer.files);
+  });
+  rRefInput.addEventListener('change', function () { addRefFiles(rRefInput.files); rRefInput.value = ''; });
+
+  function resetRequestForm() {
+    document.getElementById('rTitleInput').value = '';
+    document.getElementById('rAuthorInput').value = '';
+    document.getElementById('rBodyInput').value = '';
+    resetAutogrow();
+    requestRefs = [];
+    renderRefThumbs();
+  }
+
+  document.getElementById('rSubmitBtn').addEventListener('click', async function () {
+    const btn = this;
+    const rStatus = document.getElementById('rStatusText');
+    const bodyText = document.getElementById('rBodyInput').value.trim();
+    const editing = isEditingRequestPost();
+    if (!bodyText) { rStatus.textContent = 'リクエスト内容を入力してください'; return; }
+    if (GAS_URL.indexOf('ここに') === 0) { rStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
+
+    btn.disabled = true;
+    showLoading(editing ? '保存中...' : '投稿中...');
+    rStatus.textContent = '';
+
+    try {
+      const payload = {
+        type: 'request',
+        title: document.getElementById('rTitleInput').value,
+        author: document.getElementById('rAuthorInput').value,
+        prompt: bodyText
+      };
+      if (editing) {
+        payload.action = 'adminUpdate';
+        payload.password = adminPassword;
+        payload.id = adminEditingPost.id;
+        payload.keepReferenceImages = requestRefs.filter(function (r) { return r.kind === 'existing'; }).map(function (r) { return r.url; });
+        payload.newReferenceImages = requestRefs.filter(function (r) { return r.kind === 'new'; }).map(function (r) { return r.dataUrl; });
+      } else {
+        payload.referenceImages = requestRefs.filter(function (r) { return r.kind === 'new'; }).map(function (r) { return r.dataUrl; });
+      }
+
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || '不明なエラー');
+
+      rStatus.textContent = editing ? '保存しました' : '投稿しました';
+      const targetId = editing ? adminEditingPost.id : result.id;
+      if (editing) cancelAdminEdit(); else resetRequestForm();
+
+      await loadPosts();
+      switchTab('requestBrowse');
+      const posted = requestPosts.find(function (p) { return String(p.id) === String(targetId); });
+      if (posted) openRequestModal(posted);
+    } catch (err) {
+      document.getElementById('rStatusText').textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  });
+
+  // REQUEST PICKER (画像投稿フォーム用)
+  const requestModalOverlay = document.getElementById('requestModalOverlay');
+  const requestPickerListEl = document.getElementById('requestPickerList');
+  const requestPickerEmptyEl = document.getElementById('requestPickerEmpty');
+  let requestSortKeys = [{ field: 'date', dir: 'desc' }];
+
+  function requestLabel(p) {
+    if (p.title) return p.title;
+    const firstLine = String(p.prompt || '').replace(/\r/g, '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean)[0];
+    return firstLine || '(無題)';
+  }
+
+  function renderRequestDisplay() {
+    const el = document.getElementById('requestDisplay');
+    if (!el) return;
+    const p = selectedRequestId ? requestPosts.find(function (x) { return String(x.id) === String(selectedRequestId); }) : null;
+    if (!p) { el.innerHTML = ''; return; }
+    el.innerHTML = '<span class="chip"><span class="chip-label">' + escapeHtml(requestLabel(p)) + '</span><button type="button" id="clearRequestInline">×</button></span>';
+    document.getElementById('clearRequestInline').addEventListener('click', function () { selectedRequestId = ''; renderRequestDisplay(); });
+  }
+
+  function renderRequestPickerList(q) {
+    q = (q || '').trim().toLowerCase();
+    requestPickerEmptyEl.style.display = requestPosts.length ? 'none' : 'block';
+    const items = requestPosts.filter(function (p) {
+      if (!q) return true;
+      const hay = (String(p.title || '') + ' ' + String(p.author || '') + ' ' + String(p.prompt || '')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    items.sort(function (a, b) { return compareWithKeys(a, b, requestSortKeys); });
+    requestPickerListEl.innerHTML = items.map(function (p) {
+      const title = escapeHtml(requestLabel(p));
+      const selected = String(selectedRequestId) === String(p.id);
+      return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
+        '<div class="row-title">' + (selected ? '✓ ' : '') + title + '</div>' +
+        '<div class="row-meta"><span>投稿者: ' + authorHtml(p) + '</span></div>' +
+        '</div></div></div>';
+    }).join('');
+    requestPickerListEl.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        selectedRequestId = String(selectedRequestId) === String(row.dataset.id) ? '' : row.dataset.id;
+        renderRequestDisplay();
+        renderRequestPickerList(document.getElementById('requestSearch').value);
+      });
+    });
+  }
+  function openRequestModal2() {
+    document.getElementById('requestSearch').value = '';
+    renderPickerSortChips(document.getElementById('requestSortChips'), REQUEST_SORT_FIELDS, requestSortKeys, function () {
+      renderRequestPickerList(document.getElementById('requestSearch').value);
+    });
+    renderRequestPickerList('');
+    requestModalOverlay.classList.add('open');
+  }
+  function closeRequestModal() { requestModalOverlay.classList.remove('open'); }
+
+  document.getElementById('pickRequestBtn').addEventListener('click', openRequestModal2);
+  document.getElementById('requestModalCloseBtn').addEventListener('click', closeRequestModal);
+  requestModalOverlay.addEventListener('click', function (e) { if (e.target === requestModalOverlay) closeRequestModal(); });
+  document.getElementById('requestSearch').addEventListener('input', function () { renderRequestPickerList(this.value); });
+  document.getElementById('clearRequestBtn').addEventListener('click', function () { selectedRequestId = ''; renderRequestDisplay(); closeRequestModal(); });
+
+  // REQUEST BROWSE
+  const rList = document.getElementById('rList');
+  const rEmptyState = document.getElementById('rEmptyState');
+  const rPostCount = document.getElementById('rPostCount');
+  const rSortChips = document.getElementById('rSortChips');
+
+  rList.addEventListener('error', handleImageError, true);
+
+  function renderRSortChips() {
+    rSortChips.innerHTML = REQUEST_SORT_FIELDS.map(function (f) {
+      const idx = rSortKeys.findIndex(function (k) { return k.field === f.key; });
+      const active = idx !== -1;
+      const dir = active ? rSortKeys[idx].dir : '';
+      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
+      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    }).join('');
+    rSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        const field = chip.dataset.field;
+        const idx = rSortKeys.findIndex(function (k) { return k.field === field; });
+        if (idx === -1) rSortKeys.push({ field: field, dir: 'desc' });
+        else if (rSortKeys[idx].dir === 'desc') rSortKeys[idx].dir = 'asc';
+        else rSortKeys.splice(idx, 1);
+        renderRSortChips();
+        renderRequestList();
+      });
+    });
+  }
+
+  document.getElementById('rFilterAuthor').addEventListener('input', renderRequestList);
+  document.getElementById('rClearFiltersBtn').addEventListener('click', function () {
+    document.getElementById('rFilterAuthor').value = '';
+    renderRequestList();
+  });
+
+  function requestAnswerCount(p) {
+    return imagePosts.filter(function (ip) { return String(ip.requestId) === String(p.id) && !ip.parentId; }).length;
+  }
+
+  function requestRowHtml(p) {
+    const title = escapeHtml(requestLabel(p));
+    const author = authorHtml(p);
+    const refCount = (p.referenceImages || []).length;
+    const refMeta = refCount ? '<span>参考資料 ' + refCount + '枚</span>' : '';
+    return '<div class="row prompt-row" data-id="' + p.id + '">' +
+      '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      '<div class="row-main"><div class="row-body">' +
+      '<div class="row-title">' + title + '</div>' +
+      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span>' + refMeta + '<span class="row-requested">回答作品 ' + requestAnswerCount(p) + '件</span></div>' +
+      (p.title ? '<div class="prompt-snippet">' + escapeHtml(p.prompt || '') + '</div>' : '') +
+      '</div></div></div>';
+  }
+
+  function renderRequestList() {
+    let filtered = requestPosts.slice();
+    const fAuthor = document.getElementById('rFilterAuthor').value.trim().toLowerCase();
+    filtered = filtered.filter(function (p) {
+      const author = String(p.author || '').toLowerCase();
+      if (fAuthor && author.indexOf(fAuthor) === -1) return false;
+      return true;
+    });
+    filtered.sort(function (a, b) { return compareWithKeys(a, b, rSortKeys); });
+
+    rPostCount.textContent = filtered.length + ' 件';
+    rEmptyState.style.display = filtered.length ? 'none' : 'block';
+    rList.innerHTML = filtered.map(requestRowHtml).join('');
+
+    rList.querySelectorAll('.like-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.stopPropagation(); toggleLike(btn.dataset.like); });
+    });
+    rList.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        const post = requestPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+        if (post) openRequestModal(post);
+      });
+    });
+  }
+
+  function refGalleryHtml(p) {
+    const refs = p.referenceImages || [];
+    if (!refs.length) return '';
+    return '<div class="detail-block"><div class="label">参考資料</div><div class="ref-gallery">' +
+      refs.map(function (u) {
+        return '<a href="#" class="ref-open" data-ref-url="' + escapeHtml(u) + '">' +
+          imageTag(u, { size: 'w320', lazy: true, alt: '参考資料' }) + '</a>';
+      }).join('') + '</div></div>';
+  }
+
+  function openRequestModal(p) {
+    const answers = imagePosts.filter(function (ip) { return String(ip.requestId) === String(p.id) && !ip.parentId; });
+    answers.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const answersHtml = answers.length
+      ? answers.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('')
+      : '<div class="linked-empty">まだこのリクエストに応えた投稿はありません。</div>';
+
+    modalBody.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">' + escapeHtml(requestLabel(p)) + '</h3>' +
+        '<div class="modal-top-actions">' +
+          adminActionButtonsHtml() +
+          '<button class="btn-ghost" type="button" id="requestShareBtn">共有</button>' +
+          '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span><span>リクエスト</span></div>' +
+      '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      '<div class="detail-block"><div class="label">リクエスト内容</div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
+      refGalleryHtml(p) +
+      commentToggleHtml(p) +
+      '<div class="linked-works-head">このリクエストに応えて投稿された作品 (' + answers.length + '件)</div>' +
+      '<div class="list" id="answerWorks">' + answersHtml + '</div>';
+
+    wireModalLikeButton();
+    wireCommentToggle(p);
+    wireAdminActionButtons(p);
+    document.getElementById('requestShareBtn').addEventListener('click', function () { sharePost(p, this); });
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    modalBody.querySelectorAll('.ref-open').forEach(function (a) {
+      a.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(a.dataset.refUrl); });
+    });
+    wireImageRows(document.getElementById('answerWorks'), { detailOnly: true });
+
+    modalOverlay.classList.add('open');
+  }
+
+  // 参考資料ライトボックス
+  const refLightboxOverlay = document.getElementById('refLightboxOverlay');
+  function openRefLightbox(url) {
+    document.getElementById('refLightboxImg').src = imageSrcFor(url, 'w1000');
+    refLightboxOverlay.classList.add('open');
+  }
+  function closeRefLightbox() { refLightboxOverlay.classList.remove('open'); }
+  document.getElementById('refLightboxCloseBtn').addEventListener('click', closeRefLightbox);
+  refLightboxOverlay.addEventListener('click', function (e) { if (e.target === refLightboxOverlay) closeRefLightbox(); });
+
+  // BOARD (掲示板)
+  const boardList = document.getElementById('boardList');
+  const boardEmpty = document.getElementById('boardEmpty');
+  const boardCount = document.getElementById('boardCount');
+
+  function boardItemHtml(m) {
+    const name = m.name ? escapeHtml(m.name) : '匿名';
+    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(m.id)) + '">削除</button>' : '';
+    return '<div class="comment-item board-item">' + delBtn +
+      '<div class="comment-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(m.timestamp) + '</span></div>' +
+      '<div class="comment-body">' + escapeHtml(m.body) + '</div>' +
+    '</div>';
+  }
+
+  function renderBoard() {
+    const items = allBoard.slice().sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    boardCount.textContent = items.length + ' 件';
+    boardEmpty.style.display = items.length ? 'none' : 'block';
+    boardList.innerHTML = items.map(boardItemHtml).join('');
+    boardList.querySelectorAll('[data-del-board]').forEach(function (btn) {
+      btn.addEventListener('click', function () { adminDeleteBoard(btn.dataset.delBoard); });
+    });
+  }
+
+  document.getElementById('boardSubmitBtn').addEventListener('click', async function () {
+    const btn = this;
+    const status = document.getElementById('boardStatus');
+    const body = document.getElementById('boardBodyInput').value.trim();
+    if (!body) { status.textContent = 'メッセージを入力してください'; return; }
+    status.textContent = '';
+    btn.disabled = true;
+    showLoading('送信中...');
+    try {
+      const result = await postAction({
+        action: 'board',
+        name: document.getElementById('boardNameInput').value,
+        body: body
+      });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      if (result.message) allBoard.push(result.message);
+      document.getElementById('boardBodyInput').value = '';
+      resetAutogrow();
+      status.textContent = '投稿しました';
+      renderBoard();
+    } catch (err) {
+      status.textContent = '送信に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  });
+
+  async function adminDeleteBoard(messageId) {
+    if (!window.confirm('この投稿を削除しますか？')) return;
+    showLoading('削除中...');
+    try {
+      const result = await postAction({ action: 'adminDeleteBoard', password: adminPassword, id: messageId });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      allBoard = allBoard.filter(function (m) { return String(m.id) !== String(messageId); });
+      renderBoard();
+    } catch (err) {
+      window.alert('削除に失敗しました: ' + (err.message || err));
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
 
   // PROMPT BROWSE: ソート
   function renderPromptSortChips() {
@@ -3246,7 +3886,7 @@
   function promptRowHtml(p) {
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
-    const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + p.tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+    const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
     return '<div class="row prompt-row" data-id="' + p.id + '">' +
       '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-main"><div class="row-body">' +
@@ -3314,7 +3954,7 @@
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
-      '<div class="row-tags">' + (p.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div></div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
@@ -3359,6 +3999,7 @@
     document.body.classList.toggle('admin-on', on);
     if (!on && adminEditingPost) cancelAdminEdit();
     if (modalOverlay.classList.contains('open')) closeModal();
+    if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
   }
 
   function openAdminAuthModal() {
@@ -3517,7 +4158,8 @@
     { key: 'likeCount', label: 'いいね数の表示', desc: 'オフにするといいね数を表示しません' },
     { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
     { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
-    { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になります' }
+    { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になります' },
+    { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
@@ -3568,6 +4210,7 @@
       renderPromptSortChips();
       if (document.getElementById('tab-browse').classList.contains('active')) renderList();
       if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
+      if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
       closeAdminOptionsModal();
     } catch (err) {
       status.textContent = '保存に失敗しました: ' + (err.message || err);
@@ -3577,7 +4220,7 @@
     }
   }
 
-  /* ===== CONTACT (管理人への連絡) ===== */
+  /* ===== CONTACT (管理者への連絡) ===== */
   document.getElementById('contactSubmitBtn').addEventListener('click', async function () {
     const btn = this;
     const status = document.getElementById('contactStatus');
@@ -3607,49 +4250,62 @@
   });
 
   function refreshAfterAdminChange() {
-    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt'; });
+    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request'; });
     promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
+    requestPosts = posts.filter(function (p) { return p.type === 'request'; });
     collectDynamicKeysFromPosts();
     rebuildTagUI();
     rebuildPostTagCloud();
     rebuildDatalists();
     rebuildPromptFormTagCloud();
     rebuildPromptBrowseTagUI();
+    renderRequestDisplay();
     if (document.getElementById('tab-browse').classList.contains('active')) renderList();
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
+    if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
   }
 
   // ADMIN EDIT (投稿フォームを流用)
   let adminEditingPost = null;
 
   function isEditingImagePost() {
-    return !!adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt';
+    return !!adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt' && adminEditingPost.type !== 'request';
   }
   function isEditingPromptPost() {
     return !!adminEditingPost && adminEditingPost.type === 'prompt';
+  }
+  function isEditingRequestPost() {
+    return !!adminEditingPost && adminEditingPost.type === 'request';
   }
 
   function updateEditUi() {
     const editingImage = isEditingImagePost();
     const editingPrompt = isEditingPromptPost();
+    const editingRequest = isEditingRequestPost();
     document.getElementById('submitBtn').textContent = editingImage ? '保存する' : '投稿する';
     document.getElementById('pSubmitBtn').textContent = editingPrompt ? '保存する' : '投稿する';
+    document.getElementById('rSubmitBtn').textContent = editingRequest ? '保存する' : '投稿する';
     document.getElementById('cancelEditBtn').style.display = editingImage ? '' : 'none';
     document.getElementById('pCancelEditBtn').style.display = editingPrompt ? '' : 'none';
+    document.getElementById('rCancelEditBtn').style.display = editingRequest ? '' : 'none';
     statusText.textContent = editingImage
       ? '「' + (adminEditingPost.title || '(無題)') + '」を編集中'
       : '';
     document.getElementById('pStatusText').textContent = editingPrompt
       ? '「' + (adminEditingPost.title || '(無題)') + '」を編集中'
       : '';
+    document.getElementById('rStatusText').textContent = editingRequest
+      ? '「' + requestLabel(adminEditingPost) + '」を編集中'
+      : '';
   }
 
   function openAdminEdit(p) {
-    const isImage = (p.type || 'image') !== 'prompt';
+    const type = p.type || 'image';
+    const isImage = type !== 'prompt' && type !== 'request';
     adminEditingPost = p;
     closeModal();
     switchTab('post');
-    setPostMode(isImage ? 'image' : 'prompt');
+    setPostMode(isImage ? 'image' : type);
 
     if (isImage) {
       document.getElementById('titleInput').value = p.title || '';
@@ -3667,8 +4323,10 @@
       renderBasePromptDisplay();
       selectedParentId = String(p.parentId || '');
       renderParentDisplay();
+      selectedRequestId = String(p.requestId || '');
+      renderRequestDisplay();
       clearSelectedImage();
-    } else {
+    } else if (type === 'prompt') {
       document.getElementById('pTitleInput').value = p.title || '';
       document.getElementById('pAuthorInput').value = p.author || '';
       document.getElementById('pPromptInput').value = p.prompt || '';
@@ -3680,6 +4338,12 @@
       });
       pSelectedTags = (p.tags || []).slice();
       renderPromptChips();
+    } else {
+      document.getElementById('rTitleInput').value = p.title || '';
+      document.getElementById('rAuthorInput').value = p.author || '';
+      document.getElementById('rBodyInput').value = p.prompt || '';
+      requestRefs = (p.referenceImages || []).map(function (u) { return { kind: 'existing', url: u }; });
+      renderRefThumbs();
     }
 
     document.querySelectorAll('textarea.autogrow').forEach(autoGrow);
@@ -3691,11 +4355,13 @@
     adminEditingPost = null;
     resetImageForm();
     resetPromptForm();
+    resetRequestForm();
     updateEditUi();
   }
 
   document.getElementById('cancelEditBtn').addEventListener('click', cancelAdminEdit);
   document.getElementById('pCancelEditBtn').addEventListener('click', cancelAdminEdit);
+  document.getElementById('rCancelEditBtn').addEventListener('click', cancelAdminEdit);
 
 
   async function adminDeletePost(p) {
@@ -3710,6 +4376,7 @@
       posts = posts.filter(function (x) { return String(x.id) !== String(p.id); });
       posts.forEach(function (x) {
         if (String(x.parentId) === String(p.id)) x.parentId = '';
+        if (String(x.requestId) === String(p.id)) x.requestId = '';
         const baseIds = basePromptIdsOf(x);
         if (baseIds.indexOf(String(p.id)) !== -1) {
           x.basePromptId = baseIds.filter(function (id) { return id !== String(p.id); }).join(',');
@@ -3734,6 +4401,9 @@
   syncPromptTagMatchModeButtons();
   renderBasePromptDisplay();
   renderParentDisplay();
+  renderRequestDisplay();
+  renderRSortChips();
+  renderRefThumbs();
   renderSortChips();
   loadPosts().then(openSharedFromUrl);
 </script>
