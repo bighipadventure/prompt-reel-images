@@ -663,6 +663,9 @@
   body.opt-no-likecount .sort-chip[data-field="likeCount"]{ display:none; }
   body.opt-no-dlcount .sort-chip[data-field="downloadCount"]{ display:none; }
   body.opt-no-author .sort-chip[data-field="author"]{ display:none; }
+  body.opt-no-author .meta-author{ display:none; }
+  body.opt-no-author .author-filter{ display:none; }
+  body.opt-no-author .dl-wrap:has(.author-filter){ display:none; }
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
   body.opt-no-boardvote .board-vote{ display:none; }
@@ -953,7 +956,7 @@
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="filterAuthor" list="dl_author" placeholder="投稿者">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterUiPreset" list="dl_set_uiPreset" placeholder="UI Preset">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
         <button class="clear-tags" id="clearFiltersBtn" type="button">絞り込みをクリア</button>
@@ -1005,7 +1008,7 @@
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="pFilterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="pFilterAuthor" list="dl_author" placeholder="投稿者">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="pFilterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
         <button class="clear-tags" id="pClearFiltersBtn" type="button">絞り込みをクリア</button>
       </div>
@@ -2673,7 +2676,7 @@
           '<div class="row-thumb">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
             '<div class="row-title">' + title + '</div>' +
-            '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span>' +
+            '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
               (uiPreset ? '<span>UI Preset: ' + escapeHtml(uiPreset) + '</span>' : '') +
               (checkpoint ? '<span>Checkpoint: ' + escapeHtml(checkpoint) + '</span>' : '') +
             '</div>' +
@@ -2801,7 +2804,7 @@
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
-      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span></div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
@@ -3336,7 +3339,7 @@
       const selected = selectedBasePromptIds.some(function (id) { return String(id) === String(p.id); });
       return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
         '<div class="row-title">' + (selected ? '✓ ' : '') + title + '</div>' +
-        '<div class="row-meta"><span>投稿者: ' + author + '</span></div>' + tags +
+        '<div class="row-meta"><span class="meta-author">投稿者: ' + author + '</span></div>' + tags +
         '</div></div></div>';
     }).join('');
     basePromptListEl.querySelectorAll('.row').forEach(function (row) {
@@ -3407,7 +3410,7 @@
         '<div class="row-thumb">' + imageTag(p.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
         '<div class="row-body">' +
         '<div class="row-title">' + title + '</div>' +
-        '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span></div>' + tags +
+        '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span></div>' + tags +
         '</div></div></div>';
     }).join('');
     parentListEl.querySelectorAll('.row').forEach(function (row) {
@@ -3616,7 +3619,7 @@
       const selected = String(selectedRequestId) === String(p.id);
       return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
         '<div class="row-title">' + (selected ? '✓ ' : '') + title + '</div>' +
-        '<div class="row-meta"><span>投稿者: ' + authorHtml(p) + '</span></div>' +
+        '<div class="row-meta"><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
         '</div></div></div>';
     }).join('');
     requestPickerListEl.querySelectorAll('.row').forEach(function (row) {
@@ -3713,7 +3716,7 @@
       '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
-      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span>' + refMeta + '<span class="row-requested">回答作品 ' + requestAnswerCount(p) + '件</span></div>' +
+      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' + refMeta + '<span class="row-requested">回答作品 ' + requestAnswerCount(p) + '件</span></div>' +
       (p.title ? '<div class="request-snippet">' + escapeHtml(p.prompt || '') + '</div>' : '') +
       '</div></div></div>';
   }
@@ -3782,7 +3785,7 @@
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
-      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span><span>リクエスト</span></div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>リクエスト</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="detail-block"><div class="label">リクエスト内容</div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
       refGalleryHtml(p) +
@@ -4070,7 +4073,7 @@
       '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
-      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + promptDerivedCount(p) + '件</span></div>' +
+      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + promptDerivedCount(p) + '件</span></div>' +
       tags +
       '</div></div></div>';
   }
@@ -4133,7 +4136,7 @@
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
-      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
