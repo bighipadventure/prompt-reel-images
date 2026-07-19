@@ -312,9 +312,9 @@
   .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger); }
   .clear-tags{ font-family:'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
 
-  #postTagCloud, #tagCloud, #pTagCloud, #pBrowseTagCloud{ overflow: hidden; }
+  #postTagCloud, #tagCloud, #pTagCloud, #pBrowseTagCloud{ display: contents; }
+  .tag-cloud-wrap{ display:flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .show-all-tags{
-    margin-top: 8px;
     font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
     background: var(--surface-2); color: var(--accent);
     border: 1px solid var(--accent-dim); border-radius: 8px;
@@ -662,8 +662,29 @@
   body.opt-no-like .sort-chip[data-field="likeCount"],
   body.opt-no-likecount .sort-chip[data-field="likeCount"]{ display:none; }
   body.opt-no-dlcount .sort-chip[data-field="downloadCount"]{ display:none; }
+  body.opt-no-author .sort-chip[data-field="author"]{ display:none; }
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
+  body.opt-no-boardvote .board-vote{ display:none; }
+
+  /* ---- 掲示板グッド/バッド ---- */
+  .board-vote{ display:flex; gap:10px; margin-top:12px; }
+  .board-vote-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background: var(--surface); color: var(--ink-dim);
+    border:1px solid var(--line); border-radius:999px; padding:5px 14px;
+    font-size:12.5px; line-height:1;
+  }
+  .board-vote-btn .vote-icon{ font-size:14px; line-height:1; }
+  .board-vote-btn .vote-count{ font-variant-numeric: tabular-nums; }
+  .board-vote-btn.good.on{ background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .board-vote-btn.bad.on{ background: rgba(255,64,96,.14); border-color: var(--danger); color: var(--danger); }
+
+  /* ---- リクエスト一覧の1行スニペット ---- */
+  .request-snippet{
+    font-size: 12.5px; color: var(--ink-dim); line-height: 1.6;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 
   /* ---- 参考資料アップローダ ---- */
   .ref-uploader{ margin-top: 6px; }
@@ -828,8 +849,8 @@
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud" id="postTagCloud"></div>
-      <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button>
+      <div class="tag-cloud-wrap"><div class="tag-cloud" id="postTagCloud"></div>
+      <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button></div>
       <div class="tag-row" style="margin-top:10px;">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" placeholder="新しいタグを入力して追加">
         <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
@@ -870,8 +891,8 @@
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud" id="pTagCloud"></div>
-      <button class="show-all-tags" type="button" id="pShowAllTagsBtn" style="display:none;">全て表示</button>
+      <div class="tag-cloud-wrap"><div class="tag-cloud" id="pTagCloud"></div>
+      <button class="show-all-tags" type="button" id="pShowAllTagsBtn" style="display:none;">全て表示</button></div>
       <div class="tag-row" style="margin-top:10px;">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pNewTagInput" placeholder="新しいタグを入力して追加">
         <button class="btn-ghost" id="pAddNewTagBtn" type="button">追加</button>
@@ -938,6 +959,15 @@
         <button class="clear-tags" id="clearFiltersBtn" type="button">絞り込みをクリア</button>
       </div>
       <div class="search-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterKeyword" placeholder="タイトル・プロンプト等を検索（スペース区切り）">
+        <div class="mode-toggle" id="keywordModeToggle">
+          <button type="button" data-kwmode="AND" class="active">AND</button>
+          <button type="button" data-kwmode="OR">OR</button>
+          <button type="button" data-kwmode="NOT">NOT</button>
+        </div>
+      </div>
+      <div class="search-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
         <div class="mode-toggle" id="tagMatchModeToggle">
           <button type="button" data-tagmode="AND" class="active">AND</button>
@@ -946,8 +976,8 @@
         </div>
         <button class="clear-tags" id="clearTagsBtn" type="button">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud" id="tagCloud"></div>
-      <button class="show-all-tags" type="button" id="showAllBrowseTagsBtn" style="display:none;">全て表示</button>
+      <div class="tag-cloud-wrap"><div class="tag-cloud" id="tagCloud"></div>
+      <button class="show-all-tags" type="button" id="showAllBrowseTagsBtn" style="display:none;">全て表示</button></div>
       <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
         タグはクリックでON/OFF切替。ON中のタグ同士の絞り込み方はAND/OR/NOTで指定(例: ANDをONにしてタグを複数ONにすると、それらすべてを含む投稿だけを表示)。
       </div>
@@ -980,6 +1010,15 @@
         <button class="clear-tags" id="pClearFiltersBtn" type="button">絞り込みをクリア</button>
       </div>
       <div class="search-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="pFilterKeyword" placeholder="タイトル・プロンプト等を検索（スペース区切り）">
+        <div class="mode-toggle" id="pKeywordModeToggle">
+          <button type="button" data-kwmode="AND" class="active">AND</button>
+          <button type="button" data-kwmode="OR">OR</button>
+          <button type="button" data-kwmode="NOT">NOT</button>
+        </div>
+      </div>
+      <div class="search-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
         <div class="mode-toggle" id="pTagMatchModeToggle">
           <button type="button" data-tagmode="AND" class="active">AND</button>
@@ -988,8 +1027,8 @@
         </div>
         <button class="clear-tags" id="pClearBrowseTagsBtn" type="button">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud" id="pBrowseTagCloud"></div>
-      <button class="show-all-tags" type="button" id="pShowAllBrowseTagsBtn" style="display:none;">全て表示</button>
+      <div class="tag-cloud-wrap"><div class="tag-cloud" id="pBrowseTagCloud"></div>
+      <button class="show-all-tags" type="button" id="pShowAllBrowseTagsBtn" style="display:none;">全て表示</button></div>
       <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
         投稿されたプロンプト例の一覧です。例を開くと、その例をベースにして投稿された画像作品がその下にまとめて表示されます。
       </div>
@@ -1012,12 +1051,14 @@
         <div class="sort-chips" id="rSortChips"></div>
       </div>
       <div class="search-row">
-        <span class="label">絞り込み</span>
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="rFilterAuthor" list="dl_author" placeholder="投稿者">
+        <span class="label">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="rFilterKeyword" placeholder="例: 川辺 女の子（スペース区切り）">
+        <div class="mode-toggle" id="rKeywordModeToggle">
+          <button type="button" data-kwmode="AND" class="active">AND</button>
+          <button type="button" data-kwmode="OR">OR</button>
+          <button type="button" data-kwmode="NOT">NOT</button>
+        </div>
         <button class="clear-tags" id="rClearFiltersBtn" type="button">絞り込みをクリア</button>
-      </div>
-      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
-        投稿されたリクエストの一覧です。リクエストを開くと、それに応えて投稿された画像作品がその下にまとめて表示されます。
       </div>
     </div>
 
@@ -1512,21 +1553,25 @@
   let requestPosts = [];
   let allComments = [];
   let allBoard = [];
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
   let tagMatchMode = 'AND'; // ONにしたタグ同士の絞り込み方: AND / OR / NOT
+  let keywordMode = 'AND';
   let viewMode = 'list';
 
   let pSelectedTags = [];
   let pTagStates = {};
   let pTagMatchMode = 'AND';
+  let pKeywordMode = 'AND';
   let selectedBasePromptIds = [];
   let selectedParentId = '';
   let selectedRequestId = '';
   let requestRefs = [];
   let rSortKeys = [{ field: 'date', dir: 'desc' }];
+  let rKeywordMode = 'AND';
+  let rAnsweredFilter = ''; // '' | 'only' | 'hide'
 
   function basePromptIdsOf(post) {
     return String((post && post.basePromptId) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -1560,6 +1605,12 @@
   try { likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}'); } catch (e) { likedPosts = {}; }
   function saveLiked() {
     try { localStorage.setItem('likedPosts', JSON.stringify(likedPosts)); } catch (e) {}
+  }
+
+  let boardVotes = {};
+  try { boardVotes = JSON.parse(localStorage.getItem('boardVotes') || '{}'); } catch (e) { boardVotes = {}; }
+  function saveBoardVotes() {
+    try { localStorage.setItem('boardVotes', JSON.stringify(boardVotes)); } catch (e) {}
   }
 
   /* ---------- タブ切替 ---------- */
@@ -2178,11 +2229,20 @@
     });
   }
 
-  ['filterAuthor', 'filterUiPreset', 'filterCheckpoint'].forEach(function (id) {
+  ['filterAuthor', 'filterUiPreset', 'filterCheckpoint', 'filterKeyword'].forEach(function (id) {
     document.getElementById(id).addEventListener('input', renderList);
   });
+  document.querySelectorAll('#keywordModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      keywordMode = btn.dataset.kwmode;
+      document.querySelectorAll('#keywordModeToggle button').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.kwmode === keywordMode);
+      });
+      renderList();
+    });
+  });
   document.getElementById('clearFiltersBtn').addEventListener('click', function () {
-    ['filterAuthor', 'filterUiPreset', 'filterCheckpoint'].forEach(function (id) {
+    ['filterAuthor', 'filterUiPreset', 'filterCheckpoint', 'filterKeyword'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
     renderList();
@@ -2216,22 +2276,18 @@
 
   function applyTagCloudClamp(container, btn, maxRows) {
     const pills = Array.from(container.querySelectorAll('.tag-pill'));
+    pills.forEach(function (p) { p.style.display = ''; });
     container.style.maxHeight = '';
     if (pills.length === 0) { btn.style.display = 'none'; return; }
-    const contTop = container.getBoundingClientRect().top;
-    const rows = [];
-    pills.forEach(function (p) {
-      const r = p.getBoundingClientRect();
-      const top = Math.round(r.top - contTop);
-      let row = rows.find(function (x) { return Math.abs(x.top - top) <= 2; });
-      if (!row) { row = { top: top, bottom: 0 }; rows.push(row); }
-      const bottom = Math.round(r.bottom - contTop);
-      if (bottom > row.bottom) row.bottom = bottom;
-    });
-    rows.sort(function (a, b) { return a.top - b.top; });
-    if (rows.length <= maxRows) { btn.style.display = 'none'; return; }
-    container.style.maxHeight = rows[maxRows - 1].bottom + 'px';
     btn.style.display = '';
+    const firstTop = pills[0].getBoundingClientRect().top;
+    function sameRow(el) { return Math.abs(el.getBoundingClientRect().top - firstTop) <= 2; }
+    pills.forEach(function (p) { if (!sameRow(p)) p.style.display = 'none'; });
+    for (let i = pills.length - 1; i >= 0 && !sameRow(btn); i--) {
+      if (pills[i].style.display !== 'none') pills[i].style.display = 'none';
+    }
+    const anyHidden = pills.some(function (p) { return p.style.display === 'none'; });
+    btn.style.display = anyHidden ? '' : 'none';
   }
 
   function applyPostTagClamp() { applyTagCloudClamp(postTagCloud, showAllTagsBtn, POST_TAG_MAX_ROWS); }
@@ -2452,6 +2508,20 @@
       : selected.some(function (t) { return tags.includes(t); });
   }
 
+  function parseKeywords(value) {
+    return String(value || '').split(/[\s\u3000]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+  }
+  function postKeywordHaystack(p) {
+    return (String(p.title || '') + ' ' + String(p.prompt || '') + ' ' + String(p.negativePrompt || '') + ' ' + String(p.memo || '')).toLowerCase();
+  }
+  function matchKeywords(haystack, keywords, mode) {
+    if (!keywords.length) return true;
+    if (mode === 'NOT') return !keywords.some(function (k) { return haystack.indexOf(k) !== -1; });
+    return mode === 'OR'
+      ? keywords.some(function (k) { return haystack.indexOf(k) !== -1; })
+      : keywords.every(function (k) { return haystack.indexOf(k) !== -1; });
+  }
+
   function formatDateTime(ts) {
     const dt = new Date(ts);
     return dt.getFullYear() + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' +
@@ -2479,7 +2549,9 @@
     document.body.classList.toggle('opt-no-likecount', !options.likeCount);
     document.body.classList.toggle('opt-no-dlcount', !options.downloadCount);
     document.body.classList.toggle('opt-no-comment', !options.comment);
+    document.body.classList.toggle('opt-no-author', !options.author);
     document.body.classList.toggle('opt-no-board', !options.board);
+    document.body.classList.toggle('opt-no-boardvote', !options.boardVote);
     document.querySelectorAll('.author-field').forEach(function (el) {
       el.style.display = options.author ? '' : 'none';
     });
@@ -2563,6 +2635,7 @@
     const fAuthor = document.getElementById('filterAuthor').value.trim().toLowerCase();
     const fUiPreset = document.getElementById('filterUiPreset').value.trim().toLowerCase();
     const fCheckpoint = document.getElementById('filterCheckpoint').value.trim().toLowerCase();
+    const keywords = parseKeywords(document.getElementById('filterKeyword').value);
     filtered = filtered.filter(function (p) {
       const author = String(p.author || '').toLowerCase();
       const uiPreset = String((p.settings && p.settings.uiPreset) || '').toLowerCase();
@@ -2570,6 +2643,7 @@
       if (fAuthor && author.indexOf(fAuthor) === -1) return false;
       if (fUiPreset && uiPreset.indexOf(fUiPreset) === -1) return false;
       if (fCheckpoint && checkpoint.indexOf(fCheckpoint) === -1) return false;
+      if (!matchKeywords(postKeywordHaystack(p), keywords, keywordMode)) return false;
       return true;
     });
 
@@ -3578,7 +3652,7 @@
   rList.addEventListener('error', handleImageError, true);
 
   function renderRSortChips() {
-    rSortChips.innerHTML = REQUEST_SORT_FIELDS.map(function (f) {
+    const sortHtml = REQUEST_SORT_FIELDS.map(function (f) {
       const idx = rSortKeys.findIndex(function (k) { return k.field === f.key; });
       const active = idx !== -1;
       const dir = active ? rSortKeys[idx].dir : '';
@@ -3586,7 +3660,11 @@
       const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
       return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
     }).join('');
-    rSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
+    const answeredLabel = rAnsweredFilter === 'only' ? '回答済みのみ' : (rAnsweredFilter === 'hide' ? '未回答のみ' : '回答済み');
+    const answeredHtml = '<span class="sort-chip' + (rAnsweredFilter ? ' active' : '') + '" data-answered-chip>' + answeredLabel + '</span>';
+    rSortChips.innerHTML = sortHtml + answeredHtml;
+
+    rSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         const field = chip.dataset.field;
         const idx = rSortKeys.findIndex(function (k) { return k.field === field; });
@@ -3597,11 +3675,28 @@
         renderRequestList();
       });
     });
+    const answeredChip = rSortChips.querySelector('[data-answered-chip]');
+    if (answeredChip) {
+      answeredChip.addEventListener('click', function () {
+        rAnsweredFilter = rAnsweredFilter === '' ? 'only' : (rAnsweredFilter === 'only' ? 'hide' : '');
+        renderRSortChips();
+        renderRequestList();
+      });
+    }
   }
 
-  document.getElementById('rFilterAuthor').addEventListener('input', renderRequestList);
+  document.getElementById('rFilterKeyword').addEventListener('input', renderRequestList);
+  document.querySelectorAll('#rKeywordModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      rKeywordMode = btn.dataset.kwmode;
+      document.querySelectorAll('#rKeywordModeToggle button').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.kwmode === rKeywordMode);
+      });
+      renderRequestList();
+    });
+  });
   document.getElementById('rClearFiltersBtn').addEventListener('click', function () {
-    document.getElementById('rFilterAuthor').value = '';
+    document.getElementById('rFilterKeyword').value = '';
     renderRequestList();
   });
 
@@ -3619,16 +3714,29 @@
       '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
       '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span>投稿者: ' + author + '</span>' + refMeta + '<span class="row-requested">回答作品 ' + requestAnswerCount(p) + '件</span></div>' +
-      (p.title ? '<div class="prompt-snippet">' + escapeHtml(p.prompt || '') + '</div>' : '') +
+      (p.title ? '<div class="request-snippet">' + escapeHtml(p.prompt || '') + '</div>' : '') +
       '</div></div></div>';
   }
 
+  function passesRequestKeyword(p, keywords) {
+    if (!keywords.length) return true;
+    const haystack = (String(p.title || '') + ' ' + String(p.prompt || '')).toLowerCase();
+    if (rKeywordMode === 'NOT') return !keywords.some(function (k) { return haystack.indexOf(k) !== -1; });
+    return rKeywordMode === 'OR'
+      ? keywords.some(function (k) { return haystack.indexOf(k) !== -1; })
+      : keywords.every(function (k) { return haystack.indexOf(k) !== -1; });
+  }
+
   function renderRequestList() {
-    let filtered = requestPosts.slice();
-    const fAuthor = document.getElementById('rFilterAuthor').value.trim().toLowerCase();
-    filtered = filtered.filter(function (p) {
-      const author = String(p.author || '').toLowerCase();
-      if (fAuthor && author.indexOf(fAuthor) === -1) return false;
+    const keywords = document.getElementById('rFilterKeyword').value
+      .split(/[\s\u3000]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+    let filtered = requestPosts.filter(function (p) {
+      if (!passesRequestKeyword(p, keywords)) return false;
+      if (rAnsweredFilter) {
+        const answered = requestAnswerCount(p) > 0;
+        if (rAnsweredFilter === 'only' && !answered) return false;
+        if (rAnsweredFilter === 'hide' && answered) return false;
+      }
       return true;
     });
     filtered.sort(function (a, b) { return compareWithKeys(a, b, rSortKeys); });
@@ -3714,13 +3822,68 @@
   const boardEmpty = document.getElementById('boardEmpty');
   const boardCount = document.getElementById('boardCount');
 
+  function boardVoteHtml(m) {
+    const id = escapeHtml(String(m.id));
+    const vote = boardVotes[m.id];
+    const good = Number(m.goodCount) || 0;
+    const bad = Number(m.badCount) || 0;
+    return '<div class="board-vote">' +
+      '<button type="button" class="board-vote-btn good' + (vote === 'good' ? ' on' : '') + '" data-board-vote="good" data-board-id="' + id + '">' +
+        '<span class="vote-icon">👍</span><span class="vote-count" data-board-good="' + id + '">' + good + '</span></button>' +
+      '<button type="button" class="board-vote-btn bad' + (vote === 'bad' ? ' on' : '') + '" data-board-vote="bad" data-board-id="' + id + '">' +
+        '<span class="vote-icon">👎</span><span class="vote-count" data-board-bad="' + id + '">' + bad + '</span></button>' +
+    '</div>';
+  }
+
   function boardItemHtml(m) {
     const name = m.name ? escapeHtml(m.name) : '匿名';
     const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(m.id)) + '">削除</button>' : '';
     return '<div class="comment-item board-item">' + delBtn +
       '<div class="comment-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(m.timestamp) + '</span></div>' +
       '<div class="comment-body">' + escapeHtml(m.body) + '</div>' +
+      boardVoteHtml(m) +
     '</div>';
+  }
+
+  function updateBoardVoteUI(id) {
+    const m = allBoard.find(function (x) { return String(x.id) === String(id); });
+    if (!m) return;
+    const vote = boardVotes[id];
+    document.querySelectorAll('[data-board-good="' + id + '"]').forEach(function (el) { el.textContent = Number(m.goodCount) || 0; });
+    document.querySelectorAll('[data-board-bad="' + id + '"]').forEach(function (el) { el.textContent = Number(m.badCount) || 0; });
+    document.querySelectorAll('.board-vote-btn[data-board-id="' + id + '"]').forEach(function (btn) {
+      btn.classList.toggle('on', btn.dataset.boardVote === vote);
+    });
+  }
+
+  async function voteBoard(id, kind) {
+    const m = allBoard.find(function (x) { return String(x.id) === String(id); });
+    if (!m) return;
+    const prev = boardVotes[id] || '';
+    let goodDelta = 0, badDelta = 0;
+    if (prev === kind) {
+      if (kind === 'good') goodDelta = -1; else badDelta = -1;
+      delete boardVotes[id];
+    } else {
+      if (kind === 'good') { goodDelta = 1; if (prev === 'bad') badDelta = -1; }
+      else { badDelta = 1; if (prev === 'good') goodDelta = -1; }
+      boardVotes[id] = kind;
+    }
+    saveBoardVotes();
+    m.goodCount = Math.max(0, (Number(m.goodCount) || 0) + goodDelta);
+    m.badCount = Math.max(0, (Number(m.badCount) || 0) + badDelta);
+    updateBoardVoteUI(id);
+
+    try {
+      const result = await postAction({ action: 'boardVote', id: id, goodDelta: goodDelta, badDelta: badDelta });
+      if (result && result.success) {
+        if (typeof result.goodCount === 'number') m.goodCount = result.goodCount;
+        if (typeof result.badCount === 'number') m.badCount = result.badCount;
+        updateBoardVoteUI(id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function renderBoard() {
@@ -3730,6 +3893,9 @@
     boardList.innerHTML = items.map(boardItemHtml).join('');
     boardList.querySelectorAll('[data-del-board]').forEach(function (btn) {
       btn.addEventListener('click', function () { adminDeleteBoard(btn.dataset.delBoard); });
+    });
+    boardList.querySelectorAll('.board-vote-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { voteBoard(btn.dataset.boardId, btn.dataset.boardVote); });
     });
   }
 
@@ -3802,11 +3968,20 @@
   }
 
   // PROMPT BROWSE: 絞り込み
-  ['pFilterAuthor', 'pFilterCheckpoint'].forEach(function (id) {
+  ['pFilterAuthor', 'pFilterCheckpoint', 'pFilterKeyword'].forEach(function (id) {
     document.getElementById(id).addEventListener('input', renderPromptList);
   });
+  document.querySelectorAll('#pKeywordModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      pKeywordMode = btn.dataset.kwmode;
+      document.querySelectorAll('#pKeywordModeToggle button').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.kwmode === pKeywordMode);
+      });
+      renderPromptList();
+    });
+  });
   document.getElementById('pClearFiltersBtn').addEventListener('click', function () {
-    ['pFilterAuthor', 'pFilterCheckpoint'].forEach(function (id) { document.getElementById(id).value = ''; });
+    ['pFilterAuthor', 'pFilterCheckpoint', 'pFilterKeyword'].forEach(function (id) { document.getElementById(id).value = ''; });
     renderPromptList();
   });
 
@@ -3904,11 +4079,13 @@
     let filtered = promptPosts.filter(passesPromptTagFilter);
     const fAuthor = document.getElementById('pFilterAuthor').value.trim().toLowerCase();
     const fCheckpoint = document.getElementById('pFilterCheckpoint').value.trim().toLowerCase();
+    const keywords = parseKeywords(document.getElementById('pFilterKeyword').value);
     filtered = filtered.filter(function (p) {
       const author = String(p.author || '').toLowerCase();
       const checkpoint = String((p.settings && p.settings.checkpoint) || '').toLowerCase();
       if (fAuthor && author.indexOf(fAuthor) === -1) return false;
       if (fCheckpoint && checkpoint.indexOf(fCheckpoint) === -1) return false;
+      if (!matchKeywords(postKeywordHaystack(p), keywords, pKeywordMode)) return false;
       return true;
     });
     filtered.sort(function (a, b) { return compareWithKeys(a, b, pSortKeys); });
@@ -4163,7 +4340,8 @@
     { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
     { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
     { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になります' },
-    { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' }
+    { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
+    { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板の👍/👎ボタンを非表示にします' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
