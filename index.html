@@ -2663,14 +2663,15 @@
     if (viewMode === 'panel') layoutPanelGrid();
   }
 
-  function imageRowHtml(p, thumbSize) {
+  function imageRowHtml(p, thumbSize, opts) {
+    opts = opts || {};
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
     const uiPreset = (p.settings && p.settings.uiPreset) || '';
     const checkpoint = (p.settings && p.settings.checkpoint) || '';
     const tags = sortJa((p.tags || []).slice());
     return '' +
-      '<div class="row" data-id="' + p.id + '">' +
+      '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
         '<div class="row-counts">' + countBadgesHtml(p) + '</div>' +
         '<div class="row-main">' +
           '<div class="row-thumb">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
@@ -2700,6 +2701,18 @@
         if (!post) return;
         if (!opts.detailOnly && viewMode === 'panel') openFullImageModal(post); else openModal(post);
       });
+    });
+  }
+
+  function wirePickerRows(container, onSelect) {
+    container.querySelectorAll('.like-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleLike(btn.dataset.like);
+      });
+    });
+    container.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () { onSelect(row.dataset.id); });
     });
   }
 
@@ -3333,32 +3346,23 @@
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, basePromptSortKeys); });
     basePromptListEl.innerHTML = items.map(function (p) {
-      const title = p.title ? escapeHtml(p.title) : '(無題)';
-      const author = authorHtml(p);
-      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
       const selected = selectedBasePromptIds.some(function (id) { return String(id) === String(p.id); });
-      return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
-        '<div class="row-title">' + (selected ? '✓ ' : '') + title + '</div>' +
-        '<div class="row-meta"><span class="meta-author">投稿者: ' + author + '</span></div>' + tags +
-        '</div></div></div>';
+      return promptRowHtml(p, { selected: selected });
     }).join('');
-    basePromptListEl.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        const id = row.dataset.id;
-        const idx = selectedBasePromptIds.findIndex(function (x) { return String(x) === String(id); });
-        if (idx === -1) {
-          selectedBasePromptIds.push(id);
-          const bp = promptPosts.find(function (x) { return String(x.id) === String(id); });
-          if (bp) {
-            (bp.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
-            renderChips();
-          }
-        } else {
-          selectedBasePromptIds.splice(idx, 1);
+    wirePickerRows(basePromptListEl, function (id) {
+      const idx = selectedBasePromptIds.findIndex(function (x) { return String(x) === String(id); });
+      if (idx === -1) {
+        selectedBasePromptIds.push(id);
+        const bp = promptPosts.find(function (x) { return String(x.id) === String(id); });
+        if (bp) {
+          (bp.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+          renderChips();
         }
-        renderBasePromptDisplay();
-        renderBasePromptList(document.getElementById('basePromptSearch').value);
-      });
+      } else {
+        selectedBasePromptIds.splice(idx, 1);
+      }
+      renderBasePromptDisplay();
+      renderBasePromptList(document.getElementById('basePromptSearch').value);
     });
   }
   function openBasePromptModal() {
@@ -3403,22 +3407,13 @@
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, parentSortKeys); });
     parentListEl.innerHTML = items.map(function (p) {
-      const title = p.title ? escapeHtml(p.title) : '(無題)';
-      const author = authorHtml(p);
-      const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
-      return '<div class="row" data-id="' + p.id + '"><div class="row-main">' +
-        '<div class="row-thumb">' + imageTag(p.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
-        '<div class="row-body">' +
-        '<div class="row-title">' + title + '</div>' +
-        '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span></div>' + tags +
-        '</div></div></div>';
+      const selected = String(selectedParentId) === String(p.id);
+      return imageRowHtml(p, 'w320', { selected: selected });
     }).join('');
-    parentListEl.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        selectedParentId = row.dataset.id;
-        renderParentDisplay();
-        closeParentModal();
-      });
+    wirePickerRows(parentListEl, function (id) {
+      selectedParentId = id;
+      renderParentDisplay();
+      closeParentModal();
     });
   }
   function openParentModal() {
@@ -3615,19 +3610,13 @@
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, requestSortKeys); });
     requestPickerListEl.innerHTML = items.map(function (p) {
-      const title = escapeHtml(requestLabel(p));
       const selected = String(selectedRequestId) === String(p.id);
-      return '<div class="row prompt-row' + (selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"><div class="row-main"><div class="row-body">' +
-        '<div class="row-title">' + (selected ? '✓ ' : '') + title + '</div>' +
-        '<div class="row-meta"><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
-        '</div></div></div>';
+      return requestRowHtml(p, { selected: selected });
     }).join('');
-    requestPickerListEl.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        selectedRequestId = String(selectedRequestId) === String(row.dataset.id) ? '' : row.dataset.id;
-        renderRequestDisplay();
-        renderRequestPickerList(document.getElementById('requestSearch').value);
-      });
+    wirePickerRows(requestPickerListEl, function (id) {
+      selectedRequestId = String(selectedRequestId) === String(id) ? '' : id;
+      renderRequestDisplay();
+      renderRequestPickerList(document.getElementById('requestSearch').value);
     });
   }
   function openRequestModal2() {
@@ -3707,12 +3696,13 @@
     return imagePosts.filter(function (ip) { return String(ip.requestId) === String(p.id) && !ip.parentId; }).length;
   }
 
-  function requestRowHtml(p) {
+  function requestRowHtml(p, opts) {
+    opts = opts || {};
     const title = escapeHtml(requestLabel(p));
     const author = authorHtml(p);
     const refCount = (p.referenceImages || []).length;
     const refMeta = refCount ? '<span>参考資料 ' + refCount + '枚</span>' : '';
-    return '<div class="row prompt-row" data-id="' + p.id + '">' +
+    return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
       '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
@@ -4065,11 +4055,12 @@
     return imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1 && !ip.parentId; }).length;
   }
 
-  function promptRowHtml(p) {
+  function promptRowHtml(p, opts) {
+    opts = opts || {};
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
     const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
-    return '<div class="row prompt-row" data-id="' + p.id + '">' +
+    return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
       '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
