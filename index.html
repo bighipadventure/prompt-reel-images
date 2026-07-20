@@ -425,6 +425,7 @@
     display:flex; gap: 14px; flex-wrap:wrap; margin-bottom: 12px;
   }
   .modal .row-tags{ max-width: none; margin-bottom: 16px; }
+  .modal .row .row-tags{ margin-bottom: 0; }
   .modal-image{ text-align:center; margin-top: 14px; }
   .modal-image img{ max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); }
   .modal-actions{ display:flex; gap: 10px; justify-content:center; margin: 12px 0 20px; }
@@ -2672,7 +2673,7 @@
     const tags = sortJa((p.tags || []).slice());
     return '' +
       '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
-        '<div class="row-counts">' + countBadgesHtml(p) + '</div>' +
+        (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
         '<div class="row-main">' +
           '<div class="row-thumb">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
@@ -3347,7 +3348,7 @@
     items.sort(function (a, b) { return compareWithKeys(a, b, basePromptSortKeys); });
     basePromptListEl.innerHTML = items.map(function (p) {
       const selected = selectedBasePromptIds.some(function (id) { return String(id) === String(p.id); });
-      return promptRowHtml(p, { selected: selected });
+      return promptRowHtml(p, { selected: selected, counts: false });
     }).join('');
     wirePickerRows(basePromptListEl, function (id) {
       const idx = selectedBasePromptIds.findIndex(function (x) { return String(x) === String(id); });
@@ -3408,7 +3409,7 @@
     items.sort(function (a, b) { return compareWithKeys(a, b, parentSortKeys); });
     parentListEl.innerHTML = items.map(function (p) {
       const selected = String(selectedParentId) === String(p.id);
-      return imageRowHtml(p, 'w320', { selected: selected });
+      return imageRowHtml(p, 'w320', { selected: selected, counts: false });
     }).join('');
     wirePickerRows(parentListEl, function (id) {
       selectedParentId = id;
@@ -3611,7 +3612,7 @@
     items.sort(function (a, b) { return compareWithKeys(a, b, requestSortKeys); });
     requestPickerListEl.innerHTML = items.map(function (p) {
       const selected = String(selectedRequestId) === String(p.id);
-      return requestRowHtml(p, { selected: selected });
+      return requestRowHtml(p, { selected: selected, counts: false });
     }).join('');
     wirePickerRows(requestPickerListEl, function (id) {
       selectedRequestId = String(selectedRequestId) === String(id) ? '' : id;
@@ -3703,7 +3704,7 @@
     const refCount = (p.referenceImages || []).length;
     const refMeta = refCount ? '<span>参考資料 ' + refCount + '枚</span>' : '';
     return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
-      '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>') +
       '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
       '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' + refMeta + '<span class="row-requested">回答作品 ' + requestAnswerCount(p) + '件</span></div>' +
@@ -4061,7 +4062,7 @@
     const author = authorHtml(p);
     const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
     return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
-      '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>') +
       '<div class="row-main"><div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
       '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + promptDerivedCount(p) + '件</span></div>' +
