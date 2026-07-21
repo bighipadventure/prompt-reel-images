@@ -1728,7 +1728,7 @@
   function clearSelectedImage() {
     imageInput.value = '';
     if (adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt' && adminEditingPost.imageUrl) {
-      previewImg.src = imageSrcFor(adminEditingPost.imageUrl, 'w320');
+      previewImg.src = imageSrcFor(adminEditingPost.imageUrl, 'w1000');
       previewWrap.style.display = 'flex';
       setDropzoneState(true, true);
     } else {
