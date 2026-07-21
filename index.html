@@ -617,6 +617,7 @@
     max-height: 3.2em; overflow: hidden; white-space: pre-wrap; word-break: break-word;
   }
   .row-derived{ color: var(--accent); }
+  .row-children{ color: var(--accent); }
 
   .base-prompt-link{ font-weight: 500; word-break: break-word; }
   .linked-works-head{
@@ -968,6 +969,7 @@
           <button type="button" data-kwmode="OR">OR</button>
           <button type="button" data-kwmode="NOT">NOT</button>
         </div>
+        <button type="button" class="sort-chip" id="includeChildrenToggle" title="バリエーション(子作品)の内容も絞り込み・検索の対象に含めます">子も含めて検索</button>
       </div>
       <div class="search-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
@@ -1562,6 +1564,7 @@
   let tagMatchMode = 'AND'; // ONにしたタグ同士の絞り込み方: AND / OR / NOT
   let keywordMode = 'AND';
   let viewMode = 'list';
+  let includeChildrenSearch = false;
 
   let pSelectedTags = [];
   let pTagStates = {};
@@ -1577,6 +1580,13 @@
 
   function basePromptIdsOf(post) {
     return String((post && post.basePromptId) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function childrenOf(p) {
+    return imagePosts.filter(function (ip) { return String(ip.parentId) === String(p.id); });
+  }
+  function childCountOf(p) {
+    return childrenOf(p).length;
   }
 
   const PROMPT_SORT_FIELDS = [
@@ -2057,6 +2067,24 @@
     return arr.sort(function (a, b) { return String(a).localeCompare(String(b), 'ja', { numeric: true }); });
   }
 
+  function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+  const tagOrderCache = {};
+  function shuffledTagOrder(areaKey, tags) {
+    const key = tags.join('|');
+    const cached = tagOrderCache[areaKey];
+    if (cached && cached.key === key) return cached.order;
+    const order = shuffleArray(tags);
+    tagOrderCache[areaKey] = { key: key, order: order };
+    return order;
+  }
+
   function uniqueFieldValues(getter) {
     const set = new Set();
     posts.forEach(function (p) {
@@ -2154,7 +2182,7 @@
     // 閲覧タブのタグクラウド(既存の状態は保持しつつ、消えたタグは除外)
     Object.keys(tagStates).forEach(function (t) { if (!tags.includes(t)) delete tagStates[t]; });
 
-    tagCloud.innerHTML = tags.map(function (t) {
+    tagCloud.innerHTML = shuffledTagOrder('browse', tags).map(function (t) {
       const cls = tagStates[t] ? 'state-include' : '';
       return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
     }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
@@ -2249,6 +2277,11 @@
     });
     renderList();
   });
+  document.getElementById('includeChildrenToggle').addEventListener('click', function () {
+    includeChildrenSearch = !includeChildrenSearch;
+    this.classList.toggle('active', includeChildrenSearch);
+    renderList();
+  });
 
   /* ---------- 投稿フォームのタグ選択 ---------- */
   const selectedTagsEl = document.getElementById('selectedTags');
@@ -2265,7 +2298,7 @@
 
   function rebuildPostTagCloud() {
     const tags = allUniqueTags();
-    postTagCloud.innerHTML = tags.map(function (t) {
+    postTagCloud.innerHTML = shuffledTagOrder('postForm', tags).map(function (t) {
       const cls = selectedTags.includes(t) ? ' state-include' : '';
       return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
     }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
@@ -2631,6 +2664,28 @@
     return '<span class="count-badges">' + parts + '</span>';
   }
 
+  function fieldValuesWithChildren(p, getter) {
+    const vals = [String(getter(p) || '').toLowerCase()];
+    if (includeChildrenSearch) {
+      childrenOf(p).forEach(function (c) { vals.push(String(getter(c) || '').toLowerCase()); });
+    }
+    return vals;
+  }
+
+  function matchesTextFilterWithChildren(p, filterValue, getter) {
+    if (!filterValue) return true;
+    return fieldValuesWithChildren(p, getter).some(function (v) { return v.indexOf(filterValue) !== -1; });
+  }
+
+  function matchesKeywordFilterWithChildren(p, keywords, mode) {
+    if (!keywords.length) return true;
+    let haystack = postKeywordHaystack(p);
+    if (includeChildrenSearch) {
+      childrenOf(p).forEach(function (c) { haystack += ' ' + postKeywordHaystack(c); });
+    }
+    return matchKeywords(haystack, keywords, mode);
+  }
+
   function renderList() {
     let filtered = imagePosts.filter(function (p) { return !p.parentId; }).filter(passesTagFilter);
 
@@ -2639,13 +2694,10 @@
     const fCheckpoint = document.getElementById('filterCheckpoint').value.trim().toLowerCase();
     const keywords = parseKeywords(document.getElementById('filterKeyword').value);
     filtered = filtered.filter(function (p) {
-      const author = String(p.author || '').toLowerCase();
-      const uiPreset = String((p.settings && p.settings.uiPreset) || '').toLowerCase();
-      const checkpoint = String((p.settings && p.settings.checkpoint) || '').toLowerCase();
-      if (fAuthor && author.indexOf(fAuthor) === -1) return false;
-      if (fUiPreset && uiPreset.indexOf(fUiPreset) === -1) return false;
-      if (fCheckpoint && checkpoint.indexOf(fCheckpoint) === -1) return false;
-      if (!matchKeywords(postKeywordHaystack(p), keywords, keywordMode)) return false;
+      if (!matchesTextFilterWithChildren(p, fAuthor, function (x) { return x.author; })) return false;
+      if (!matchesTextFilterWithChildren(p, fUiPreset, function (x) { return x.settings && x.settings.uiPreset; })) return false;
+      if (!matchesTextFilterWithChildren(p, fCheckpoint, function (x) { return x.settings && x.settings.checkpoint; })) return false;
+      if (!matchesKeywordFilterWithChildren(p, keywords, keywordMode)) return false;
       return true;
     });
 
@@ -2669,6 +2721,7 @@
     const uiPreset = (p.settings && p.settings.uiPreset) || '';
     const checkpoint = (p.settings && p.settings.checkpoint) || '';
     const tags = sortJa((p.tags || []).slice());
+    const childCount = childCountOf(p);
     return '' +
       '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
         (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
@@ -2679,6 +2732,7 @@
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
               (uiPreset ? '<span>UI Preset: ' + escapeHtml(uiPreset) + '</span>' : '') +
               (checkpoint ? '<span>Checkpoint: ' + escapeHtml(checkpoint) + '</span>' : '') +
+              (childCount ? '<span class="row-children">バリエーション ' + childCount + '件</span>' : '') +
             '</div>' +
             (tags.length ? '<div class="row-tags">' + tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
           '</div>' +
@@ -3160,7 +3214,7 @@
   }
   function rebuildPromptFormTagCloud() {
     const tags = allUniquePromptTags();
-    pTagCloud.innerHTML = tags.map(function (t) {
+    pTagCloud.innerHTML = shuffledTagOrder('promptForm', tags).map(function (t) {
       const cls = pSelectedTags.includes(t) ? ' state-include' : '';
       return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
     }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
@@ -3411,6 +3465,11 @@
     }).join('');
     wirePickerRows(parentListEl, function (id) {
       selectedParentId = id;
+      const parentPost = imagePosts.find(function (x) { return String(x.id) === String(id); });
+      if (parentPost) {
+        (parentPost.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+        renderChips();
+      }
       renderParentDisplay();
       closeParentModal();
     });
@@ -3990,7 +4049,7 @@
   function rebuildPromptBrowseTagUI() {
     const tags = allUniquePromptTags();
     Object.keys(pTagStates).forEach(function (t) { if (!tags.includes(t)) delete pTagStates[t]; });
-    pBrowseTagCloud.innerHTML = tags.map(function (t) {
+    pBrowseTagCloud.innerHTML = shuffledTagOrder('promptBrowse', tags).map(function (t) {
       const cls = pTagStates[t] ? 'state-include' : '';
       return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
     }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
