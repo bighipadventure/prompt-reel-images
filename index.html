@@ -314,6 +314,9 @@
   .tag-pill.state-include{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger); }
   .clear-tags{ font-family:'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
+  /* 検索パネル内の「〜をクリア」は行末要素なので、すべて行の右端に揃える。
+     これで「絞り込みをクリア」と「タグ選択をクリア」が同じ軸に並ぶ。 */
+  .search-row .clear-tags{ margin-left: auto; }
 
   #postTagCloud, #tagCloud, #pTagCloud, #pBrowseTagCloud{ display: contents; }
   .tag-cloud-wrap{ display:flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -2476,6 +2479,19 @@
     return order;
   }
 
+  // タグクラウドの表示順。
+  // 選択中のタグを先頭にまとめることで、「全て表示」モーダルで選んだタグが
+  // 1行に切り詰められた表示でも必ず見えるようにする。
+  // 未選択のときは元の並び(shuffledTagOrder のキャッシュ)をそのまま返すので、
+  // 「タグ選択をクリア」すると元の並びに戻る。
+  function tagDisplayOrder(areaKey, tags, states) {
+    const base = shuffledTagOrder(areaKey, tags);
+    const selected = base.filter(function (t) { return states[t]; });
+    if (!selected.length) return base;
+    const rest = base.filter(function (t) { return !states[t]; });
+    return selected.concat(rest);
+  }
+
   function uniqueFieldValues(getter) {
     const set = new Set();
     posts.forEach(function (p) {
@@ -2573,7 +2589,7 @@
     // 閲覧タブのタグクラウド(既存の状態は保持しつつ、消えたタグは除外)
     Object.keys(tagStates).forEach(function (t) { if (!tags.includes(t)) delete tagStates[t]; });
 
-    tagCloud.innerHTML = shuffledTagOrder('browse', tags).map(function (t) {
+    tagCloud.innerHTML = tagDisplayOrder('browse', tags, tagStates).map(function (t) {
       const cls = tagStates[t] ? 'state-include' : '';
       return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
     }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
@@ -3205,7 +3221,9 @@
     const gap = parseFloat(cs.getPropertyValue('column-gap') || cs.getPropertyValue('gap')) || 6;
 
     list.querySelectorAll('.row').forEach(function (item) {
-      const img = item.querySelector('img');
+      // 行内の最初の img は .row-counts のグッド/バッドアイコン(16x16)なので、
+      // ここで拾うと全カードが正方形になる。必ずサムネイルを指定すること。
+      const img = item.querySelector('.row-thumb img');
       if (!img) return;
 
       function applySpan() {
@@ -4740,7 +4758,7 @@
   function rebuildPromptBrowseTagUI() {
     const tags = allUniquePromptTags();
     Object.keys(pTagStates).forEach(function (t) { if (!tags.includes(t)) delete pTagStates[t]; });
-    pBrowseTagCloud.innerHTML = shuffledTagOrder('promptBrowse', tags).map(function (t) {
+    pBrowseTagCloud.innerHTML = tagDisplayOrder('promptBrowse', tags, pTagStates).map(function (t) {
       const cls = pTagStates[t] ? 'state-include' : '';
       return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
     }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
