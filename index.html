@@ -317,6 +317,8 @@
   /* 検索パネル内の「〜をクリア」は行末要素なので、すべて行の右端に揃える。
      これで「絞り込みをクリア」と「タグ選択をクリア」が同じ軸に並ぶ。 */
   .search-row .clear-tags{ margin-left: auto; }
+  /* 並び順行の右端に寄せるトグル群(ボタン同士は詰める) */
+  .row-right-toggles{ display:flex; align-items:center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
 
   #postTagCloud, #tagCloud, #pTagCloud, #pBrowseTagCloud{ display: contents; }
   .tag-cloud-wrap{ display:flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -1147,8 +1149,10 @@
       <div class="search-row">
         <span class="label">並び順</span>
         <div class="sort-chips" id="sortChips"></div>
-        <button type="button" class="sort-chip" id="includeChildrenToggle" style="margin-left:20px;" title="バリエーション(子作品)も一覧にすべて表示します(パネル表示を含む)">子も全て表示</button>
-        <button type="button" class="sort-chip fixrequest-only" id="includeFixToggle" style="margin-left:10px;" title="修正依頼の投稿も一覧にすべて表示します(パネル表示を含む)">修正依頼作品も表示</button>
+        <div class="row-right-toggles">
+          <button type="button" class="sort-chip" id="includeChildrenToggle" title="バリエーション(子作品)も一覧にすべて表示します(パネル表示を含む)">子も全て表示</button>
+          <button type="button" class="sort-chip fixrequest-only" id="includeFixToggle" title="修正依頼の投稿も一覧にすべて表示します(パネル表示を含む)">修正依頼作品も表示</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
