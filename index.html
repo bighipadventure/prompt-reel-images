@@ -35,6 +35,9 @@
     --danger: #ff4060;
     --danger-dim: #3a1c25;
     --like: #ff4060;
+    /* メインエリアの幅。カートバーもこれに合わせて内容を揃える */
+    --content-max: 1600px;
+    --content-pad: 20px;
   }
   *{ box-sizing: border-box; }
   html,body{ margin:0; padding:0; }
@@ -43,9 +46,9 @@
     color: var(--ink);
     font-family: 'Noto Sans JP', sans-serif;
     min-height: 100vh;
-    padding: 32px 20px 80px;
+    padding: 32px var(--content-pad) 80px;
   }
-  .wrap{ max-width: 1600px; width: 100%; margin: 0 auto; }
+  .wrap{ max-width: var(--content-max); width: 100%; margin: 0 auto; }
 
   header{ margin-bottom: 24px; }
   header .eyebrow{
@@ -526,8 +529,20 @@
     transition: color .12s ease, border-color .12s ease, background .12s ease;
   }
   .like-btn:hover{ color: var(--like); border-color: var(--like); }
-  .like-btn .heart{ font-size: 17px; line-height: 1; }
   .like-btn.liked{ color: var(--like); border-color: var(--like); background: var(--danger-dim); }
+
+  /* ---- グッド/バッドのアイコン画像(images/thumb_up.png, images/thumb_down.png) ---- */
+  .btn-icon{
+    width: 16px; height: 16px; object-fit: contain; display: block; flex: none;
+    /* 未押下はくすませ、押下で本来の色に戻すことで ON/OFF を見せる */
+    opacity: .45; filter: grayscale(1);
+    transition: opacity .12s ease, filter .12s ease;
+  }
+  .like-btn:hover .btn-icon,
+  .dislike-btn:hover .btn-icon{ opacity: .85; filter: grayscale(.25); }
+  .like-btn.liked .btn-icon,
+  .dislike-btn.disliked .btn-icon{ opacity: 1; filter: none; }
+  .count-badge .btn-icon{ opacity: .7; }
   .row-meta .count-badges{ margin-top: 0; }
   .row{ position: relative; }
   .row-counts{ position: absolute; top: 10px; right: 14px; }
@@ -536,7 +551,7 @@
   .list.panel-mode .row-counts{ display: none; }
   .modal-counts{ margin-bottom: 14px; }
   .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
-  .modal-counts .like-btn .heart{ font-size: 20px; }
+  .modal-counts .btn-icon{ width: 19px; height: 19px; }
   .modal-counts .count-badge{ font-size: 15px; }
 
   /* ---- はじめてガイド ---- */
@@ -595,6 +610,9 @@
     grid-area: count; font-size: 12px; color: var(--accent); background: var(--accent-dim);
     border-radius: 999px; padding: 2px 10px; white-space: nowrap; justify-self:end;
   }
+  /* 数字だけだと何の回数か伝わらないのでラベルを添える */
+  .databank-row .db-count-label{ opacity: .8; margin-right: 5px; }
+  .databank-row .db-count-label::after{ content: ':'; margin-left: 2px; }
   .databank-row .db-ja{ grid-area: ja; font-size: 12px; color: var(--ink-dim); word-break: break-word; }
   .databank-row .db-ja.db-untranslated{ opacity: 0.5; }
   body.db-cart-mode .databank-row{ border-color: var(--accent-dim); }
@@ -605,25 +623,103 @@
     .databank-table{ grid-template-columns: 1fr; }
   }
 
+  /* ---- データバンクのカート(画面最下部に固定。カードとは別デザインで「カート」と分かるようにする) ---- */
   .cart-bar{
-    background: var(--surface); border: 1px solid var(--accent-dim); border-radius: 12px;
-    padding: 12px 16px; margin-bottom: 16px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+    background: linear-gradient(180deg, rgba(20,22,42,.96), rgba(14,15,32,.99));
+    border-top: 2px solid var(--accent);
+    box-shadow: 0 -10px 30px rgba(0,0,0,.45);
+    backdrop-filter: blur(6px);
+    max-height: 42vh; overflow-y: auto;
+  }
+  /* 内容の左右端がメインエリア(.wrap)と一致するよう、最大幅は本文幅 + 左右padding */
+  .cart-inner{
+    max-width: calc(var(--content-max) + var(--content-pad) * 2);
+    margin: 0 auto; padding: 12px var(--content-pad) 14px;
   }
   .cart-head{ display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap:wrap; margin-bottom: 10px; }
-  .cart-title{ font-family:'Noto Sans JP',sans-serif; font-size: 13px; font-weight:700; }
+  .cart-title{ font-family:'Noto Sans JP',sans-serif; font-size: 13px; font-weight:700; color: var(--ink); display:inline-flex; align-items:center; gap:8px; }
+  .cart-icon{ width: 16px; height: 16px; object-fit: contain; display:block; flex:none; }
+  .cart-num{ color: var(--accent); font-size: 15px; }
   .cart-actions{ display:flex; gap: 8px; flex-wrap:wrap; }
+  /* 通常は非活性(枠線)デザイン。押した瞬間だけ活性(塗り)になる */
+  .cart-copy{
+    background: transparent; color: var(--ink-dim); border:1px solid var(--line);
+    border-radius: 8px; padding: 7px 20px; font-size: 12.5px; font-weight:700;
+    letter-spacing:.04em; cursor:pointer; min-width: 140px;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .cart-copy:hover{ color: var(--accent); border-color: var(--accent); }
+  .cart-copy.copied{ background: var(--accent); color:#fff; border-color: var(--accent); }
+  /* COPYと同じ挙動の赤版。通常は非活性(枠線)、押した瞬間だけ活性(赤塗り)にする */
+  .cart-clear{
+    background: transparent; color: var(--ink-dim); border:1px solid var(--line);
+    border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight:700;
+    letter-spacing:.04em; cursor:pointer; min-width: 120px;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .cart-clear:hover{ color: var(--danger); border-color: var(--danger); }
+  .cart-clear.cleared{ background: var(--danger); color:#fff; border-color: var(--danger); }
+  /* チップ1行分(30px = 削除ボタン20px + 上下padding8px + border2px)の高さを確保。
+     チップと空メッセージは同じ枠に入れるので、空↔1個追加でも高さが変わらない。 */
+  .cart-body{ min-height: 30px; }
   .cart-chips{ display:flex; flex-wrap:wrap; gap: 8px; }
   .cart-chip{
     display:inline-flex; align-items:center; gap: 6px; font-family:'Noto Sans JP',sans-serif;
-    font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line);
-    border-radius: 999px; padding: 4px 6px 4px 12px;
+    font-size: 12.5px; background: var(--accent-dim); border: 1px solid var(--accent);
+    color: var(--ink); border-radius: 6px; padding: 4px 6px 4px 12px;
   }
   .cart-chip button{
-    background: transparent; color: var(--ink-dim); border:none; border-radius:999px;
+    background: transparent; color: var(--ink-dim); border:none; border-radius:4px;
     width: 20px; height: 20px; line-height: 1; font-size: 13px; padding: 0; cursor: pointer;
   }
   .cart-chip button:hover{ color: var(--danger); background: var(--danger-dim); }
   .cart-empty{ font-family:'Noto Sans JP',sans-serif; font-size: 11.5px; color: var(--ink-dim); }
+  /* カート表示中はカートに隠れないよう一覧の下に余白を足す */
+  body.db-cart-open #tab-databank{ padding-bottom: calc(var(--cart-h, 160px) + 32px); }
+
+  /* ---- 右下に追従するボタン群 ---- */
+  .fab-stack{
+    position: fixed; right: 20px; bottom: 20px; z-index: 95;
+    display:flex; align-items:center; gap: 10px;
+  }
+  body.db-cart-open .fab-stack{ bottom: calc(var(--cart-h, 160px) + 16px); }
+  /* 背景に埋もれないよう、太めの枠 + 濃い影 + 外周のダークハローで浮かせる。
+     ハロー(spread 影)が背後のカードとの境界を作り、「ボタンがある」と一目で分かるようにする。 */
+  .fab{
+    font-family:'Noto Sans JP',sans-serif; cursor:pointer; font-weight: 700;
+    border: 2px solid var(--accent);
+    background: var(--surface);
+    color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(18,18,18,.85), 0 8px 22px rgba(0,0,0,.55);
+    transition: transform .15s ease, background .12s ease, color .12s ease, box-shadow .15s ease;
+  }
+  .fab:hover{
+    background: var(--accent); color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 4px rgba(18,18,18,.85), 0 12px 26px rgba(0,150,250,.45);
+  }
+  .fab:active{ transform: translateY(0); }
+  .fab-top{
+    width: 52px; height: 52px; border-radius: 50%; font-size: 15px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .fab-cart{
+    display:none; align-items:center; gap:8px;
+    height: 52px; border-radius: 999px; padding: 0 22px; font-size: 13px;
+  }
+  .fab-cart .fab-cart-icon{ width: 18px; height: 18px; object-fit: contain; display:block; flex:none; }
+  /* データバンクタブ表示中のみ出す */
+  body.tab-databank .fab-cart{ display:inline-flex; }
+  /* ONのときは塗りつぶしで「動作中」を明示 */
+  .fab-cart.active{ background: var(--accent); color:#fff; }
+  .fab-cart.active:hover{ filter: brightness(1.1); }
+  @media (max-width: 640px){
+    .fab-stack{ right: 14px; bottom: 14px; gap: 8px; }
+    .fab-top{ width: 48px; height: 48px; }
+    .fab-cart{ height: 48px; padding: 0 16px; font-size: 11.5px; }
+    .cart-inner{ padding-top: 10px; padding-bottom: 12px; }
+  }
   .list.panel-mode .row{
     grid-row-end: span 26;
     overflow: hidden;
@@ -727,6 +823,23 @@
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
   body.opt-no-boardvote .board-vote{ display:none; }
+  /* 修正依頼機能: オプションがオンのときだけ表示(オフ時は存在自体を見せない) */
+  body:not(.opt-fixrequest) .fixrequest-only{ display:none !important; }
+  /* 投稿タイトルと「修正依頼の具体的な内容」の間を明確に空ける(相殺に依存しない) */
+  #fixContentField{ margin-top: 26px; }
+  #fixContentField > .field-label{ margin-top: 0; }
+  body.opt-no-dislike .dislike-btn{ display:none; }
+  .dislike-btn{
+    display:inline-flex; align-items:center; gap:4px; background: var(--surface-2);
+    color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 10px; font-size: 12px; cursor: pointer; font-family:'Noto Sans JP',sans-serif;
+  }
+  .dislike-btn:hover{ color: var(--danger); border-color: var(--danger); }
+  .dislike-btn.disliked{ color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
+  .row-hidden-badge{
+    display:inline-block; font-size: 10.5px; color: var(--danger); background: var(--danger-dim);
+    border: 1px solid var(--danger); border-radius: 999px; padding: 1px 8px; margin-left: 8px; vertical-align: middle;
+  }
 
   /* ---- 掲示板グッド/バッド ---- */
   .board-vote{ display:flex; gap:10px; margin-top:12px; }
@@ -736,7 +849,13 @@
     border:1px solid var(--line); border-radius:999px; padding:5px 14px;
     font-size:12.5px; line-height:1;
   }
-  .board-vote-btn .vote-icon{ font-size:14px; line-height:1; }
+  .board-vote-btn .vote-icon{
+    width:15px; height:15px; object-fit:contain; display:block; flex:none;
+    opacity:.45; filter:grayscale(1);
+    transition: opacity .12s ease, filter .12s ease;
+  }
+  .board-vote-btn:hover .vote-icon{ opacity:.85; filter:grayscale(.25); }
+  .board-vote-btn.on .vote-icon{ opacity:1; filter:none; }
   .board-vote-btn .vote-count{ font-variant-numeric: tabular-nums; }
   .board-vote-btn.good.on{ background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
   .board-vote-btn.bad.on{ background: rgba(255,64,96,.14); border-color: var(--danger); color: var(--danger); }
@@ -834,6 +953,7 @@
     <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
     <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
     <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
+    <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
     <button class="tab-btn" data-tab="databank">プロンプトデータバンク</button>
     <button class="tab-btn" data-tab="board">掲示板</button>
     <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
@@ -847,10 +967,11 @@
       <button type="button" data-postmode="image" class="post-mode-btn active">画像を投稿</button>
       <button type="button" data-postmode="prompt" class="post-mode-btn">プロンプト例を投稿</button>
       <button type="button" data-postmode="request" class="post-mode-btn">リクエストを投稿</button>
+      <button type="button" data-postmode="fix" class="post-mode-btn fixrequest-only">修正依頼を投稿</button>
     </div>
 
     <section class="panel" id="imagePostForm">
-      <h2>画像を投稿</h2>
+      <h2 id="imageFormHeading">画像を投稿</h2>
 
       <label class="field-label">画像</label>
       <div class="dropzone" id="dropzone">
@@ -869,6 +990,11 @@
 
       <label class="field-label">投稿タイトル</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="titleInput" placeholder="例: 桜並木の少女">
+
+      <div id="fixContentField" style="display:none;">
+        <label class="field-label">修正依頼の具体的な内容</label>
+        <textarea id="fixContentInput" class="autogrow" placeholder="例: 右手の指を5本に修正してほしい / 背景をもっと暗く など、直してほしい点を具体的に"></textarea>
+      </div>
 
       <div class="author-field">
         <label class="field-label">投稿者(空欄で匿名)</label>
@@ -900,6 +1026,14 @@
       <div class="base-prompt-select">
         <button class="btn-ghost" id="pickRequestBtn" type="button">リクエストを選択</button>
         <span id="requestDisplay" class="base-prompt-display"></span>
+      </div>
+
+      <div id="fixRequestField" class="fixrequest-only">
+        <label class="field-label">対応する修正依頼(任意・複数選択可 / 修正依頼への回答として投稿するとき)</label>
+        <div class="base-prompt-select">
+          <button class="btn-ghost" id="pickFixRequestBtn" type="button">修正依頼を選択</button>
+          <span id="fixRequestDisplay" class="base-prompt-display"></span>
+        </div>
       </div>
 
       <label class="field-label">生成設定(任意 / 画像ドロップで自動入力)</label>
@@ -1011,6 +1145,7 @@
         <span class="label">並び順</span>
         <div class="sort-chips" id="sortChips"></div>
         <button type="button" class="sort-chip" id="includeChildrenToggle" style="margin-left:20px;" title="バリエーション(子作品)も一覧にすべて表示します(パネル表示を含む)">子も全て表示</button>
+        <button type="button" class="sort-chip fixrequest-only" id="includeFixToggle" style="margin-left:10px;" title="修正依頼の投稿も一覧にすべて表示します(パネル表示を含む)">修正依頼作品も表示</button>
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
@@ -1137,6 +1272,37 @@
     <div class="empty" id="rEmptyState" style="display:none;">条件に一致するリクエストがありません。</div>
   </div>
 
+  <!-- ============ 修正依頼一覧タブ ============ -->
+  <div class="tab-panel" id="tab-fixBrowse">
+
+    <div class="search-panel">
+      <div class="search-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="fSortChips"></div>
+      </div>
+      <div class="search-row">
+        <span class="label">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="fFilterKeyword" placeholder="例: 手 指（スペース区切り）">
+        <div class="mode-toggle" id="fKeywordModeToggle">
+          <button type="button" data-kwmode="AND" class="active">AND</button>
+          <button type="button" data-kwmode="OR">OR</button>
+          <button type="button" data-kwmode="NOT">NOT</button>
+        </div>
+        <button class="clear-tags" id="fClearFiltersBtn" type="button">絞り込みをクリア</button>
+      </div>
+      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
+        生成した画像の「修正依頼」の一覧です。依頼を開くと、その依頼に対応して投稿された画像作品がその下にまとめて表示されます。
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <span class="count" id="fPostCount"></span>
+    </div>
+
+    <div class="list" id="fList"></div>
+    <div class="empty" id="fEmptyState" style="display:none;">条件に一致する修正依頼がありません。</div>
+  </div>
+
   <!-- ============ プロンプトデータバンクタブ ============ -->
   <div class="tab-panel" id="tab-databank">
 
@@ -1171,21 +1337,23 @@
 
     <div class="toolbar">
       <span class="count" id="dbCount"></span>
-      <div class="toolbar-right">
-        <button type="button" class="sort-chip" id="dbCartModeBtn">カートに入れるモード</button>
-      </div>
     </div>
 
+    <!-- カートは画面最下部に固定表示。スクロールしながら追加できるようにする -->
     <div class="cart-bar" id="dbCartBar" style="display:none;">
-      <div class="cart-head">
-        <span class="cart-title">カート <span id="dbCartCount">0</span> 件</span>
-        <div class="cart-actions">
-          <button type="button" class="btn-copy" id="dbCartCopyBtn">COPY</button>
-          <button type="button" class="clear-tags" id="dbCartClearBtn">カートを空にする</button>
+      <div class="cart-inner">
+        <div class="cart-head">
+          <span class="cart-title"><img class="cart-icon" src="images/shopping_cart.png" alt="">カート <span class="cart-num" id="dbCartCount">0</span> 件</span>
+          <div class="cart-actions">
+            <button type="button" class="cart-copy" id="dbCartCopyBtn">COPY</button>
+            <button type="button" class="cart-clear" id="dbCartClearBtn">空にする</button>
+          </div>
+        </div>
+        <div class="cart-body">
+          <div class="cart-chips" id="dbCartChips"></div>
+          <div class="cart-empty" id="dbCartEmpty">使いたいプロンプトをクリックすると、ここに追加されます。COPYでまとめてコピーできます。</div>
         </div>
       </div>
-      <div class="cart-chips" id="dbCartChips"></div>
-      <div class="cart-empty" id="dbCartEmpty">「カートに入れるモード」をONにして、使いたいプロンプトをクリックすると、ここに追加されます。COPYでまとめてコピーできます。</div>
     </div>
 
     <div id="databankList"></div>
@@ -1268,7 +1436,7 @@
         <div class="num">4</div>
         <div class="body">
           <strong>リアクションする</strong><br>
-          ♡でいいね、詳細画面からダウンロードや共有URLのコピーができます。
+          グッドボタンで評価、詳細画面からダウンロードや共有URLのコピーができます。
         </div>
       </div>
       <div class="guide-note">
@@ -1343,9 +1511,14 @@
         <div class="qa-a">日本語訳は自動翻訳をもとに用意しており、新しく使われた語は少し時間をおくと自動で埋まります(「—」は未登録の状態です)。訳が不自然な語や、もっと良い訳・関連キーワードを足したい場合は、管理者が辞書を直接直せます。気になる訳があれば使い方タブ下部の連絡フォームから管理者へ知らせてください。</div>
       </div>
 
+      <div class="qa-item fixrequest-only">
+        <div class="qa-q">生成した画像を直してほしいときは？</div>
+        <div class="qa-a">投稿タブの「修正依頼を投稿」から、直してほしい画像と「修正依頼の具体的な内容」を書いて投稿してください。投稿した依頼は「修正依頼一覧」タブに並びます。依頼に応えるときは、画像を投稿する際に「対応する修正依頼」でその依頼を選ぶと紐づき、依頼の詳細ページに対応作品としてまとめて表示されます。なお修正依頼の投稿は画像投稿一覧には並びません(一覧上部の「修正依頼作品も表示」を押すと一緒に表示できます)。</div>
+      </div>
+
       <div class="qa-item">
-        <div class="qa-q">「いいね」は何回でも押せますか？</div>
-        <div class="qa-a">1つの投稿につき、同じ端末・ブラウザからは1回までです(もう一度押すと取り消せます)。いいね済みかどうかはお使いのブラウザに記録されるため、別の端末やブラウザからは別カウントになります。</div>
+        <div class="qa-q">「グッド」は何回でも押せますか？</div>
+        <div class="qa-a">1つの投稿につき、同じ端末・ブラウザからは1回までです(もう一度押すと取り消せます)。グッド済みかどうかはお使いのブラウザに記録されるため、別の端末やブラウザからは別カウントになります。</div>
       </div>
     </section>
 
@@ -1643,11 +1816,34 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="fixRequestModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="fixRequestModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">対応する修正依頼を選択</h3>
+    <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除(複数選択可)</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="fixRequestSearch" placeholder="タイトル・投稿者・内容で検索" style="flex:1 1 200px; width:auto;">
+      <button class="btn-ghost" id="clearFixRequestBtn" type="button">すべて解除</button>
+    </div>
+    <div class="sort-chips" id="fixRequestSortChips" style="margin-bottom:14px;"></div>
+    <div class="list" id="fixRequestList"></div>
+    <div class="empty" id="fixRequestEmpty" style="display:none;">修正依頼投稿がまだありません。</div>
+  </div>
+</div>
+
 <div class="modal-overlay full-image-overlay" id="refLightboxOverlay">
   <div class="full-image-inner">
     <button class="modal-close" type="button" id="refLightboxCloseBtn">✕ 閉じる</button>
     <div class="full-image-wrap"><img id="refLightboxImg" alt="参考資料"></div>
   </div>
+</div>
+
+<!-- 画面右下に常時追従するボタン群(カートモードはデータバンクタブ表示中のみ) -->
+<div class="fab-stack" id="fabStack">
+  <button type="button" class="fab fab-cart" id="dbCartModeBtn">
+    <img class="fab-cart-icon" src="images/shopping_cart.png" alt=""><span>カートに入れるモード</span>
+  </button>
+  <button type="button" class="fab fab-top" id="scrollTopBtn" title="先頭に戻る" aria-label="先頭に戻る">▲</button>
 </div>
 
 <div class="loading-overlay" id="loadingOverlay">
@@ -1702,13 +1898,23 @@
     'Version': 'version'
   };
 
+  // モーダルを開く共通処理。
+  // .modal-overlay 自体がスクロールコンテナなので、開くたびに先頭へ戻す
+  // (前に開いたモーダルのスクロール位置が residual として残るのを防ぐ)。
+  function openOverlay(el) {
+    if (!el) return;
+    el.classList.add('open');
+    if (el.classList.contains('modal-overlay')) el.scrollTop = 0;
+  }
+
   let posts = [];
   let imagePosts = [];
   let promptPosts = [];
   let requestPosts = [];
+  let fixPosts = [];
   let allComments = [];
   let allBoard = [];
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
@@ -1724,10 +1930,19 @@
   let selectedBasePromptIds = [];
   let selectedParentId = '';
   let selectedRequestId = '';
+  let selectedFixRequestIds = [];
   let requestRefs = [];
   let rSortKeys = [{ field: 'date', dir: 'desc' }];
   let rKeywordMode = 'AND';
   let rAnsweredFilter = ''; // '' | 'only' | 'hide'
+  let fSortKeys = [{ field: 'date', dir: 'desc' }];
+  let fKeywordMode = 'AND';
+  let fAnsweredFilter = ''; // '' | 'only' | 'hide'
+  let showFixWorks = false;
+
+  function fixRequestIdsOf(post) {
+    return String((post && post.fixRequestId) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+  }
 
   function basePromptIdsOf(post) {
     return String((post && post.basePromptId) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -1742,7 +1957,7 @@
 
   const PROMPT_SORT_FIELDS = [
     { key: 'date',       label: '日時' },
-    { key: 'likeCount',  label: 'いいね' },
+    { key: 'likeCount',  label: 'グッド' },
     { key: 'author',     label: '投稿者' },
     { key: 'checkpoint', label: 'Checkpoint' }
   ];
@@ -1750,13 +1965,13 @@
 
   const REQUEST_SORT_FIELDS = [
     { key: 'date',      label: '日時' },
-    { key: 'likeCount', label: 'いいね' },
+    { key: 'likeCount', label: 'グッド' },
     { key: 'author',    label: '投稿者' }
   ];
 
   const SORT_FIELDS = [
     { key: 'date',          label: '日時' },
-    { key: 'likeCount',     label: 'いいね' },
+    { key: 'likeCount',     label: 'グッド' },
     { key: 'downloadCount', label: 'ダウンロード' },
     { key: 'author',        label: '投稿者' },
     { key: 'uiPreset',      label: 'UI Preset' },
@@ -1770,6 +1985,23 @@
     try { localStorage.setItem('likedPosts', JSON.stringify(likedPosts)); } catch (e) {}
   }
 
+  let dislikedPosts = {};
+  try { dislikedPosts = JSON.parse(localStorage.getItem('dislikedPosts') || '{}'); } catch (e) { dislikedPosts = {}; }
+  function saveDisliked() {
+    try { localStorage.setItem('dislikedPosts', JSON.stringify(dislikedPosts)); } catch (e) {}
+  }
+  function dislikeThreshold() {
+    const n = Number(options.dislikeThreshold);
+    return n > 0 ? n : 10;
+  }
+  // バッドしきい値到達で非管理者には強制非表示。管理者モードでは表示(モデレーション用)
+  function isHiddenByDislike(p) {
+    return options.dislike && !adminMode && (Number(p.dislikeCount) || 0) >= dislikeThreshold();
+  }
+  function visiblePosts(arr) {
+    return arr.filter(function (p) { return !isHiddenByDislike(p); });
+  }
+
   let boardVotes = {};
   try { boardVotes = JSON.parse(localStorage.getItem('boardVotes') || '{}'); } catch (e) { boardVotes = {}; }
   function saveBoardVotes() {
@@ -1781,12 +2013,16 @@
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
     document.getElementById('tab-' + name).classList.add('active');
+    // 右下の「カートに入れるモード」ボタンはデータバンクタブ表示中のみ出す
+    document.body.classList.toggle('tab-databank', name === 'databank');
     if (name === 'browse') { renderList(); applyBrowseTagClamp(); }
     if (name === 'promptBrowse') { renderPromptList(); applyPromptBrowseTagClamp(); }
     if (name === 'requestBrowse') { renderRequestList(); }
+    if (name === 'fixBrowse') { renderFixList(); }
     if (name === 'databank') { renderDatabank(); }
     if (name === 'board') { renderBoard(); }
     if (name === 'post') { applyPostTagClamp(); if (currentPostMode() === 'prompt') applyPromptFormTagClamp(); }
+    syncCartLayout();
   }
   document.querySelectorAll('.tab-btn').forEach(function (btn) {
     btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
@@ -2190,9 +2426,10 @@
       options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
       buildInternalDict(data.dictionary);
       applyOptionsToUi();
-      imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request'; });
+      imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix'; });
       promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
       requestPosts = posts.filter(function (p) { return p.type === 'request'; });
+      fixPosts = posts.filter(function (p) { return p.type === 'fix'; });
       collectDynamicKeysFromPosts();
       rebuildSettingsGrid();
       rebuildTagUI();
@@ -2448,6 +2685,11 @@
     this.classList.toggle('active', showChildren);
     renderList();
   });
+  document.getElementById('includeFixToggle').addEventListener('click', function () {
+    showFixWorks = !showFixWorks;
+    this.classList.toggle('active', showFixWorks);
+    renderList();
+  });
 
   /* ---------- 投稿フォームのタグ選択 ---------- */
   const selectedTagsEl = document.getElementById('selectedTags');
@@ -2512,7 +2754,7 @@
       });
     });
   }
-  function openTagModal() { renderTagModalCloud(); tagModalOverlay.classList.add('open'); }
+  function openTagModal() { renderTagModalCloud(); openOverlay(tagModalOverlay); }
   function closeTagModal() { tagModalOverlay.classList.remove('open'); }
 
   showAllTagsBtn.addEventListener('click', openTagModal);
@@ -2541,7 +2783,7 @@
       });
     });
   }
-  function openBrowseTagModal() { renderBrowseTagModalCloud(); browseTagModalOverlay.classList.add('open'); }
+  function openBrowseTagModal() { renderBrowseTagModalCloud(); openOverlay(browseTagModalOverlay); }
   function closeBrowseTagModal() { browseTagModalOverlay.classList.remove('open'); }
 
   showAllBrowseTagsBtn.addEventListener('click', openBrowseTagModal);
@@ -2625,6 +2867,9 @@
     renderParentDisplay();
     selectedRequestId = '';
     renderRequestDisplay();
+    document.getElementById('fixContentInput').value = '';
+    selectedFixRequestIds = [];
+    renderFixRequestDisplay();
   }
 
   document.getElementById('submitBtn').addEventListener('click', async function () {
@@ -2640,6 +2885,9 @@
     statusText.textContent = '';
 
     try {
+      const mode = currentPostMode();
+      const editingFix = editing && adminEditingPost && adminEditingPost.type === 'fix';
+      const isFix = editingFix || (!editing && mode === 'fix');
       const payload = {
         title: document.getElementById('titleInput').value,
         author: document.getElementById('authorInput').value,
@@ -2648,10 +2896,12 @@
         memo: document.getElementById('memoInput').value,
         settings: collectSettings(),
         tags: selectedTags,
-        type: 'image',
+        type: isFix ? 'fix' : 'image',
         basePromptId: selectedBasePromptIds.join(','),
         parentId: selectedParentId,
-        requestId: selectedRequestId
+        requestId: isFix ? '' : selectedRequestId,
+        fixContent: isFix ? document.getElementById('fixContentInput').value : '',
+        fixRequestId: isFix ? '' : selectedFixRequestIds.join(',')
       };
       if (editing) {
         payload.action = 'adminUpdate';
@@ -2679,8 +2929,8 @@
       if (editing) cancelAdminEdit(); else resetImageForm();
 
       await loadPosts();
-      switchTab('browse');
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
+      switchTab(posted && posted.type === 'fix' ? 'fixBrowse' : 'browse');
       if (posted) openModal(posted);
     } catch (err) {
       statusText.textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
@@ -2753,11 +3003,22 @@
     document.body.classList.toggle('opt-no-author', !options.author);
     document.body.classList.toggle('opt-no-board', !options.board);
     document.body.classList.toggle('opt-no-boardvote', !options.boardVote);
+    document.body.classList.toggle('opt-fixrequest', !!options.fixRequest);
+    document.body.classList.toggle('opt-no-dislike', !options.dislike);
     document.querySelectorAll('.author-field').forEach(function (el) {
       el.style.display = options.author ? '' : 'none';
     });
     if (!options.board && document.getElementById('tab-board').classList.contains('active')) {
       switchTab('browse');
+    }
+    // 修正依頼機能オフ時は、関連タブ/投稿モード/表示トグルの状態も畳む
+    if (!options.fixRequest) {
+      if (document.getElementById('tab-fixBrowse').classList.contains('active')) switchTab('browse');
+      if (currentPostMode() === 'fix') setPostMode('image');
+      if (showFixWorks) {
+        showFixWorks = false;
+        document.getElementById('includeFixToggle').classList.remove('active');
+      }
     }
   }
 
@@ -2785,6 +3046,8 @@
   function wireModalLikeButton() {
     const likeBtn = modalBody.querySelector('.modal-counts .like-btn');
     if (likeBtn) likeBtn.addEventListener('click', function () { toggleLike(likeBtn.dataset.like); });
+    const dislikeBtn = modalBody.querySelector('.modal-counts .dislike-btn');
+    if (dislikeBtn) dislikeBtn.addEventListener('click', function () { toggleDislike(dislikeBtn.dataset.dislike); });
   }
 
   function compareByKeys(a, b) {
@@ -2818,10 +3081,16 @@
         ? '<span data-like-count="' + p.id + '">' + (Number(p.likeCount) || 0) + '</span>'
         : '';
       parts += '<button class="like-btn' + (liked ? ' liked' : '') + '" type="button" data-like="' + p.id + '">' +
-        '<span class="heart">' + (liked ? '♥' : '♡') + '</span>' + countHtml +
+        '<img class="btn-icon" src="images/thumb_up.png" alt="グッド">' + countHtml +
       '</button>';
     } else if (options.likeCount) {
-      parts += '<span class="count-badge">♥ <span data-like-count="' + p.id + '">' + (Number(p.likeCount) || 0) + '</span></span>';
+      parts += '<span class="count-badge"><img class="btn-icon" src="images/thumb_up.png" alt="グッド"><span data-like-count="' + p.id + '">' + (Number(p.likeCount) || 0) + '</span></span>';
+    }
+    if (options.dislike) {
+      const disliked = !!dislikedPosts[p.id];
+      parts += '<button class="dislike-btn' + (disliked ? ' disliked' : '') + '" type="button" data-dislike="' + p.id + '" title="バッド">' +
+        '<img class="btn-icon" src="images/thumb_down.png" alt="バッド"><span data-dislike-count="' + p.id + '">' + (Number(p.dislikeCount) || 0) + '</span>' +
+      '</button>';
     }
     if (!opts.likeOnly && options.downloadCount) {
       parts += '<span class="count-badge">⬇ <span data-dl-count="' + p.id + '">' + (Number(p.downloadCount) || 0) + '</span></span>';
@@ -2836,7 +3105,9 @@
   }
 
   function renderList() {
-    const base = showChildren ? imagePosts.slice() : imagePosts.filter(function (p) { return !p.parentId; });
+    let base = showChildren ? imagePosts.slice() : imagePosts.filter(function (p) { return !p.parentId; });
+    if (showFixWorks && options.fixRequest) base = base.concat(fixPosts.slice());
+    base = visiblePosts(base);
     let filtered = base.filter(passesTagFilter);
 
     const fAuthor = document.getElementById('filterAuthor').value.trim().toLowerCase();
@@ -2890,14 +3161,27 @@
       '</div>';
   }
 
-  function wireImageRows(container, opts) {
-    opts = opts || {};
+  // 一覧行内のグッド/バッドボタンの配線。
+  // 行クリック(詳細を開く)へ伝播させないよう必ず stopPropagation する。
+  // 各一覧が個別に配線すると漏れるため、この関数に集約している。
+  function wireCountButtons(container) {
     container.querySelectorAll('.like-btn').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         toggleLike(btn.dataset.like);
       });
     });
+    container.querySelectorAll('.dislike-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleDislike(btn.dataset.dislike);
+      });
+    });
+  }
+
+  function wireImageRows(container, opts) {
+    opts = opts || {};
+    wireCountButtons(container);
     container.querySelectorAll('.row').forEach(function (row) {
       row.addEventListener('click', function () {
         const post = posts.find(function (p) { return String(p.id) === String(row.dataset.id); });
@@ -2908,12 +3192,7 @@
   }
 
   function wirePickerRows(container, onSelect) {
-    container.querySelectorAll('.like-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        toggleLike(btn.dataset.like);
-      });
-    });
+    wireCountButtons(container);
     container.querySelectorAll('.row').forEach(function (row) {
       row.addEventListener('click', function () { onSelect(row.dataset.id); });
     });
@@ -3010,9 +3289,35 @@
         '<div class="list" id="childWorks">' + children.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
       : '';
 
+    // この画像が対応している修正依頼(画像投稿)へのリンク
+    const fixList = fixRequestIdsOf(p)
+      .map(function (id) { return fixPosts.find(function (fp) { return String(fp.id) === String(id); }); })
+      .filter(Boolean);
+    const fixLinksBlock = (options.fixRequest && fixList.length)
+      ? '<div class="detail-block"><div class="label">対応した修正依頼</div>' +
+          '<div class="value">' + fixList.map(function (fp) {
+            return '<a href="#" class="fix-post-link" data-fix-id="' + escapeHtml(String(fp.id)) + '" style="display:inline-block; margin: 0 10px 4px 0;">' +
+              (fp.title ? escapeHtml(fp.title) : '(無題)') + '</a>';
+          }).join('') + '</div></div>'
+      : '';
+
+    // 修正依頼の詳細を開いたとき: 依頼内容と、それに対応して投稿された画像作品の一覧
+    const fixContentBlock = (p.type === 'fix' && p.fixContent)
+      ? '<div class="detail-block"><div class="label">修正依頼の内容</div><div class="value">' + escapeHtml(p.fixContent) + '</div></div>'
+      : '';
+    let fixAnswersBlock = '';
+    if (p.type === 'fix') {
+      const answers = imagePosts.filter(function (ip) { return fixRequestIdsOf(ip).indexOf(String(p.id)) !== -1 && !ip.parentId; });
+      answers.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+      fixAnswersBlock = '<div class="linked-works-head">この修正依頼に対応して投稿された作品(' + answers.length + '件)</div>' +
+        (answers.length
+          ? '<div class="list" id="fixAnswerWorks">' + answers.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
+          : '<div class="linked-empty">まだこの修正依頼に対応した投稿はありません。</div>');
+    }
+
     modalBody.innerHTML = '' +
       '<div class="modal-header">' +
-        '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
+        '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + (p.type === 'fix' ? ' <span class="row-hidden-badge" style="color:var(--accent);background:var(--accent-dim);border-color:var(--accent);">修正依頼</span>' : '') + '</h3>' +
         '<div class="modal-top-actions">' +
           adminActionButtonsHtml() +
           '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>' +
@@ -3024,9 +3329,11 @@
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
+      fixContentBlock +
       baseBlock +
       parentBlock +
       requestBlock +
+      fixLinksBlock +
       '<div class="detail-block">' +
         '<div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
         '<div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div>' +
@@ -3038,6 +3345,7 @@
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">設定関係</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
+      fixAnswersBlock +
       childrenBlock;
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
@@ -3059,7 +3367,7 @@
       baseLink.addEventListener('click', function (e) {
         e.preventDefault();
         const bp = promptPosts.find(function (pp) { return String(pp.id) === String(baseLink.dataset.promptId); });
-        if (bp) { switchTab('promptBrowse'); openPromptModal(bp); }
+        if (bp) openPromptModal(bp);
       });
     });
 
@@ -3077,14 +3385,24 @@
       requestLink.addEventListener('click', function (e) {
         e.preventDefault();
         const rp = requestPosts.find(function (x) { return String(x.id) === String(requestLink.dataset.requestId); });
-        if (rp) { switchTab('requestBrowse'); openRequestModal(rp); }
+        if (rp) openRequestModal(rp);
       });
     }
 
     const childWorks = document.getElementById('childWorks');
     if (childWorks) wireImageRows(childWorks, { detailOnly: true });
 
-    modalOverlay.classList.add('open');
+    modalBody.querySelectorAll('.fix-post-link').forEach(function (fixLink) {
+      fixLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        const fp = fixPosts.find(function (x) { return String(x.id) === String(fixLink.dataset.fixId); });
+        if (fp) openModal(fp);
+      });
+    });
+    const fixAnswerWorks = document.getElementById('fixAnswerWorks');
+    if (fixAnswerWorks) wireImageRows(fixAnswerWorks, { detailOnly: true });
+
+    openOverlay(modalOverlay);
   }
 
   function closeModal() {
@@ -3104,7 +3422,7 @@
     fullImageImg.src = '';
     fullImageImg.src = imageSrcFor(p.imageUrl, 'w1000');
     fullImageOverlay.dataset.id = p.id;
-    fullImageOverlay.classList.add('open');
+    openOverlay(fullImageOverlay);
   }
   function closeFullImageModal() {
     fullImageOverlay.classList.remove('open');
@@ -3131,7 +3449,7 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlMenu(); closeDbUsageModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlMenu(); closeDbUsageModal(); }
   });
 
   async function postAction(payload) {
@@ -3153,10 +3471,15 @@
     document.querySelectorAll('[data-dl-count="' + id + '"]').forEach(function (el) {
       el.textContent = Number(p.downloadCount) || 0;
     });
+    document.querySelectorAll('[data-dislike-count="' + id + '"]').forEach(function (el) {
+      el.textContent = Number(p.dislikeCount) || 0;
+    });
     document.querySelectorAll('.like-btn[data-like="' + id + '"], .modal-counts .like-btn').forEach(function (btn) {
       btn.classList.toggle('liked', liked);
-      const heart = btn.querySelector('.heart');
-      if (heart) heart.textContent = liked ? '♥' : '♡';
+    });
+    const disliked = !!dislikedPosts[id];
+    document.querySelectorAll('.dislike-btn[data-dislike="' + id + '"]').forEach(function (btn) {
+      btn.classList.toggle('disliked', disliked);
     });
   }
 
@@ -3182,6 +3505,41 @@
     }
   }
 
+  async function toggleDislike(id) {
+    const p = posts.find(function (x) { return String(x.id) === String(id); });
+    if (!p) return;
+    const currentlyDisliked = !!dislikedPosts[id];
+    const delta = currentlyDisliked ? -1 : 1;
+
+    if (currentlyDisliked) delete dislikedPosts[id]; else dislikedPosts[id] = true;
+    saveDisliked();
+    p.dislikeCount = Math.max(0, (Number(p.dislikeCount) || 0) + delta);
+    updateCountUI(id);
+
+    try {
+      const result = await postAction({ action: 'dislike', id: id, delta: delta });
+      if (result && result.success && typeof result.dislikeCount === 'number') {
+        p.dislikeCount = result.dislikeCount;
+        updateCountUI(id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    // しきい値に到達したら一覧・詳細から消える(非管理者)。表示を更新する。
+    if (isHiddenByDislike(p)) {
+      closeModal();
+      rerenderActiveList();
+    }
+  }
+
+  function rerenderActiveList() {
+    if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+    if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
+    if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
+    if (document.getElementById('tab-fixBrowse') && document.getElementById('tab-fixBrowse').classList.contains('active')) renderFixList();
+  }
+
   function sharePost(p, btn) {
     const code = p.shareId || p.id;
     const url = location.origin + location.pathname + '?p=' + encodeURIComponent(code);
@@ -3201,8 +3559,13 @@
       return String(p.shareId) === String(code) || String(p.id) === String(code);
     });
     if (post) {
+      if (isHiddenByDislike(post)) return;
       if (post.type === 'prompt') { switchTab('promptBrowse'); openPromptModal(post); }
       else if (post.type === 'request') { switchTab('requestBrowse'); openRequestModal(post); }
+      else if (post.type === 'fix') {
+        if (!options.fixRequest) return;
+        switchTab('fixBrowse'); openModal(post);
+      }
       else { switchTab('browse'); openModal(post); }
     }
   }
@@ -3328,9 +3691,14 @@
     document.querySelectorAll('#postModeToggle button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.postmode === mode);
     });
-    document.getElementById('imagePostForm').style.display = mode === 'image' ? '' : 'none';
+    const showImageForm = mode === 'image' || mode === 'fix';
+    document.getElementById('imagePostForm').style.display = showImageForm ? '' : 'none';
     document.getElementById('promptPostForm').style.display = mode === 'prompt' ? '' : 'none';
     document.getElementById('requestPostForm').style.display = mode === 'request' ? '' : 'none';
+    // 画像フォーム流用: fixモードなら修正依頼内容欄を表示、画像モードなら修正依頼ピッカーを表示
+    document.getElementById('imageFormHeading').textContent = mode === 'fix' ? '修正依頼を投稿' : '画像を投稿';
+    document.getElementById('fixContentField').style.display = mode === 'fix' ? '' : 'none';
+    document.getElementById('fixRequestField').style.display = mode === 'image' ? '' : 'none';
     if (mode === 'prompt') rebuildPromptFormTagCloud(); else applyPostTagClamp();
   }
 
@@ -3413,7 +3781,7 @@
       });
     });
   }
-  function openPTagModal() { renderPTagModalCloud(); pTagModalOverlay.classList.add('open'); }
+  function openPTagModal() { renderPTagModalCloud(); openOverlay(pTagModalOverlay); }
   function closePTagModal() { pTagModalOverlay.classList.remove('open'); }
 
   pShowAllTagsBtn.addEventListener('click', openPTagModal);
@@ -3574,7 +3942,7 @@
       renderBasePromptList(document.getElementById('basePromptSearch').value);
     });
     renderBasePromptList('');
-    basePromptModalOverlay.classList.add('open');
+    openOverlay(basePromptModalOverlay);
   }
   function closeBasePromptModal() { basePromptModalOverlay.classList.remove('open'); }
 
@@ -3583,6 +3951,66 @@
   basePromptModalOverlay.addEventListener('click', function (e) { if (e.target === basePromptModalOverlay) closeBasePromptModal(); });
   document.getElementById('basePromptSearch').addEventListener('input', function () { renderBasePromptList(this.value); });
   document.getElementById('clearBasePromptBtn').addEventListener('click', function () { selectedBasePromptIds = []; renderBasePromptDisplay(); renderBasePromptList(document.getElementById('basePromptSearch').value); });
+
+  // FIX REQUEST PICKER (画像投稿が対応する修正依頼を複数選択。ベースプロンプトと同様の仕様)
+  const fixRequestModalOverlay = document.getElementById('fixRequestModalOverlay');
+  const fixRequestListEl = document.getElementById('fixRequestList');
+  const fixRequestEmptyEl = document.getElementById('fixRequestEmpty');
+  let fixPickerSortKeys = [{ field: 'date', dir: 'desc' }];
+
+  function renderFixRequestDisplay() {
+    const el = document.getElementById('fixRequestDisplay');
+    if (!el) return;
+    const items = selectedFixRequestIds
+      .map(function (id) { return fixPosts.find(function (x) { return String(x.id) === String(id); }); })
+      .filter(Boolean);
+    if (!items.length) { el.innerHTML = ''; return; }
+    el.innerHTML = items.map(function (p, i) {
+      return '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" data-clear-fix="' + i + '">×</button></span>';
+    }).join('');
+    el.querySelectorAll('[data-clear-fix]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const p = items[Number(btn.dataset.clearFix)];
+        selectedFixRequestIds = selectedFixRequestIds.filter(function (id) { return String(id) !== String(p.id); });
+        renderFixRequestDisplay();
+      });
+    });
+  }
+  function renderFixRequestList(q) {
+    q = (q || '').trim().toLowerCase();
+    fixRequestEmptyEl.style.display = fixPosts.length ? 'none' : 'block';
+    const items = fixPosts.filter(function (p) {
+      if (!q) return true;
+      const hay = (String(p.title || '') + ' ' + String(p.author || '') + ' ' + String(p.fixContent || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    items.sort(function (a, b) { return compareWithKeys(a, b, fixPickerSortKeys); });
+    fixRequestListEl.innerHTML = items.map(function (p) {
+      const selected = selectedFixRequestIds.some(function (id) { return String(id) === String(p.id); });
+      return imageRowHtml(p, 'w320', { selected: selected, counts: false });
+    }).join('');
+    wirePickerRows(fixRequestListEl, function (id) {
+      const idx = selectedFixRequestIds.findIndex(function (x) { return String(x) === String(id); });
+      if (idx === -1) selectedFixRequestIds.push(id); else selectedFixRequestIds.splice(idx, 1);
+      renderFixRequestDisplay();
+      renderFixRequestList(document.getElementById('fixRequestSearch').value);
+    });
+  }
+  function openFixRequestModal() {
+    document.getElementById('fixRequestSearch').value = '';
+    renderPickerSortChips(document.getElementById('fixRequestSortChips'), REQUEST_SORT_FIELDS, fixPickerSortKeys, function () {
+      renderFixRequestList(document.getElementById('fixRequestSearch').value);
+    });
+    renderFixRequestList('');
+    openOverlay(fixRequestModalOverlay);
+  }
+  function closeFixRequestModal() { fixRequestModalOverlay.classList.remove('open'); }
+
+  document.getElementById('pickFixRequestBtn').addEventListener('click', openFixRequestModal);
+  document.getElementById('fixRequestModalCloseBtn').addEventListener('click', closeFixRequestModal);
+  fixRequestModalOverlay.addEventListener('click', function (e) { if (e.target === fixRequestModalOverlay) closeFixRequestModal(); });
+  document.getElementById('fixRequestSearch').addEventListener('input', function () { renderFixRequestList(this.value); });
+  document.getElementById('clearFixRequestBtn').addEventListener('click', function () { selectedFixRequestIds = []; renderFixRequestDisplay(); renderFixRequestList(document.getElementById('fixRequestSearch').value); });
 
   // PARENT POST PICKER
   const parentModalOverlay = document.getElementById('parentModalOverlay');
@@ -3630,7 +4058,7 @@
       renderParentList(document.getElementById('parentSearch').value);
     });
     renderParentList('');
-    parentModalOverlay.classList.add('open');
+    openOverlay(parentModalOverlay);
   }
   function closeParentModal() { parentModalOverlay.classList.remove('open'); }
 
@@ -3833,7 +4261,7 @@
       renderRequestPickerList(document.getElementById('requestSearch').value);
     });
     renderRequestPickerList('');
-    requestModalOverlay.classList.add('open');
+    openOverlay(requestModalOverlay);
   }
   function closeRequestModal() { requestModalOverlay.classList.remove('open'); }
 
@@ -3931,7 +4359,7 @@
   function renderRequestList() {
     const keywords = document.getElementById('rFilterKeyword').value
       .split(/[\s\u3000]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
-    let filtered = requestPosts.filter(function (p) {
+    let filtered = visiblePosts(requestPosts).filter(function (p) {
       if (!passesRequestKeyword(p, keywords)) return false;
       if (rAnsweredFilter) {
         const answered = requestAnswerCount(p) > 0;
@@ -3946,9 +4374,7 @@
     rEmptyState.style.display = filtered.length ? 'none' : 'block';
     rList.innerHTML = filtered.map(requestRowHtml).join('');
 
-    rList.querySelectorAll('.like-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) { e.stopPropagation(); toggleLike(btn.dataset.like); });
-    });
+    wireCountButtons(rList);
     rList.querySelectorAll('.row').forEach(function (row) {
       row.addEventListener('click', function () {
         const post = requestPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
@@ -3957,8 +4383,123 @@
     });
   }
 
-  function refGalleryHtml(p) {
-    const refs = p.referenceImages || [];
+  // FIX REQUEST BROWSE (修正依頼一覧)
+  const fList = document.getElementById('fList');
+  const fEmptyState = document.getElementById('fEmptyState');
+  const fPostCount = document.getElementById('fPostCount');
+  const fSortChips = document.getElementById('fSortChips');
+  fList.addEventListener('error', handleImageError, true);
+
+  function fixAnswerCount(p) {
+    return imagePosts.filter(function (ip) { return fixRequestIdsOf(ip).indexOf(String(p.id)) !== -1 && !ip.parentId; }).length;
+  }
+
+  function renderFSortChips() {
+    const sortHtml = REQUEST_SORT_FIELDS.map(function (f) {
+      const idx = fSortKeys.findIndex(function (k) { return k.field === f.key; });
+      const active = idx !== -1;
+      const dir = active ? fSortKeys[idx].dir : '';
+      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
+      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    }).join('');
+    const answeredLabel = fAnsweredFilter === 'only' ? '対応済みのみ' : (fAnsweredFilter === 'hide' ? '未対応のみ' : '対応済み');
+    fSortChips.innerHTML = sortHtml +
+      '<span class="sort-chip' + (fAnsweredFilter ? ' active' : '') + '" data-fanswered-chip>' + answeredLabel + '</span>';
+
+    fSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        const field = chip.dataset.field;
+        const idx = fSortKeys.findIndex(function (k) { return k.field === field; });
+        if (idx === -1) fSortKeys.push({ field: field, dir: 'desc' });
+        else if (fSortKeys[idx].dir === 'desc') fSortKeys[idx].dir = 'asc';
+        else fSortKeys.splice(idx, 1);
+        renderFSortChips();
+        renderFixList();
+      });
+    });
+    const fAnsweredChip = fSortChips.querySelector('[data-fanswered-chip]');
+    if (fAnsweredChip) {
+      fAnsweredChip.addEventListener('click', function () {
+        fAnsweredFilter = fAnsweredFilter === '' ? 'only' : (fAnsweredFilter === 'only' ? 'hide' : '');
+        renderFSortChips();
+        renderFixList();
+      });
+    }
+  }
+
+  document.getElementById('fFilterKeyword').addEventListener('input', renderFixList);
+  document.querySelectorAll('#fKeywordModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      fKeywordMode = btn.dataset.kwmode;
+      document.querySelectorAll('#fKeywordModeToggle button').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.kwmode === fKeywordMode);
+      });
+      renderFixList();
+    });
+  });
+  document.getElementById('fClearFiltersBtn').addEventListener('click', function () {
+    document.getElementById('fFilterKeyword').value = '';
+    fAnsweredFilter = '';
+    renderFSortChips();
+    renderFixList();
+  });
+
+  function passesFixKeyword(p, keywords) {
+    if (!keywords.length) return true;
+    const haystack = (String(p.title || '') + ' ' + String(p.fixContent || '') + ' ' + String(p.prompt || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+    if (fKeywordMode === 'NOT') return !keywords.some(function (k) { return haystack.indexOf(k) !== -1; });
+    return fKeywordMode === 'OR'
+      ? keywords.some(function (k) { return haystack.indexOf(k) !== -1; })
+      : keywords.every(function (k) { return haystack.indexOf(k) !== -1; });
+  }
+
+  function fixRowHtml(p) {
+    const title = p.title ? escapeHtml(p.title) : '(無題)';
+    const snippet = p.fixContent ? '<div class="request-snippet">' + escapeHtml(p.fixContent) + '</div>' : '';
+    const tags = sortJa((p.tags || []).slice());
+    return '<div class="row" data-id="' + p.id + '">' +
+      '<div class="row-counts">' + countBadgesHtml(p) + '</div>' +
+      '<div class="row-main">' +
+        '<div class="row-thumb">' + imageTag(p.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+        '<div class="row-body">' +
+          '<div class="row-title">' + title + '</div>' +
+          '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span class="row-requested">対応作品 ' + fixAnswerCount(p) + '件</span></div>' +
+          snippet +
+          (tags.length ? '<div class="row-tags">' + tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderFixList() {
+    const keywords = document.getElementById('fFilterKeyword').value
+      .split(/[\s\u3000]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+    let filtered = visiblePosts(fixPosts).filter(function (p) {
+      if (!passesFixKeyword(p, keywords)) return false;
+      if (fAnsweredFilter) {
+        const answered = fixAnswerCount(p) > 0;
+        if (fAnsweredFilter === 'only' && !answered) return false;
+        if (fAnsweredFilter === 'hide' && answered) return false;
+      }
+      return true;
+    });
+    filtered.sort(function (a, b) { return compareWithKeys(a, b, fSortKeys); });
+
+    fPostCount.textContent = filtered.length + ' 件';
+    fEmptyState.style.display = filtered.length ? 'none' : 'block';
+    fList.innerHTML = filtered.map(fixRowHtml).join('');
+
+    wireCountButtons(fList);
+    fList.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        const post = fixPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+        if (post) openModal(post);
+      });
+    });
+  }
+
+  function refGalleryHtml(p) {    const refs = p.referenceImages || [];
     if (!refs.length) return '';
     return '<div class="detail-block"><div class="label">参考資料</div><div class="ref-gallery">' +
       refs.map(function (u) {
@@ -4001,14 +4542,14 @@
     });
     wireImageRows(document.getElementById('answerWorks'), { detailOnly: true });
 
-    modalOverlay.classList.add('open');
+    openOverlay(modalOverlay);
   }
 
   // 参考資料ライトボックス
   const refLightboxOverlay = document.getElementById('refLightboxOverlay');
   function openRefLightbox(url) {
     document.getElementById('refLightboxImg').src = imageSrcFor(url, 'w1000');
-    refLightboxOverlay.classList.add('open');
+    openOverlay(refLightboxOverlay);
   }
   function closeRefLightbox() { refLightboxOverlay.classList.remove('open'); }
   document.getElementById('refLightboxCloseBtn').addEventListener('click', closeRefLightbox);
@@ -4029,10 +4570,10 @@
     const good = Number(m.goodCount) || 0;
     const bad = Number(m.badCount) || 0;
     return '<div class="board-vote">' +
-      '<button type="button" class="board-vote-btn good' + (vote === 'good' ? ' on' : '') + '" data-board-vote="good" data-board-id="' + id + '">' +
-        '<span class="vote-icon">👍</span><span class="vote-count" data-board-good="' + id + '">' + good + '</span></button>' +
-      '<button type="button" class="board-vote-btn bad' + (vote === 'bad' ? ' on' : '') + '" data-board-vote="bad" data-board-id="' + id + '">' +
-        '<span class="vote-icon">👎</span><span class="vote-count" data-board-bad="' + id + '">' + bad + '</span></button>' +
+      '<button type="button" class="board-vote-btn good' + (vote === 'good' ? ' on' : '') + '" data-board-vote="good" data-board-id="' + id + '" title="グッド">' +
+        '<img class="vote-icon" src="images/thumb_up.png" alt="グッド"><span class="vote-count" data-board-good="' + id + '">' + good + '</span></button>' +
+      '<button type="button" class="board-vote-btn bad' + (vote === 'bad' ? ' on' : '') + '" data-board-vote="bad" data-board-id="' + id + '" title="バッド">' +
+        '<img class="vote-icon" src="images/thumb_down.png" alt="バッド"><span class="vote-count" data-board-bad="' + id + '">' + bad + '</span></button>' +
     '</div>';
   }
 
@@ -4236,7 +4777,7 @@
       });
     });
   }
-  function openPBrowseTagModal() { renderPBrowseTagModalCloud(); pBrowseTagModalOverlay.classList.add('open'); }
+  function openPBrowseTagModal() { renderPBrowseTagModalCloud(); openOverlay(pBrowseTagModalOverlay); }
   function closePBrowseTagModal() { pBrowseTagModalOverlay.classList.remove('open'); }
 
   pShowAllBrowseTagsBtn.addEventListener('click', openPBrowseTagModal);
@@ -4278,7 +4819,7 @@
   }
 
   function renderPromptList() {
-    let filtered = promptPosts.filter(passesPromptTagFilter);
+    let filtered = visiblePosts(promptPosts).filter(passesPromptTagFilter);
     const fAuthor = document.getElementById('pFilterAuthor').value.trim().toLowerCase();
     const fCheckpoint = document.getElementById('pFilterCheckpoint').value.trim().toLowerCase();
     const keywords = parseKeywords(document.getElementById('pFilterKeyword').value);
@@ -4296,9 +4837,7 @@
     pEmptyState.style.display = filtered.length ? 'none' : 'block';
     pList.innerHTML = filtered.map(promptRowHtml).join('');
 
-    pList.querySelectorAll('.like-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) { e.stopPropagation(); toggleLike(btn.dataset.like); });
-    });
+    wireCountButtons(pList);
     pList.querySelectorAll('.row').forEach(function (row) {
       row.addEventListener('click', function () {
         const post = promptPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
@@ -4361,7 +4900,7 @@
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
     wireImageRows(document.getElementById('linkedWorks'), { detailOnly: true });
 
-    modalOverlay.classList.add('open');
+    openOverlay(modalOverlay);
   }
 
   /* ===== ADMIN MODE ===== */
@@ -4383,12 +4922,13 @@
     if (!on && adminEditingPost) cancelAdminEdit();
     if (modalOverlay.classList.contains('open')) closeModal();
     if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
+    rerenderActiveList();
   }
 
   function openAdminAuthModal() {
     adminPasswordInput.value = '';
     adminAuthStatus.textContent = '';
-    adminAuthOverlay.classList.add('open');
+    openOverlay(adminAuthOverlay);
     adminPasswordInput.focus();
   }
   function closeAdminAuthModal() { adminAuthOverlay.classList.remove('open'); }
@@ -4485,7 +5025,7 @@
     renderCommentList(p.id);
     document.getElementById('commentCloseBtn').addEventListener('click', closeCommentModal);
     document.getElementById('commentSubmitBtn').addEventListener('click', function () { submitComment(p); });
-    commentOverlay.classList.add('open');
+    openOverlay(commentOverlay);
   }
   function closeCommentModal() { commentOverlay.classList.remove('open'); }
   commentOverlay.addEventListener('click', function (e) { if (e.target === commentOverlay) closeCommentModal(); });
@@ -4537,13 +5077,15 @@
 
   /* ===== ADMIN OPTIONS (オプション機能のオンオフ) ===== */
   const OPTION_DEFS = [
-    { key: 'like', label: 'いいねボタン', desc: 'オフにすると全画面からいいねボタンが消えます' },
-    { key: 'likeCount', label: 'いいね数の表示', desc: 'オフにするといいね数を表示しません' },
+    { key: 'like', label: 'グッドボタン', desc: 'オフにすると全画面からグッドボタンが消えます' },
+    { key: 'likeCount', label: 'グッド数の表示', desc: 'オフにするとグッド数を表示しません' },
     { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
     { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
     { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になります' },
     { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
-    { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板の👍/👎ボタンを非表示にします' }
+    { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
+    { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
+    { key: 'dislike', label: 'バッドボタン', desc: 'オフにするとバッドボタンを非表示にします。オンのとき、しきい値に達した投稿は利用者から自動で非表示になります' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
@@ -4563,6 +5105,11 @@
           '<div class="opt-switch' + (draftOptions[o.key] ? ' on' : '') + '" data-opt="' + o.key + '"></div>' +
         '</div>';
       }).join('') +
+      '<div class="opt-toggle-row">' +
+        '<div><div class="opt-label">バッドの強制非表示しきい値</div>' +
+        '<div class="opt-desc">バッドがこの回数に達した投稿は、利用者の一覧・詳細から自動で非表示になります(管理者モードでは引き続き表示されます)</div></div>' +
+        '<input type="number" min="1" step="1" id="dislikeThresholdInput" value="' + (Number(draftOptions.dislikeThreshold) || 10) + '" style="width:90px;">' +
+      '</div>' +
       '<div class="admin-modal-status" id="adminOptionsStatus"></div>' +
       '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>';
 
@@ -4575,7 +5122,7 @@
     });
     document.getElementById('adminOptionsCloseBtn').addEventListener('click', closeAdminOptionsModal);
     document.getElementById('adminOptionsSaveBtn').addEventListener('click', saveAdminOptions);
-    adminOptionsOverlay.classList.add('open');
+    openOverlay(adminOptionsOverlay);
   }
   function closeAdminOptionsModal() { adminOptionsOverlay.classList.remove('open'); }
   adminOptionsOverlay.addEventListener('click', function (e) { if (e.target === adminOptionsOverlay) closeAdminOptionsModal(); });
@@ -4584,17 +5131,27 @@
   async function saveAdminOptions() {
     const status = document.getElementById('adminOptionsStatus');
     status.textContent = '';
+    const th = Number(document.getElementById('dislikeThresholdInput').value);
+    draftOptions.dislikeThreshold = (th && th > 0) ? Math.floor(th) : 10;
     showLoading('保存中...');
     try {
       const result = await postAction({ action: 'adminSetOptions', password: adminPassword, options: draftOptions });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
-      options = Object.assign({}, DEFAULT_OPTIONS, result.options || draftOptions);
+
+      // GAS側が新しいオプションに未対応(古いCode.gsがデプロイされたまま)だと、
+      // 未知のキーが返却から欠落し、保存したはずの設定がオフに戻ってしまう。
+      // 黙って戻さず原因を明示する。
+      const returned = result.options || {};
+      const missing = ['fixRequest', 'dislike'].filter(function (k) { return !(k in returned); });
+      if (missing.length) {
+        throw new Error('GAS側が新機能に未対応です。最新の Code.gs を貼り付けたうえで「デプロイを管理」→ 新しいバージョンとして更新し、setup を再実行してください。');
+      }
+
+      options = Object.assign({}, DEFAULT_OPTIONS, returned);
       applyOptionsToUi();
       renderSortChips();
       renderPromptSortChips();
-      if (document.getElementById('tab-browse').classList.contains('active')) renderList();
-      if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
-      if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
+      rerenderActiveList();
       closeAdminOptionsModal();
     } catch (err) {
       status.textContent = '保存に失敗しました: ' + (err.message || err);
@@ -4634,9 +5191,10 @@
   });
 
   function refreshAfterAdminChange() {
-    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request'; });
+    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix'; });
     promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
     requestPosts = posts.filter(function (p) { return p.type === 'request'; });
+    fixPosts = posts.filter(function (p) { return p.type === 'fix'; });
     collectDynamicKeysFromPosts();
     rebuildTagUI();
     rebuildPostTagCloud();
@@ -4644,9 +5202,11 @@
     rebuildPromptFormTagCloud();
     rebuildPromptBrowseTagUI();
     renderRequestDisplay();
+    renderFixRequestDisplay();
     if (document.getElementById('tab-browse').classList.contains('active')) renderList();
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
     if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
+    if (document.getElementById('tab-fixBrowse').classList.contains('active')) renderFixList();
   }
 
   // ADMIN EDIT (投稿フォームを流用)
@@ -4689,7 +5249,7 @@
     adminEditingPost = p;
     closeModal();
     switchTab('post');
-    setPostMode(isImage ? 'image' : type);
+    setPostMode(type === 'prompt' || type === 'request' ? type : (type === 'fix' ? 'fix' : 'image'));
 
     if (isImage) {
       document.getElementById('titleInput').value = p.title || '';
@@ -4709,6 +5269,9 @@
       renderParentDisplay();
       selectedRequestId = String(p.requestId || '');
       renderRequestDisplay();
+      document.getElementById('fixContentInput').value = p.fixContent || '';
+      selectedFixRequestIds = fixRequestIdsOf(p);
+      renderFixRequestDisplay();
       clearSelectedImage();
     } else if (type === 'prompt') {
       document.getElementById('pTitleInput').value = p.title || '';
@@ -4890,7 +5453,7 @@
       const inCart = dbCart.some(function (c) { return c.key === r.key; });
       return '<div class="databank-row' + (inCart ? ' in-cart' : '') + '" data-dbkey="' + escapeHtml(r.key) + '" data-dbtoken="' + escapeHtml(r.display) + '">' +
         '<span class="db-token">' + escapeHtml(r.display) + genre + '</span>' +
-        '<span class="db-count">' + r.count + '回</span>' +
+        '<span class="db-count"><span class="db-count-label">採用回数</span>' + r.count + '回</span>' +
         '<span class="db-ja' + (ja ? '' : ' db-untranslated') + '">' + (ja ? escapeHtml(ja) : '—') + '</span>' +
       '</div>';
     }).join('') + '</div>';
@@ -4923,12 +5486,12 @@
         const post = posts.find(function (p) { return String(p.id) === String(row.dataset.id); });
         if (!post) return;
         closeDbUsageModal();
-        if (post.type === 'prompt') { switchTab('promptBrowse'); openPromptModal(post); }
-        else { switchTab('browse'); openModal(post); }
+        if (post.type === 'prompt') openPromptModal(post);
+        else openModal(post);
       });
     });
     document.getElementById('dbUsageCloseBtn').addEventListener('click', closeDbUsageModal);
-    document.getElementById('dbUsageOverlay').classList.add('open');
+    openOverlay(document.getElementById('dbUsageOverlay'));
   }
   function closeDbUsageModal() { document.getElementById('dbUsageOverlay').classList.remove('open'); }
   document.getElementById('dbUsageOverlay').addEventListener('click', function (e) {
@@ -4952,6 +5515,7 @@
     if (!dbCart.length) {
       chips.innerHTML = '';
       emptyEl.style.display = 'block';
+      syncCartLayout();
       return;
     }
     emptyEl.style.display = 'none';
@@ -4968,15 +5532,32 @@
         });
       });
     });
+    syncCartLayout();
+  }
+
+  // カートバーは画面下部に固定表示するため、実際の高さを CSS 変数に反映して
+  // 一覧の下余白と右下ボタンの位置を追従させる。
+  function syncCartLayout() {
+    const bar = document.getElementById('dbCartBar');
+    const open = dbCartMode && document.getElementById('tab-databank').classList.contains('active');
+    document.body.classList.toggle('db-cart-open', open);
+    if (!open) { document.body.style.removeProperty('--cart-h'); return; }
+    document.body.style.setProperty('--cart-h', bar.offsetHeight + 'px');
+  }
+
+  function setCartMode(on) {
+    dbCartMode = on;
+    document.getElementById('dbCartModeBtn').classList.toggle('active', on);
+    document.body.classList.toggle('db-cart-mode', on);
+    document.getElementById('dbCartBar').style.display = on ? 'block' : 'none';
+    if (on) renderCart();
+    syncCartLayout();
   }
 
   document.getElementById('dbCartModeBtn').addEventListener('click', function () {
-    dbCartMode = !dbCartMode;
-    this.classList.toggle('active', dbCartMode);
-    document.body.classList.toggle('db-cart-mode', dbCartMode);
-    document.getElementById('dbCartBar').style.display = dbCartMode ? 'block' : 'none';
-    if (dbCartMode) renderCart();
+    setCartMode(!dbCartMode);
   });
+  window.addEventListener('resize', syncCartLayout);
   document.getElementById('dbCartCopyBtn').addEventListener('click', function () {
     if (!dbCart.length) return;
     const text = dbCart.map(function (c) { return c.token; }).join(', ');
@@ -4984,15 +5565,28 @@
     const label = btn.textContent;
     navigator.clipboard.writeText(text).then(function () {
       btn.textContent = 'コピーしました';
-      setTimeout(function () { btn.textContent = label; }, 1200);
+      btn.classList.add('copied');   // 押した時だけ活性デザインにする
+      setTimeout(function () {
+        btn.textContent = label;
+        btn.classList.remove('copied');
+      }, 1200);
     }).catch(function () {
       window.prompt('以下をコピーしてください', text);
     });
   });
   document.getElementById('dbCartClearBtn').addEventListener('click', function () {
+    if (!dbCart.length) return;
     dbCart = [];
     renderCart();
     document.querySelectorAll('#databankList .databank-row.in-cart').forEach(function (row) { row.classList.remove('in-cart'); });
+    const btn = this;
+    const label = btn.textContent;
+    btn.textContent = '空にしました';
+    btn.classList.add('cleared');   // 押した時だけ活性(赤)デザインにする
+    setTimeout(function () {
+      btn.textContent = label;
+      btn.classList.remove('cleared');
+    }, 1200);
   });
 
   document.querySelectorAll('#dbSourceToggle button').forEach(function (btn) {
@@ -5047,6 +5641,20 @@
     protectWithin(document.body);
   }
 
+  /* ===== 右下「先頭に戻る」ボタン ===== */
+  (function () {
+    const btn = document.getElementById('scrollTopBtn');
+    // モーダル表示中はモーダル自身がスクロールコンテナなので、そちらを先頭に戻す
+    function openModalOverlay() {
+      return document.querySelector('.modal-overlay.open');
+    }
+    btn.addEventListener('click', function () {
+      const ov = openModalOverlay();
+      if (ov) ov.scrollTo({ top: 0, behavior: 'smooth' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  })();
+
   /* ===== INIT ===== */
   guardPasswordManager();
   buildPromptSettingsGrid();
@@ -5057,8 +5665,11 @@
   renderParentDisplay();
   renderRequestDisplay();
   renderRSortChips();
+  renderFixRequestDisplay();
+  renderFSortChips();
   renderRefThumbs();
   renderSortChips();
+  syncCartLayout();
   loadPosts().then(openSharedFromUrl);
 </script>
 </body>
