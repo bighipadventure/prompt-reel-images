@@ -833,6 +833,12 @@
   /* 投稿タイトルと「修正依頼の具体的な内容」の間を明確に空ける(相殺に依存しない) */
   #fixContentField{ margin-top: 26px; }
   #fixContentField > .field-label{ margin-top: 0; }
+  /* div でラップされたラベルは(親内で唯一のlabelのため):first-of-typeに該当し、
+     margin-topが0にリセットされてしまう。他のfield-labelと同じ間隔を確保する。 */
+  .author-field{ margin-top: 18px; }
+  .author-field > .field-label{ margin-top: 0; }
+  #fixRequestField{ margin-top: 18px; }
+  #fixRequestField > .field-label{ margin-top: 0; }
   body.opt-no-dislike .dislike-btn{ display:none; }
   .dislike-btn{
     display:inline-flex; align-items:center; gap:4px; background: var(--surface-2);
@@ -1015,33 +1021,33 @@
       <label class="field-label">メモ(備考)</label>
       <textarea id="memoInput" class="autogrow" placeholder="補足・備考があれば"></textarea>
 
-      <label class="field-label">ベースにしたプロンプト例(任意・複数選択可)</label>
+      <label class="field-label">ベースにしたプロンプト例(複数選択可)</label>
       <div class="base-prompt-select">
         <button class="btn-ghost" id="pickBasePromptBtn" type="button">プロンプト例を選択</button>
         <span id="basePromptDisplay" class="base-prompt-display"></span>
       </div>
 
-      <label class="field-label">親にする投稿作品(任意 / 同じ設定のバリエーションを投稿するとき)</label>
+      <label class="field-label">親にする投稿作品(同じ設定のバリエーションを投稿するとき)</label>
       <div class="base-prompt-select">
         <button class="btn-ghost" id="pickParentBtn" type="button">親作品を選択</button>
         <span id="parentDisplay" class="base-prompt-display"></span>
       </div>
 
-      <label class="field-label">応えるリクエスト(任意 / リクエストへの回答として投稿するとき)</label>
+      <label class="field-label">応えるリクエスト(リクエストへの回答として投稿するとき)</label>
       <div class="base-prompt-select">
         <button class="btn-ghost" id="pickRequestBtn" type="button">リクエストを選択</button>
         <span id="requestDisplay" class="base-prompt-display"></span>
       </div>
 
       <div id="fixRequestField" class="fixrequest-only">
-        <label class="field-label">対応する修正依頼(任意・複数選択可 / 修正依頼への回答として投稿するとき)</label>
+        <label class="field-label">対応する修正依頼(修正依頼への回答として投稿するとき)</label>
         <div class="base-prompt-select">
           <button class="btn-ghost" id="pickFixRequestBtn" type="button">修正依頼を選択</button>
           <span id="fixRequestDisplay" class="base-prompt-display"></span>
         </div>
       </div>
 
-      <label class="field-label">生成設定(任意 / 画像ドロップで自動入力)</label>
+      <label class="field-label">生成設定(画像ドロップで自動入力)</label>
       <div class="settings-grid open" id="settingsGrid"></div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
@@ -1083,7 +1089,7 @@
       <label class="field-label">メモ(備考)</label>
       <textarea id="pMemoInput" class="autogrow" placeholder="使い方・意図・相性のよいモデルなど"></textarea>
 
-      <label class="field-label">生成時の自分の環境(任意)</label>
+      <label class="field-label">生成時の自分の環境</label>
       <div class="settings-grid open" id="pSettingsGrid"></div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
@@ -1119,7 +1125,7 @@
       <label class="field-label">リクエスト内容</label>
       <textarea id="rBodyInput" class="autogrow" placeholder="どんな画像を生成してほしいか、できるだけ具体的に書いてください"></textarea>
 
-      <label class="field-label">参考資料(任意・複数可 / jpegに変換・縮小して保存されます)</label>
+      <label class="field-label">参考資料(複数可 / jpegに変換・縮小して保存されます)</label>
       <div class="dropzone dropzone-compact" id="rDropzone">
         <div class="dz-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
