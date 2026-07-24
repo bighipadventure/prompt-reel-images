@@ -828,6 +828,15 @@
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
   body.opt-no-boardvote .board-vote{ display:none; }
+  /* 使い方タブなど、機能説明をオプションと連動して隠すための共通クラス */
+  body.opt-no-like .opt-only-like,
+  body.opt-no-likecount .opt-only-likecount,
+  body.opt-no-dlcount .opt-only-dlcount,
+  body.opt-no-comment .opt-only-comment,
+  body.opt-no-author .opt-only-author,
+  body.opt-no-board .opt-only-board,
+  body.opt-no-boardvote .opt-only-boardvote,
+  body.opt-no-dislike .opt-only-dislike{ display:none !important; }
   /* 修正依頼機能: オプションがオンのときだけ表示(オフ時は存在自体を見せない) */
   body:not(.opt-fixrequest) .fixrequest-only{ display:none !important; }
   /* 投稿タイトルと「修正依頼の具体的な内容」の間を明確に空ける(相殺に依存しない) */
@@ -947,6 +956,35 @@
   .qa-q::before{ content:'Q.'; color: var(--accent); font-weight: 900; }
   .qa-a{ font-size: 13.5px; line-height: 1.8; color: var(--ink-dim); display:flex; gap: 8px; }
   .qa-a::before{ content:'A.'; color: var(--ink); font-weight: 900; }
+
+  /* ---- 説明ページ(使い方 / はじめてガイド)の見出し ---- */
+  #tab-usage .panel > h2,
+  #tab-guide .panel > h2{
+    font-size: 19px;
+    font-weight: 900;
+    letter-spacing: .02em;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  #tab-usage .panel > h2::before,
+  #tab-guide .panel > h2::before{ width: 6px; height: 22px; border-radius: 3px; }
+
+  /* ---- 使い方タブの機能リスト ---- */
+  .feature-item{ padding: 14px 0; }
+  .feature-item:first-child, .guide-step + .feature-item{ padding-top: 0; }
+  .feature-item:last-child{ padding-bottom: 0; }
+  .feature-item + .feature-item{ border-top: 1px solid var(--line); }
+  .feature-name{
+    font-weight: 700; font-size: 13.5px; color: var(--ink);
+    display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .feature-name::before{
+    content: ''; flex: none; width: 4px; height: 13px;
+    border-radius: 2px; background: var(--accent);
+  }
+  .feature-desc{ font-size: 13.5px; line-height: 1.95; color: var(--ink-dim); padding-left: 12px; }
 </style>
 </head>
 <body>
@@ -1404,26 +1442,6 @@
   <!-- ============ 本ツールの使い方タブ ============ -->
   <div class="tab-panel" id="tab-usage">
     <section class="panel">
-      <h2>このツールでできること</h2>
-      <div class="guide-step">
-        <div class="body">
-          Stable Diffusionなどで生成した<strong>画像</strong>と、その<strong>プロンプトや生成設定</strong>を記録・共有し、仲間内で情報交換するためのボードです。投稿は大きく2種類あります。
-        </div>
-      </div>
-      <div class="guide-step">
-        <div class="num">1</div>
-        <div class="body"><strong>画像投稿</strong>: 生成した画像に、プロンプト・生成設定・タグ・メモを付けて共有します。「画像投稿一覧」タブに並びます。</div>
-      </div>
-      <div class="guide-step">
-        <div class="num">2</div>
-        <div class="body"><strong>プロンプト例の投稿</strong>: 自分で考えたオリジナルキャラやシチュエーションのプロンプトを、1つの「作品」として共有します。「プロンプト投稿一覧」タブに並びます。</div>
-      </div>
-      <div class="guide-note">
-        画像を投稿するときに「ベースにしたプロンプト例」を選んでおくと、その画像とプロンプト例が紐づきます。プロンプト例の詳細を開くと、それをベースに作られた画像作品が一覧で表示されるので、プロンプト例をタグのように使って作品を探せます。
-      </div>
-    </section>
-
-    <section class="panel">
       <h2>はじめての方向け:基本の使い方</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -1450,11 +1468,216 @@
         <div class="num">4</div>
         <div class="body">
           <strong>リアクションする</strong><br>
-          グッドボタンで評価、詳細画面からダウンロードや共有URLのコピーができます。
+          <span class="opt-only-like">気に入った作品にはグッドボタンを押せます。</span><span class="opt-only-comment">コメントで感想を伝えることもできます。</span>詳細画面からは画像のダウンロードや、共有URLのコピーができます。
         </div>
       </div>
       <div class="guide-note">
-        慣れてきたら: 画像なしの「プロンプト例」の投稿や、画像投稿時の「ベースにしたプロンプト例」「親にする投稿作品」での紐づけも使えます。詳しくは下のQ&amp;Aへ。
+        ここまでできれば十分に使えます。以下は「もっと使いこなしたい人向け」の全機能の説明です。気になったところだけ読んでください。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>このツールでできること</h2>
+      <div class="guide-step">
+        <div class="body">
+          Stable Diffusionなどで生成した<strong>画像</strong>と、その<strong>プロンプトや生成設定</strong>を記録・共有し、仲間内で情報交換するためのボードです。ログインもアカウント登録も不要で、ブラウザだけで使えます。投稿には次の種類があります。
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">画像投稿</div>
+        <div class="feature-desc">生成した画像に、プロンプト・生成設定・タグ・メモを付けて共有します。「画像投稿一覧」タブに並びます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">プロンプト例の投稿</div>
+        <div class="feature-desc">自分で考えたオリジナルキャラやシチュエーションのプロンプトを、画像なしで1つの「作品」として共有します。「プロンプト投稿一覧」タブに並びます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">リクエストの投稿</div>
+        <div class="feature-desc">「こういう画像を作ってほしい」という依頼を出せます。参考資料の画像も添付できます。「リクエスト一覧」タブに並びます。</div>
+      </div>
+      <div class="feature-item fixrequest-only">
+        <div class="feature-name">修正依頼の投稿</div>
+        <div class="feature-desc">すでにある画像に対して「ここをこう直してほしい」という依頼を出せます。「修正依頼一覧」タブに並びます。</div>
+      </div>
+      <div class="guide-note">
+        投稿どうしは「紐づけ」でつながります。たとえば画像を投稿するときに「ベースにしたプロンプト例」を選んでおくと、そのプロンプト例の詳細を開いたときに、それをベースに作られた画像作品が一覧で表示されます。プロンプト例をタグのように使って作品を探せる、ということです。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>タブごとにできること</h2>
+      <div class="feature-item">
+        <div class="feature-name">投稿</div>
+        <div class="feature-desc">作品や依頼を投稿するタブです。上部のボタンで「画像を投稿」「プロンプト例を投稿」「リクエストを投稿」<span class="fixrequest-only">「修正依頼を投稿」</span>を切り替えます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">画像投稿一覧</div>
+        <div class="feature-desc">投稿された画像作品が並びます。リスト表示とパネル表示を切り替えられ、並び順・絞り込み・キーワード検索・タグで探せます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">プロンプト投稿一覧</div>
+        <div class="feature-desc">画像なしのプロンプト例が並びます。画像一覧とほぼ同じ探し方ができます(リスト表示のみ)。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">リクエスト一覧</div>
+        <div class="feature-desc">「こういう画像が見たい」という依頼が並びます。誰かが応えて投稿すると、その依頼の詳細に作品がまとまって表示されます。</div>
+      </div>
+      <div class="feature-item fixrequest-only">
+        <div class="feature-name">修正依頼一覧</div>
+        <div class="feature-desc">「この画像のここを直してほしい」という依頼が並びます。対応した作品は依頼の詳細にまとまって表示されます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">プロンプトデータバンク</div>
+        <div class="feature-desc">みんなの投稿に実際に使われているプロンプト語を集計し、日本語訳つきの辞書にしたタブです。使いたい語をカートに集めてまとめてコピーできます。</div>
+      </div>
+      <div class="feature-item opt-only-board">
+        <div class="feature-name">掲示板</div>
+        <div class="feature-desc">作品に紐づかない雑談・質問・お知らせ用の自由なやり取りの場です。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">本ツールの使い方</div>
+        <div class="feature-desc">このページです。いちばん下に管理者への連絡フォームがあります。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">はじめてガイド</div>
+        <div class="feature-desc">自分のパソコンで画像生成を始めるまでの手順(ソフトの導入・モデルの入手・初回生成)をまとめた別記事です。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>投稿するときに使える機能</h2>
+      <div class="feature-item">
+        <div class="feature-name">画像の生成情報を自動で読み取る</div>
+        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。読み取れた内容は投稿前に手で直せます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">プレビューの拡大と取り消し</div>
+        <div class="feature-desc">アップロードした画像はフォーム上に大きくプレビューされます。クリックで全画面表示、右上の ✕ でアップロードの取り消しができます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">生成設定の入力</div>
+        <div class="feature-desc">UI Preset / Checkpoint / VAE / Sampling Method / Steps / Width / Height / CFG Scale / Seed など、生成設定を項目ごとに記録できます。各入力欄の右端にある <strong>▼</strong> を押すと、これまでの投稿で使われた値が一覧で出るので、そこから選ぶだけで入力できます(手入力もできます)。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">タグ</div>
+        <div class="feature-desc">既存のタグはクリックで付け外しでき、新しいタグは入力欄から追加できます。タグは画像投稿とプロンプト例で共通のプールなので、みんなが使っている言葉に合わせると探しやすくなります。</div>
+      </div>
+      <div class="feature-item opt-only-author">
+        <div class="feature-name">投稿者名</div>
+        <div class="feature-desc">任意入力です。空欄のまま投稿すると「匿名」と表示されます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">メモ(備考)</div>
+        <div class="feature-desc">「この設定だと手が崩れやすい」「LoRAはこれを併用」など、プロンプト以外の補足を自由に書けます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">リクエストの参考資料</div>
+        <div class="feature-desc">リクエストを投稿するときは、参考にしてほしい画像を複数枚まとめて添付できます。送信前に自動で縮小されるので、大きな画像でもそのままドロップして大丈夫です。サムネイルはクリックで拡大、右上の ✕ で削除できます。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>投稿どうしを紐づける</h2>
+      <div class="guide-step">
+        <div class="body">
+          投稿フォームの下の方にあるピッカー(選択ボタン)から、他の投稿と関連づけられます。紐づけておくと、お互いの詳細画面から行き来できるようになります。
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">ベースにしたプロンプト例(画像 → プロンプト例・複数選択可)</div>
+        <div class="feature-desc">「このプロンプト例を参考に作りました」という関係です。プロンプト例の詳細の下に、それをベースにした画像作品が一覧表示されます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">親にする投稿作品(画像 → 画像・1件のみ)</div>
+        <div class="feature-desc">同じ設定でSeed違いを量産したときに使います。親を指定した作品(子)は一覧に並ばず、親の詳細の下に「この作品のバリエーション」としてまとまります。一覧が似た作品であふれるのを防ぐための仕組みです。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">応えるリクエスト(画像 → リクエスト・1件のみ)</div>
+        <div class="feature-desc">「このリクエストに応えて作りました」という関係です。リクエストの詳細の下に、応えた作品が一覧表示されます。</div>
+      </div>
+      <div class="feature-item fixrequest-only">
+        <div class="feature-name">対応する修正依頼(画像 → 修正依頼・複数選択可)</div>
+        <div class="feature-desc">「この修正依頼に対応して作りました」という関係です。修正依頼の詳細の下に、対応作品が一覧表示されます。</div>
+      </div>
+      <div class="guide-note">
+        選んだ相手はフォーム上にタグのようなチップで表示されます。間違えたときはチップを外して選び直してください。紐づけはすべて任意で、何も選ばずに投稿しても構いません。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>一覧から作品を探す</h2>
+      <div class="feature-item">
+        <div class="feature-name">並び順</div>
+        <div class="feature-desc">一覧の上部にあるチップで、日時<span class="opt-only-like opt-only-likecount">・グッド数</span><span class="opt-only-dlcount">・ダウンロード数</span><span class="opt-only-author">・投稿者</span>・UI Preset・Checkpoint などの順に並べ替えられます。同じチップをもう一度押すと昇順/降順が入れ替わり、複数のチップを押すと押した順に優先されます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">絞り込み</div>
+        <div class="feature-desc"><span class="opt-only-author">投稿者・</span>UI Preset・Checkpoint を部分一致で絞り込めます。右端の「絞り込みをクリア」で条件をまとめて解除できます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">キーワード検索</div>
+        <div class="feature-desc">タイトル・プロンプト・ネガティブプロンプト・メモをまとめて検索します。スペース区切りで複数の語を指定でき、<strong>AND</strong>(すべて含む)/<strong>OR</strong>(どれかを含む)/<strong>NOT</strong>(どれも含まない)を切り替えられます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">タグで絞込</div>
+        <div class="feature-desc">タグはクリックでON/OFF。こちらも AND / OR / NOT を切り替えられます。タグクラウドは1行だけ表示されますが、右端の「全て表示」で全タグの一覧を開けます。選んだタグは必ず先頭に並ぶので、1行に収まらなくても見失いません。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">リスト表示 / パネル表示</div>
+        <div class="feature-desc">画像投稿一覧では表示形式を切り替えられます。パネル表示は画像を元の縦横比のまま敷き詰める形式で、隣の「表示サイズ」スライダーで大きさを調整できます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">子も全て表示</div>
+        <div class="feature-desc">通常は隠れているバリエーション(親に紐づいた子作品)も、このボタンを押すと一覧にすべて表示されます。</div>
+      </div>
+      <div class="feature-item fixrequest-only">
+        <div class="feature-name">修正依頼作品も表示</div>
+        <div class="feature-desc">通常は画像投稿一覧に並ばない修正依頼の投稿も、このボタンを押すと一緒に表示されます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">回答済み<span class="fixrequest-only">・対応済み</span>で絞る</div>
+        <div class="feature-desc">リクエスト一覧<span class="fixrequest-only">・修正依頼一覧</span>の並び順チップの末尾には3段階のチップがあり、押すたびに「全件 → 応えられたものだけ → まだ応えられていないものだけ」と切り替わります。まだ誰も応えていない依頼を探すときに便利です。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">先頭に戻る</div>
+        <div class="feature-desc">画面右下のボタンでページの先頭へ戻れます。詳細画面を開いているときは、その詳細画面の先頭へ戻ります。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>詳細画面でできること</h2>
+      <div class="guide-step">
+        <div class="body">
+          一覧の作品をクリックすると詳細画面が開きます。閉じるときは右上の「✕ 閉じる」、背景のクリック、または <code>Esc</code> キーです。
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">プロンプトのコピー</div>
+        <div class="feature-desc">PROMPT / NEGATIVE PROMPT それぞれの「コピー」ボタンで、そのまま自分の生成ツールに貼り付けられます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">ダウンロード</div>
+        <div class="feature-desc">画像を原寸で保存できます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">共有</div>
+        <div class="feature-desc">その作品を直接開けるURLをコピーできます。リンクを送られた人は、開いた瞬間にその作品の詳細が表示されます。管理者に投稿について連絡するときも、このURLを添えると確実です。</div>
+      </div>
+      <div class="feature-item opt-only-like">
+        <div class="feature-name">グッド</div>
+        <div class="feature-desc">気に入った作品に付けられます。1つの投稿につき同じ端末・ブラウザから1回まで、もう一度押すと取り消せます。</div>
+      </div>
+      <div class="feature-item opt-only-dislike">
+        <div class="feature-name">バッド</div>
+        <div class="feature-desc">ふさわしくないと感じた投稿に付けられます。グッドと同じく1端末1回で、もう一度押すと取り消せます。バッドが一定数に達した投稿は自動的に一覧から見えなくなります。</div>
+      </div>
+      <div class="feature-item opt-only-comment">
+        <div class="feature-name">コメント</div>
+        <div class="feature-desc">「コメント N件」を押すとコメント画面が開きます。上のフォームから名前(任意)とメッセージを書いて投稿でき、下に投稿済みのコメントが並びます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">紐づいた投稿へのジャンプ</div>
+        <div class="feature-desc">「ベースにしたプロンプト例」「応えたリクエスト」<span class="fixrequest-only">「対応した修正依頼」</span>のリンクや、詳細の下に並ぶバリエーション・関連作品をクリックすると、そのまま相手の詳細へ移動できます。閉じれば元の一覧に戻ります。</div>
       </div>
     </section>
 
@@ -1465,20 +1688,55 @@
           「プロンプトデータバンク」タブは、みんなの投稿で実際に使われているプロンプトを「,」ごとに分解して集計し、日本語訳つきの一覧にした辞書です。「こういう表現、英語で何て書くんだろう？」を探すのに便利です。
         </div>
       </div>
-      <div class="guide-step">
-        <div class="num">1</div>
-        <div class="body"><strong>絞り込む・並べ替える</strong><br>「ソース」(PROMPT / NEGATIVE)や「対象」(画像投稿 / プロンプト例)を切り替え、「並び順」(採用回数順 / 英語名順 / 日本語名順)で整列できます。絞り込み欄は英語・日本語・ジャンル・キーワードのどれでも部分一致で探せます。</div>
+      <div class="feature-item">
+        <div class="feature-name">絞り込む・並べ替える</div>
+        <div class="feature-desc">「ソース」(PROMPT / NEGATIVE)や「対象」(画像投稿 / プロンプト例)を切り替え、「並び順」(採用回数順 / 英語名順 / 日本語名順)で整列できます。絞り込み欄は英語・日本語・ジャンル・キーワードのどれでも部分一致で探せます。</div>
       </div>
-      <div class="guide-step">
-        <div class="num">2</div>
-        <div class="body"><strong>使用作品を見る</strong><br>各プロンプトのカードをクリックすると、そのプロンプトを使っている作品が一覧で開きます。作品をクリックすれば詳細へ移動できます。</div>
+      <div class="feature-item">
+        <div class="feature-name">使用作品を見る</div>
+        <div class="feature-desc">各プロンプトのカードをクリックすると、そのプロンプトを使っている作品が一覧で開きます。作品をクリックすれば詳細へ移動できます。</div>
       </div>
-      <div class="guide-step">
-        <div class="num">3</div>
-        <div class="body"><strong>カートでまとめてコピー</strong><br>「カートに入れるモード」をオンにして使いたいプロンプトをクリックすると、カートに追加されていきます。「COPY」でまとめてコピーでき(<code>A, B, C</code> の形式)、そのまま自分の画像生成に貼り付けられます。チップの ✕ で個別削除、「カートを空にする」で全消去できます。</div>
+      <div class="feature-item">
+        <div class="feature-name">カートでまとめてコピー</div>
+        <div class="feature-desc">「カートに入れるモード」をオンにして使いたいプロンプトをクリックすると、カートに追加されていきます。「COPY」でまとめてコピーでき(<code>A, B, C</code> の形式)、そのまま自分の画像生成に貼り付けられます。チップの ✕ で個別削除、「カートを空にする」で全消去できます。</div>
       </div>
       <div class="guide-note">
-        日本語訳は自動翻訳をベースに管理者が整えています。訳が「—」の語は、少し待つと自動で埋まります。
+        日本語訳は自動翻訳をベースに管理者が整えています。訳が「—」の語は、少し待つと自動で埋まります。カートの中身はページを読み込み直すと消えるので、必要な分をコピーしてから閉じてください。
+      </div>
+    </section>
+
+    <section class="panel fixrequest-only">
+      <h2>修正依頼の使い方</h2>
+      <div class="feature-item">
+        <div class="feature-name">依頼する</div>
+        <div class="feature-desc">「投稿」タブの「修正依頼を投稿」から、直してほしい画像と「修正依頼の具体的な内容」を書いて投稿します。入力できる項目は画像投稿と同じです。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">依頼を探す</div>
+        <div class="feature-desc">投稿した依頼は「修正依頼一覧」タブに並びます。「対応済み」チップで、まだ誰も応えていない依頼だけを表示できます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">依頼に応える</div>
+        <div class="feature-desc">直した画像を投稿するときに「対応する修正依頼」でその依頼を選ぶと紐づき、依頼の詳細に対応作品としてまとめて表示されます。</div>
+      </div>
+      <div class="guide-note">
+        修正依頼の投稿は、通常は画像投稿一覧には並びません。一覧上部の「修正依頼作品も表示」を押すと一緒に表示できます。
+      </div>
+    </section>
+
+    <section class="panel opt-only-board">
+      <h2>掲示板の使い方</h2>
+      <div class="guide-step">
+        <div class="body">
+          特定の作品に紐づかない話題(雑談・質問・お知らせなど)はこちらへどうぞ。お名前は任意で、空欄なら「匿名」と表示されます。新しい投稿が上に並びます。
+        </div>
+      </div>
+      <div class="feature-item opt-only-boardvote">
+        <div class="feature-name">グッド / バッド</div>
+        <div class="feature-desc">各メッセージに 👍 / 👎 を付けられます。1端末につき1票で、押し直せば取り消しや切り替えができます。</div>
+      </div>
+      <div class="guide-note">
+        投稿の削除は管理者のみが行えます。取り消したい書き込みがある場合は、このページ下部の連絡フォームからお知らせください。
       </div>
     </section>
 
@@ -1516,8 +1774,33 @@
       </div>
 
       <div class="qa-item">
+        <div class="qa-q">画像をドロップしても何も自動入力されません。</div>
+        <div class="qa-a">画像に生成情報が埋め込まれていない場合(SNSやチャットアプリを経由した画像、加工・変換した画像、生成情報を保存しない設定で出力した画像など)は読み取れません。その場合は各項目を手入力してください。入力欄の右端の ▼ を押すと、これまでの投稿で使われた値から選べます。</div>
+      </div>
+
+      <div class="qa-item">
         <div class="qa-q">投稿した内容は後から編集できますか？</div>
         <div class="qa-a">投稿後の編集機能はありません。内容を直したい場合は、投稿し直すか、管理者へ相談してください。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">リクエストと<span class="fixrequest-only">修正依頼・</span>プロンプト例は、どう使い分ければいいですか？</div>
+        <div class="qa-a">「まだ存在しない画像を作ってほしい」ときはリクエスト<span class="fixrequest-only">、「すでにある画像のここを直してほしい」ときは修正依頼</span>です。プロンプト例は依頼ではなく、自分の書いたプロンプトを共有する投稿です。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">投稿したリクエストに誰かが応えてくれたか、どこで分かりますか？</div>
+        <div class="qa-a">リクエストの詳細を開くと、いちばん下に「このリクエストに応えて投稿された作品」が一覧表示されます。一覧の行にも回答作品の件数が出るので、そこでも確認できます。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">キーワード検索の AND / OR / NOT はどう使いますか？</div>
+        <div class="qa-a">検索欄にスペース区切りで複数の語を入れたときの扱い方の指定です。ANDは入力した語をすべて含む投稿、ORはどれか1つでも含む投稿、NOTはどれも含まない投稿を表示します。タグの絞り込みでも同じ3種類を選べます。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">タグクラウドに目当てのタグが見当たりません。</div>
+        <div class="qa-a">タグは1行だけ表示され、あふれた分は隠れています。行の右端にある「全て表示」を押すと全タグの一覧が開きます。選んだタグは常に先頭に移動するので、選択中のタグが隠れてしまうことはありません。</div>
       </div>
 
       <div class="qa-item">
@@ -1530,9 +1813,34 @@
         <div class="qa-a">投稿タブの「修正依頼を投稿」から、直してほしい画像と「修正依頼の具体的な内容」を書いて投稿してください。投稿した依頼は「修正依頼一覧」タブに並びます。依頼に応えるときは、画像を投稿する際に「対応する修正依頼」でその依頼を選ぶと紐づき、依頼の詳細ページに対応作品としてまとめて表示されます。なお修正依頼の投稿は画像投稿一覧には並びません(一覧上部の「修正依頼作品も表示」を押すと一緒に表示できます)。</div>
       </div>
 
-      <div class="qa-item">
+      <div class="qa-item opt-only-like">
         <div class="qa-q">「グッド」は何回でも押せますか？</div>
         <div class="qa-a">1つの投稿につき、同じ端末・ブラウザからは1回までです(もう一度押すと取り消せます)。グッド済みかどうかはお使いのブラウザに記録されるため、別の端末やブラウザからは別カウントになります。</div>
+      </div>
+
+      <div class="qa-item opt-only-dislike">
+        <div class="qa-q">「バッド」を押すとどうなりますか？</div>
+        <div class="qa-a">グッドと同じく1端末・1ブラウザにつき1回で、もう一度押せば取り消せます。バッドが一定の数に達した投稿は、利用者の一覧・共有URLから自動的に表示されなくなります(管理者には引き続き見えるので、内容を確認したうえで対応します)。誹謗中傷の代わりではなく、見えにくくしたい投稿の目印として使ってください。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">投稿が一覧から消えました。</div>
+        <div class="qa-a">親作品に紐づけた「子」の投稿<span class="fixrequest-only">や修正依頼の投稿</span>は、既定では一覧に出ません。一覧上部の「子も全て表示」<span class="fixrequest-only">「修正依頼作品も表示」</span>を押すと表示されます。<span class="opt-only-dislike">また、バッドが規定数に達した投稿は自動的に非表示になります。</span>それでも見つからない場合は、管理者が削除した可能性があります。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">共有URLを送ったのに、相手の画面で作品が開きません。</div>
+        <div class="qa-a">その投稿が削除されている場合や、URLが途中で切れている場合に起こります。詳細画面の「共有」ボタンで取得したURLをそのまま貼り付けて送ってください。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">読み込みが遅い・画像が表示されないことがあります。</div>
+        <div class="qa-a">投稿データと画像はGoogleのサービスから取得しているため、混み合っている時間帯や通信環境によって時間がかかることがあります。しばらく待つか、ページを再読み込みしてください。何度も失敗する場合は連絡フォームからお知らせください。</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">投稿してはいけない内容はありますか？</div>
+        <div class="qa-a">画像はすべてGoogleドライブに保存されるため、Googleの規約に触れる画像が投稿されるとアカウントごと停止され、このサイト自体が終了します。他人の個人情報や、明らかに問題のある画像は投稿しないでください。気になる投稿を見つけたら、連絡フォームから管理者へお知らせください。</div>
       </div>
     </section>
 
