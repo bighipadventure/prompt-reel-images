@@ -2707,15 +2707,18 @@
 
   // GAS WebアプリはクロスオリジンfetchだとCORSでブロックされることがあるため、
   // <script>タグ読み込み(JSONP)で取得する。
-  function jsonpRequest(url) {
+  function jsonpRequest(url, timeoutMs) {
     return new Promise(function (resolve, reject) {
       const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
       const script = document.createElement('script');
 
+      // <script>タグ読み込みには進捗イベントが無く、「まだ正常に読み込み中か」を途中で判定できない。
+      // そのため、データ量が増えても打ち切られないよう長めのタイムアウトを既定にし、
+      // 呼び出し側(loadPosts)でさらに時間を延ばしながら自動リトライする。
       const timeoutId = setTimeout(function () {
         cleanup();
         reject(new Error('タイムアウトしました'));
-      }, 15000);
+      }, timeoutMs || 60000);
 
       function cleanup() {
         delete window[callbackName];
@@ -2738,10 +2741,31 @@
     });
   }
 
+  // 投稿数・辞書データが増えるとdoGetの応答が大きくなり、1回のタイムアウトで
+  // 打ち切ってしまうと「まだ読み込み中なだけ」でも失敗扱いになってしまう。
+  // タイムアウト時間を段階的に伸ばしながら数回リトライし、遅いだけの場合は
+  // ユーザーに見えないうちに読み込み完了させる。
+  const LOAD_RETRY_TIMEOUTS = [20000, 40000, 70000]; // 20秒→40秒→70秒(合計最大約2分)
+  async function fetchPostsDataWithRetry() {
+    let lastErr = null;
+    for (let i = 0; i < LOAD_RETRY_TIMEOUTS.length; i++) {
+      if (i > 0) {
+        showLoading('読み込みに時間がかかっています…(' + (i + 1) + '/' + LOAD_RETRY_TIMEOUTS.length + '回目)');
+      }
+      try {
+        return await jsonpRequest(GAS_URL, LOAD_RETRY_TIMEOUTS[i]);
+      } catch (err) {
+        lastErr = err;
+        console.error('読み込み試行 ' + (i + 1) + ' 回目に失敗:', err);
+      }
+    }
+    throw lastErr || new Error('読み込みに失敗しました');
+  }
+
   async function loadPosts() {
     showLoading('読み込み中...');
     try {
-      const data = await jsonpRequest(GAS_URL);
+      const data = await fetchPostsDataWithRetry();
       posts = data.posts || [];
       allComments = data.comments || [];
       allBoard = data.board || [];
@@ -2769,7 +2793,7 @@
       if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
       statusText.textContent = '';
     } catch (err) {
-      statusText.textContent = '読み込みに失敗しました';
+      statusText.textContent = '読み込みに失敗しました(通信が不安定な可能性があります)。ページを再読み込みしてください。';
       console.error(err);
     } finally {
       hideLoading();
