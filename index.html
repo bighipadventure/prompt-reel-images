@@ -2236,6 +2236,11 @@
   let fixPosts = [];
   let allComments = [];
   let allBoard = [];
+  // 段階読み込みの状態。stage=parentsで一覧を出した後、stage=restを背後で読み込む。
+  // rest完了までは、個別に開かれた投稿ごとに detailId= で優先取得する(ensurePostLoaded)。
+  let restStageLoaded = false;
+  let restStageLoading = false;
+  const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
@@ -2746,36 +2751,86 @@
   // タイムアウト時間を段階的に伸ばしながら数回リトライし、遅いだけの場合は
   // ユーザーに見えないうちに読み込み完了させる。
   const LOAD_RETRY_TIMEOUTS = [20000, 40000, 70000]; // 20秒→40秒→70秒(合計最大約2分)
-  async function fetchPostsDataWithRetry() {
+
+  // stage: 'parents' | 'rest'。GAS側のdoGetが対応するstageパラメータ付きで取得する。
+  async function fetchStageWithRetry(stage, onRetry) {
     let lastErr = null;
+    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'stage=' + stage;
     for (let i = 0; i < LOAD_RETRY_TIMEOUTS.length; i++) {
-      if (i > 0) {
-        showLoading('読み込みに時間がかかっています…(' + (i + 1) + '/' + LOAD_RETRY_TIMEOUTS.length + '回目)');
-      }
+      if (i > 0 && onRetry) onRetry(i + 1, LOAD_RETRY_TIMEOUTS.length);
       try {
-        return await jsonpRequest(GAS_URL, LOAD_RETRY_TIMEOUTS[i]);
+        return await jsonpRequest(url, LOAD_RETRY_TIMEOUTS[i]);
       } catch (err) {
         lastErr = err;
-        console.error('読み込み試行 ' + (i + 1) + ' 回目に失敗:', err);
+        console.error('読み込み試行(' + stage + ') ' + (i + 1) + '回目に失敗:', err);
       }
     }
     throw lastErr || new Error('読み込みに失敗しました');
   }
 
+  // 特定の投稿1件+直接関連する投稿+コメントだけを優先取得する(段階読み込みの完了を待たない)。
+  async function fetchPostDetail(idOrShareId) {
+    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'detailId=' + encodeURIComponent(idOrShareId);
+    return jsonpRequest(url, 20000);
+  }
+
+  function rebuildDerivedArraysFromPosts() {
+    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix'; });
+    promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
+    requestPosts = posts.filter(function (p) { return p.type === 'request'; });
+    fixPosts = posts.filter(function (p) { return p.type === 'fix'; });
+  }
+
+  function findLocalPost(idOrShareId) {
+    return posts.find(function (p) { return String(p.id) === String(idOrShareId) || String(p.shareId) === String(idOrShareId); });
+  }
+
+  function mergePostIntoLocalState(post) {
+    if (!post) return;
+    const idx = posts.findIndex(function (x) { return String(x.id) === String(post.id); });
+    if (idx === -1) posts.push(post); else posts[idx] = post;
+  }
+
+  // 段階読み込み(stage=rest)が終わるまでの間、個別に投稿を開いたときに
+  // その投稿+直接関連する投稿+コメントだけを優先的に取得する。
+  // rest完了後は全データがすでに揃っているのでネットワークアクセスなしで即座に返す。
+  async function ensurePostLoaded(idOrShareId) {
+    let post = findLocalPost(idOrShareId);
+    if (restStageLoaded) return post || null;
+    if (post && detailFetchedIds[post.id]) return post;
+
+    showLoading('読み込み中...');
+    try {
+      const data = await fetchPostDetail(idOrShareId);
+      if (data && data.post) {
+        mergePostIntoLocalState(data.post);
+        (data.related || []).forEach(mergePostIntoLocalState);
+        (data.comments || []).forEach(function (c) {
+          if (!allComments.some(function (x) { return String(x.id) === String(c.id); })) allComments.push(c);
+        });
+        rebuildDerivedArraysFromPosts();
+        detailFetchedIds[data.post.id] = true;
+        post = data.post;
+      }
+    } catch (err) {
+      console.error('個別読み込みに失敗しました:', err);
+    } finally {
+      hideLoading();
+    }
+    return post || null;
+  }
+
+  // 第1段階: 親の画像投稿だけを取得して一覧を表示し、その時点で読み込み中表示を解除する。
   async function loadPosts() {
     showLoading('読み込み中...');
     try {
-      const data = await fetchPostsDataWithRetry();
+      const data = await fetchStageWithRetry('parents', function (n, total) {
+        showLoading('読み込みに時間がかかっています…(' + n + '/' + total + '回目)');
+      });
       posts = data.posts || [];
-      allComments = data.comments || [];
-      allBoard = data.board || [];
       options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
-      buildInternalDict(data.dictionary);
       applyOptionsToUi();
-      imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix'; });
-      promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
-      requestPosts = posts.filter(function (p) { return p.type === 'request'; });
-      fixPosts = posts.filter(function (p) { return p.type === 'fix'; });
+      rebuildDerivedArraysFromPosts();
       collectDynamicKeysFromPosts();
       rebuildSettingsGrid();
       rebuildTagUI();
@@ -2787,17 +2842,54 @@
       renderBasePromptDisplay();
       renderRequestDisplay();
       if (document.getElementById('tab-browse').classList.contains('active')) renderList();
-      if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
-      if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
-      if (document.getElementById('tab-databank').classList.contains('active')) renderDatabank();
-      if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
       statusText.textContent = '';
     } catch (err) {
       statusText.textContent = '読み込みに失敗しました(通信が不安定な可能性があります)。ページを再読み込みしてください。';
       console.error(err);
     } finally {
+      // 親の画像投稿の読み込みが終わった時点で読み込み中表示を解除する。
+      // 子画像・プロンプト例・リクエスト・修正依頼・コメント・掲示板・辞書は続けて背後で取得する。
       hideLoading();
     }
+    loadRestStage();
+  }
+
+  // 第2段階: 残りのデータを背後で取得し、静かにマージして表示を更新する。
+  // 失敗しても致命的ではない(個別に開いた投稿はensurePostLoadedで都度取得できる)ため、
+  // 読み込み中表示は出さず、しばらく待ってから自動で再試行する。
+  async function loadRestStage() {
+    if (restStageLoading || restStageLoaded) return;
+    restStageLoading = true;
+    try {
+      const data = await fetchStageWithRetry('rest');
+      (data.posts || []).forEach(mergePostIntoLocalState);
+      allComments = data.comments || [];
+      allBoard = data.board || [];
+      options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
+      buildInternalDict(data.dictionary);
+      applyOptionsToUi();
+      rebuildDerivedArraysFromPosts();
+      collectDynamicKeysFromPosts();
+      rebuildSettingsGrid();
+      rebuildTagUI();
+      rebuildPostTagCloud();
+      rebuildDatalists();
+      rebuildPromptFormTagCloud();
+      renderPromptChips();
+      rebuildPromptBrowseTagUI();
+      renderBasePromptDisplay();
+      renderRequestDisplay();
+      restStageLoaded = true;
+      rerenderActiveList();
+      if (document.getElementById('tab-databank').classList.contains('active')) renderDatabank();
+      if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
+    } catch (err) {
+      console.error('追加データの読み込みに失敗しました。しばらくして再試行します:', err);
+      restStageLoading = false;
+      setTimeout(loadRestStage, 15000);
+      return;
+    }
+    restStageLoading = false;
   }
 
   function sortJa(arr) {
@@ -2813,12 +2905,21 @@
     return a;
   }
   const tagOrderCache = {};
+  // 段階読み込み(親投稿→残り)の途中でタグ集合が増えるたびに全体を再シャッフルすると、
+  // 表示中のタグクラウドが突然並び替わってユーザーを驚かせてしまう。
+  // そのため、既に順番が決まっているタグはそのまま維持し、新しく見つかったタグだけを
+  // ランダムな順で末尾に追加する(初回呼び出し時は全タグが「新規」としてシャッフルされる)。
   function shuffledTagOrder(areaKey, tags) {
-    const key = tags.join('|');
     const cached = tagOrderCache[areaKey];
-    if (cached && cached.key === key) return cached.order;
-    const order = shuffleArray(tags);
-    tagOrderCache[areaKey] = { key: key, order: order };
+    const prevOrder = cached ? cached.order : [];
+    const currentSet = {};
+    tags.forEach(function (t) { currentSet[t] = true; });
+    const kept = prevOrder.filter(function (t) { return currentSet[t]; }); // 消えたタグは除外
+    const prevSet = {};
+    prevOrder.forEach(function (t) { prevSet[t] = true; });
+    const newTags = tags.filter(function (t) { return !prevSet[t]; });
+    const order = kept.concat(shuffleArray(newTags));
+    tagOrderCache[areaKey] = { order: order };
     return order;
   }
 
@@ -3542,10 +3643,16 @@
     opts = opts || {};
     wireCountButtons(container);
     container.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        const post = posts.find(function (p) { return String(p.id) === String(row.dataset.id); });
-        if (!post) return;
-        if (!opts.detailOnly && viewMode === 'panel') openFullImageModal(post); else openModal(post);
+      row.addEventListener('click', async function () {
+        // パネル表示のフルスクリーン画像は軽量なのでそのまま開き、
+        // 詳細モーダルを開く場合のみ、紐づけ・コメントを優先取得してから開く。
+        if (!opts.detailOnly && viewMode === 'panel') {
+          const quick = findLocalPost(row.dataset.id);
+          if (quick) openFullImageModal(quick);
+          return;
+        }
+        const post = await ensurePostLoaded(row.dataset.id);
+        if (post) openModal(post);
       });
     });
   }
@@ -3725,27 +3832,27 @@
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
     modalBody.querySelectorAll('.base-prompt-link').forEach(function (baseLink) {
-      baseLink.addEventListener('click', function (e) {
+      baseLink.addEventListener('click', async function (e) {
         e.preventDefault();
-        const bp = promptPosts.find(function (pp) { return String(pp.id) === String(baseLink.dataset.promptId); });
+        const bp = await ensurePostLoaded(baseLink.dataset.promptId);
         if (bp) openPromptModal(bp);
       });
     });
 
     const parentLink = modalBody.querySelector('.parent-post-link');
     if (parentLink) {
-      parentLink.addEventListener('click', function (e) {
+      parentLink.addEventListener('click', async function (e) {
         e.preventDefault();
-        const pp = imagePosts.find(function (ip) { return String(ip.id) === String(parentLink.dataset.postId); });
+        const pp = await ensurePostLoaded(parentLink.dataset.postId);
         if (pp) openModal(pp);
       });
     }
 
     const requestLink = modalBody.querySelector('.request-post-link');
     if (requestLink) {
-      requestLink.addEventListener('click', function (e) {
+      requestLink.addEventListener('click', async function (e) {
         e.preventDefault();
-        const rp = requestPosts.find(function (x) { return String(x.id) === String(requestLink.dataset.requestId); });
+        const rp = await ensurePostLoaded(requestLink.dataset.requestId);
         if (rp) openRequestModal(rp);
       });
     }
@@ -3754,9 +3861,9 @@
     if (childWorks) wireImageRows(childWorks, { detailOnly: true });
 
     modalBody.querySelectorAll('.fix-post-link').forEach(function (fixLink) {
-      fixLink.addEventListener('click', function (e) {
+      fixLink.addEventListener('click', async function (e) {
         e.preventDefault();
-        const fp = fixPosts.find(function (x) { return String(x.id) === String(fixLink.dataset.fixId); });
+        const fp = await ensurePostLoaded(fixLink.dataset.fixId);
         if (fp) openModal(fp);
       });
     });
@@ -3799,9 +3906,11 @@
       closeFullImageModal();
     }
   });
-  document.getElementById('fullImageDetailBtn').addEventListener('click', function () {
-    const post = currentFullImagePost();
+  document.getElementById('fullImageDetailBtn').addEventListener('click', async function () {
+    const id = currentFullImagePost() && currentFullImagePost().id;
     closeFullImageModal();
+    if (!id) return;
+    const post = await ensurePostLoaded(id);
     if (post) openModal(post);
   });
   document.getElementById('fullImageDownloadBtn').addEventListener('click', function () {
@@ -3912,13 +4021,13 @@
     });
   }
 
-  function openSharedFromUrl() {
+  async function openSharedFromUrl() {
     const params = new URLSearchParams(location.search);
     const code = params.get('p');
     if (!code) return;
-    const post = posts.find(function (p) {
-      return String(p.shareId) === String(code) || String(p.id) === String(code);
-    });
+    // 親の画像投稿以外(子画像・プロンプト例・リクエスト・修正依頼)は段階読み込みの
+    // 第2段階が終わるまでローカルに無いことがあるため、個別優先読み込みで直接取得する。
+    const post = await ensurePostLoaded(code);
     if (post) {
       if (isHiddenByDislike(post)) return;
       if (post.type === 'prompt') { switchTab('promptBrowse'); openPromptModal(post); }
@@ -4737,8 +4846,8 @@
 
     wireCountButtons(rList);
     rList.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        const post = requestPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+      row.addEventListener('click', async function () {
+        const post = await ensurePostLoaded(row.dataset.id);
         if (post) openRequestModal(post);
       });
     });
@@ -4853,8 +4962,8 @@
 
     wireCountButtons(fList);
     fList.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        const post = fixPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+      row.addEventListener('click', async function () {
+        const post = await ensurePostLoaded(row.dataset.id);
         if (post) openModal(post);
       });
     });
@@ -5200,8 +5309,8 @@
 
     wireCountButtons(pList);
     pList.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        const post = promptPosts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+      row.addEventListener('click', async function () {
+        const post = await ensurePostLoaded(row.dataset.id);
         if (post) openPromptModal(post);
       });
     });
@@ -5552,10 +5661,7 @@
   });
 
   function refreshAfterAdminChange() {
-    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix'; });
-    promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
-    requestPosts = posts.filter(function (p) { return p.type === 'request'; });
-    fixPosts = posts.filter(function (p) { return p.type === 'fix'; });
+    rebuildDerivedArraysFromPosts();
     collectDynamicKeysFromPosts();
     rebuildTagUI();
     rebuildPostTagCloud();
@@ -5843,8 +5949,8 @@
     }
     body.innerHTML = html;
     body.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        const post = posts.find(function (p) { return String(p.id) === String(row.dataset.id); });
+      row.addEventListener('click', async function () {
+        const post = await ensurePostLoaded(row.dataset.id);
         if (!post) return;
         closeDbUsageModal();
         if (post.type === 'prompt') openPromptModal(post);
