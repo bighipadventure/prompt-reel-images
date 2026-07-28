@@ -2785,6 +2785,18 @@
     return posts.find(function (p) { return String(p.id) === String(idOrShareId) || String(p.shareId) === String(idOrShareId); });
   }
 
+  // プロンプト例・リクエスト・修正依頼・データバンク・掲示板は stage=rest(背後読み込み)が
+  // 終わるまで実際には0件ではないのに空に見えてしまう。不具合と誤解されないよう、
+  // 未読み込みの間だけ件数表示・空表示を「読み込み中」に差し替える。
+  // rest完了後にタブを開けば(あるいは既に開いていれば自動で)通常表示にすぐ戻る。
+  const LOADING_NOTICE = '読み込み中です。しばらくお待ちください…';
+  function setListCountAndEmpty(countEl, emptyEl, count, unit, emptyText) {
+    const pending = !restStageLoaded && count === 0;
+    countEl.textContent = pending ? '読み込み中…' : (count + ' ' + unit);
+    emptyEl.textContent = pending ? LOADING_NOTICE : emptyText;
+    emptyEl.style.display = count ? 'none' : 'block';
+  }
+
   function mergePostIntoLocalState(post) {
     if (!post) return;
     const idx = posts.findIndex(function (x) { return String(x.id) === String(post.id); });
@@ -4840,8 +4852,7 @@
     });
     filtered.sort(function (a, b) { return compareWithKeys(a, b, rSortKeys); });
 
-    rPostCount.textContent = filtered.length + ' 件';
-    rEmptyState.style.display = filtered.length ? 'none' : 'block';
+    setListCountAndEmpty(rPostCount, rEmptyState, filtered.length, '件', '条件に一致するリクエストがありません。');
     rList.innerHTML = filtered.map(requestRowHtml).join('');
 
     wireCountButtons(rList);
@@ -4956,8 +4967,7 @@
     });
     filtered.sort(function (a, b) { return compareWithKeys(a, b, fSortKeys); });
 
-    fPostCount.textContent = filtered.length + ' 件';
-    fEmptyState.style.display = filtered.length ? 'none' : 'block';
+    setListCountAndEmpty(fPostCount, fEmptyState, filtered.length, '件', '条件に一致する修正依頼がありません。');
     fList.innerHTML = filtered.map(fixRowHtml).join('');
 
     wireCountButtons(fList);
@@ -5100,8 +5110,7 @@
 
   function renderBoard() {
     const items = allBoard.slice().sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
-    boardCount.textContent = items.length + ' 件';
-    boardEmpty.style.display = items.length ? 'none' : 'block';
+    setListCountAndEmpty(boardCount, boardEmpty, items.length, '件', 'まだ投稿がありません。最初のひとことを書いてみましょう。');
     boardList.innerHTML = items.map(boardItemHtml).join('');
     boardList.querySelectorAll('[data-del-board]').forEach(function (btn) {
       btn.addEventListener('click', function () { adminDeleteBoard(btn.dataset.delBoard); });
@@ -5303,8 +5312,7 @@
     });
     filtered.sort(function (a, b) { return compareWithKeys(a, b, pSortKeys); });
 
-    pPostCount.textContent = filtered.length + ' 件';
-    pEmptyState.style.display = filtered.length ? 'none' : 'block';
+    setListCountAndEmpty(pPostCount, pEmptyState, filtered.length, '件', '条件に一致するプロンプト投稿がありません。');
     pList.innerHTML = filtered.map(promptRowHtml).join('');
 
     wireCountButtons(pList);
@@ -5910,8 +5918,14 @@
 
     const listEl = document.getElementById('databankList');
     const emptyEl = document.getElementById('dbEmptyState');
-    document.getElementById('dbCount').textContent = rows.length + ' 種類';
-    if (!rows.length) { emptyEl.style.display = 'block'; listEl.innerHTML = ''; return; }
+    const dbPending = !restStageLoaded && rows.length === 0;
+    document.getElementById('dbCount').textContent = dbPending ? '読み込み中…' : (rows.length + ' 種類');
+    if (!rows.length) {
+      emptyEl.textContent = dbPending ? LOADING_NOTICE : '対象のプロンプトがありません。';
+      emptyEl.style.display = 'block';
+      listEl.innerHTML = '';
+      return;
+    }
     emptyEl.style.display = 'none';
     listEl.innerHTML = '<div class="databank-table">' + rows.map(function (r) {
       const e = dictEntry(r.key) || {};
