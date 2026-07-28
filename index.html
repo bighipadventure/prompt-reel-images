@@ -2833,26 +2833,54 @@
   }
 
   // 第1段階: 親の画像投稿だけを取得して一覧を表示し、その時点で読み込み中表示を解除する。
+  // stage=parents のレスポンスをローカル状態へ反映する共通処理
+  function applyParentsData(data) {
+    posts = data.posts || [];
+    options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
+    applyOptionsToUi();
+    rebuildDerivedArraysFromPosts();
+    collectDynamicKeysFromPosts();
+    rebuildSettingsGrid();
+    rebuildTagUI();
+    rebuildPostTagCloud();
+    rebuildDatalists();
+    rebuildPromptFormTagCloud();
+    renderPromptChips();
+    rebuildPromptBrowseTagUI();
+    renderBasePromptDisplay();
+    renderRequestDisplay();
+  }
+
+  // stage=rest のレスポンスをローカル状態へマージする共通処理
+  function applyRestData(data) {
+    (data.posts || []).forEach(mergePostIntoLocalState);
+    allComments = data.comments || [];
+    allBoard = data.board || [];
+    options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
+    buildInternalDict(data.dictionary);
+    applyOptionsToUi();
+    rebuildDerivedArraysFromPosts();
+    collectDynamicKeysFromPosts();
+    rebuildSettingsGrid();
+    rebuildTagUI();
+    rebuildPostTagCloud();
+    rebuildDatalists();
+    rebuildPromptFormTagCloud();
+    renderPromptChips();
+    rebuildPromptBrowseTagUI();
+    renderBasePromptDisplay();
+    renderRequestDisplay();
+  }
+
+  // アプリを開いたときの初回読み込み専用。まず親の画像投稿だけを取得して一覧を表示し、
+  // その時点で読み込み中表示を解除してから、残りを loadRestStage() で背後取得する。
   async function loadPosts() {
     showLoading('読み込み中...');
     try {
       const data = await fetchStageWithRetry('parents', function (n, total) {
         showLoading('読み込みに時間がかかっています…(' + n + '/' + total + '回目)');
       });
-      posts = data.posts || [];
-      options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
-      applyOptionsToUi();
-      rebuildDerivedArraysFromPosts();
-      collectDynamicKeysFromPosts();
-      rebuildSettingsGrid();
-      rebuildTagUI();
-      rebuildPostTagCloud();
-      rebuildDatalists();
-      rebuildPromptFormTagCloud();
-      renderPromptChips();
-      rebuildPromptBrowseTagUI();
-      renderBasePromptDisplay();
-      renderRequestDisplay();
+      applyParentsData(data);
       if (document.getElementById('tab-browse').classList.contains('active')) renderList();
       statusText.textContent = '';
     } catch (err) {
@@ -2874,23 +2902,7 @@
     restStageLoading = true;
     try {
       const data = await fetchStageWithRetry('rest');
-      (data.posts || []).forEach(mergePostIntoLocalState);
-      allComments = data.comments || [];
-      allBoard = data.board || [];
-      options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
-      buildInternalDict(data.dictionary);
-      applyOptionsToUi();
-      rebuildDerivedArraysFromPosts();
-      collectDynamicKeysFromPosts();
-      rebuildSettingsGrid();
-      rebuildTagUI();
-      rebuildPostTagCloud();
-      rebuildDatalists();
-      rebuildPromptFormTagCloud();
-      renderPromptChips();
-      rebuildPromptBrowseTagUI();
-      renderBasePromptDisplay();
-      renderRequestDisplay();
+      applyRestData(data);
       restStageLoaded = true;
       rerenderActiveList();
       if (document.getElementById('tab-databank').classList.contains('active')) renderDatabank();
@@ -2902,6 +2914,28 @@
       return;
     }
     restStageLoading = false;
+  }
+
+  // 投稿・編集の直後に使う専用のリロード。
+  // 段階読み込み(stage=parents→stage=rest)を直列で待ってから戻るため、
+  // 呼び出し側は戻り値の時点でposts/imagePosts/promptPosts/requestPosts/fixPostsが
+  // すべて最新化されていることを前提にしてよい(新規投稿を確実に見つけて開くため)。
+  // 既に stage=rest 済みでも、削除・変更を反映するため必ず両方取り直す。
+  async function reloadAllPosts() {
+    showLoading('読み込み中...');
+    try {
+      const parentsData = await fetchStageWithRetry('parents');
+      applyParentsData(parentsData);
+      const restData = await fetchStageWithRetry('rest');
+      applyRestData(restData);
+      restStageLoaded = true;
+      restStageLoading = false;
+    } catch (err) {
+      console.error('再読み込みに失敗しました:', err);
+      statusText.textContent = '再読み込みに失敗しました。ページを再読み込みしてください。';
+    } finally {
+      hideLoading();
+    }
   }
 
   function sortJa(arr) {
@@ -3400,7 +3434,7 @@
       const targetId = editing ? adminEditingPost.id : result.id;
       if (editing) cancelAdminEdit(); else resetImageForm();
 
-      await loadPosts();
+      await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
       switchTab(posted && posted.type === 'fix' ? 'fixBrowse' : 'browse');
       if (posted) openModal(posted);
@@ -4325,7 +4359,7 @@
       const targetId = editing ? adminEditingPost.id : result.id;
       if (editing) cancelAdminEdit(); else resetPromptForm();
 
-      await loadPosts();
+      await reloadAllPosts();
       switchTab('promptBrowse');
       const posted = promptPosts.find(function (p) { return String(p.id) === String(targetId); });
       if (posted) openPromptModal(posted);
@@ -4684,7 +4718,7 @@
       const targetId = editing ? adminEditingPost.id : result.id;
       if (editing) cancelAdminEdit(); else resetRequestForm();
 
-      await loadPosts();
+      await reloadAllPosts();
       switchTab('requestBrowse');
       const posted = requestPosts.find(function (p) { return String(p.id) === String(targetId); });
       if (posted) openRequestModal(posted);
