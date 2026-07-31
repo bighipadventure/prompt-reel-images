@@ -5591,13 +5591,13 @@
   const OPTION_DEFS = [
     { key: 'like', label: 'グッドボタン', desc: 'オフにすると全画面からグッドボタンが消えます' },
     { key: 'likeCount', label: 'グッド数の表示', desc: 'オフにするとグッド数を表示しません' },
+    { key: 'dislike', label: 'バッドボタン', desc: 'オフにするとバッドボタンを非表示にします。オンのとき、しきい値に達した投稿は利用者から自動で非表示になります' },
     { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
-    { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
     { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になります' },
+    { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
     { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
     { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
-    { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
-    { key: 'dislike', label: 'バッドボタン', desc: 'オフにするとバッドボタンを非表示にします。オンのとき、しきい値に達した投稿は利用者から自動で非表示になります' }
+    { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
@@ -5605,6 +5605,12 @@
 
   function openAdminOptionsModal() {
     draftOptions = Object.assign({}, options);
+    const dislikeThresholdRow =
+      '<div class="opt-toggle-row">' +
+        '<div><div class="opt-label">バッドの強制非表示しきい値</div>' +
+        '<div class="opt-desc">バッドがこの回数に達した投稿は、利用者の一覧・詳細から自動で非表示になります(管理者モードでは引き続き表示されます)</div></div>' +
+        '<input type="number" min="1" step="1" id="dislikeThresholdInput" value="' + (Number(draftOptions.dislikeThreshold) || 10) + '" style="width:90px;">' +
+      '</div>';
     adminOptionsBody.innerHTML = '' +
       '<div class="modal-header">' +
         '<h3 class="modal-title">オプション機能</h3>' +
@@ -5615,13 +5621,8 @@
         return '<div class="opt-toggle-row">' +
           '<div><div class="opt-label">' + o.label + '</div><div class="opt-desc">' + o.desc + '</div></div>' +
           '<div class="opt-switch' + (draftOptions[o.key] ? ' on' : '') + '" data-opt="' + o.key + '"></div>' +
-        '</div>';
+        '</div>' + (o.key === 'dislike' ? dislikeThresholdRow : '');
       }).join('') +
-      '<div class="opt-toggle-row">' +
-        '<div><div class="opt-label">バッドの強制非表示しきい値</div>' +
-        '<div class="opt-desc">バッドがこの回数に達した投稿は、利用者の一覧・詳細から自動で非表示になります(管理者モードでは引き続き表示されます)</div></div>' +
-        '<input type="number" min="1" step="1" id="dislikeThresholdInput" value="' + (Number(draftOptions.dislikeThreshold) || 10) + '" style="width:90px;">' +
-      '</div>' +
       '<div class="admin-modal-status" id="adminOptionsStatus"></div>' +
       '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>';
 
