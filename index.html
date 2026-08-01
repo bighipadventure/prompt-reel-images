@@ -172,7 +172,7 @@
     max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); cursor: zoom-in;
   }
 
-  input[type="text"], input[type="number"]{
+  input[type="text"], input[type="number"], input[type="password"]{
     width:100%;
     background: var(--surface-2);
     border: 1px solid var(--line);
@@ -839,6 +839,9 @@
   body.opt-no-dislike .opt-only-dislike{ display:none !important; }
   /* 修正依頼機能: オプションがオンのときだけ表示(オフ時は存在自体を見せない) */
   body:not(.opt-fixrequest) .fixrequest-only{ display:none !important; }
+  /* 投稿者編集機能: オプションがオンのときだけ表示(オフ時は存在自体を見せない) */
+  body:not(.opt-owneredit) .owneredit-only{ display:none !important; }
+  body.opt-owneredit .owneredit-off-only{ display:none !important; }
   /* 投稿タイトルと「修正依頼の具体的な内容」の間を明確に空ける(相殺に依存しない) */
   #fixContentField{ margin-top: 26px; }
   #fixContentField > .field-label{ margin-top: 0; }
@@ -1101,6 +1104,11 @@
       </div>
       <div class="chips" id="selectedTags"></div>
 
+      <div class="owneredit-only" id="editPwField">
+        <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+        <input type="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="editPwInput" placeholder="空欄のままでも投稿できます">
+      </div>
+
       <div class="submit-row">
         <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
         <button class="btn-ghost" id="cancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
@@ -1143,6 +1151,11 @@
       </div>
       <div class="chips" id="pSelectedTags"></div>
 
+      <div class="owneredit-only" id="pEditPwField">
+        <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+        <input type="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="pEditPwInput" placeholder="空欄のままでも投稿できます">
+      </div>
+
       <div class="submit-row">
         <button class="btn-submit" id="pSubmitBtn" type="button">投稿する</button>
         <button class="btn-ghost" id="pCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
@@ -1178,6 +1191,11 @@
         <input type="file" id="rRefInput" accept="image/*" multiple>
       </div>
       <div class="ref-thumbs" id="rRefThumbs"></div>
+
+      <div class="owneredit-only" id="rEditPwField">
+        <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+        <input type="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="rEditPwInput" placeholder="空欄のままでも投稿できます">
+      </div>
 
       <div class="submit-row">
         <button class="btn-submit" id="rSubmitBtn" type="button">投稿する</button>
@@ -1447,7 +1465,7 @@
         <div class="num">1</div>
         <div class="body">
           <strong>投稿する</strong><br>
-          「投稿」タブに画像をドラッグ&amp;ドロップ →「投稿する」を押すだけ。プロンプトや設定は画像から自動入力されます。
+          「投稿」タブに画像をドラッグ&amp;ドロップ →「投稿する」を押すだけ。プロンプトや設定は画像から自動入力されます。<span class="owneredit-only">「編集用パスワード」を設定しておくと、あとから自分で投稿を編集できます。</span>
         </div>
       </div>
       <div class="guide-step">
@@ -1675,6 +1693,10 @@
         <div class="feature-name">コメント</div>
         <div class="feature-desc">「コメント N件」を押すとコメント画面が開きます。上のフォームから名前(任意)とメッセージを書いて投稿でき、下に投稿済みのコメントが並びます。</div>
       </div>
+      <div class="feature-item owneredit-only">
+        <div class="feature-name">編集(自分の投稿)</div>
+        <div class="feature-desc">投稿時に「編集用パスワード」を設定した作品は、詳細画面右上の「編集」ボタンから、そのパスワードを入力して自分で内容を修正できます。</div>
+      </div>
       <div class="feature-item">
         <div class="feature-name">紐づいた投稿へのジャンプ</div>
         <div class="feature-desc">「ベースにしたプロンプト例」「応えたリクエスト」<span class="fixrequest-only">「対応した修正依頼」</span>のリンクや、詳細の下に並ぶバリエーション・関連作品をクリックすると、そのまま相手の詳細へ移動できます。閉じれば元の一覧に戻ります。</div>
@@ -1780,7 +1802,7 @@
 
       <div class="qa-item">
         <div class="qa-q">投稿した内容は後から編集できますか？</div>
-        <div class="qa-a">投稿後の編集機能はありません。内容を直したい場合は、投稿し直すか、管理者へ相談してください。</div>
+        <div class="qa-a"><span class="owneredit-off-only">投稿後の編集機能はありません。内容を直したい場合は、投稿し直すか、管理者へ相談してください。</span><span class="owneredit-only">投稿するときに「編集用パスワード」を設定しておくと、詳細画面右上の「編集」ボタンからそのパスワードを入力して、後から自分で内容を修正できます。パスワードを設定しなかった投稿や、パスワードを忘れてしまった投稿は編集できないため、その場合は投稿し直すか、管理者へ相談してください。</span></div>
       </div>
 
       <div class="qa-item">
@@ -2072,6 +2094,19 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="ownerAuthOverlay">
+  <div class="modal modal-narrow">
+    <button class="modal-close" type="button" id="ownerAuthCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">投稿の編集</h3>
+    <label class="field-label">編集用パスワード</label>
+    <input type="password" id="ownerPasswordInput" placeholder="投稿時に設定したパスワード" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
+    <div class="admin-modal-status" id="ownerAuthStatus"></div>
+    <div class="submit-row" style="margin-top:12px;">
+      <button class="btn-submit" type="button" id="ownerAuthSubmitBtn">編集する</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="adminOptionsOverlay">
   <div class="modal modal-narrow" id="adminOptionsBody"></div>
 </div>
@@ -2241,7 +2276,7 @@
   let restStageLoaded = false;
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, ownerEdit: false, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
@@ -3376,6 +3411,7 @@
     document.getElementById('fixContentInput').value = '';
     selectedFixRequestIds = [];
     renderFixRequestDisplay();
+    document.getElementById('editPwInput').value = '';
   }
 
   document.getElementById('submitBtn').addEventListener('click', async function () {
@@ -3410,9 +3446,11 @@
         fixRequestId: isFix ? '' : selectedFixRequestIds.join(',')
       };
       if (editing) {
-        payload.action = 'adminUpdate';
-        payload.password = adminPassword;
+        payload.action = ownerEditPassword ? 'ownerUpdate' : 'adminUpdate';
+        payload.password = ownerEditPassword || adminPassword;
         payload.id = adminEditingPost.id;
+      } else if (options.ownerEdit) {
+        payload.editPassword = document.getElementById('editPwInput').value;
       }
       if (file) {
         payload.imageBase64 = await fileToBase64(file);
@@ -3510,6 +3548,7 @@
     document.body.classList.toggle('opt-no-board', !options.board);
     document.body.classList.toggle('opt-no-boardvote', !options.boardVote);
     document.body.classList.toggle('opt-fixrequest', !!options.fixRequest);
+    document.body.classList.toggle('opt-owneredit', !!options.ownerEdit);
     document.body.classList.toggle('opt-no-dislike', !options.dislike);
     document.querySelectorAll('.author-field').forEach(function (el) {
       el.style.display = options.author ? '' : 'none';
@@ -3833,7 +3872,7 @@
       '<div class="modal-header">' +
         '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + (p.type === 'fix' ? ' <span class="row-hidden-badge" style="color:var(--accent);background:var(--accent-dim);border-color:var(--accent);">修正依頼</span>' : '') + '</h3>' +
         '<div class="modal-top-actions">' +
-          adminActionButtonsHtml() +
+          adminActionButtonsHtml(p) +
           '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>' +
           '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
@@ -4315,6 +4354,7 @@
     clearPromptSettings();
     pSelectedTags = [];
     renderPromptChips();
+    document.getElementById('pEditPwInput').value = '';
   }
 
   document.getElementById('pSubmitBtn').addEventListener('click', async function () {
@@ -4341,11 +4381,13 @@
         tags: pSelectedTags
       };
       if (editing) {
-        payload.action = 'adminUpdate';
-        payload.password = adminPassword;
+        payload.action = ownerEditPassword ? 'ownerUpdate' : 'adminUpdate';
+        payload.password = ownerEditPassword || adminPassword;
         payload.id = adminEditingPost.id;
         payload.basePromptId = '';
         payload.parentId = '';
+      } else if (options.ownerEdit) {
+        payload.editPassword = document.getElementById('pEditPwInput').value;
       }
       const res = await fetch(GAS_URL, {
         method: 'POST',
@@ -4675,6 +4717,7 @@
     resetAutogrow();
     requestRefs = [];
     renderRefThumbs();
+    document.getElementById('rEditPwInput').value = '';
   }
 
   document.getElementById('rSubmitBtn').addEventListener('click', async function () {
@@ -4697,13 +4740,14 @@
         prompt: bodyText
       };
       if (editing) {
-        payload.action = 'adminUpdate';
-        payload.password = adminPassword;
+        payload.action = ownerEditPassword ? 'ownerUpdate' : 'adminUpdate';
+        payload.password = ownerEditPassword || adminPassword;
         payload.id = adminEditingPost.id;
         payload.keepReferenceImages = requestRefs.filter(function (r) { return r.kind === 'existing'; }).map(function (r) { return r.url; });
         payload.newReferenceImages = requestRefs.filter(function (r) { return r.kind === 'new'; }).map(function (r) { return r.dataUrl; });
       } else {
         payload.referenceImages = requestRefs.filter(function (r) { return r.kind === 'new'; }).map(function (r) { return r.dataUrl; });
+        if (options.ownerEdit) payload.editPassword = document.getElementById('rEditPwInput').value;
       }
 
       const res = await fetch(GAS_URL, {
@@ -5033,7 +5077,7 @@
       '<div class="modal-header">' +
         '<h3 class="modal-title">' + escapeHtml(requestLabel(p)) + '</h3>' +
         '<div class="modal-top-actions">' +
-          adminActionButtonsHtml() +
+          adminActionButtonsHtml(p) +
           '<button class="btn-ghost" type="button" id="requestShareBtn">共有</button>' +
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
@@ -5381,7 +5425,7 @@
       '<div class="modal-header">' +
         '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</h3>' +
         '<div class="modal-top-actions">' +
-          adminActionButtonsHtml() +
+          adminActionButtonsHtml(p) +
           '<button class="btn-ghost" type="button" id="promptShareBtn">共有</button>' +
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
@@ -5475,10 +5519,57 @@
     }
   }
 
-  function adminActionButtonsHtml() {
-    if (!adminMode) return '';
-    return '<button class="btn-ghost" type="button" id="adminEditBtn">編集</button>' +
-      '<button class="btn-ghost" type="button" id="adminDeleteBtn" style="color:var(--danger); border-color:var(--danger);">削除</button>';
+  const ownerAuthOverlay = document.getElementById('ownerAuthOverlay');
+  const ownerPasswordInput = document.getElementById('ownerPasswordInput');
+  const ownerAuthStatus = document.getElementById('ownerAuthStatus');
+  let ownerAuthTarget = null;
+
+  function openOwnerAuthModal(p) {
+    ownerAuthTarget = p;
+    ownerPasswordInput.value = '';
+    ownerAuthStatus.textContent = '';
+    openOverlay(ownerAuthOverlay);
+    ownerPasswordInput.focus();
+  }
+  function closeOwnerAuthModal() { ownerAuthOverlay.classList.remove('open'); }
+
+  document.getElementById('ownerAuthCloseBtn').addEventListener('click', closeOwnerAuthModal);
+  ownerAuthOverlay.addEventListener('click', function (e) { if (e.target === ownerAuthOverlay) closeOwnerAuthModal(); });
+  ownerPasswordInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitOwnerAuth(); });
+  document.getElementById('ownerAuthSubmitBtn').addEventListener('click', submitOwnerAuth);
+
+  async function submitOwnerAuth() {
+    if (!ownerAuthTarget) return;
+    const pw = ownerPasswordInput.value;
+    if (!pw) { ownerAuthStatus.textContent = 'パスワードを入力してください'; return; }
+    ownerAuthStatus.textContent = '';
+    showLoading('確認中...');
+    try {
+      const result = await postAction({ action: 'ownerAuth', id: ownerAuthTarget.id, password: pw });
+      if (result && result.success) {
+        const target = ownerAuthTarget;
+        closeOwnerAuthModal();
+        openOwnerEdit(target, pw);
+      } else {
+        ownerAuthStatus.textContent = 'パスワードが違います';
+      }
+    } catch (err) {
+      ownerAuthStatus.textContent = '通信に失敗しました';
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function adminActionButtonsHtml(p) {
+    if (adminMode) {
+      return '<button class="btn-ghost" type="button" id="adminEditBtn">管理者編集</button>' +
+        '<button class="btn-ghost" type="button" id="adminDeleteBtn" style="color:var(--danger); border-color:var(--danger);">削除</button>';
+    }
+    if (options.ownerEdit && p && p.hasEditPassword) {
+      return '<button class="btn-ghost" type="button" id="ownerEditBtn">編集</button>';
+    }
+    return '';
   }
 
   function wireAdminActionButtons(p) {
@@ -5486,6 +5577,8 @@
     const deleteBtn = document.getElementById('adminDeleteBtn');
     if (editBtn) editBtn.addEventListener('click', function () { openAdminEdit(p); });
     if (deleteBtn) deleteBtn.addEventListener('click', function () { adminDeletePost(p); });
+    const ownerBtn = document.getElementById('ownerEditBtn');
+    if (ownerBtn) ownerBtn.addEventListener('click', function () { openOwnerAuthModal(p); });
   }
 
   /* ===== COMMENTS (作品コメント) ===== */
@@ -5597,7 +5690,8 @@
     { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
     { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
     { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
-    { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' }
+    { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
+    { key: 'ownerEdit', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示されます。投稿者がパスワードを設定した投稿は、詳細画面の「編集」ボタンからそのパスワードを入力して本人が編集できます(オフのときは欄もボタンも表示されません)' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
@@ -5655,7 +5749,7 @@
       // 未知のキーが返却から欠落し、保存したはずの設定がオフに戻ってしまう。
       // 黙って戻さず原因を明示する。
       const returned = result.options || {};
-      const missing = ['fixRequest', 'dislike'].filter(function (k) { return !(k in returned); });
+      const missing = ['fixRequest', 'dislike', 'ownerEdit'].filter(function (k) { return !(k in returned); });
       if (missing.length) {
         throw new Error('GAS側が新機能に未対応です。最新の Code.gs を貼り付けたうえで「デプロイを管理」→ 新しいバージョンとして更新し、setup を再実行してください。');
       }
@@ -5721,6 +5815,7 @@
 
   // ADMIN EDIT (投稿フォームを流用)
   let adminEditingPost = null;
+  let ownerEditPassword = '';
 
   function isEditingImagePost() {
     return !!adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt' && adminEditingPost.type !== 'request';
@@ -5742,6 +5837,9 @@
     document.getElementById('cancelEditBtn').style.display = editingImage ? '' : 'none';
     document.getElementById('pCancelEditBtn').style.display = editingPrompt ? '' : 'none';
     document.getElementById('rCancelEditBtn').style.display = editingRequest ? '' : 'none';
+    document.getElementById('editPwField').style.display = editingImage ? 'none' : '';
+    document.getElementById('pEditPwField').style.display = editingPrompt ? 'none' : '';
+    document.getElementById('rEditPwField').style.display = editingRequest ? 'none' : '';
     statusText.textContent = editingImage
       ? '「' + (adminEditingPost.title || '(無題)') + '」を編集中'
       : '';
@@ -5753,7 +5851,13 @@
       : '';
   }
 
+  function openOwnerEdit(p, password) {
+    openAdminEdit(p);
+    ownerEditPassword = password;
+  }
+
   function openAdminEdit(p) {
+    ownerEditPassword = '';
     const type = p.type || 'image';
     const isImage = type !== 'prompt' && type !== 'request';
     adminEditingPost = p;
@@ -5810,6 +5914,7 @@
 
   function cancelAdminEdit() {
     adminEditingPost = null;
+    ownerEditPassword = '';
     resetImageForm();
     resetPromptForm();
     resetRequestForm();
