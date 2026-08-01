@@ -910,8 +910,8 @@
 
   /* ---- 参考資料ギャラリー(詳細) ---- */
   .ref-gallery{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
-  .ref-gallery a{ display:block; width:140px; height:140px; border-radius:10px; overflow:hidden; border:1px solid var(--line); }
-  .ref-gallery img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ref-gallery a{ display:block; max-width:220px; max-height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--line); background: var(--surface-2); cursor: zoom-in; }
+  .ref-gallery img{ display:block; width:auto; height:auto; max-width:220px; max-height:220px; }
 
   /* ---- リクエスト行 ---- */
   .row-requested{ color: var(--accent); }
@@ -1442,6 +1442,21 @@
 
       <label class="field-label">メッセージ</label>
       <textarea id="boardBodyInput" class="autogrow" placeholder="ご自由にどうぞ"></textarea>
+
+      <label class="field-label">画像を添付(任意・複数可 / jpegに変換・縮小して保存されます)</label>
+      <div class="dropzone dropzone-compact" id="boardDropzone">
+        <div class="dz-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+        </div>
+        <div class="dz-title">ここに画像をドラッグ&ドロップ</div>
+        <div class="dz-sub">または<span class="dz-browse">クリックしてファイルを選択</span><br>複数枚まとめて追加できます</div>
+        <input type="file" id="boardRefInput" accept="image/*" multiple>
+      </div>
+      <div class="ref-thumbs" id="boardRefThumbs"></div>
 
       <div class="submit-row">
         <button class="btn-submit" id="boardSubmitBtn" type="button">投稿する</button>
@@ -3470,7 +3485,7 @@
 
       statusText.textContent = editing ? '保存しました' : '投稿しました';
       const targetId = editing ? adminEditingPost.id : result.id;
-      if (editing) cancelAdminEdit(); else resetImageForm();
+      if (editing) cancelAdminEdit(false); else resetImageForm();
 
       await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
@@ -4399,7 +4414,7 @@
 
       pStatus.textContent = editing ? '保存しました' : '投稿しました';
       const targetId = editing ? adminEditingPost.id : result.id;
-      if (editing) cancelAdminEdit(); else resetPromptForm();
+      if (editing) cancelAdminEdit(false); else resetPromptForm();
 
       await reloadAllPosts();
       switchTab('promptBrowse');
@@ -4760,7 +4775,7 @@
 
       rStatus.textContent = editing ? '保存しました' : '投稿しました';
       const targetId = editing ? adminEditingPost.id : result.id;
-      if (editing) cancelAdminEdit(); else resetRequestForm();
+      if (editing) cancelAdminEdit(false); else resetRequestForm();
 
       await reloadAllPosts();
       switchTab('requestBrowse');
@@ -5122,6 +5137,60 @@
   const boardEmpty = document.getElementById('boardEmpty');
   const boardCount = document.getElementById('boardCount');
 
+  // 掲示板の添付画像。保存先・縮小・サムネイル表示はリクエストの参考資料と同じ仕様
+  // (resizeToJpeg / REF_MAX_DIM / REF_JPEG_QUALITY を流用)。
+  let boardRefs = [];
+  const boardRefThumbs = document.getElementById('boardRefThumbs');
+  const boardRefInput = document.getElementById('boardRefInput');
+  const boardDropzone = document.getElementById('boardDropzone');
+
+  function renderBoardRefThumbs() {
+    boardRefThumbs.innerHTML = boardRefs.map(function (r, i) {
+      return '<div class="ref-thumb"><img src="' + escapeHtml(r.dataUrl) + '" alt="添付画像" data-board-ref-view="' + i + '">' +
+        '<button class="ref-remove" type="button" data-board-ref-idx="' + i + '" title="削除">✕</button></div>';
+    }).join('');
+    boardRefThumbs.querySelectorAll('[data-board-ref-view]').forEach(function (img) {
+      img.addEventListener('click', function () {
+        const r = boardRefs[Number(img.dataset.boardRefView)];
+        if (r) openRefLightbox(r.dataUrl);
+      });
+    });
+    boardRefThumbs.querySelectorAll('[data-board-ref-idx]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        boardRefs.splice(Number(btn.dataset.boardRefIdx), 1);
+        renderBoardRefThumbs();
+      });
+    });
+  }
+
+  async function addBoardRefFiles(fileList) {
+    const files = Array.from(fileList || []).filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    showLoading('画像を処理中...');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const dataUrl = await resizeToJpeg(files[i]);
+        boardRefs.push({ dataUrl: dataUrl });
+      }
+      renderBoardRefThumbs();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('boardStatus').textContent = '画像の処理に失敗しました';
+    } finally {
+      hideLoading();
+    }
+  }
+
+  boardDropzone.addEventListener('click', function () { boardRefInput.click(); });
+  boardDropzone.addEventListener('dragover', function (e) { e.preventDefault(); boardDropzone.classList.add('drag-over'); });
+  boardDropzone.addEventListener('dragleave', function () { boardDropzone.classList.remove('drag-over'); });
+  boardDropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    boardDropzone.classList.remove('drag-over');
+    if (e.dataTransfer && e.dataTransfer.files) addBoardRefFiles(e.dataTransfer.files);
+  });
+  boardRefInput.addEventListener('change', function () { addBoardRefFiles(boardRefInput.files); boardRefInput.value = ''; });
+
   function boardVoteHtml(m) {
     const id = escapeHtml(String(m.id));
     const vote = boardVotes[m.id];
@@ -5135,12 +5204,22 @@
     '</div>';
   }
 
+  function boardImagesHtml(m) {
+    const imgs = m.images || [];
+    if (!imgs.length) return '';
+    return '<div class="ref-gallery board-ref-gallery">' + imgs.map(function (u) {
+      return '<a href="#" class="ref-open" data-ref-url="' + escapeHtml(u) + '">' +
+        imageTag(u, { size: 'w320', lazy: true, alt: '添付画像' }) + '</a>';
+    }).join('') + '</div>';
+  }
+
   function boardItemHtml(m) {
     const name = m.name ? escapeHtml(m.name) : '匿名';
     const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(m.id)) + '">削除</button>' : '';
     return '<div class="comment-item board-item">' + delBtn +
       '<div class="comment-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(m.timestamp) + '</span></div>' +
       '<div class="comment-body">' + escapeHtml(m.body) + '</div>' +
+      boardImagesHtml(m) +
       boardVoteHtml(m) +
     '</div>';
   }
@@ -5196,6 +5275,9 @@
     boardList.querySelectorAll('.board-vote-btn').forEach(function (btn) {
       btn.addEventListener('click', function () { voteBoard(btn.dataset.boardId, btn.dataset.boardVote); });
     });
+    boardList.querySelectorAll('.ref-open').forEach(function (a) {
+      a.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(a.dataset.refUrl); });
+    });
   }
 
   document.getElementById('boardSubmitBtn').addEventListener('click', async function () {
@@ -5210,12 +5292,15 @@
       const result = await postAction({
         action: 'board',
         name: document.getElementById('boardNameInput').value,
-        body: body
+        body: body,
+        images: boardRefs.map(function (r) { return r.dataUrl; })
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       if (result.message) allBoard.push(result.message);
       document.getElementById('boardBodyInput').value = '';
       resetAutogrow();
+      boardRefs = [];
+      renderBoardRefThumbs();
       status.textContent = '投稿しました';
       renderBoard();
     } catch (err) {
@@ -5475,7 +5560,7 @@
     adminBtn.classList.toggle('on', on);
     document.getElementById('adminOptionsBtn').style.display = on ? '' : 'none';
     document.body.classList.toggle('admin-on', on);
-    if (!on && adminEditingPost) cancelAdminEdit();
+    if (!on && adminEditingPost) cancelAdminEdit(false);
     if (modalOverlay.classList.contains('open')) closeModal();
     if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
     rerenderActiveList();
@@ -5912,18 +5997,32 @@
     window.scrollTo(0, 0);
   }
 
-  function cancelAdminEdit() {
+  async function cancelAdminEdit(returnToDetail) {
+    const editingPost = adminEditingPost;
     adminEditingPost = null;
     ownerEditPassword = '';
     resetImageForm();
     resetPromptForm();
     resetRequestForm();
     updateEditUi();
+    if (returnToDetail !== false && editingPost) await reopenPostDetail(editingPost);
   }
 
-  document.getElementById('cancelEditBtn').addEventListener('click', cancelAdminEdit);
-  document.getElementById('pCancelEditBtn').addEventListener('click', cancelAdminEdit);
-  document.getElementById('rCancelEditBtn').addEventListener('click', cancelAdminEdit);
+  // 編集キャンセル時に、編集前に開いていた投稿の詳細モーダルへ戻る。
+  // 保存成功時は呼び出し側が別途モーダルを開くため、そちらでは使わない(cancelAdminEdit(false)を渡す)。
+  async function reopenPostDetail(p) {
+    const type = p.type || 'image';
+    switchTab(type === 'prompt' ? 'promptBrowse' : type === 'request' ? 'requestBrowse' : type === 'fix' ? 'fixBrowse' : 'browse');
+    const post = await ensurePostLoaded(p.id) || p;
+    if (isHiddenByDislike(post)) return;
+    if (post.type === 'prompt') openPromptModal(post);
+    else if (post.type === 'request') openRequestModal(post);
+    else openModal(post);
+  }
+
+  document.getElementById('cancelEditBtn').addEventListener('click', function () { cancelAdminEdit(); });
+  document.getElementById('pCancelEditBtn').addEventListener('click', function () { cancelAdminEdit(); });
+  document.getElementById('rCancelEditBtn').addEventListener('click', function () { cancelAdminEdit(); });
 
 
   async function adminDeletePost(p) {
@@ -5946,7 +6045,7 @@
       });
 
       refreshAfterAdminChange();
-      if (adminEditingPost && String(adminEditingPost.id) === String(p.id)) cancelAdminEdit();
+      if (adminEditingPost && String(adminEditingPost.id) === String(p.id)) cancelAdminEdit(false);
       closeModal();
     } catch (err) {
       window.alert('削除に失敗しました: ' + (err.message || err));
@@ -6289,6 +6388,7 @@
   renderFixRequestDisplay();
   renderFSortChips();
   renderRefThumbs();
+  renderBoardRefThumbs();
   renderSortChips();
   syncCartLayout();
   loadPosts().then(openSharedFromUrl);
