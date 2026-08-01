@@ -268,7 +268,8 @@
     padding:0; font-size:14px; line-height:1; cursor:pointer;
   }
 
-  .submit-row{ margin-top: 22px; display:flex; align-items:center; gap:14px; }
+  .submit-row{ margin-top: 22px; display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .submit-row-left{ display:flex; align-items:center; gap:14px; }
   .btn-submit{
     background: var(--accent);
     color: #fff;
@@ -851,8 +852,10 @@
   .author-field > .field-label{ margin-top: 0; }
   #fixRequestField{ margin-top: 18px; }
   #fixRequestField > .field-label{ margin-top: 0; }
-  #editPwField, #pEditPwField, #rEditPwField{ margin-top: 26px; }
-  #editPwField > .field-label, #pEditPwField > .field-label, #rEditPwField > .field-label{ margin-top: 0; }
+  #editPwField, #pEditPwField, #rEditPwField{ margin-top: 0; width: 50%; flex: 0 1 auto; }
+  #editPwField > .field-label, #pEditPwField > .field-label, #rEditPwField > .field-label{
+    margin-top: 0; margin-bottom: 6px; white-space: nowrap; text-align: left;
+  }
   body.opt-no-dislike .dislike-btn{ display:none; }
   .dislike-btn{
     display:inline-flex; align-items:center; gap:4px; background: var(--surface-2);
@@ -1106,15 +1109,16 @@
       </div>
       <div class="chips" id="selectedTags"></div>
 
-      <div class="owneredit-only" id="editPwField">
-        <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
-        <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="editPwInput" placeholder="空欄のままでも投稿できます">
-      </div>
-
       <div class="submit-row">
-        <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
-        <button class="btn-ghost" id="cancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
-        <span class="status" id="statusText"></span>
+        <div class="submit-row-left">
+          <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
+          <button class="btn-ghost" id="cancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
+          <span class="status" id="statusText"></span>
+        </div>
+        <div class="owneredit-only" id="editPwField">
+          <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+          <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="editPwInput" placeholder="空欄のままでも投稿できます">
+        </div>
       </div>
     </section>
 
@@ -1153,15 +1157,16 @@
       </div>
       <div class="chips" id="pSelectedTags"></div>
 
-      <div class="owneredit-only" id="pEditPwField">
-        <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
-        <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="pEditPwInput" placeholder="空欄のままでも投稿できます">
-      </div>
-
       <div class="submit-row">
-        <button class="btn-submit" id="pSubmitBtn" type="button">投稿する</button>
-        <button class="btn-ghost" id="pCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
-        <span class="status" id="pStatusText"></span>
+        <div class="submit-row-left">
+          <button class="btn-submit" id="pSubmitBtn" type="button">投稿する</button>
+          <button class="btn-ghost" id="pCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
+          <span class="status" id="pStatusText"></span>
+        </div>
+        <div class="owneredit-only" id="pEditPwField">
+          <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+          <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="pEditPwInput" placeholder="空欄のままでも投稿できます">
+        </div>
       </div>
     </section>
 
@@ -1194,15 +1199,16 @@
       </div>
       <div class="ref-thumbs" id="rRefThumbs"></div>
 
-      <div class="owneredit-only" id="rEditPwField">
-        <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
-        <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="rEditPwInput" placeholder="空欄のままでも投稿できます">
-      </div>
-
       <div class="submit-row">
-        <button class="btn-submit" id="rSubmitBtn" type="button">投稿する</button>
-        <button class="btn-ghost" id="rCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
-        <span class="status" id="rStatusText"></span>
+        <div class="submit-row-left">
+          <button class="btn-submit" id="rSubmitBtn" type="button">投稿する</button>
+          <button class="btn-ghost" id="rCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
+          <span class="status" id="rStatusText"></span>
+        </div>
+        <div class="owneredit-only" id="rEditPwField">
+          <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+          <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="rEditPwInput" placeholder="空欄のままでも投稿できます">
+        </div>
       </div>
     </section>
   </div>
