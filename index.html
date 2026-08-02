@@ -1035,6 +1035,8 @@
   .board-reply-form-row{ display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap; }
   .board-reply-status{ font-size:12px; color: var(--ink-dim); }
   .board-reply-count{ font-size:12px; color: var(--ink-dim); }
+  .board-replies-toggle{ margin-top:12px; background:none; border:0; padding:4px 0; color: var(--accent); font-size:12.5px; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; }
+  .board-replies-toggle:hover{ text-decoration:underline; }
 
   /* ---- コメント ---- */
   .comment-toggle-btn{
@@ -1940,7 +1942,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">スレッドと返信</div>
-        <div class="feature-desc">上のフォームで投稿するとスレッド(親)ができます。各スレッドの「返信する」ボタンから、そのスレッドにぶら下がる返信を書けます。返信は投稿の古い順に並びます。</div>
+        <div class="feature-desc">上のフォームで投稿するとスレッド(親)ができます。各スレッドの「返信する」ボタンから、そのスレッドにぶら下がる返信を書けます(返信にも画像を添付できます)。返信は投稿の古い順に並びます。既存の返信は最初は折りたたまれていて、「返信を表示 ▾」を押すと開きます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">並び替え</div>
@@ -1948,7 +1950,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">画像の添付</div>
-        <div class="feature-desc">スレッドには画像を複数枚まとめて添付できます。「画像を添付」ボタンを押すとドロップエリアが開きます。送信前に自動で縮小されるので、大きな画像でもそのままドロップして大丈夫です。添付画像はクリックで拡大できます。</div>
+        <div class="feature-desc">スレッドにも返信にも画像を複数枚まとめて添付できます。「画像を添付」ボタンを押すとドロップエリアが開きます。送信前に自動で縮小されるので、大きな画像でもそのままドロップして大丈夫です。添付画像はクリックで拡大できます。</div>
       </div>
       <div class="feature-item opt-only-boardvote">
         <div class="feature-name">グッド / バッド</div>
@@ -5586,6 +5588,47 @@
     return { threads: threads, repliesByThread: repliesByThread };
   }
 
+  // 返信フォームの添付画像(スレッドidごとに保持。フォームは再描画で作り直されるためDOM外で管理)
+  const replyRefs = {};
+  function replyThumbsHtml(threadId) {
+    const rr = replyRefs[threadId] || [];
+    return rr.map(function (r, i) {
+      return '<div class="ref-thumb"><img src="' + escapeHtml(r.dataUrl) + '" alt="添付画像" data-rr-view="' + i + '">' +
+        '<button class="ref-remove" type="button" data-rr-idx="' + i + '" title="削除">✕</button></div>';
+    }).join('');
+  }
+  function wireReplyThumbs(thumbsEl, threadId) {
+    thumbsEl.querySelectorAll('[data-rr-view]').forEach(function (img) {
+      img.addEventListener('click', function () {
+        const r = (replyRefs[threadId] || [])[Number(img.dataset.rrView)];
+        if (r) openRefLightbox(r.dataUrl);
+      });
+    });
+    thumbsEl.querySelectorAll('[data-rr-idx]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        (replyRefs[threadId] || []).splice(Number(btn.dataset.rrIdx), 1);
+        thumbsEl.innerHTML = replyThumbsHtml(threadId);
+        wireReplyThumbs(thumbsEl, threadId);
+      });
+    });
+  }
+  async function addReplyFiles(threadId, fileList, thumbsEl) {
+    const files = Array.from(fileList || []).filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    showLoading('画像を処理中...');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const dataUrl = await resizeToJpeg(files[i]);
+        (replyRefs[threadId] = replyRefs[threadId] || []).push({ dataUrl: dataUrl });
+      }
+      if (thumbsEl) { thumbsEl.innerHTML = replyThumbsHtml(threadId); wireReplyThumbs(thumbsEl, threadId); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
   function boardReplyHtml(r, no) {
     const name = r.name ? escapeHtml(r.name) : '匿名';
     const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(r.id)) + '">削除</button>' : '';
@@ -5600,7 +5643,8 @@
     const name = t.name ? escapeHtml(t.name) : '匿名';
     const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(t.id)) + '">削除</button>' : '';
     const repliesHtml = replies.length
-      ? '<div class="board-replies">' + replies.map(function (r, i) { return boardReplyHtml(r, i + 1); }).join('') + '</div>'
+      ? '<button class="board-replies-toggle" type="button">返信を表示 ▾</button>' +
+        '<div class="board-replies" style="display:none;">' + replies.map(function (r, i) { return boardReplyHtml(r, i + 1); }).join('') + '</div>'
       : '';
     return '<div class="comment-item board-thread" data-thread="' + escapeHtml(String(t.id)) + '">' + delBtn +
       '<div class="board-thread-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
@@ -5617,6 +5661,18 @@
         '</div>' +
         '<label class="field-label">返信</label>' +
         '<textarea class="board-reply-body" placeholder="このスレッドに返信する"></textarea>' +
+        '<div class="board-attach-row">' +
+          '<button class="btn-ghost board-reply-attach-toggle" type="button">画像を添付</button>' +
+          '<span class="board-attach-hint">(任意・複数可 / jpegに変換・縮小されます)</span>' +
+        '</div>' +
+        '<div class="board-reply-dz-wrap" style="display:none;">' +
+          '<div class="dropzone dropzone-compact board-reply-dz">' +
+            '<div class="dz-title">ここに画像をドラッグ&ドロップ</div>' +
+            '<div class="dz-sub">または<span class="dz-browse">クリックしてファイルを選択</span></div>' +
+            '<input type="file" class="board-reply-file" accept="image/*" multiple>' +
+          '</div>' +
+        '</div>' +
+        '<div class="ref-thumbs board-reply-thumbs">' + replyThumbsHtml(t.id) + '</div>' +
         '<div class="board-reply-form-row">' +
           '<button class="btn-submit board-reply-submit" type="button" data-reply-submit="' + escapeHtml(String(t.id)) + '">返信する</button>' +
           '<span class="board-reply-status"></span>' +
@@ -5681,6 +5737,16 @@
     boardList.querySelectorAll('.ref-open').forEach(function (a) {
       a.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(a.dataset.refUrl); });
     });
+    boardList.querySelectorAll('.board-replies-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const thread = btn.closest('.board-thread');
+        const rep = thread && thread.querySelector('.board-replies');
+        if (!rep) return;
+        const show = rep.style.display === 'none';
+        rep.style.display = show ? '' : 'none';
+        btn.textContent = show ? '返信を隠す ▴' : '返信を表示 ▾';
+      });
+    });
     boardList.querySelectorAll('.board-reply-toggle').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const thread = btn.closest('.board-thread');
@@ -5691,6 +5757,31 @@
         btn.textContent = show ? '返信を閉じる' : '返信する';
         if (show) { const ta = form.querySelector('.board-reply-body'); if (ta) ta.focus(); }
       });
+    });
+    boardList.querySelectorAll('.board-reply-form').forEach(function (form) {
+      const thread = form.closest('.board-thread');
+      const threadId = thread ? thread.dataset.thread : '';
+      const thumbs = form.querySelector('.board-reply-thumbs');
+      if (thumbs) wireReplyThumbs(thumbs, threadId);
+      const attachToggle = form.querySelector('.board-reply-attach-toggle');
+      const dzWrap = form.querySelector('.board-reply-dz-wrap');
+      const dz = form.querySelector('.board-reply-dz');
+      const file = form.querySelector('.board-reply-file');
+      if (attachToggle && dzWrap) {
+        attachToggle.addEventListener('click', function () {
+          const show = dzWrap.style.display === 'none';
+          dzWrap.style.display = show ? '' : 'none';
+          attachToggle.classList.toggle('on', show);
+          attachToggle.textContent = show ? '添付を閉じる' : '画像を添付';
+        });
+      }
+      if (dz && file) {
+        dz.addEventListener('click', function () { file.click(); });
+        dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('drag-over'); });
+        dz.addEventListener('dragleave', function () { dz.classList.remove('drag-over'); });
+        dz.addEventListener('drop', function (e) { e.preventDefault(); dz.classList.remove('drag-over'); if (e.dataTransfer && e.dataTransfer.files) addReplyFiles(threadId, e.dataTransfer.files, thumbs); });
+        file.addEventListener('change', function () { addReplyFiles(threadId, file.files, thumbs); file.value = ''; });
+      }
     });
     boardList.querySelectorAll('.board-reply-submit').forEach(function (btn) {
       btn.addEventListener('click', function () { submitBoardReply(btn.dataset.replySubmit, btn); });
@@ -5714,11 +5805,20 @@
         name: nameEl.value,
         body: body,
         parentId: threadId,
-        images: []
+        images: (replyRefs[threadId] || []).map(function (r) { return r.dataUrl; })
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       if (result.message) allBoard.push(result.message);
+      delete replyRefs[threadId];
       renderBoard();
+      // 投稿した返信が見えるよう、そのスレッドの返信を開いた状態にする
+      const thread = boardList.querySelector('.board-thread[data-thread="' + threadId + '"]');
+      if (thread) {
+        const rep = thread.querySelector('.board-replies');
+        const tog = thread.querySelector('.board-replies-toggle');
+        if (rep) rep.style.display = '';
+        if (tog) tog.textContent = '返信を隠す ▴';
+      }
     } catch (err) {
       statusEl.textContent = '送信に失敗しました: ' + (err.message || err);
       console.error(err);
