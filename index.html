@@ -2492,6 +2492,7 @@
   let restStageLoaded = false;
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
+  let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
   const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, ownerEdit: false, loginEnabled: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
@@ -2588,12 +2589,25 @@
 
   /* ---------- タブ切替 ---------- */
   function switchTab(name) {
+    const prevActive = document.querySelector('.tab-btn.active');
+    const prevTab = prevActive ? prevActive.dataset.tab : null;
+    // 画像一覧から離れるときはスクロール位置を覚えておく
+    if (prevTab === 'browse' && name !== 'browse') browseScrollY = window.scrollY;
+
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
     document.getElementById('tab-' + name).classList.add('active');
     // 右下の「カートに入れるモード」ボタンはデータバンクタブ表示中のみ出す
     document.body.classList.toggle('tab-databank', name === 'databank');
-    if (name === 'browse') { renderList(); applyBrowseTagClamp(); }
+    if (name === 'browse') {
+      // データ/フィルタが変わっていなければ再描画せず、描画済みDOMとスクロール位置を保つ
+      if (browseDirty || !list.children.length) {
+        renderList();
+      } else {
+        window.scrollTo(0, browseScrollY);
+      }
+      applyBrowseTagClamp();
+    }
     if (name === 'promptBrowse') { renderPromptList(); applyPromptBrowseTagClamp(); }
     if (name === 'requestBrowse') { renderRequestList(); }
     if (name === 'fixBrowse') { renderFixList(); }
@@ -3094,10 +3108,46 @@
     return post || null;
   }
 
+  // 一覧から詳細を開く共通処理。ローカルに本文がある投稿はスピナー無しで即表示し、
+  // rest未完了でコメント・関連がまだ無い場合だけ背後で補完してモーダルを更新する。
+  function openImageDetail(idOrShareId) {
+    const local = findLocalPost(idOrShareId);
+    if (local) {
+      openModal(local);
+      if (!restStageLoaded && !detailFetchedIds[local.id]) backfillDetail(idOrShareId, local.id);
+      return;
+    }
+    // ローカルに無い(未読み込みの子・共有URL等)のみ、取得してから開く
+    ensurePostLoaded(idOrShareId).then(function (post) { if (post) openModal(post); });
+  }
+
+  async function backfillDetail(idOrShareId, postId) {
+    try {
+      const data = await fetchPostDetail(idOrShareId); // 背後取得(全画面スピナーは出さない)
+      if (!data || !data.post) return;
+      mergePostIntoLocalState(data.post);
+      (data.related || []).forEach(mergePostIntoLocalState);
+      (data.comments || []).forEach(function (c) {
+        if (!allComments.some(function (x) { return String(x.id) === String(c.id); })) allComments.push(c);
+      });
+      rebuildDerivedArraysFromPosts();
+      detailFetchedIds[data.post.id] = true;
+      // まだ同じ投稿を開いていれば、コメント・関連を反映して描き直す(スクロール位置は保持)
+      if (openDetailPostId === postId && modalOverlay.classList.contains('open')) {
+        const st = modalOverlay.scrollTop;
+        openModal(findLocalPost(postId) || data.post);
+        modalOverlay.scrollTop = st;
+      }
+    } catch (err) {
+      console.error('詳細の背後補完に失敗:', err);
+    }
+  }
+
   // 第1段階: 親の画像投稿だけを取得して一覧を表示し、その時点で読み込み中表示を解除する。
   // stage=parents のレスポンスをローカル状態へ反映する共通処理
   function applyParentsData(data) {
     posts = data.posts || [];
+    browseDirty = true;
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
     applyOptionsToUi();
@@ -3117,6 +3167,7 @@
   // stage=rest のレスポンスをローカル状態へマージする共通処理
   function applyRestData(data) {
     (data.posts || []).forEach(mergePostIntoLocalState);
+    browseDirty = true;
     allComments = data.comments || [];
     allBoard = data.board || [];
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
@@ -3908,6 +3959,7 @@
     browseShown = 0;
     list.innerHTML = '';
     appendBrowsePage();
+    browseDirty = false;
 
     if (viewMode === 'panel') layoutPanelGrid();
   }
@@ -3920,6 +3972,8 @@
   let browseThumbSize = 'w320';
   let browseShown = 0;
   let browseObserver = null;
+  let browseDirty = true;      // データ/フィルタ変更で true。タブ切替時の再描画要否判定に使う
+  let browseScrollY = 0;       // 画像一覧タブのスクロール位置(タブ切替をまたいで保持)
 
   function appendBrowsePage() {
     const slice = browseFiltered.slice(browseShown, browseShown + BROWSE_PAGE);
@@ -4003,16 +4057,15 @@
     opts = opts || {};
     wireCountButtons(container);
     container.querySelectorAll('.row').forEach(function (row) {
-      row.addEventListener('click', async function () {
+      row.addEventListener('click', function () {
         // パネル表示のフルスクリーン画像は軽量なのでそのまま開き、
-        // 詳細モーダルを開く場合のみ、紐づけ・コメントを優先取得してから開く。
+        // 詳細モーダルは本文がローカルにあれば即表示(スピナー無し)・不足分のみ背後補完。
         if (!opts.detailOnly && viewMode === 'panel') {
           const quick = findLocalPost(row.dataset.id);
           if (quick) openFullImageModal(quick);
           return;
         }
-        const post = await ensurePostLoaded(row.dataset.id);
-        if (post) openModal(post);
+        openImageDetail(row.dataset.id);
       });
     });
   }
@@ -4068,6 +4121,7 @@
   modalBody.addEventListener('error', handleImageError, true);
 
   function openModal(p) {
+    openDetailPostId = p.id;
     const knownKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
     const settingsEntries = SETTINGS_FIELDS
       .filter(function (f) { return p.settings && p.settings[f.key]; })
@@ -4202,10 +4256,9 @@
 
     const parentLink = modalBody.querySelector('.parent-post-link');
     if (parentLink) {
-      parentLink.addEventListener('click', async function (e) {
+      parentLink.addEventListener('click', function (e) {
         e.preventDefault();
-        const pp = await ensurePostLoaded(parentLink.dataset.postId);
-        if (pp) openModal(pp);
+        openImageDetail(parentLink.dataset.postId);
       });
     }
 
@@ -4222,10 +4275,9 @@
     if (childWorks) wireImageRows(childWorks, { detailOnly: true });
 
     modalBody.querySelectorAll('.fix-post-link').forEach(function (fixLink) {
-      fixLink.addEventListener('click', async function (e) {
+      fixLink.addEventListener('click', function (e) {
         e.preventDefault();
-        const fp = await ensurePostLoaded(fixLink.dataset.fixId);
-        if (fp) openModal(fp);
+        openImageDetail(fixLink.dataset.fixId);
       });
     });
     const fixAnswerWorks = document.getElementById('fixAnswerWorks');
@@ -4235,6 +4287,7 @@
   }
 
   function closeModal() {
+    openDetailPostId = null;
     modalOverlay.classList.remove('open');
     modalBody.innerHTML = '';
   }
