@@ -444,6 +444,7 @@
   .image-actions-row{ display:flex; justify-content:flex-end; gap: 10px; margin: 14px 0 28px; }
   .image-actions-row .btn-ghost{ padding: 6px 14px; font-size: 12px; }
   .block-head{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+  .block-foot{ display:flex; justify-content:flex-end; margin-top:8px; }
   .block-head .label{ margin-bottom: 0; }
   .btn-copy{
     background: var(--surface-2); color: var(--accent);
@@ -577,7 +578,7 @@
   .guide-step .body{ flex:1; font-size:13.5px; line-height:1.8; }
   .guide-step .body strong{ color:var(--ink); }
   .guide-note{
-    background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    background: var(--surface-2); border: 1px solid var(--line);
     border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--ink-dim); line-height:1.7; margin-top:8px;
   }
   .guide-warn{
@@ -884,7 +885,7 @@
   .mouse-tooltip{
     position: fixed; z-index: 300; max-width: 280px;
     background: var(--surface-2); color: var(--ink);
-    border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border: 1px solid var(--line);
     border-radius: 8px; padding: 8px 11px;
     font-size: 11.5px; line-height: 1.6; font-family:'Noto Sans JP',sans-serif;
     box-shadow: 0 8px 24px rgba(0,0,0,.45); pointer-events: none; display: none;
@@ -894,16 +895,16 @@
   .announce-bar{
     display:flex; align-items:center; gap:8px; flex-wrap:wrap;
     width:100%; text-align:left; cursor:pointer;
-    background: var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--accent);
+    background: var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--danger);
     border-radius:10px; padding:6px 13px; margin:10px 0 6px;
     color: var(--ink); font-family:'Noto Sans JP',sans-serif;
   }
-  .announce-bar:hover{ border-color: var(--accent); }
-  .announce-bar-label{ flex:none; font-size:11px; font-weight:700; color: var(--accent); border:1px solid var(--accent); border-radius:5px; padding:1px 7px; }
+  .announce-bar:hover{ border-color: var(--danger); }
+  .announce-bar-label{ flex:none; font-size:11px; font-weight:700; color: var(--danger); border:1px solid var(--danger); border-radius:5px; padding:1px 7px; }
   .announce-bar-title{ flex:1 1 auto; min-width:0; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .announce-bar-more{ flex:none; font-size:11.5px; color: var(--ink-dim); }
   .announce-bar-date{ flex:none; font-size:11px; color: var(--ink-dim); margin-left:auto; }
-  .announce-modal-latest{ position:relative; background: var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:14px 16px; margin-bottom:8px; }
+  .announce-modal-latest{ position:relative; background: var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:8px; }
   body.admin-on .announce-modal-latest, body.admin-on .announce-modal-item{ padding-right:64px; }
   .announce-modal-title{ font-size:15px; font-weight:700; color: var(--ink); margin:0 0 4px; }
   .announce-modal-date{ font-size:11.5px; color: var(--ink-dim); margin-bottom:8px; }
@@ -1953,7 +1954,7 @@
 
       <div class="qa-item">
         <div class="qa-q">サイトを開くとパスワードの入力を求められます。</div>
-        <div class="qa-a">管理者がログイン画面をオンにしている場合、サイトを開いた最初に合言葉(パスワード)の入力を求められます。仲間内だけで使うための簡単な入場制限です。パスワードが分からない・入場できない場合は、管理者に確認してください。一度正しく入力すると、その端末では次回以降は自動で入場します(管理者がパスワードを変更すると再入力が必要になります)。</div>
+        <div class="qa-a">管理者がログイン画面をオンにしている場合、サイトを開いた最初に合言葉(パスワード)の入力を求められます。仲間内だけで使うための簡単な入場制限です。パスワードが分からない・入場できない場合は、管理者に確認してください。一度正しく入力すると、その端末では次回以降は自動で入場します(管理者がパスワードを変更すると再入力が必要になります)。なお、サーバー(GAS)に接続できないときは「接続できません。再接続しています...」と表示され、接続が回復するまで自動で待ち続けます(この間は中身は表示されません)。</div>
       </div>
 
       <div class="qa-item">
@@ -2942,8 +2943,10 @@
   const loadingOverlay = document.getElementById('loadingOverlay');
   const loadingText = document.getElementById('loadingText');
 
-  function showLoading(msg) {
+  function showLoading(msg, red) {
     loadingText.textContent = msg || '読み込み中...';
+    const sp = loadingOverlay.querySelector('.spinner');
+    if (sp) sp.classList.toggle('red', !!red);
     loadingOverlay.classList.add('open');
   }
   function hideLoading() {
@@ -3031,7 +3034,7 @@
   // rest完了後にタブを開けば(あるいは既に開いていれば自動で)通常表示にすぐ戻る。
   function setListCountAndEmpty(countEl, emptyEl, count, unit, emptyText) {
     const pending = !restStageLoaded && count === 0;
-    countEl.textContent = pending ? '読み込み中…' : (count + ' ' + unit);
+    countEl.textContent = pending ? '' : (count + ' ' + unit);
     if (pending) {
       emptyEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
       emptyEl.style.display = 'block';
@@ -4098,12 +4101,14 @@
       requestBlock +
       fixLinksBlock +
       '<div class="detail-block">' +
-        '<div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
+        '<div class="block-head"><div class="label">PROMPT</div></div>' +
         '<div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div>' +
+        '<div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
       '</div>' +
       '<div class="detail-block">' +
-        '<div class="block-head"><div class="label">NEGATIVE PROMPT</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
+        '<div class="block-head"><div class="label">NEGATIVE PROMPT</div></div>' +
         '<div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div>' +
+        '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
       '</div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">設定関係</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
@@ -5844,8 +5849,8 @@
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
-      '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div></div>' +
+      '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div></div>' +
+      '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div></div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div></div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
@@ -5910,7 +5915,7 @@
   function closeAdminAuthModal() { adminAuthOverlay.classList.remove('open'); }
 
   adminBtn.addEventListener('click', function () {
-    if (adminMode) setAdminMode(false); else openAdminAuthModal();
+    if (adminMode) { localStorage.removeItem('pr_admin_pw'); setAdminMode(false); } else openAdminAuthModal();
   });
   document.getElementById('adminAuthCloseBtn').addEventListener('click', closeAdminAuthModal);
   adminAuthOverlay.addEventListener('click', function (e) { if (e.target === adminAuthOverlay) closeAdminAuthModal(); });
@@ -5921,11 +5926,12 @@
     const pw = adminPasswordInput.value;
     if (!pw) { adminAuthStatus.textContent = 'パスワードを入力してください'; return; }
     adminAuthStatus.textContent = '';
-    showLoading('認証中...');
+    showLoading('認証中...', true);
     try {
       const result = await postAction({ action: 'adminAuth', password: pw });
       if (result && result.success) {
         adminPassword = pw;
+        localStorage.setItem('pr_admin_pw', pw);
         setAdminMode(true);
         closeAdminAuthModal();
       } else {
@@ -5937,6 +5943,16 @@
     } finally {
       hideLoading();
     }
+  }
+
+  async function tryAutoAdminLogin() {
+    const stored = localStorage.getItem('pr_admin_pw');
+    if (!stored || adminMode) return;
+    try {
+      const r = await postAction({ action: 'adminAuth', password: stored });
+      if (r && r.success) { adminPassword = stored; setAdminMode(true); }
+      else localStorage.removeItem('pr_admin_pw');
+    } catch (e) { /* 通信不調時は今回は入らず、次回に任せる */ }
   }
 
   const ownerAuthOverlay = document.getElementById('ownerAuthOverlay');
@@ -6525,7 +6541,7 @@
     const listEl = document.getElementById('databankList');
     const emptyEl = document.getElementById('dbEmptyState');
     const dbPending = !restStageLoaded && rows.length === 0;
-    document.getElementById('dbCount').textContent = dbPending ? '読み込み中…' : (rows.length + ' 種類');
+    document.getElementById('dbCount').textContent = dbPending ? '' : (rows.length + ' 種類');
     if (!rows.length) {
       if (dbPending) {
         emptyEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
@@ -6754,27 +6770,37 @@
   function proceedToApp() {
     showLoading('読み込み中...');
     document.getElementById('loginGate').classList.add('hidden');
-    loadPosts().then(openSharedFromUrl);
+    loadPosts().then(function () { openSharedFromUrl(); tryAutoAdminLogin(); });
   }
 
   async function startApp() {
-    try {
-      const cfg = await fetchLoginConfig();
-      if (cfg && cfg.enabled) {
-        const stored = localStorage.getItem('pr_login_pw');
-        if (stored) {
-          try {
-            const r = await postAction({ action: 'loginAuth', password: stored });
-            if (r && r.success) { proceedToApp(); return; }
-          } catch (e) { /* 再入力へ */ }
-          localStorage.removeItem('pr_login_pw');
-        }
-        showLoginGate(cfg);
-        return;
+    const checking = document.getElementById('loginChecking');
+    const checkingText = checking ? checking.querySelector('span') : null;
+    let cfg = null;
+    while (!cfg) {
+      try {
+        cfg = await fetchLoginConfig();
+      } catch (e) {
+        console.error('ログイン設定の取得に失敗、再接続します:', e);
+        // fail-closed: 設定を取得できるまでアプリは絶対に表示しない。何度でも再試行する。
+        if (checking) checking.style.display = '';
+        document.getElementById('loginCard').style.display = 'none';
+        if (checkingText) checkingText.textContent = '接続できません。再接続しています...';
+        await new Promise(function (r) { setTimeout(r, 3000); });
+        if (checkingText) checkingText.textContent = '確認中...';
       }
-    } catch (e) {
-      console.error('ログイン設定の取得に失敗:', e);
-      // 取得失敗時はロックアウトを避けて通常表示にフォールバック
+    }
+    if (cfg && cfg.enabled) {
+      const stored = localStorage.getItem('pr_login_pw');
+      if (stored) {
+        try {
+          const r = await postAction({ action: 'loginAuth', password: stored });
+          if (r && r.success) { proceedToApp(); return; }
+        } catch (e) { /* 再入力へ */ }
+        localStorage.removeItem('pr_login_pw');
+      }
+      showLoginGate(cfg);
+      return;
     }
     proceedToApp();
   }
