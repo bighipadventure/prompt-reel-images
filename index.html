@@ -797,15 +797,17 @@
 
   /* ---- 管理モード ---- */
   header{ position: relative; }
-  .admin-btn{
+  .header-admin-btns{
     position: absolute; top: 0; right: 0;
+    display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .admin-btn{
     background: var(--surface); color: var(--ink-dim);
     border: 1px solid var(--line); border-radius: 8px;
     font-size: 12px; padding: 7px 14px;
   }
   .admin-btn:hover{ color: var(--accent); border-color: var(--accent); }
   .admin-btn.on{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  .admin-opts-btn{ right: 116px; }
   .opt-toggle-row{
     display:flex; align-items:center; justify-content:space-between;
     gap:14px; padding:12px 2px; border-bottom:1px solid var(--line);
@@ -833,6 +835,8 @@
   body.opt-no-author .sort-chip[data-field="author"]{ display:none; }
   body.opt-no-author .meta-author{ display:none; }
   body.opt-no-author .author-filter{ display:none; }
+  body.opt-no-author .author-field{ display:none !important; }
+  body.opt-no-author .board-reply-namefield{ display:none !important; }
   body.opt-no-author .dl-wrap:has(.author-filter){ display:none; }
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
@@ -1127,10 +1131,12 @@
       <span class="announce-bar-more">(クリックで詳細表示)</span>
       <span class="announce-bar-date" id="announceBarDate"></span>
     </button>
-    <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
-    <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
-    <button class="admin-btn admin-opts-btn admin-badge-btn" type="button" id="adminContactsBtn" style="display:none;">連絡一覧<span class="contact-badge" id="contactBadge">0</span></button>
-    <button class="admin-btn admin-opts-btn" type="button" id="adminAnnounceBtn" style="display:none;">お知らせを投稿</button>
+    <div class="header-admin-btns">
+      <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
+      <button class="admin-btn admin-opts-btn admin-badge-btn" type="button" id="adminContactsBtn" style="display:none;">連絡一覧<span class="contact-badge" id="contactBadge">0</span></button>
+      <button class="admin-btn admin-opts-btn" type="button" id="adminAnnounceBtn" style="display:none;">お知らせを投稿</button>
+      <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
+    </div>
   </header>
 
   <nav class="tabs">
@@ -3059,8 +3065,13 @@
   // rest完了後は全データがすでに揃っているのでネットワークアクセスなしで即座に返す。
   async function ensurePostLoaded(idOrShareId) {
     let post = findLocalPost(idOrShareId);
-    if (restStageLoaded) return post || null;
+    // 既に全項目を取得済みならそのまま返す
     if (post && detailFetchedIds[post.id]) return post;
+    // 詳細取得が必要なのは、(1)ローカルに無い (2)一覧軽量化で間引かれた partial 投稿
+    // (3)まだ rest(背後読み込み)が終わっていない、のいずれか。
+    // 開いた対象は最優先で、表示に必要な全項目が揃うまで詳細取得する。
+    const needsDetail = !post || post.partial === true || !restStageLoaded;
+    if (!needsDetail) return post || null;
 
     showLoading('読み込み中...');
     try {
@@ -5547,8 +5558,10 @@
       repliesHtml +
       '<div class="board-thread-actions"><button class="btn-ghost board-reply-toggle" type="button">返信する</button></div>' +
       '<div class="board-reply-form" style="display:none;">' +
-        '<label class="field-label">お名前(任意)</label>' +
-        '<input type="text" class="board-reply-name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="匿名で返信できます">' +
+        '<div class="board-reply-namefield">' +
+          '<label class="field-label">お名前(任意)</label>' +
+          '<input type="text" class="board-reply-name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="匿名で返信できます">' +
+        '</div>' +
         '<label class="field-label">返信</label>' +
         '<textarea class="board-reply-body" placeholder="このスレッドに返信する"></textarea>' +
         '<div class="board-reply-form-row">' +
@@ -6173,7 +6186,7 @@
     { key: 'likeCount', label: 'グッド数の表示', desc: 'オフにするとグッド数を表示しません' },
     { key: 'dislike', label: 'バッドボタン', desc: 'オフにするとバッドボタンを非表示にします。オンのとき、しきい値に達した投稿は利用者から自動で非表示になります' },
     { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
-    { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になります' },
+    { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になり、各フォーム(投稿・掲示板・返信)の名前入力欄も隠れます' },
     { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
     { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
     { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
