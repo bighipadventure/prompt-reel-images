@@ -3892,10 +3892,56 @@
     emptyState.style.display = filtered.length ? 'none' : 'block';
 
     const thumbSize = viewMode === 'panel' ? 'w640' : 'w320';
-    list.innerHTML = filtered.map(function (p) { return imageRowHtml(p, thumbSize); }).join('');
-    wireImageRows(list);
+    browseFiltered = filtered;
+    browseThumbSize = thumbSize;
+    browseShown = 0;
+    list.innerHTML = '';
+    appendBrowsePage();
 
     if (viewMode === 'panel') layoutPanelGrid();
+  }
+
+  // ===== 一覧の分割描画(無限スクロール) =====
+  // 一度に全カードを描画せず、まず1ページ分だけ描画し、末尾のセンチネルが
+  // 見えたら次ページを追記する。画像は loading="lazy" と併用して初期負荷を下げる。
+  const BROWSE_PAGE = 48;
+  let browseFiltered = [];
+  let browseThumbSize = 'w320';
+  let browseShown = 0;
+  let browseObserver = null;
+
+  function appendBrowsePage() {
+    const slice = browseFiltered.slice(browseShown, browseShown + BROWSE_PAGE);
+    if (slice.length) {
+      const temp = document.createElement('div');
+      temp.innerHTML = slice.map(function (p) { return imageRowHtml(p, browseThumbSize); }).join('');
+      wireImageRows(temp);
+      while (temp.firstChild) list.appendChild(temp.firstChild);
+      browseShown += slice.length;
+    }
+    updateBrowseSentinel();
+    if (viewMode === 'panel') layoutPanelGrid();
+  }
+
+  function updateBrowseSentinel() {
+    let sentinel = document.getElementById('browseSentinel');
+    if (browseShown >= browseFiltered.length) {
+      if (sentinel) { if (browseObserver) browseObserver.unobserve(sentinel); sentinel.remove(); }
+      return;
+    }
+    if (!sentinel) {
+      sentinel = document.createElement('div');
+      sentinel.id = 'browseSentinel';
+      sentinel.setAttribute('aria-hidden', 'true');
+      sentinel.style.height = '1px';
+    }
+    if (list.parentNode) list.parentNode.insertBefore(sentinel, list.nextSibling);
+    if (!browseObserver) {
+      browseObserver = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) appendBrowsePage();
+      }, { rootMargin: '800px 0px' });
+    }
+    browseObserver.observe(sentinel);
   }
 
   function imageRowHtml(p, thumbSize, opts) {
@@ -4410,6 +4456,7 @@
     return '<img src="' + escapeHtml(src) + '"' +
       (opts.className ? ' class="' + opts.className + '"' : '') +
       (opts.lazy ? ' loading="lazy"' : '') +
+      ' decoding="async"' +
       ' alt="' + escapeHtml(opts.alt || '') + '"' +
       ' data-fileid="' + escapeHtml(id) + '"' +
       ' data-size="' + escapeHtml(size) + '"' +
