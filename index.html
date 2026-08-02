@@ -439,6 +439,10 @@
   .modal-image{ text-align:center; margin-top: 14px; }
   .modal-image img{ max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); }
   .modal-actions{ display:flex; gap: 10px; justify-content:center; margin: 12px 0 20px; }
+  /* 画像のすぐ右下(コピー欄の上あたり)に置くダウンロード/共有ボタン。
+     PROMPTエリアとの間を離すため下マージンを大きめに取る。 */
+  .image-actions-row{ display:flex; justify-content:flex-end; gap: 10px; margin: 14px 0 28px; }
+  .image-actions-row .btn-ghost{ padding: 6px 14px; font-size: 12px; }
   .block-head{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
   .block-head .label{ margin-bottom: 0; }
   .btn-copy{
@@ -460,7 +464,9 @@
     border: 3px solid var(--line); border-top-color: var(--accent);
     animation: spin .8s linear infinite;
   }
+  .spinner.red{ border-top-color: var(--danger); }
   @keyframes spin{ to{ transform: rotate(360deg); } }
+  .list-loading{ display:flex; flex-direction:column; align-items:center; gap:12px; padding:36px 0; color: var(--ink-dim); font-size:13px; }
 
   textarea.autogrow{ resize: none; overflow: hidden; }
   .filter-input{ flex: 1 1 150px; width: auto; }
@@ -557,6 +563,7 @@
   .list.panel-mode .row-counts{ display: none; }
   .modal-counts{ margin-bottom: 14px; }
   .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
+  .modal-counts .dislike-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
   .modal-counts .btn-icon{ width: 19px; height: 19px; }
   .modal-counts .count-badge{ font-size: 15px; }
 
@@ -852,10 +859,80 @@
   .author-field > .field-label{ margin-top: 0; }
   #fixRequestField{ margin-top: 18px; }
   #fixRequestField > .field-label{ margin-top: 0; }
-  #editPwField, #pEditPwField, #rEditPwField{ margin-top: 0; width: 50%; flex: 0 1 auto; }
-  #editPwField > .field-label, #pEditPwField > .field-label, #rEditPwField > .field-label{
-    margin-top: 0; margin-bottom: 6px; white-space: nowrap; text-align: left;
+  /* 編集用パスワード: 投稿ボタンと同じ行の右側に、1行横並びで配置する */
+  .panel-head-row{ display:flex; align-items:flex-start; justify-content:space-between; gap: 20px; flex-wrap:wrap; margin-bottom: 16px; }
+  .panel-head-row h2{ margin-bottom: 0; }
+  .edit-pw-box{
+    display:flex; flex-direction:row; align-items:center; flex-wrap:wrap;
+    gap:10px; width:auto; max-width:100%;
   }
+  .edit-pw-line{ display:flex; align-items:center; gap:6px; margin-bottom:0; flex:none; }
+  .edit-pw-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12.5px; font-weight:700; color: var(--accent);
+    white-space:nowrap; font-family:'Noto Sans JP',sans-serif;
+  }
+  .edit-pw-badge::before{
+    content:''; width:13px; height:13px; flex:none; display:inline-block;
+    background-color: var(--accent);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .edit-pw-note{ display:none; }
+  .edit-pw-box input{ flex:1 1 200px; min-width:0; width:auto; }
+  .edit-pw-badge{ cursor: help; }
+  .mouse-tooltip{
+    position: fixed; z-index: 300; max-width: 280px;
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 8px 11px;
+    font-size: 11.5px; line-height: 1.6; font-family:'Noto Sans JP',sans-serif;
+    box-shadow: 0 8px 24px rgba(0,0,0,.45); pointer-events: none; display: none;
+  }
+  .mouse-tooltip.show{ display: block; }
+  /* ---- お知らせ ---- */
+  .announce-bar{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    width:100%; text-align:left; cursor:pointer;
+    background: var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--accent);
+    border-radius:10px; padding:6px 13px; margin:10px 0 6px;
+    color: var(--ink); font-family:'Noto Sans JP',sans-serif;
+  }
+  .announce-bar:hover{ border-color: var(--accent); }
+  .announce-bar-label{ flex:none; font-size:11px; font-weight:700; color: var(--accent); border:1px solid var(--accent); border-radius:5px; padding:1px 7px; }
+  .announce-bar-title{ flex:1 1 auto; min-width:0; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .announce-bar-more{ flex:none; font-size:11.5px; color: var(--ink-dim); }
+  .announce-bar-date{ flex:none; font-size:11px; color: var(--ink-dim); margin-left:auto; }
+  .announce-modal-latest{ position:relative; background: var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:14px 16px; margin-bottom:8px; }
+  body.admin-on .announce-modal-latest, body.admin-on .announce-modal-item{ padding-right:64px; }
+  .announce-modal-title{ font-size:15px; font-weight:700; color: var(--ink); margin:0 0 4px; }
+  .announce-modal-date{ font-size:11.5px; color: var(--ink-dim); margin-bottom:8px; }
+  .announce-modal-text{ font-size:13.5px; line-height:1.8; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
+  .announce-past-head{ font-size:12px; font-weight:700; color: var(--ink-dim); margin:20px 0 6px; }
+  .announce-modal-item{ position:relative; padding:14px 2px; border-bottom:1px solid var(--line); }
+  .announce-modal-item:last-child{ border-bottom:0; }
+  /* ---- ログイン画面 ---- */
+  .login-gate{ position:fixed; inset:0; z-index:400; display:flex; align-items:center; justify-content:center; padding:24px; background: var(--bg); }
+  .login-gate.hidden{ display:none; }
+  .login-checking{ display:flex; flex-direction:column; align-items:center; gap:14px; color: var(--ink-dim); font-size:13px; }
+  .login-card{ width:100%; max-width:420px; background: var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px 26px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .login-brand{ font-size:22px; font-weight:800; color: var(--ink); letter-spacing:.02em; }
+  .login-sub{ font-size:12.5px; color: var(--ink-dim); margin:4px 0 16px; }
+  .login-image{ display:block; width:100%; max-height:260px; object-fit:contain; border-radius:10px; border:1px solid var(--line); margin-bottom:14px; background: var(--surface-2); }
+  .login-message{ font-size:13.5px; line-height:1.8; color: var(--ink); white-space:pre-wrap; word-break:break-word; margin-bottom:16px; }
+  .login-input{ width:100%; margin-bottom:12px; }
+  .login-submit{ width:100%; }
+  .login-error{ font-size:12.5px; color: var(--danger); margin-top:10px; min-height:1em; }
+  /* ---- 連絡未読バッジ ---- */
+  .admin-badge-btn{ position:relative; }
+  .contact-badge{ position:absolute; top:-7px; right:-7px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background: var(--danger); color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; display:none; }
+  .contact-badge.show{ display:block; }
+  .contact-item{ position:relative; padding:12px 2px; border-bottom:1px solid var(--line); }
+  .contact-item:last-child{ border-bottom:0; }
+  .contact-item.unread{ background: var(--accent-dim); border-radius:8px; padding:12px 12px; }
+  .contact-text{ font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
+  .contact-item-actions{ margin-top:8px; }
+  .contact-unread-tag{ display:inline-block; font-size:10.5px; font-weight:700; color: var(--accent); border:1px solid var(--accent); border-radius:5px; padding:1px 6px; margin-bottom:6px; }
   body.opt-no-dislike .dislike-btn{ display:none; }
   .dislike-btn{
     display:inline-flex; align-items:center; gap:4px; background: var(--surface-2);
@@ -917,6 +994,7 @@
   .ref-gallery{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
   .ref-gallery a{ display:block; max-width:220px; max-height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--line); background: var(--surface-2); cursor: zoom-in; }
   .ref-gallery img{ display:block; width:auto; height:auto; max-width:220px; max-height:220px; }
+  .announce-gallery a, .announce-gallery img{ max-width:440px; max-height:440px; }
 
   /* ---- リクエスト行 ---- */
   .row-requested{ color: var(--accent); }
@@ -924,6 +1002,30 @@
 
   /* ---- 掲示板 ---- */
   .board-item .comment-name{ color: var(--ink); }
+  .board-attach-row{ display:flex; align-items:center; gap:10px; margin:14px 0 0; flex-wrap:wrap; }
+  .board-attach-hint{ font-size:11.5px; color: var(--ink-dim); }
+  .board-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .board-threads{ display:flex; flex-direction:column; gap:16px; }
+  .board-thread{ background: var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .board-thread-head{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+  .board-thread-no{ font-weight:700; color: var(--accent); font-size:13px; }
+  .board-thread .comment-name{ font-weight:700; color: var(--ink); }
+  .board-thread-body{ font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
+  .board-replies{ margin-top:12px; display:flex; flex-direction:column; gap:0; border-top:1px solid var(--line); }
+  .board-reply{ padding:11px 0 11px 14px; border-left:2px solid var(--line); border-bottom:1px solid var(--line); margin-left:2px; }
+  .board-reply:last-child{ border-bottom:0; }
+  .board-reply-head{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+  .board-reply-no{ font-weight:700; color: var(--ink-dim); font-size:12px; font-variant-numeric:tabular-nums; }
+  .board-reply-name{ font-size:12.5px; font-weight:700; color: var(--ink); }
+  .board-reply .comment-date{ font-size:11px; color: var(--ink-dim); }
+  .board-reply-body{ font-size:13px; line-height:1.65; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
+  .board-thread-actions{ margin-top:12px; }
+  .board-reply-form{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  .board-reply-form textarea{ min-height:64px; }
+  .board-reply-form .field-label{ margin-top:0; }
+  .board-reply-form-row{ display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap; }
+  .board-reply-status{ font-size:12px; color: var(--ink-dim); }
+  .board-reply-count{ font-size:12px; color: var(--ink-dim); }
 
   /* ---- コメント ---- */
   .comment-toggle-btn{
@@ -996,13 +1098,34 @@
 </style>
 </head>
 <body>
+<div id="loginGate" class="login-gate">
+  <div id="loginChecking" class="login-checking"><div class="spinner red"></div><span>確認中...</span></div>
+  <div id="loginCard" class="login-card" style="display:none;">
+    <div class="login-brand">Prompt Reel</div>
+    <div class="login-sub">閲覧にはパスワードが必要です</div>
+    <div id="loginGateMessage" class="login-message" style="display:none;"></div>
+    <img id="loginGateImage" class="login-image" alt="お知らせ画像" style="display:none;">
+    <input type="password" id="loginPwInput" class="login-input" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="パスワードを入力">
+    <button type="button" id="loginSubmitBtn" class="btn-submit login-submit">入場する</button>
+    <div id="loginError" class="login-error"></div>
+  </div>
+</div>
+
 <div class="wrap">
 
   <header>
     <div class="eyebrow">仲間内で使う画像＆プロンプト共有ボード</div>
     <h1>Prompt Reel</h1>
+    <button class="announce-bar" type="button" id="announceBar" style="display:none;">
+      <span class="announce-bar-label">お知らせ</span>
+      <span class="announce-bar-title" id="announceBarTitle"></span>
+      <span class="announce-bar-more">(クリックで詳細表示)</span>
+      <span class="announce-bar-date" id="announceBarDate"></span>
+    </button>
     <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
     <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
+    <button class="admin-btn admin-opts-btn admin-badge-btn" type="button" id="adminContactsBtn" style="display:none;">連絡一覧<span class="contact-badge" id="contactBadge">0</span></button>
+    <button class="admin-btn admin-opts-btn" type="button" id="adminAnnounceBtn" style="display:none;">お知らせを投稿</button>
   </header>
 
   <nav class="tabs">
@@ -1028,7 +1151,9 @@
     </div>
 
     <section class="panel" id="imagePostForm">
-      <h2 id="imageFormHeading">画像を投稿</h2>
+      <div class="panel-head-row">
+        <h2 id="imageFormHeading">画像を投稿</h2>
+      </div>
 
       <label class="field-label">画像</label>
       <div class="dropzone" id="dropzone">
@@ -1114,15 +1239,20 @@
           <button class="btn-ghost" id="cancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
           <span class="status" id="statusText"></span>
         </div>
-        <div class="owneredit-only" id="editPwField">
-          <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+        <div class="owneredit-only edit-pw-box" id="editPwField">
+          <div class="edit-pw-line">
+            <span class="edit-pw-badge">編集用パスワードを設定</span>
+            <span class="edit-pw-note">(設定すると、このパスワードで後から自分の投稿を編集できます。)</span>
+          </div>
           <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="editPwInput" placeholder="空欄のままでも投稿できます">
         </div>
       </div>
     </section>
 
     <section class="panel" id="promptPostForm" style="display:none;">
-      <h2>プロンプト例を投稿</h2>
+      <div class="panel-head-row">
+        <h2>プロンプト例を投稿</h2>
+      </div>
 
       <label class="field-label">タイトル</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pTitleInput" placeholder="例: オリジナルキャラ○○の基本プロンプト">
@@ -1162,15 +1292,20 @@
           <button class="btn-ghost" id="pCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
           <span class="status" id="pStatusText"></span>
         </div>
-        <div class="owneredit-only" id="pEditPwField">
-          <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+        <div class="owneredit-only edit-pw-box" id="pEditPwField">
+          <div class="edit-pw-line">
+            <span class="edit-pw-badge">編集用パスワードを設定</span>
+            <span class="edit-pw-note">(設定すると、このパスワードで後から自分の投稿を編集できます。)</span>
+          </div>
           <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="pEditPwInput" placeholder="空欄のままでも投稿できます">
         </div>
       </div>
     </section>
 
     <section class="panel" id="requestPostForm" style="display:none;">
-      <h2>リクエストを投稿</h2>
+      <div class="panel-head-row">
+        <h2>リクエストを投稿</h2>
+      </div>
 
       <label class="field-label">タイトル</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="rTitleInput" placeholder="例: 夕暮れの海辺に立つ猫耳の少女">
@@ -1204,8 +1339,11 @@
           <button class="btn-ghost" id="rCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
           <span class="status" id="rStatusText"></span>
         </div>
-        <div class="owneredit-only" id="rEditPwField">
-          <label class="field-label">編集用パスワード(設定すると、このパスワードで後から自分の投稿を編集できます。)</label>
+        <div class="owneredit-only edit-pw-box" id="rEditPwField">
+          <div class="edit-pw-line">
+            <span class="edit-pw-badge">編集用パスワードを設定</span>
+            <span class="edit-pw-note">(設定すると、このパスワードで後から自分の投稿を編集できます。)</span>
+          </div>
           <input type="text" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" id="rEditPwInput" placeholder="空欄のままでも投稿できます">
         </div>
       </div>
@@ -1450,18 +1588,23 @@
       <label class="field-label">メッセージ</label>
       <textarea id="boardBodyInput" class="autogrow" placeholder="ご自由にどうぞ"></textarea>
 
-      <label class="field-label">画像を添付(任意・複数可 / jpegに変換・縮小して保存されます)</label>
-      <div class="dropzone dropzone-compact" id="boardDropzone">
-        <div class="dz-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="M21 15l-5-5L5 21"/>
-          </svg>
+      <div class="board-attach-row">
+        <button class="btn-ghost board-attach-toggle" type="button" id="boardAttachToggle">画像を添付</button>
+        <span class="board-attach-hint">(任意・複数可 / jpegに変換・縮小して保存されます)</span>
+      </div>
+      <div id="boardDropzoneWrap" style="display:none;">
+        <div class="dropzone dropzone-compact" id="boardDropzone">
+          <div class="dz-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+          </div>
+          <div class="dz-title">ここに画像をドラッグ&ドロップ</div>
+          <div class="dz-sub">または<span class="dz-browse">クリックしてファイルを選択</span><br>複数枚まとめて追加できます</div>
+          <input type="file" id="boardRefInput" accept="image/*" multiple>
         </div>
-        <div class="dz-title">ここに画像をドラッグ&ドロップ</div>
-        <div class="dz-sub">または<span class="dz-browse">クリックしてファイルを選択</span><br>複数枚まとめて追加できます</div>
-        <input type="file" id="boardRefInput" accept="image/*" multiple>
       </div>
       <div class="ref-thumbs" id="boardRefThumbs"></div>
 
@@ -1471,12 +1614,13 @@
       </div>
     </section>
 
-    <div class="toolbar">
+    <div class="toolbar board-toolbar">
+      <div class="sort-chips" id="boardSortChips"></div>
       <span class="count" id="boardCount"></span>
     </div>
 
-    <div class="comment-list" id="boardList"></div>
-    <div class="empty" id="boardEmpty" style="display:none;">まだ投稿がありません。最初のひとことを書いてみましょう。</div>
+    <div class="board-threads" id="boardList"></div>
+    <div class="empty" id="boardEmpty" style="display:none;">まだスレッドがありません。最初のスレッドを立ててみましょう。</div>
   </div>
 
   <!-- ============ 本ツールの使い方タブ ============ -->
@@ -1572,7 +1716,11 @@
       </div>
       <div class="feature-item opt-only-board">
         <div class="feature-name">掲示板</div>
-        <div class="feature-desc">作品に紐づかない雑談・質問・お知らせ用の自由なやり取りの場です。文章だけでなく、画像を添付して投稿することもできます。</div>
+        <div class="feature-desc">作品に紐づかない雑談・質問の場です。スレッドを立てて、各スレッドに返信していく形式で、並び順の切り替え(投稿順・最新の返信がある順・勢い順)や画像の添付もできます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">お知らせ</div>
+        <div class="feature-desc">運営からのお知らせがあるときは、タイトル直下に最新のお知らせが1行で表示されます。クリックすると、最新の全文と過去のお知らせをまとめて読めるモーダルが開きます。画像が添付されている場合は本文と一緒に表示されます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">本ツールの使い方</div>
@@ -1776,24 +1924,37 @@
       <h2>掲示板の使い方</h2>
       <div class="guide-step">
         <div class="body">
-          特定の作品に紐づかない話題(雑談・質問・お知らせなど)はこちらへどうぞ。お名前は任意で、空欄なら「匿名」と表示されます。新しい投稿が上に並びます。
+          特定の作品に紐づかない話題(雑談・質問など)はこちらへどうぞ。上のフォームから新しいスレッドを立て、各スレッドに返信していく形式です。お名前は任意で、空欄なら「匿名」と表示されます。
         </div>
       </div>
       <div class="feature-item">
+        <div class="feature-name">スレッドと返信</div>
+        <div class="feature-desc">上のフォームで投稿するとスレッド(親)ができます。各スレッドの「返信する」ボタンから、そのスレッドにぶら下がる返信を書けます。返信は投稿の古い順に並びます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">並び替え</div>
+        <div class="feature-desc">スレッドの並び順を「投稿順(新しいスレッドが上)」「最新の返信がある順」「勢い順(返信の多さと経過時間から算出)」で切り替えられます。</div>
+      </div>
+      <div class="feature-item">
         <div class="feature-name">画像の添付</div>
-        <div class="feature-desc">メッセージには画像を複数枚まとめて添付できます。送信前に自動で縮小されるので、大きな画像でもそのままドロップして大丈夫です。添付した画像はクリックすると拡大できます。</div>
+        <div class="feature-desc">スレッドには画像を複数枚まとめて添付できます。「画像を添付」ボタンを押すとドロップエリアが開きます。送信前に自動で縮小されるので、大きな画像でもそのままドロップして大丈夫です。添付画像はクリックで拡大できます。</div>
       </div>
       <div class="feature-item opt-only-boardvote">
         <div class="feature-name">グッド / バッド</div>
-        <div class="feature-desc">各メッセージに 👍 / 👎 を付けられます。1端末につき1票で、押し直せば取り消しや切り替えができます。</div>
+        <div class="feature-desc">各スレッドに 👍 / 👎 を付けられます。1端末につき1票で、押し直せば取り消しや切り替えができます。</div>
       </div>
       <div class="guide-note">
-        投稿の削除は管理者のみが行えます。取り消したい書き込みがある場合は、このページ下部の連絡フォームからお知らせください。
+        投稿の削除は管理者のみが行えます。スレッドを削除すると、そのスレッドへの返信もまとめて削除されます。取り消したい書き込みがある場合は、このページ下部の連絡フォームからお知らせください。
       </div>
     </section>
 
     <section class="panel">
       <h2>よくある質問(Q&amp;A)</h2>
+
+      <div class="qa-item">
+        <div class="qa-q">サイトを開くとパスワードの入力を求められます。</div>
+        <div class="qa-a">管理者がログイン画面をオンにしている場合、サイトを開いた最初に合言葉(パスワード)の入力を求められます。仲間内だけで使うための簡単な入場制限です。パスワードが分からない・入場できない場合は、管理者に確認してください。一度正しく入力すると、その端末では次回以降は自動で入場します(管理者がパスワードを変更すると再入力が必要になります)。</div>
+      </div>
 
       <div class="qa-item">
         <div class="qa-q">投稿した作品(画像・プロンプト例)は削除できますか？</div>
@@ -2141,6 +2302,18 @@
   <div class="modal modal-narrow" id="adminOptionsBody"></div>
 </div>
 
+<div class="modal-overlay" id="announceOverlay">
+  <div class="modal" id="announceBody"></div>
+</div>
+
+<div class="modal-overlay" id="announceComposeOverlay">
+  <div class="modal" id="announceComposeBody"></div>
+</div>
+
+<div class="modal-overlay" id="contactsOverlay">
+  <div class="modal" id="contactsBody"></div>
+</div>
+
 <div class="modal-overlay" id="commentOverlay">
   <div class="modal" id="commentModalBody"></div>
 </div>
@@ -2301,12 +2474,14 @@
   let fixPosts = [];
   let allComments = [];
   let allBoard = [];
+  let allAnnounce = [];
+  let announceRefs = [];
   // 段階読み込みの状態。stage=parentsで一覧を出した後、stage=restを背後で読み込む。
   // rest完了までは、個別に開かれた投稿ごとに detailId= で優先取得する(ensurePostLoaded)。
   let restStageLoaded = false;
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, ownerEdit: false, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, ownerEdit: false, loginEnabled: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
@@ -2854,12 +3029,16 @@
   // 終わるまで実際には0件ではないのに空に見えてしまう。不具合と誤解されないよう、
   // 未読み込みの間だけ件数表示・空表示を「読み込み中」に差し替える。
   // rest完了後にタブを開けば(あるいは既に開いていれば自動で)通常表示にすぐ戻る。
-  const LOADING_NOTICE = '読み込み中です。しばらくお待ちください…';
   function setListCountAndEmpty(countEl, emptyEl, count, unit, emptyText) {
     const pending = !restStageLoaded && count === 0;
     countEl.textContent = pending ? '読み込み中…' : (count + ' ' + unit);
-    emptyEl.textContent = pending ? LOADING_NOTICE : emptyText;
-    emptyEl.style.display = count ? 'none' : 'block';
+    if (pending) {
+      emptyEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
+      emptyEl.style.display = 'block';
+    } else {
+      emptyEl.textContent = emptyText;
+      emptyEl.style.display = count ? 'none' : 'block';
+    }
   }
 
   function mergePostIntoLocalState(post) {
@@ -2902,6 +3081,7 @@
   function applyParentsData(data) {
     posts = data.posts || [];
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
+    if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
     applyOptionsToUi();
     rebuildDerivedArraysFromPosts();
     collectDynamicKeysFromPosts();
@@ -2921,6 +3101,7 @@
     (data.posts || []).forEach(mergePostIntoLocalState);
     allComments = data.comments || [];
     allBoard = data.board || [];
+    if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     buildInternalDict(data.dictionary);
     applyOptionsToUi();
@@ -3903,8 +4084,6 @@
         '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + (p.type === 'fix' ? ' <span class="row-hidden-badge" style="color:var(--accent);background:var(--accent-dim);border-color:var(--accent);">修正依頼</span>' : '') + '</h3>' +
         '<div class="modal-top-actions">' +
           adminActionButtonsHtml(p) +
-          '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>' +
-          '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
@@ -3912,6 +4091,7 @@
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
+      '<div class="image-actions-row"><button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button><button class="btn-ghost" type="button" id="shareBtn">共有</button></div>' +
       fixContentBlock +
       baseBlock +
       parentBlock +
@@ -5206,6 +5386,14 @@
   });
   boardRefInput.addEventListener('change', function () { addBoardRefFiles(boardRefInput.files); boardRefInput.value = ''; });
 
+  document.getElementById('boardAttachToggle').addEventListener('click', function () {
+    const wrap = document.getElementById('boardDropzoneWrap');
+    const show = wrap.style.display === 'none';
+    wrap.style.display = show ? '' : 'none';
+    this.classList.toggle('on', show);
+    this.textContent = show ? '添付を閉じる' : '画像を添付';
+  });
+
   function boardVoteHtml(m) {
     const id = escapeHtml(String(m.id));
     const vote = boardVotes[m.id];
@@ -5228,14 +5416,90 @@
     }).join('') + '</div>';
   }
 
-  function boardItemHtml(m) {
-    const name = m.name ? escapeHtml(m.name) : '匿名';
-    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(m.id)) + '">削除</button>' : '';
-    return '<div class="comment-item board-item">' + delBtn +
-      '<div class="comment-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(m.timestamp) + '</span></div>' +
-      '<div class="comment-body">' + escapeHtml(m.body) + '</div>' +
-      boardImagesHtml(m) +
-      boardVoteHtml(m) +
+  const BOARD_SORTS = [
+    { key: 'created', label: '投稿順' },
+    { key: 'lastReply', label: '最新の返信がある順' },
+    { key: 'momentum', label: '勢い順' }
+  ];
+  let boardSort = 'created';
+
+  function renderBoardSortChips() {
+    const el = document.getElementById('boardSortChips');
+    if (!el) return;
+    el.innerHTML = BOARD_SORTS.map(function (s) {
+      return '<button type="button" class="sort-chip' + (boardSort === s.key ? ' active' : '') + '" data-board-sort="' + s.key + '">' + s.label + '</button>';
+    }).join('');
+    el.querySelectorAll('[data-board-sort]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        boardSort = btn.dataset.boardSort;
+        renderBoardSortChips();
+        renderBoard();
+      });
+    });
+  }
+
+  function groupBoardThreads() {
+    const threads = allBoard.filter(function (m) { return !m.parentId; });
+    const repliesByThread = {};
+    allBoard.forEach(function (m) {
+      if (m.parentId) (repliesByThread[m.parentId] = repliesByThread[m.parentId] || []).push(m);
+    });
+    Object.keys(repliesByThread).forEach(function (tid) {
+      repliesByThread[tid].sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
+    });
+    const now = Date.now();
+    function lastReplyTime(t) {
+      const r = repliesByThread[t.id];
+      if (r && r.length) return new Date(r[r.length - 1].timestamp).getTime();
+      return new Date(t.timestamp).getTime();
+    }
+    function momentum(t) {
+      const r = repliesByThread[t.id] || [];
+      const ageMs = Math.max(now - new Date(t.timestamp).getTime(), 60000);
+      return (r.length + 1) * 86400000 / ageMs;
+    }
+    threads.sort(function (a, b) {
+      if (boardSort === 'lastReply') return lastReplyTime(b) - lastReplyTime(a);
+      if (boardSort === 'momentum') return momentum(b) - momentum(a);
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+    return { threads: threads, repliesByThread: repliesByThread };
+  }
+
+  function boardReplyHtml(r, no) {
+    const name = r.name ? escapeHtml(r.name) : '匿名';
+    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(r.id)) + '">削除</button>' : '';
+    return '<div class="board-reply">' + delBtn +
+      '<div class="board-reply-head"><span class="board-reply-no">' + no + '</span><span class="board-reply-name">' + name + '</span><span class="comment-date">' + formatDateTime(r.timestamp) + '</span></div>' +
+      '<div class="board-reply-body">' + escapeHtml(r.body) + '</div>' +
+      boardImagesHtml(r) +
+    '</div>';
+  }
+
+  function boardThreadHtml(t, replies) {
+    const name = t.name ? escapeHtml(t.name) : '匿名';
+    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(t.id)) + '">削除</button>' : '';
+    const repliesHtml = replies.length
+      ? '<div class="board-replies">' + replies.map(function (r, i) { return boardReplyHtml(r, i + 1); }).join('') + '</div>'
+      : '';
+    return '<div class="comment-item board-thread" data-thread="' + escapeHtml(String(t.id)) + '">' + delBtn +
+      '<div class="board-thread-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
+        '<span class="board-reply-count">返信 ' + replies.length + '</span></div>' +
+      '<div class="board-thread-body">' + escapeHtml(t.body) + '</div>' +
+      boardImagesHtml(t) +
+      boardVoteHtml(t) +
+      repliesHtml +
+      '<div class="board-thread-actions"><button class="btn-ghost board-reply-toggle" type="button">返信する</button></div>' +
+      '<div class="board-reply-form" style="display:none;">' +
+        '<label class="field-label">お名前(任意)</label>' +
+        '<input type="text" class="board-reply-name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="匿名で返信できます">' +
+        '<label class="field-label">返信</label>' +
+        '<textarea class="board-reply-body" placeholder="このスレッドに返信する"></textarea>' +
+        '<div class="board-reply-form-row">' +
+          '<button class="btn-submit board-reply-submit" type="button" data-reply-submit="' + escapeHtml(String(t.id)) + '">返信する</button>' +
+          '<span class="board-reply-status"></span>' +
+        '</div>' +
+      '</div>' +
     '</div>';
   }
 
@@ -5281,9 +5545,11 @@
   }
 
   function renderBoard() {
-    const items = allBoard.slice().sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
-    setListCountAndEmpty(boardCount, boardEmpty, items.length, '件', 'まだ投稿がありません。最初のひとことを書いてみましょう。');
-    boardList.innerHTML = items.map(boardItemHtml).join('');
+    const grouped = groupBoardThreads();
+    const threads = grouped.threads;
+    const repliesByThread = grouped.repliesByThread;
+    setListCountAndEmpty(boardCount, boardEmpty, threads.length, '件のスレッド', 'まだスレッドがありません。最初のスレッドを立ててみましょう。');
+    boardList.innerHTML = threads.map(function (t) { return boardThreadHtml(t, repliesByThread[t.id] || []); }).join('');
     boardList.querySelectorAll('[data-del-board]').forEach(function (btn) {
       btn.addEventListener('click', function () { adminDeleteBoard(btn.dataset.delBoard); });
     });
@@ -5293,6 +5559,51 @@
     boardList.querySelectorAll('.ref-open').forEach(function (a) {
       a.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(a.dataset.refUrl); });
     });
+    boardList.querySelectorAll('.board-reply-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const thread = btn.closest('.board-thread');
+        const form = thread && thread.querySelector('.board-reply-form');
+        if (!form) return;
+        const show = form.style.display === 'none';
+        form.style.display = show ? '' : 'none';
+        btn.textContent = show ? '返信を閉じる' : '返信する';
+        if (show) { const ta = form.querySelector('.board-reply-body'); if (ta) ta.focus(); }
+      });
+    });
+    boardList.querySelectorAll('.board-reply-submit').forEach(function (btn) {
+      btn.addEventListener('click', function () { submitBoardReply(btn.dataset.replySubmit, btn); });
+    });
+  }
+
+  async function submitBoardReply(threadId, btn) {
+    const form = btn.closest('.board-reply-form');
+    if (!form) return;
+    const nameEl = form.querySelector('.board-reply-name');
+    const bodyEl = form.querySelector('.board-reply-body');
+    const statusEl = form.querySelector('.board-reply-status');
+    const body = bodyEl.value.trim();
+    if (!body) { statusEl.textContent = '返信を入力してください'; return; }
+    statusEl.textContent = '';
+    btn.disabled = true;
+    showLoading('送信中...');
+    try {
+      const result = await postAction({
+        action: 'board',
+        name: nameEl.value,
+        body: body,
+        parentId: threadId,
+        images: []
+      });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      if (result.message) allBoard.push(result.message);
+      renderBoard();
+    } catch (err) {
+      statusEl.textContent = '送信に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
   }
 
   document.getElementById('boardSubmitBtn').addEventListener('click', async function () {
@@ -5574,7 +5885,16 @@
     adminBtn.textContent = on ? '管理モード終了' : '管理画面';
     adminBtn.classList.toggle('on', on);
     document.getElementById('adminOptionsBtn').style.display = on ? '' : 'none';
+    document.getElementById('adminAnnounceBtn').style.display = on ? '' : 'none';
+    document.getElementById('adminContactsBtn').style.display = on ? '' : 'none';
     document.body.classList.toggle('admin-on', on);
+    if (on) {
+      refreshContacts();
+    } else {
+      contactsList = [];
+      contactUnread = 0;
+      updateContactBadge();
+    }
     if (!on && adminEditingPost) cancelAdminEdit(false);
     if (modalOverlay.classList.contains('open')) closeModal();
     if (document.getElementById('tab-board').classList.contains('active')) renderBoard();
@@ -5791,7 +6111,8 @@
     { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
     { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
     { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
-    { key: 'ownerEdit', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示されます。投稿者がパスワードを設定した投稿は、詳細画面の「編集」ボタンからそのパスワードを入力して本人が編集できます(オフのときは欄もボタンも表示されません)' }
+    { key: 'ownerEdit', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示されます。投稿者がパスワードを設定した投稿は、詳細画面の「編集」ボタンからそのパスワードを入力して本人が編集できます(オフのときは欄もボタンも表示されません)' },
+    { key: 'loginEnabled', label: 'ログイン画面', desc: 'オンにすると、サイトを開いたときにパスワード入力画面を表示します(変更は次回読み込みから反映)。パスワードや表示メッセージ・画像はadminシートで管理します' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
@@ -5817,6 +6138,15 @@
           '<div class="opt-switch' + (draftOptions[o.key] ? ' on' : '') + '" data-opt="' + o.key + '"></div>' +
         '</div>' + (o.key === 'dislike' ? dislikeThresholdRow : '');
       }).join('') +
+      '<div class="opt-toggle-row">' +
+        '<div><div class="opt-label">ログイン画面のパスワード</div>' +
+        '<div class="opt-desc">サイトを開くときのパスワードを変更します(現在値は表示されません)。メッセージ・画像はadminシートのE1・E2で指定します</div></div>' +
+        '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
+          '<input type="text" id="loginPwChangeInput" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="新しいパスワード" style="width:150px;">' +
+          '<button class="btn-ghost" type="button" id="loginPwChangeBtn">変更</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="admin-modal-status" id="loginPwChangeStatus"></div>' +
       '<div class="admin-modal-status" id="adminOptionsStatus"></div>' +
       '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>';
 
@@ -5829,7 +6159,29 @@
     });
     document.getElementById('adminOptionsCloseBtn').addEventListener('click', closeAdminOptionsModal);
     document.getElementById('adminOptionsSaveBtn').addEventListener('click', saveAdminOptions);
+    document.getElementById('loginPwChangeBtn').addEventListener('click', changeLoginPassword);
     openOverlay(adminOptionsOverlay);
+  }
+
+  async function changeLoginPassword() {
+    const input = document.getElementById('loginPwChangeInput');
+    const status = document.getElementById('loginPwChangeStatus');
+    const np = input.value.trim();
+    status.textContent = '';
+    if (!np) { status.textContent = '新しいパスワードを入力してください'; return; }
+    showLoading('変更中...');
+    try {
+      const r = await postAction({ action: 'adminSetLoginPassword', password: adminPassword, newPassword: np });
+      if (!r || !r.success) throw new Error((r && r.error) || '不明なエラー');
+      input.value = '';
+      status.textContent = 'ログインパスワードを変更しました';
+      localStorage.removeItem('pr_login_pw');
+    } catch (e) {
+      status.textContent = '変更に失敗しました: ' + (e.message || e);
+      console.error(e);
+    } finally {
+      hideLoading();
+    }
   }
   function closeAdminOptionsModal() { adminOptionsOverlay.classList.remove('open'); }
   adminOptionsOverlay.addEventListener('click', function (e) { if (e.target === adminOptionsOverlay) closeAdminOptionsModal(); });
@@ -5849,7 +6201,7 @@
       // 未知のキーが返却から欠落し、保存したはずの設定がオフに戻ってしまう。
       // 黙って戻さず原因を明示する。
       const returned = result.options || {};
-      const missing = ['fixRequest', 'dislike', 'ownerEdit'].filter(function (k) { return !(k in returned); });
+      const missing = ['fixRequest', 'dislike', 'ownerEdit', 'loginEnabled'].filter(function (k) { return !(k in returned); });
       if (missing.length) {
         throw new Error('GAS側が新機能に未対応です。最新の Code.gs を貼り付けたうえで「デプロイを管理」→ 新しいバージョンとして更新し、setup を再実行してください。');
       }
@@ -6175,7 +6527,11 @@
     const dbPending = !restStageLoaded && rows.length === 0;
     document.getElementById('dbCount').textContent = dbPending ? '読み込み中…' : (rows.length + ' 種類');
     if (!rows.length) {
-      emptyEl.textContent = dbPending ? LOADING_NOTICE : '対象のプロンプトがありません。';
+      if (dbPending) {
+        emptyEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
+      } else {
+        emptyEl.textContent = '対象のプロンプトがありません。';
+      }
       emptyEl.style.display = 'block';
       listEl.innerHTML = '';
       return;
@@ -6390,8 +6746,375 @@
     });
   })();
 
+  // ===== LOGIN(閲覧前ログイン) =====
+  function fetchLoginConfig() {
+    return jsonpRequest(GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'stage=login', 20000);
+  }
+
+  function proceedToApp() {
+    showLoading('読み込み中...');
+    document.getElementById('loginGate').classList.add('hidden');
+    loadPosts().then(openSharedFromUrl);
+  }
+
+  async function startApp() {
+    try {
+      const cfg = await fetchLoginConfig();
+      if (cfg && cfg.enabled) {
+        const stored = localStorage.getItem('pr_login_pw');
+        if (stored) {
+          try {
+            const r = await postAction({ action: 'loginAuth', password: stored });
+            if (r && r.success) { proceedToApp(); return; }
+          } catch (e) { /* 再入力へ */ }
+          localStorage.removeItem('pr_login_pw');
+        }
+        showLoginGate(cfg);
+        return;
+      }
+    } catch (e) {
+      console.error('ログイン設定の取得に失敗:', e);
+      // 取得失敗時はロックアウトを避けて通常表示にフォールバック
+    }
+    proceedToApp();
+  }
+
+  function showLoginGate(cfg) {
+    document.getElementById('loginChecking').style.display = 'none';
+    document.getElementById('loginCard').style.display = '';
+    const msgEl = document.getElementById('loginGateMessage');
+    const imgEl = document.getElementById('loginGateImage');
+    if (cfg.message && String(cfg.message).trim()) { msgEl.textContent = cfg.message; msgEl.style.display = ''; }
+    else { msgEl.style.display = 'none'; }
+    if (cfg.image && String(cfg.image).trim()) { imgEl.src = imageSrcFor(cfg.image, 'w600'); imgEl.style.display = ''; }
+    else { imgEl.style.display = 'none'; }
+    const input = document.getElementById('loginPwInput');
+    if (input) input.focus();
+  }
+
+  async function submitLogin() {
+    const input = document.getElementById('loginPwInput');
+    const err = document.getElementById('loginError');
+    const card = document.getElementById('loginCard');
+    const checking = document.getElementById('loginChecking');
+    const pw = input.value;
+    err.textContent = '';
+    if (!pw) { err.textContent = 'パスワードを入力してください'; return; }
+    card.style.display = 'none';
+    checking.style.display = '';
+    try {
+      const r = await postAction({ action: 'loginAuth', password: pw });
+      if (r && r.success) {
+        localStorage.setItem('pr_login_pw', pw);
+        proceedToApp();
+      } else {
+        checking.style.display = 'none';
+        card.style.display = '';
+        err.textContent = 'パスワードが違います';
+        input.focus();
+      }
+    } catch (e) {
+      checking.style.display = 'none';
+      card.style.display = '';
+      err.textContent = '通信に失敗しました。時間をおいて再度お試しください。';
+      input.focus();
+      console.error(e);
+    }
+  }
+
+  document.getElementById('loginSubmitBtn').addEventListener('click', submitLogin);
+  document.getElementById('loginPwInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') submitLogin(); });
+
+  // ===== CONTACT 未読管理(管理者向け) =====
+  let contactsList = [];
+  let contactUnread = 0;
+
+  async function refreshContacts() {
+    if (!adminPassword) return;
+    try {
+      const r = await postAction({ action: 'getContacts', password: adminPassword });
+      if (r && r.success) {
+        contactsList = r.contacts || [];
+        contactUnread = r.unread || 0;
+        updateContactBadge();
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  function updateContactBadge() {
+    const badge = document.getElementById('contactBadge');
+    if (!badge) return;
+    if (contactUnread > 0) { badge.textContent = String(contactUnread); badge.classList.add('show'); }
+    else { badge.classList.remove('show'); }
+  }
+
+  function openContactsModal() {
+    const overlay = document.getElementById('contactsOverlay');
+    const body = document.getElementById('contactsBody');
+    const items = contactsList.slice().reverse(); // 新しい連絡を上に
+    body.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">連絡一覧' + (contactUnread > 0 ? '(未読 ' + contactUnread + ')' : '') + '</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="contactsCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      (items.length ? items.map(function (c) {
+        return '<div class="contact-item' + (c.read ? '' : ' unread') + '">' +
+          (c.read ? '' : '<div class="contact-unread-tag">未読</div>') +
+          '<div class="contact-text">' + escapeHtml(c.text) + '</div>' +
+          (c.read ? '' : '<div class="contact-item-actions"><button class="btn-ghost contact-read-btn" type="button" data-contact-row="' + c.row + '">確認済みにする</button></div>') +
+        '</div>';
+      }).join('') : '<div class="empty">連絡はまだありません。</div>');
+    document.getElementById('contactsCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
+    body.querySelectorAll('.contact-read-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { markContactRead(Number(btn.dataset.contactRow)); });
+    });
+    openOverlay(overlay);
+  }
+
+  async function markContactRead(row) {
+    showLoading('更新中...');
+    try {
+      const r = await postAction({ action: 'markContactRead', password: adminPassword, row: row });
+      if (!r || !r.success) throw new Error((r && r.error) || '不明なエラー');
+      contactsList.forEach(function (c) { if (c.row === row && !c.read) { c.read = true; contactUnread = Math.max(0, contactUnread - 1); } });
+      updateContactBadge();
+      openContactsModal();
+    } catch (e) {
+      window.alert('更新に失敗しました: ' + (e.message || e));
+      console.error(e);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  document.getElementById('adminContactsBtn').addEventListener('click', openContactsModal);
+  document.getElementById('contactsOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+
+  // ===== ANNOUNCE (お知らせ) =====
+  function sortedAnnounce() {
+    return allAnnounce.slice().sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+  }
+
+  function renderAnnounceBar() {
+    const bar = document.getElementById('announceBar');
+    if (!bar) return;
+    const list = sortedAnnounce();
+    if (!list.length) { bar.style.display = 'none'; return; }
+    const latest = list[0];
+    document.getElementById('announceBarTitle').textContent = latest.title || '(無題)';
+    document.getElementById('announceBarDate').textContent = formatDateTime(latest.timestamp);
+    bar.style.display = '';
+  }
+
+  function announceImagesHtml(a) {
+    const imgs = a.images || [];
+    if (!imgs.length) return '';
+    return '<div class="ref-gallery announce-gallery">' + imgs.map(function (u) {
+      return '<a href="#" class="ref-open" data-ref-url="' + escapeHtml(u) + '">' + imageTag(u, { size: 'w640', lazy: true, alt: 'お知らせ画像' }) + '</a>';
+    }).join('') + '</div>';
+  }
+
+  function announceDelBtnHtml(a) {
+    return adminMode ? '<button class="comment-del" type="button" data-del-announce="' + escapeHtml(String(a.id)) + '">削除</button>' : '';
+  }
+
+  function openAnnounceModal() {
+    const list = sortedAnnounce();
+    if (!list.length) return;
+    const latest = list[0];
+    const past = list.slice(1);
+    const overlay = document.getElementById('announceOverlay');
+    const body = document.getElementById('announceBody');
+    body.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">お知らせ</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="announceCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      '<div class="announce-modal-latest">' + announceDelBtnHtml(latest) +
+        '<div class="announce-modal-title">' + escapeHtml(latest.title || '(無題)') + '</div>' +
+        '<div class="announce-modal-date">' + formatDateTime(latest.timestamp) + '</div>' +
+        '<div class="announce-modal-text">' + escapeHtml(latest.body || '') + '</div>' +
+        announceImagesHtml(latest) +
+      '</div>' +
+      (past.length ? '<div class="announce-past-head">過去のお知らせ</div>' + past.map(function (a) {
+        return '<div class="announce-modal-item">' + announceDelBtnHtml(a) +
+          '<div class="announce-modal-title">' + escapeHtml(a.title || '(無題)') + '</div>' +
+          '<div class="announce-modal-date">' + formatDateTime(a.timestamp) + '</div>' +
+          '<div class="announce-modal-text">' + escapeHtml(a.body || '') + '</div>' +
+          announceImagesHtml(a) +
+        '</div>';
+      }).join('') : '');
+    document.getElementById('announceCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
+    body.querySelectorAll('.ref-open').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(el.dataset.refUrl); });
+    });
+    body.querySelectorAll('[data-del-announce]').forEach(function (btn) {
+      btn.addEventListener('click', function () { adminDeleteAnnounce(btn.dataset.delAnnounce); });
+    });
+    openOverlay(overlay);
+  }
+
+  async function adminDeleteAnnounce(id) {
+    if (!window.confirm('このお知らせを削除しますか？')) return;
+    showLoading('削除中...');
+    try {
+      const result = await postAction({ action: 'adminDeleteAnnounce', password: adminPassword, id: id });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      allAnnounce = allAnnounce.filter(function (a) { return String(a.id) !== String(id); });
+      renderAnnounceBar();
+      if (sortedAnnounce().length) openAnnounceModal();
+      else document.getElementById('announceOverlay').classList.remove('open');
+    } catch (err) {
+      window.alert('削除に失敗しました: ' + (err.message || err));
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function renderAnnounceComposeThumbs() {
+    const wrap = document.getElementById('announceComposeThumbs');
+    if (!wrap) return;
+    wrap.innerHTML = announceRefs.map(function (r, i) {
+      return '<div class="ref-thumb"><img src="' + escapeHtml(r.dataUrl) + '" alt="添付画像" data-ac-view="' + i + '"><button class="ref-remove" type="button" data-ac-idx="' + i + '" title="削除">✕</button></div>';
+    }).join('');
+    wrap.querySelectorAll('[data-ac-view]').forEach(function (img) {
+      img.addEventListener('click', function () { const r = announceRefs[Number(img.dataset.acView)]; if (r) openRefLightbox(r.dataUrl); });
+    });
+    wrap.querySelectorAll('[data-ac-idx]').forEach(function (btn) {
+      btn.addEventListener('click', function () { announceRefs.splice(Number(btn.dataset.acIdx), 1); renderAnnounceComposeThumbs(); });
+    });
+  }
+
+  async function addAnnounceFiles(fileList) {
+    const files = Array.from(fileList || []).filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    showLoading('画像を処理中...');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const dataUrl = await resizeToJpeg(files[i]);
+        announceRefs.push({ dataUrl: dataUrl });
+      }
+      renderAnnounceComposeThumbs();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function openAnnounceComposeModal() {
+    announceRefs = [];
+    const overlay = document.getElementById('announceComposeOverlay');
+    const body = document.getElementById('announceComposeBody');
+    body.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">お知らせを投稿</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="announceComposeCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      '<label class="field-label">お知らせタイトル(バーに1行で表示されます)</label>' +
+      '<input type="text" id="announceTitleInput" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="例: メンテナンスのお知らせ">' +
+      '<label class="field-label">お知らせ本文(クリックで開くモーダルに全文表示されます)</label>' +
+      '<textarea id="announceBodyInput" placeholder="詳しい内容をご記入ください"></textarea>' +
+      '<div class="board-attach-row">' +
+        '<button class="btn-ghost" type="button" id="announceAttachToggle">画像を添付</button>' +
+        '<span class="board-attach-hint">(任意・複数可 / jpegに変換・縮小して保存されます)</span>' +
+      '</div>' +
+      '<div id="announceDropzoneWrap" style="display:none;">' +
+        '<div class="dropzone dropzone-compact" id="announceDropzone">' +
+          '<div class="dz-title">ここに画像をドラッグ&ドロップ</div>' +
+          '<div class="dz-sub">または<span class="dz-browse">クリックしてファイルを選択</span></div>' +
+          '<input type="file" id="announceRefInput" accept="image/*" multiple>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ref-thumbs" id="announceComposeThumbs"></div>' +
+      '<div class="admin-modal-status" id="announceComposeStatus"></div>' +
+      '<div class="submit-row"><button class="btn-submit" type="button" id="announceSubmitBtn">投稿する</button></div>';
+
+    renderAnnounceComposeThumbs();
+
+    document.getElementById('announceComposeCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
+    document.getElementById('announceAttachToggle').addEventListener('click', function () {
+      const wrap = document.getElementById('announceDropzoneWrap');
+      const show = wrap.style.display === 'none';
+      wrap.style.display = show ? '' : 'none';
+      this.classList.toggle('on', show);
+      this.textContent = show ? '添付を閉じる' : '画像を添付';
+    });
+    const dz = document.getElementById('announceDropzone');
+    const fi = document.getElementById('announceRefInput');
+    dz.addEventListener('click', function () { fi.click(); });
+    dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', function () { dz.classList.remove('drag-over'); });
+    dz.addEventListener('drop', function (e) { e.preventDefault(); dz.classList.remove('drag-over'); if (e.dataTransfer && e.dataTransfer.files) addAnnounceFiles(e.dataTransfer.files); });
+    fi.addEventListener('change', function () { addAnnounceFiles(fi.files); fi.value = ''; });
+    document.getElementById('announceSubmitBtn').addEventListener('click', submitAnnounce);
+    openOverlay(overlay);
+  }
+
+  async function submitAnnounce() {
+    const status = document.getElementById('announceComposeStatus');
+    const title = document.getElementById('announceTitleInput').value.trim();
+    const bodyText = document.getElementById('announceBodyInput').value;
+    status.textContent = '';
+    if (!title) { status.textContent = 'タイトルを入力してください'; return; }
+    const btn = document.getElementById('announceSubmitBtn');
+    btn.disabled = true;
+    showLoading('送信中...');
+    try {
+      const result = await postAction({
+        action: 'announce',
+        password: adminPassword,
+        title: title,
+        body: bodyText,
+        images: announceRefs.map(function (r) { return r.dataUrl; })
+      });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      if (result.announcement) allAnnounce.push(result.announcement);
+      announceRefs = [];
+      renderAnnounceBar();
+      document.getElementById('announceComposeOverlay').classList.remove('open');
+    } catch (err) {
+      status.textContent = '送信に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('announceBar').addEventListener('click', openAnnounceModal);
+  document.getElementById('announceOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+  document.getElementById('announceComposeOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+  document.getElementById('adminAnnounceBtn').addEventListener('click', openAnnounceComposeModal);
+
+  // ===== EDIT PASSWORD TOOLTIP =====
+  function initEditPwTooltip() {
+    const TEXT = '設定すると、このパスワードで後から自分の投稿を編集できます。空欄のままでも投稿できます。';
+    const tip = document.createElement('div');
+    tip.className = 'mouse-tooltip';
+    tip.textContent = TEXT;
+    document.body.appendChild(tip);
+    function move(e) {
+      const pad = 14;
+      const rect = tip.getBoundingClientRect();
+      let x = e.clientX + pad;
+      let y = e.clientY + pad;
+      if (x + rect.width > window.innerWidth - 8) x = e.clientX - rect.width - pad;
+      if (y + rect.height > window.innerHeight - 8) y = e.clientY - rect.height - pad;
+      tip.style.left = Math.max(8, x) + 'px';
+      tip.style.top = Math.max(8, y) + 'px';
+    }
+    document.querySelectorAll('.edit-pw-badge').forEach(function (el) {
+      el.addEventListener('mouseenter', function (e) { tip.classList.add('show'); move(e); });
+      el.addEventListener('mousemove', move);
+      el.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
+    });
+  }
+
   /* ===== INIT ===== */
   guardPasswordManager();
+  initEditPwTooltip();
   buildPromptSettingsGrid();
   attachDatalistDropdowns(document);
   renderPromptSortChips();
@@ -6405,8 +7128,9 @@
   renderRefThumbs();
   renderBoardRefThumbs();
   renderSortChips();
+  renderBoardSortChips();
   syncCartLayout();
-  loadPosts().then(openSharedFromUrl);
+  startApp();
 </script>
 </body>
 </html>
