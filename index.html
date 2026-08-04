@@ -855,6 +855,11 @@
   /* 投稿者編集機能: オプションがオンのときだけ表示(オフ時は存在自体を見せない) */
   body:not(.opt-owneredit) .owneredit-only{ display:none !important; }
   body.opt-owneredit .owneredit-off-only{ display:none !important; }
+  /* 修正後画像モード: オプションがオンのときだけトグル・説明を表示 */
+  body:not(.opt-inpaint) .inpaint-only{ display:none !important; }
+  /* モードがオンのときだけ表示する要素 / モードがオンのとき隠す要素 */
+  body:not(.inpaint-mode) .inpaint-active-only{ display:none !important; }
+  body.inpaint-mode .inpaint-hidden-mode{ display:none !important; }
   /* 投稿タイトルと「修正依頼の具体的な内容」の間を明確に空ける(相殺に依存しない) */
   #fixContentField{ margin-top: 26px; }
   #fixContentField > .field-label{ margin-top: 0; }
@@ -867,6 +872,41 @@
   /* 編集用パスワード: 投稿ボタンと同じ行の右側に、1行横並びで配置する */
   .panel-head-row{ display:flex; align-items:flex-start; justify-content:space-between; gap: 20px; flex-wrap:wrap; margin-bottom: 16px; }
   .panel-head-row h2{ margin-bottom: 0; }
+  .head-toggle{
+    font-family:'Noto Sans JP',sans-serif; font-size: 12px;
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-dim);
+    cursor: pointer; user-select: none; display:inline-flex; align-items:center; gap: 7px; white-space:nowrap;
+  }
+  .head-toggle .head-toggle-dot{ width: 8px; height: 8px; border-radius: 50%; background: var(--ink-dim); }
+  .head-toggle.active{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .head-toggle.active .head-toggle-dot{ background: var(--accent); }
+  /* 修正後画像モード: 元画像の情報読み込み欄(サムネイルを出さない・画像アップロードとは別デザイン) */
+  .inpaint-src{
+    display:flex; align-items:center; gap: 12px;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface-2); cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .inpaint-src:hover{ border-color: var(--accent); }
+  .inpaint-src.drag-over{ border-color: var(--accent); border-style: dashed; background: rgba(232,163,61,0.08); }
+  .inpaint-src.loaded{ border-color: var(--accent); background: var(--accent-dim); }
+  .inpaint-src-icon{
+    flex:0 0 auto; width: 34px; height: 34px; border-radius: 8px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--accent-dim); color: var(--accent);
+  }
+  .inpaint-src.loaded .inpaint-src-icon{ background: var(--surface); }
+  .inpaint-src-icon svg{ width: 18px; height: 18px; }
+  .inpaint-src-text{ flex:1 1 auto; min-width: 0; }
+  .inpaint-src-title{ font-size: 13px; font-weight: 700; color: var(--ink); }
+  .inpaint-src-title .dz-browse{ color: var(--accent); text-decoration: underline; }
+  .inpaint-src-sub{ font-size: 11.5px; color: var(--ink-dim); margin-top: 2px; line-height: 1.5; }
+  .inpaint-src-clear{
+    flex:0 0 auto; font-size: 11.5px; padding: 5px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); cursor: pointer;
+  }
+  .inpaint-src-clear:hover{ color: var(--danger); border-color: var(--danger); }
   .edit-pw-box{
     display:flex; flex-direction:row; align-items:center; flex-wrap:wrap;
     gap:10px; width:auto; max-width:100%;
@@ -1175,9 +1215,13 @@
     <section class="panel" id="imagePostForm">
       <div class="panel-head-row">
         <h2 id="imageFormHeading">画像を投稿</h2>
+        <button type="button" id="inpaintModeBtn" class="head-toggle inpaint-only" aria-pressed="false" title="元画像から生成情報だけを読み取り、修正後(inpaint など)の画像を投稿するモード">
+          <span class="head-toggle-dot" aria-hidden="true"></span>修正後画像モード
+        </button>
       </div>
 
-      <label class="field-label">画像</label>
+      <label class="field-label inpaint-hidden-mode">画像</label>
+      <label class="field-label inpaint-active-only" style="margin-top:0;">投稿する画像(修正後)</label>
       <div class="dropzone" id="dropzone">
         <div class="dz-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1190,6 +1234,25 @@
         <div class="dz-sub" id="dropzoneSub">または<span class="dz-browse">クリックしてファイルを選択</span><br>PNG / JPEG / WebP の生成情報を自動で読み取ります</div>
         <div class="preview" id="previewWrap" style="display:none;"><span class="preview-frame"><img id="previewImg" alt="プレビュー"><button class="preview-clear" type="button" id="clearImageBtn" title="画像を取り消す">✕</button></span></div>
         <input type="file" id="imageInput">
+      </div>
+
+      <div class="inpaint-active-only" id="inpaintOriginalField">
+        <label class="field-label" style="margin-top:18px;">元画像から情報だけ読み込む(この画像は投稿されません)</label>
+        <div class="inpaint-src" id="inpaintOriginalDropzone" tabindex="0">
+          <div class="inpaint-src-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6"/>
+              <path d="M8 13h8M8 17h6"/>
+            </svg>
+          </div>
+          <div class="inpaint-src-text">
+            <div class="inpaint-src-title" id="inpaintOriginalLabel">元画像をドラッグ&ドロップ / <span class="dz-browse">クリックして選択</span></div>
+            <div class="inpaint-src-sub">プロンプト・ネガティブ・生成設定だけをフォームへ反映します</div>
+          </div>
+          <button type="button" class="inpaint-src-clear" id="inpaintOriginalClear" style="display:none;">クリア</button>
+          <input type="file" id="inpaintOriginalInput" style="display:none;">
+        </div>
       </div>
 
       <label class="field-label">投稿タイトル</label>
@@ -1760,6 +1823,10 @@
       <div class="feature-item owneredit-only">
         <div class="feature-name">編集用パスワード</div>
         <div class="feature-desc">画像投稿・プロンプト例・リクエストのどのフォームにも「編集用パスワード(任意)」欄があります。ここにパスワードを設定して投稿すると、あとから自分でその投稿を編集できるようになります(空欄のままでも投稿は可能です)。パスワードは投稿後には変更できず、詳細画面には設定済みかどうかだけが表示されるので、パスワードそのものが他の利用者に見えることはありません。</div>
+      </div>
+      <div class="feature-item inpaint-only">
+        <div class="feature-name">修正後画像モード</div>
+        <div class="feature-desc">画像の一部だけを描き直した(inpaint した)ときなど、「元画像の生成情報はそのまま残しつつ、投稿する画像は修正後のものにしたい」場合に使います。投稿フォーム右上の「修正後画像モード」を押すと、上に「投稿する画像(修正後)」のアップロード欄、その下に「元画像から情報だけ読み込む」欄が出ます。上のアップロード欄に修正後の画像を入れるとその画像だけがアップロードされ、下の読み込み欄に元画像を入れるとプロンプト・ネガティブ・生成設定だけがフォームへ反映されます(こちらの画像は投稿されません)。読み取った情報は投稿前に手で直すこともできます。</div>
       </div>
     </section>
 
@@ -2477,7 +2544,7 @@
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, ownerEdit: false, loginEnabled: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, ownerEdit: false, inpaint: false, loginEnabled: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
@@ -2673,11 +2740,15 @@
   /* ---------- ドラッグ&ドロップ ---------- */
   const DROPZONE_LABEL_DEFAULT = 'ここに画像をドラッグ&ドロップ';
   const DROPZONE_LABEL_EDIT = 'ドラッグ&ドロップで画像を差し替え';
+  const DROPZONE_SUB_DEFAULT = 'または<span class="dz-browse">クリックしてファイルを選択</span><br>PNG / JPEG / WebP の生成情報を自動で読み取ります';
+  const DROPZONE_SUB_INPAINT = 'または<span class="dz-browse">クリックしてファイルを選択</span><br>この画像がそのまま投稿されます(生成情報は上書きしません)';
   const dropzone = document.getElementById('dropzone');
   const imageInput = document.getElementById('imageInput');
   const previewWrap = document.getElementById('previewWrap');
   const previewImg = document.getElementById('previewImg');
   const dropzoneLabel = document.getElementById('dropzoneLabel');
+  const dropzoneSub = document.getElementById('dropzoneSub');
+  let inpaintMode = false;
 
   // hasImage: プレビュー画像が表示されているか。editing: 編集で現画像を維持中か
   function setDropzoneState(hasImage, editing) {
@@ -2731,7 +2802,54 @@
       setDropzoneState(true, false);
     };
     reader.readAsDataURL(file);
+    if (!inpaintMode) readImageMetadata(file);
+  });
+
+  // ===== 修正後画像モード(inpaint) =====
+  const inpaintOriginalInput = document.getElementById('inpaintOriginalInput');
+  const inpaintOriginalDropzone = document.getElementById('inpaintOriginalDropzone');
+  const inpaintOriginalLabel = document.getElementById('inpaintOriginalLabel');
+  const inpaintOriginalClear = document.getElementById('inpaintOriginalClear');
+  const INPAINT_SRC_TITLE_DEFAULT = '元画像をドラッグ&ドロップ / <span class="dz-browse">クリックして選択</span>';
+
+  function clearInpaintOriginal() {
+    inpaintOriginalInput.value = '';
+    inpaintOriginalLabel.innerHTML = INPAINT_SRC_TITLE_DEFAULT;
+    inpaintOriginalClear.style.display = 'none';
+    inpaintOriginalDropzone.classList.remove('loaded');
+  }
+  function setInpaintMode(on) {
+    inpaintMode = !!on;
+    document.body.classList.toggle('inpaint-mode', inpaintMode);
+    const btn = document.getElementById('inpaintModeBtn');
+    if (btn) { btn.classList.toggle('active', inpaintMode); btn.setAttribute('aria-pressed', inpaintMode ? 'true' : 'false'); }
+    dropzoneSub.innerHTML = inpaintMode ? DROPZONE_SUB_INPAINT : DROPZONE_SUB_DEFAULT;
+    if (!inpaintMode) clearInpaintOriginal();
+  }
+  document.getElementById('inpaintModeBtn').addEventListener('click', function () { setInpaintMode(!inpaintMode); });
+
+  inpaintOriginalDropzone.addEventListener('click', function () { inpaintOriginalInput.click(); });
+  inpaintOriginalDropzone.addEventListener('dragover', function (e) { e.preventDefault(); inpaintOriginalDropzone.classList.add('drag-over'); });
+  inpaintOriginalDropzone.addEventListener('dragleave', function () { inpaintOriginalDropzone.classList.remove('drag-over'); });
+  inpaintOriginalDropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    inpaintOriginalDropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
+      inpaintOriginalInput.files = e.dataTransfer.files;
+      inpaintOriginalInput.dispatchEvent(new Event('change'));
+    }
+  });
+  inpaintOriginalInput.addEventListener('change', function () {
+    const file = inpaintOriginalInput.files[0];
+    if (!file) { clearInpaintOriginal(); return; }
     readImageMetadata(file);
+    inpaintOriginalLabel.textContent = '✓ ' + file.name + ' から情報を読み込みました';
+    inpaintOriginalClear.style.display = '';
+    inpaintOriginalDropzone.classList.add('loaded');
+  });
+  inpaintOriginalClear.addEventListener('click', function (e) {
+    e.stopPropagation();
+    clearInpaintOriginal();
   });
 
   /* ---------- 画像メタデータ(生成情報)読み取り ---------- */
@@ -3676,6 +3794,7 @@
     selectedFixRequestIds = [];
     renderFixRequestDisplay();
     document.getElementById('editPwInput').value = '';
+    setInpaintMode(false);
   }
 
   document.getElementById('submitBtn').addEventListener('click', async function () {
@@ -3813,7 +3932,9 @@
     document.body.classList.toggle('opt-no-boardvote', !options.boardVote);
     document.body.classList.toggle('opt-fixrequest', !!options.fixRequest);
     document.body.classList.toggle('opt-owneredit', !!options.ownerEdit);
+    document.body.classList.toggle('opt-inpaint', !!options.inpaint);
     document.body.classList.toggle('opt-no-dislike', !options.dislike);
+    if (!options.inpaint && typeof setInpaintMode === 'function') setInpaintMode(false);
     document.querySelectorAll('.author-field').forEach(function (el) {
       el.style.display = options.author ? '' : 'none';
     });
@@ -6297,6 +6418,7 @@
     { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
     { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
     { key: 'ownerEdit', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示されます。投稿者がパスワードを設定した投稿は、詳細画面の「編集」ボタンからそのパスワードを入力して本人が編集できます(オフのときは欄もボタンも表示されません)' },
+    { key: 'inpaint', label: '修正後画像モード', desc: 'オンにすると、画像投稿フォームの右上に「修正後画像モード」トグルが表示されます。トグルを押すと、元画像からプロンプト・生成設定だけを読み取り、実際に投稿する画像には修正後(inpaint など)の画像を選べます(オフのときはトグルごと表示されません)' },
     { key: 'loginEnabled', label: 'ログイン画面', desc: 'オンにすると、サイトを開いたときにパスワード入力画面を表示します(変更は次回読み込みから反映)。パスワードや表示メッセージ・画像はadminシートで管理します' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
@@ -6386,7 +6508,7 @@
       // 未知のキーが返却から欠落し、保存したはずの設定がオフに戻ってしまう。
       // 黙って戻さず原因を明示する。
       const returned = result.options || {};
-      const missing = ['fixRequest', 'dislike', 'ownerEdit', 'loginEnabled'].filter(function (k) { return !(k in returned); });
+      const missing = ['fixRequest', 'dislike', 'ownerEdit', 'inpaint', 'loginEnabled'].filter(function (k) { return !(k in returned); });
       if (missing.length) {
         throw new Error('GAS側が新機能に未対応です。最新の Code.gs を貼り付けたうえで「デプロイを管理」→ 新しいバージョンとして更新し、setup を再実行してください。');
       }
@@ -6524,6 +6646,7 @@
       selectedFixRequestIds = fixRequestIdsOf(p);
       renderFixRequestDisplay();
       clearSelectedImage();
+      setInpaintMode(false);
     } else if (type === 'prompt') {
       document.getElementById('pTitleInput').value = p.title || '';
       document.getElementById('pAuthorInput').value = p.author || '';
