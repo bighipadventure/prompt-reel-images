@@ -301,6 +301,7 @@
   .mode-toggle button.active{ background: var(--accent); color: #fff; }
 
   .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
+  .req-mark{ display:inline-block; font-size:10.5px; font-weight:700; color: var(--danger); border:1px solid var(--danger); border-radius:5px; padding:0 6px; margin:0 2px; vertical-align:middle; }
   .tag-pill{
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
@@ -441,7 +442,18 @@
   .modal-actions{ display:flex; gap: 10px; justify-content:center; margin: 12px 0 20px; }
   /* 画像のすぐ右下(コピー欄の上あたり)に置くダウンロード/共有ボタン。
      PROMPTエリアとの間を離すため下マージンを大きめに取る。 */
-  .image-actions-row{ display:flex; justify-content:flex-end; gap: 10px; margin: 14px 0 28px; }
+  .image-actions-row{ display:flex; justify-content:flex-end; gap: 10px; margin: 14px 0 28px; align-items:center; }
+  .image-actions-row.has-variants{ justify-content:space-between; }
+  .image-actions-btns{ display:flex; gap:10px; }
+  .variant-switcher{ display:flex; flex-wrap:wrap; gap:6px; }
+  .variant-switch-btn{
+    font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:700;
+    width:34px; height:34px; padding:0; border-radius:6px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums;
+    background: var(--surface-2); color: var(--ink-dim); border:1px solid var(--line);
+  }
+  .variant-switch-btn:hover{ color: var(--accent); border-color: var(--accent); }
+  .variant-switch-btn.active{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .image-actions-row .btn-ghost{ padding: 6px 14px; font-size: 12px; }
   .block-head{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
   .block-foot{ display:flex; justify-content:flex-end; margin-top:8px; }
@@ -784,6 +796,7 @@
   }
   .row-derived{ color: var(--accent); }
   .row-children{ color: var(--accent); }
+  .row-comments{ color: var(--ink-dim); }
 
   .base-prompt-link{ font-weight: 500; word-break: break-word; }
   .linked-works-head{
@@ -881,6 +894,14 @@
   .head-toggle .head-toggle-dot{ width: 8px; height: 8px; border-radius: 50%; background: var(--ink-dim); }
   .head-toggle.active{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .head-toggle.active .head-toggle-dot{ background: var(--accent); }
+  .head-toggle-group{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  /* 差分を同時に投稿: 2枚目以降の画像ストリップ(□番号つきサムネイル) */
+  .variant-hint{ font-size:11.5px; color: var(--ink-dim); margin-top:6px; line-height:1.6; }
+  .variant-thumb{ position:relative; width:116px; height:116px; }
+  .variant-thumb img{ width:116px; height:116px; object-fit:cover; border-radius:10px; display:block; border:1px solid var(--line); cursor:pointer; }
+  .variant-thumb.active img{ border-color: var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .variant-num{ position:absolute; left:-7px; bottom:-7px; width:24px; height:24px; border-radius:6px; background:var(--accent); color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; font-variant-numeric:tabular-nums; box-shadow:0 1px 3px rgba(0,0,0,0.35); }
+  .variant-remove{ position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:11px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
   /* 修正後画像モード: 元画像の情報読み込み欄(サムネイルを出さない・画像アップロードとは別デザイン) */
   .inpaint-src{
     display:flex; align-items:center; gap: 12px;
@@ -936,18 +957,45 @@
   }
   .mouse-tooltip.show{ display: block; }
   /* ---- お知らせ ---- */
+  /* バーは未読お知らせを1行ずつ縦に積む。行=クリック領域(announce-bar-main)+既読ボタン */
   .announce-bar{
+    display:flex; flex-direction:column; gap:6px;
+    width:100%; margin:10px 0 6px;
+  }
+  .announce-bar-row{ display:flex; align-items:stretch; gap:8px; }
+  .announce-bar-main{
+    flex:1 1 auto; min-width:0;
     display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    width:100%; text-align:left; cursor:pointer;
+    text-align:left; cursor:pointer;
     background: var(--surface-2); border:1px solid var(--line);
-    border-radius:10px; padding:6px 13px; margin:10px 0 6px;
+    border-radius:10px; padding:6px 13px;
     color: var(--ink); font-family:'Noto Sans JP',sans-serif;
   }
-  .announce-bar:hover{ border-color: var(--danger); }
+  .announce-bar-main:hover{ border-color: var(--danger); }
+  .announce-bar-read{
+    flex:none; align-self:stretch;
+    font-family:'Noto Sans JP',sans-serif; font-size:11.5px; font-weight:700;
+    background: var(--surface); color: var(--danger);
+    border:1px solid var(--line); border-radius:10px; padding:0 14px; cursor:pointer;
+  }
+  .announce-bar-read:hover{ color:#fff; background: var(--danger); border-color: var(--danger); }
   .announce-bar-label{ flex:none; font-size:11px; font-weight:700; color: var(--danger); border:1px solid var(--danger); border-radius:5px; padding:1px 7px; }
   .announce-bar-title{ flex:1 1 auto; min-width:0; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .announce-bar-more{ flex:none; font-size:11.5px; color: var(--ink-dim); }
   .announce-bar-date{ flex:none; font-size:11px; color: var(--ink-dim); margin-left:auto; }
+  /* お知らせは赤で統一: 右上の常設「お知らせ」ボタンのホバーも赤にする */
+  #announceListBtn:hover{ color: var(--danger); border-color: var(--danger); }
+  /* 履歴一覧: タイトル+日時だけの行。クリックで詳細へ */
+  .announce-list-item{ position:relative; display:flex; align-items:center; gap:12px; background: var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:8px; cursor:pointer; }
+  .announce-list-item:hover{ border-color: var(--danger); }
+  .announce-list-item .ali-title{ flex:1 1 auto; min-width:0; font-size:14px; font-weight:700; color: var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .announce-list-item .ali-date{ flex:none; font-size:11.5px; color: var(--ink-dim); }
+  body.admin-on .announce-list-item{ padding-right:64px; }
+  /* 詳細モーダルヘッダ: 既読ボタンを閉じるの左に置く */
+  .announce-detail-read{ font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; background: var(--danger); color:#fff; border:1px solid var(--danger); border-radius:8px; padding:6px 14px; cursor:pointer; }
+  .announce-detail-read:hover{ filter:brightness(1.08); }
+  .announce-detail-back{ font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; background: var(--surface); color: var(--ink-dim); border:1px solid var(--line); border-radius:8px; padding:6px 14px; cursor:pointer; }
+  .announce-detail-back:hover{ color: var(--danger); border-color: var(--danger); }
   #announceBody .modal-header{ border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:20px; }
   #announceBody .modal-title{ font-size:19px; font-weight:900; letter-spacing:.02em; display:flex; align-items:center; gap:12px; margin:0; }
   #announceBody .modal-title::before{ content:''; width:6px; height:22px; background: var(--danger); border-radius:3px; flex:none; }
@@ -1032,6 +1080,18 @@
   .attach-add-tile{ width:58px; height:58px; border-radius:8px; border:1.5px dashed var(--line); background:transparent; color:var(--ink-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; font-size:10px; font-family:'Noto Sans JP',sans-serif; transition:border-color .15s ease, color .15s ease; }
   .attach-add-tile:hover{ border-color:var(--accent); color:var(--accent); }
   .attach-add-tile .plus{ font-size:20px; line-height:1; }
+  /* 差分ストリップは通常の添付より一回り大きく(サムネと同じ116px)。ドロップ領域も広く見せる */
+  #variantStrip{ gap:12px; min-height:120px; align-content:flex-start; }
+  #variantStrip .attach-add-tile{ width:116px; height:116px; font-size:12px; }
+  #variantStrip .attach-add-tile .plus{ font-size:30px; }
+  .variant-remove{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+  /* 差分の詳細設定を編集中に出すバナー */
+  .variant-edit-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; padding:9px 13px; border-radius:9px; background: var(--accent-dim); border:1px solid var(--accent); font-size:12.5px; color: var(--ink); }
+  .variant-edit-bar .veb-label{ font-weight:700; }
+  .variant-edit-bar .veb-back{ margin-left:auto; font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; background: var(--surface); color: var(--accent); border:1px solid var(--accent); border-radius:8px; padding:5px 12px; cursor:pointer; }
+  .variant-edit-bar .veb-note{ color: var(--ink-dim); }
+  .dropzone.slot-locked{ cursor:not-allowed; }
+  .dropzone.slot-locked .dz-title, .dropzone.slot-locked .dz-sub{ opacity:.5; }
   .ref-thumb{
     position: relative; width: 110px; height: 110px;
   }
@@ -1176,16 +1236,12 @@
   <header>
     <div class="eyebrow">仲間内で使う画像＆プロンプト共有ボード</div>
     <h1>Prompt Reel</h1>
-    <button class="announce-bar" type="button" id="announceBar" style="display:none;">
-      <span class="announce-bar-label">お知らせ</span>
-      <span class="announce-bar-title" id="announceBarTitle"></span>
-      <span class="announce-bar-more">(クリックで詳細表示)</span>
-      <span class="announce-bar-date" id="announceBarDate"></span>
-    </button>
+    <div class="announce-bar" id="announceBar" style="display:none;"></div>
     <div class="header-admin-btns">
       <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
       <button class="admin-btn admin-opts-btn admin-badge-btn" type="button" id="adminContactsBtn" style="display:none;">連絡一覧<span class="contact-badge" id="contactBadge">0</span></button>
       <button class="admin-btn admin-opts-btn" type="button" id="adminAnnounceBtn" style="display:none;">お知らせを投稿</button>
+      <button class="admin-btn" type="button" id="announceListBtn">お知らせ</button>
       <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
     </div>
   </header>
@@ -1215,9 +1271,14 @@
     <section class="panel" id="imagePostForm">
       <div class="panel-head-row">
         <h2 id="imageFormHeading">画像を投稿</h2>
-        <button type="button" id="inpaintModeBtn" class="head-toggle inpaint-only" aria-pressed="false" title="元画像から生成情報だけを読み取り、修正後(inpaint など)の画像を投稿するモード">
-          <span class="head-toggle-dot" aria-hidden="true"></span>修正後画像モード
-        </button>
+        <div class="head-toggle-group">
+          <button type="button" id="variantModeBtn" class="head-toggle" aria-pressed="false" title="複数枚の画像(Seed違いなどの差分)を1つの投稿にまとめて同時アップロードします。閲覧時は詳細画面で切り替えられます">
+            <span class="head-toggle-dot" aria-hidden="true"></span>差分を同時に投稿
+          </button>
+          <button type="button" id="inpaintModeBtn" class="head-toggle inpaint-only" aria-pressed="false" title="元画像から生成情報だけを読み取り、修正後(inpaint など)の画像を投稿するモード">
+            <span class="head-toggle-dot" aria-hidden="true"></span>修正後画像モード
+          </button>
+        </div>
       </div>
 
       <label class="field-label inpaint-hidden-mode">画像</label>
@@ -1234,6 +1295,20 @@
         <div class="dz-sub" id="dropzoneSub">または<span class="dz-browse">クリックしてファイルを選択</span><br>PNG / JPEG / WebP の生成情報を自動で読み取ります</div>
         <div class="preview" id="previewWrap" style="display:none;"><span class="preview-frame"><img id="previewImg" alt="プレビュー"><button class="preview-clear" type="button" id="clearImageBtn" title="画像を取り消す">✕</button></span></div>
         <input type="file" id="imageInput">
+      </div>
+
+      <div id="variantField" style="display:none;">
+        <label class="field-label" style="margin-top:18px;">差分画像(2枚目以降)</label>
+        <div class="variant-hint">最初にアップした画像が □1、ここに追加した画像が □2・□3… になります。各画像の生成情報は自動で読み取られ、閲覧時に詳細画面で切り替えられます。</div>
+        <div class="attach-strip" id="variantStrip">
+          <div class="attach-add-tile" id="variantAddTile"><span class="plus">＋</span>差分を追加</div>
+          <input type="file" id="variantInput" accept="image/*" multiple style="display:none;">
+        </div>
+        <div class="variant-edit-bar" id="variantEditBar" style="display:none;">
+          <span class="veb-label" id="variantEditLabel"></span>
+          <span class="veb-note">この差分のプロンプト・設定を編集できます(画像はこの差分に固定)。</span>
+          <button class="veb-back" type="button" id="variantBackBtn">メイン画像に戻る</button>
+        </div>
       </div>
 
       <div class="inpaint-active-only" id="inpaintOriginalField">
@@ -1307,7 +1382,7 @@
       <div class="settings-grid open" id="settingsGrid"></div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
-        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
+        <label class="field-label" style="margin:0;">タグ <span class="req-mark">必須</span>(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
       </div>
       <div class="tag-cloud-wrap"><div class="tag-cloud" id="postTagCloud"></div>
@@ -1360,7 +1435,7 @@
       <div class="settings-grid open" id="pSettingsGrid"></div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
-        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
+        <label class="field-label" style="margin:0;">タグ <span class="req-mark">必須</span>(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
       </div>
       <div class="tag-cloud-wrap"><div class="tag-cloud" id="pTagCloud"></div>
@@ -1778,7 +1853,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">お知らせ</div>
-        <div class="feature-desc">運営からのお知らせがあるときは、タイトル直下に最新のお知らせが1行で表示されます。クリックすると、最新の全文と過去のお知らせをまとめて読めるモーダルが開きます。画像が添付されている場合は本文と一緒に表示されます。</div>
+        <div class="feature-desc">運営からのお知らせがあるときは、タイトル直下に未読のお知らせが1件ずつ縦に並んで常に表示されます。各行の「既読」ボタンを押すまで消えないので、複数のお知らせを見落としません。行をクリックすると、そのお知らせの全文モーダルが開きます(画像が添付されていれば一緒に表示)。全文モーダルの右上、「閉じる」の左にも「既読」ボタンがあります。ヘッダー右上の「お知らせ」ボタンを押すと、これまでのお知らせをタイトルと投稿日時の一覧で確認でき、項目をクリックすると全文を読み返せます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">本ツールの使い方</div>
@@ -1794,7 +1869,7 @@
       <h2>投稿するときに使える機能</h2>
       <div class="feature-item">
         <div class="feature-name">画像の生成情報を自動で読み取る</div>
-        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。読み取れた内容は投稿前に手で直せます。</div>
+        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。生成情報に「UI Preset」が含まれていないときは、Checkpoint名から自動で判定して補完します(例: 名前に <code>xl</code> を含めば <code>xl</code>、<code>flux</code> なら <code>flux</code> のように、投稿ツールのUI Presetと同じ表記が入ります)。読み取れた内容は投稿前に手で直せます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プレビューの拡大と取り消し</div>
@@ -1806,7 +1881,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">タグ</div>
-        <div class="feature-desc">既存のタグはクリックで付け外しでき、新しいタグは入力欄から追加できます。タグは画像投稿とプロンプト例で共通のプールなので、みんなが使っている言葉に合わせると探しやすくなります。</div>
+        <div class="feature-desc">既存のタグはクリックで付け外しでき、新しいタグは入力欄から追加できます。タグは画像投稿とプロンプト例で共通のプールなので、みんなが使っている言葉に合わせると探しやすくなります。<strong>タグは必須です</strong>。1つも選ばずに投稿しようとすると、投稿できずに「タグを1つ以上選択してください」と表示されます(修正依頼の投稿でも同じです)。</div>
       </div>
       <div class="feature-item opt-only-author">
         <div class="feature-name">投稿者名</div>
@@ -1823,6 +1898,10 @@
       <div class="feature-item owneredit-only">
         <div class="feature-name">編集用パスワード</div>
         <div class="feature-desc">画像投稿・プロンプト例・リクエストのどのフォームにも「編集用パスワード(任意)」欄があります。ここにパスワードを設定して投稿すると、あとから自分でその投稿を編集できるようになります(空欄のままでも投稿は可能です)。パスワードは投稿後には変更できず、詳細画面には設定済みかどうかだけが表示されるので、パスワードそのものが他の利用者に見えることはありません。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">差分を同時に投稿</div>
+        <div class="feature-desc">同じ設定でSeed違いを量産したときなど、複数枚の画像を1つの投稿にまとめてアップロードできます。投稿フォーム右上の「差分を同時に投稿」を押すと、画像欄の下に差分画像を追加する枠が出ます。最初にアップした画像が □1、追加した画像が □2・□3… になり、各画像の生成情報(プロンプト・設定)は自動で読み取られます。追加した差分サムネイルをクリックすると、その差分の詳細設定(プロンプト・ネガティブ・生成設定)をフォームに呼び出して個別に確認・修正できます(そのあいだ画像欄はその差分に固定され、「□1(メイン)に戻る」で元の画像に戻れます)。閲覧するときは、詳細画面の画像の下に出る 1・2… のボタンで切り替えられ、プロンプトや設定も画像ごとに切り替わります。似た作品で一覧があふれるのを避けたいときは、こちらか「親にする投稿作品」による親子紐づけのどちらかを使ってください。</div>
       </div>
       <div class="feature-item inpaint-only">
         <div class="feature-name">修正後画像モード</div>
@@ -1912,6 +1991,10 @@
       <div class="feature-item">
         <div class="feature-name">ダウンロード</div>
         <div class="feature-desc">画像を原寸で保存できます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">画像の切り替え(差分投稿)</div>
+        <div class="feature-desc">複数枚をまとめた投稿では、画像のすぐ下の左側に番号ボタン(1・2…)が四角で並びます。押すと表示する画像が切り替わり、PROMPT / NEGATIVE / 設定関係も画像ごとに切り替わります(1 が最初に投稿された画像です)。ダウンロードは、そのとき表示している画像が対象になります。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">共有</div>
@@ -2520,6 +2603,36 @@
     'Version': 'version'
   };
 
+  // Checkpoint名からUI Presetを推定するルール。上から順に、Checkpoint名(小文字)に
+  // match(部分一致)を含む最初のものを採用し、preset の文字列を UI Preset 欄に書き込む。
+  // preset は投稿ツール側の UI Preset ドロップダウンの選択肢(sd / xl / flux …)に一致させてある。
+  // より紛らわしい短い語(xl / sd)は広い受け皿として下の方に置き、その下に「他語に埋もれやすい語」
+  // (anima / wan / pid)をフォールバックとして置いている(例: animagineXL や rapidXL は先に xl が
+  // 当たり xl になる)。判定結果を変えたいときは、この配列の値や並び順を編集するだけでよい。
+  const UI_PRESET_RULES = [
+    { match: 'klein',  preset: 'klein' },
+    { match: 'flux',   preset: 'flux' },
+    { match: 'qwen',   preset: 'qwen' },
+    { match: 'lumina', preset: 'lumina' },
+    { match: 'ernie',  preset: 'ernie' },
+    { match: 'krea',   preset: 'krea' },
+    { match: 'zit',    preset: 'zit' },
+    { match: 'xl',     preset: 'xl' },
+    { match: 'sd',     preset: 'sd' },
+    { match: 'anima',  preset: 'anima' },
+    { match: 'wan',    preset: 'wan' },
+    { match: 'pid',    preset: 'pid' }
+  ];
+
+  function guessUiPreset(checkpoint) {
+    const name = String(checkpoint || '').toLowerCase();
+    if (!name) return '';
+    for (let i = 0; i < UI_PRESET_RULES.length; i++) {
+      if (name.indexOf(UI_PRESET_RULES[i].match) !== -1) return UI_PRESET_RULES[i].preset;
+    }
+    return '';
+  }
+
   // モーダルを開く共通処理。
   // .modal-overlay 自体がスクロールコンテナなので、開くたびに先頭へ戻す
   // (前に開いたモーダルのスクロール位置が residual として残るのを防ぐ)。
@@ -2735,6 +2848,21 @@
     allSettingsFields().forEach(function (f) { const el = document.getElementById(f.id); if (el) el.value = ''; });
   }
 
+  // 設定オブジェクト(prompt等の生成設定)をフォームへ反映する。未知キーは動的欄として追加。
+  function loadSettingsIntoForm(settingsObj) {
+    settingsObj = settingsObj || {};
+    const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    Object.keys(settingsObj).forEach(function (k) {
+      if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
+    });
+    dynamicSettingKeys.sort();
+    rebuildSettingsGrid();
+    allSettingsFields().forEach(function (f) {
+      const el = document.getElementById(f.id);
+      if (el) el.value = (settingsObj[f.key] !== undefined && settingsObj[f.key] !== null) ? settingsObj[f.key] : '';
+    });
+  }
+
   rebuildSettingsGrid();
 
   /* ---------- ドラッグ&ドロップ ---------- */
@@ -2781,18 +2909,20 @@
     if (previewImg.src) openRefLightbox(previewImg.src);
   });
 
-  dropzone.addEventListener('click', function () { imageInput.click(); });
+  dropzone.addEventListener('click', function () { if (variantLocked()) return; imageInput.click(); });
   dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
   dropzone.addEventListener('drop', function (e) {
     e.preventDefault();
     dropzone.classList.remove('drag-over');
+    if (variantLocked()) return;
     if (e.dataTransfer.files && e.dataTransfer.files.length) {
       imageInput.files = e.dataTransfer.files;
       imageInput.dispatchEvent(new Event('change'));
     }
   });
   imageInput.addEventListener('change', function () {
+    if (variantLocked()) { imageInput.value = ''; return; }
     const file = imageInput.files[0];
     if (!file) { previewWrap.style.display = 'none'; setDropzoneState(false, false); return; }
     const reader = new FileReader();
@@ -2850,6 +2980,169 @@
   inpaintOriginalClear.addEventListener('click', function (e) {
     e.stopPropagation();
     clearInpaintOriginal();
+  });
+
+  // ===== 差分を同時に投稿(複数画像) =====
+  // スロット: 0 = □1(メイン画像=メインフォーム), 1..N = variantImages[slot-1]。
+  // サムネイルをクリックすると、その画像の詳細設定(プロンプト/ネガティブ/生成設定)をフォームで編集できる。
+  let variantMode = false;
+  let variantImages = [];
+  let activeSlot = 0;
+  let mainSlot = { prompt: '', negativePrompt: '', settings: {}, previewSrc: '' };
+  const variantInput = document.getElementById('variantInput');
+  const variantField = document.getElementById('variantField');
+  const variantStrip = document.getElementById('variantStrip');
+  const variantAddTile = document.getElementById('variantAddTile');
+
+  function variantLocked() { return variantMode && activeSlot !== 0; }
+
+  function setVariantMode(on) {
+    variantMode = !!on;
+    const btn = document.getElementById('variantModeBtn');
+    if (btn) { btn.classList.toggle('active', variantMode); btn.setAttribute('aria-pressed', variantMode ? 'true' : 'false'); }
+    variantField.style.display = variantMode ? '' : 'none';
+    if (!variantMode) {
+      variantImages = [];
+      activeSlot = 0;
+      mainSlot = { prompt: '', negativePrompt: '', settings: {}, previewSrc: '' };
+      renderVariantStrip();
+      updateVariantEditUi();
+    }
+  }
+
+  function slotFormValues() {
+    return {
+      prompt: document.getElementById('promptInput').value,
+      negativePrompt: document.getElementById('negativeInput').value,
+      settings: collectSettings()
+    };
+  }
+
+  // 現在フォームに入っている値を、いま選択中のスロットへ保存する
+  function flushActiveSlot() {
+    const v = slotFormValues();
+    if (activeSlot === 0) {
+      mainSlot.prompt = v.prompt; mainSlot.negativePrompt = v.negativePrompt; mainSlot.settings = v.settings;
+      mainSlot.previewSrc = previewImg.src || '';
+    } else {
+      const vi = variantImages[activeSlot - 1];
+      if (vi) { vi.prompt = v.prompt; vi.negativePrompt = v.negativePrompt; vi.settings = v.settings; }
+    }
+  }
+
+  // 指定スロットの内容をフォーム(プロンプト/ネガティブ/設定/プレビュー)へ反映する
+  function loadSlot(idx) {
+    const promptEl = document.getElementById('promptInput');
+    const negEl = document.getElementById('negativeInput');
+    let data, src;
+    if (idx === 0) { data = mainSlot; src = mainSlot.previewSrc; }
+    else { data = variantImages[idx - 1]; src = data ? data.dataUrl : ''; }
+    if (!data) return;
+    promptEl.value = data.prompt || ''; autoGrow(promptEl);
+    negEl.value = data.negativePrompt || ''; autoGrow(negEl);
+    loadSettingsIntoForm(data.settings || {});
+    if (src) { previewImg.src = src; previewWrap.style.display = 'flex'; }
+    else { previewImg.src = ''; previewWrap.style.display = 'none'; }
+  }
+
+  function setActiveSlot(idx) {
+    if (idx === activeSlot) return;
+    flushActiveSlot();
+    activeSlot = idx;
+    loadSlot(idx);
+    updateVariantEditUi();
+    renderVariantStrip();
+  }
+
+  function updateVariantEditUi() {
+    const bar = document.getElementById('variantEditBar');
+    const label = document.getElementById('variantEditLabel');
+    const locked = variantLocked();
+    if (bar) bar.style.display = locked ? '' : 'none';
+    if (locked && label) label.textContent = '差分 (' + (activeSlot + 1) + '枚目) を編集中';
+    dropzone.classList.toggle('slot-locked', locked);
+    document.getElementById('clearImageBtn').style.display = locked ? 'none' : '';
+    if (locked) { dropzoneLabel.textContent = '□1(メイン)に戻ると画像を変更できます'; }
+    else { setDropzoneState(dropzone.classList.contains('has-image'), !!adminEditingPost); }
+  }
+
+  function renderVariantStrip() {
+    variantStrip.querySelectorAll('.variant-thumb').forEach(function (el) { el.remove(); });
+    variantImages.forEach(function (v, i) {
+      const slotIdx = i + 1;
+      const thumb = document.createElement('div');
+      thumb.className = 'variant-thumb' + (activeSlot === slotIdx ? ' active' : '');
+      thumb.innerHTML = '<img src="' + escapeHtml(v.dataUrl) + '" alt="差分画像" title="クリックでこの差分の設定を編集">' +
+        '<span class="variant-num">' + (i + 2) + '</span>' +
+        '<button class="variant-remove" type="button" title="削除">✕</button>';
+      thumb.querySelector('img').addEventListener('click', function () { setActiveSlot(slotIdx); });
+      thumb.querySelector('.variant-remove').addEventListener('click', function (e) {
+        e.stopPropagation();
+        setActiveSlot(0);
+        variantImages.splice(i, 1);
+        renderVariantStrip();
+      });
+      variantStrip.insertBefore(thumb, variantAddTile);
+    });
+  }
+
+  function extractVariantMeta(file) {
+    return new Promise(function (resolve) {
+      const mr = new FileReader();
+      mr.onload = function () {
+        let out = { prompt: '', negativePrompt: '', settings: {} };
+        try {
+          const paramText = extractImageParameters(mr.result);
+          if (paramText) {
+            const info = parseGenerationInfo(paramText);
+            out.prompt = info.prompt || '';
+            out.negativePrompt = info.negative || '';
+            out.settings = generationInfoToSettings(info);
+          }
+        } catch (e) { console.error(e); }
+        resolve(out);
+      };
+      mr.onerror = function () { resolve({ prompt: '', negativePrompt: '', settings: {} }); };
+      mr.readAsArrayBuffer(file);
+    });
+  }
+
+  async function addVariantFiles(fileList) {
+    const files = Array.from(fileList || []).filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    showLoading('画像を処理中...');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const dataUrl = await fileToBase64(file);
+        const meta = await extractVariantMeta(file);
+        variantImages.push({
+          dataUrl: dataUrl,
+          mime: file.type,
+          name: file.name,
+          prompt: meta.prompt,
+          negativePrompt: meta.negativePrompt,
+          settings: meta.settings
+        });
+      }
+      renderVariantStrip();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  document.getElementById('variantModeBtn').addEventListener('click', function () { setVariantMode(!variantMode); });
+  document.getElementById('variantBackBtn').addEventListener('click', function () { setActiveSlot(0); });
+  variantAddTile.addEventListener('click', function () { variantInput.click(); });
+  variantInput.addEventListener('change', function () { addVariantFiles(variantInput.files); variantInput.value = ''; });
+  variantStrip.addEventListener('dragover', function (e) { e.preventDefault(); variantStrip.classList.add('drag-over'); });
+  variantStrip.addEventListener('dragleave', function () { variantStrip.classList.remove('drag-over'); });
+  variantStrip.addEventListener('drop', function (e) {
+    e.preventDefault();
+    variantStrip.classList.remove('drag-over');
+    if (e.dataTransfer && e.dataTransfer.files) addVariantFiles(e.dataTransfer.files);
   });
 
   /* ---------- 画像メタデータ(生成情報)読み取り ---------- */
@@ -3012,13 +3305,7 @@
     return { prompt: prompt, negative: negative, params: params };
   }
 
-  function applyGenerationInfo(info) {
-    let filledAny = false;
-    const promptEl = document.getElementById('promptInput');
-    const negEl = document.getElementById('negativeInput');
-    if (info.prompt) { promptEl.value = info.prompt; autoGrow(promptEl); filledAny = true; }
-    if (info.negative) { negEl.value = info.negative; autoGrow(negEl); filledAny = true; }
-
+  function generationInfoToSettings(info) {
     const values = {};
     const consumed = { 'Size': true };
     Object.keys(PARAM_KEY_MAP).forEach(function (pk) {
@@ -3029,12 +3316,28 @@
       const sm = String(info.params['Size']).match(/(\d+)\s*x\s*(\d+)/i);
       if (sm) { values.width = sm[1]; values.height = sm[2]; }
     }
-    const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
     Object.keys(info.params).forEach(function (k) {
-      if (!consumed[k] && String(info.params[k]) !== '') {
-        values[k] = info.params[k];
-        if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
-      }
+      if (!consumed[k] && String(info.params[k]) !== '') values[k] = info.params[k];
+    });
+    // UI Preset が生成情報に無く、Checkpoint名が取れているときは名称から推定して補完する
+    if (!values.uiPreset && values.checkpoint) {
+      const guessed = guessUiPreset(values.checkpoint);
+      if (guessed) values.uiPreset = guessed;
+    }
+    return values;
+  }
+
+  function applyGenerationInfo(info) {
+    let filledAny = false;
+    const promptEl = document.getElementById('promptInput');
+    const negEl = document.getElementById('negativeInput');
+    if (info.prompt) { promptEl.value = info.prompt; autoGrow(promptEl); filledAny = true; }
+    if (info.negative) { negEl.value = info.negative; autoGrow(negEl); filledAny = true; }
+
+    const values = generationInfoToSettings(info);
+    const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    Object.keys(values).forEach(function (k) {
+      if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
     });
     dynamicSettingKeys.sort();
 
@@ -3795,14 +4098,18 @@
     renderFixRequestDisplay();
     document.getElementById('editPwInput').value = '';
     setInpaintMode(false);
+    setVariantMode(false);
   }
 
   document.getElementById('submitBtn').addEventListener('click', async function () {
     const submitBtn = this;
+    // 差分編集中なら□1(メイン)へ戻し、編集内容を各スロットへ確定させる
+    if (variantMode && activeSlot !== 0) setActiveSlot(0);
     const file = imageInput.files[0];
     const editing = isEditingImagePost();
 
     if (!file && !editing) { statusText.textContent = '画像を選択してください'; return; }
+    if (!selectedTags.length) { statusText.textContent = 'タグを1つ以上選択してください(タグは必須です)'; return; }
     if (GAS_URL.indexOf('ここに') === 0) { statusText.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     submitBtn.disabled = true;
@@ -3839,6 +4146,18 @@
         payload.imageBase64 = await fileToBase64(file);
         payload.imageMime = file.type;
         payload.imageName = file.name;
+      }
+      if (!editing && !isFix && variantMode && variantImages.length) {
+        payload.variants = variantImages.map(function (v) {
+          return {
+            imageBase64: v.dataUrl,
+            imageMime: v.mime,
+            imageName: v.name,
+            prompt: v.prompt,
+            negativePrompt: v.negativePrompt,
+            settings: v.settings
+          };
+        });
       }
 
       const res = await fetch(GAS_URL, {
@@ -4122,6 +4441,7 @@
     const checkpoint = (p.settings && p.settings.checkpoint) || '';
     const tags = sortJa((p.tags || []).slice());
     const childCount = childCountOf(p);
+    const commentCount = options.comment ? commentsFor(p.id).length : 0;
     return '' +
       '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
         (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
@@ -4132,7 +4452,8 @@
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
               (uiPreset ? '<span>UI Preset: ' + escapeHtml(uiPreset) + '</span>' : '') +
               (checkpoint ? '<span>Checkpoint: ' + escapeHtml(checkpoint) + '</span>' : '') +
-              (childCount ? '<span class="row-children">バリエーション ' + childCount + '件</span>' : '') +
+              (childCount ? '<span class="row-children">子作品 ' + childCount + '件</span>' : '') +
+              (commentCount ? '<span class="row-comments">コメント ' + commentCount + '件</span>' : '') +
             '</div>' +
             (tags.length ? '<div class="row-tags">' + tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
           '</div>' +
@@ -4227,17 +4548,20 @@
 
   function openModal(p) {
     openDetailPostId = p.id;
-    const knownKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
-    const settingsEntries = SETTINGS_FIELDS
-      .filter(function (f) { return p.settings && p.settings[f.key]; })
-      .map(function (f) {
-        return '<div><span>' + escapeHtml(f.label) + '</span>' + escapeHtml(p.settings[f.key]) + '</div>';
-      }).join('') +
-      (p.settings ? Object.keys(p.settings) : [])
-        .filter(function (k) { return knownKeys.indexOf(k) === -1 && String(p.settings[k]) !== ''; })
-        .map(function (k) {
-          return '<div><span>' + escapeHtml(k) + '</span>' + escapeHtml(p.settings[k]) + '</div>';
-        }).join('');
+
+    const imageSet = [{ imageUrl: p.imageUrl, prompt: p.prompt, negativePrompt: p.negativePrompt, settings: p.settings }]
+      .concat((p.variants || []).map(function (v) {
+        return {
+          imageUrl: v.imageUrl,
+          prompt: v.prompt || p.prompt,
+          negativePrompt: v.negativePrompt || p.negativePrompt,
+          settings: (v.settings && Object.keys(v.settings).length) ? v.settings : p.settings
+        };
+      }));
+    const hasVariants = imageSet.length > 1;
+    const anySettings = imageSet.some(function (v) { return v.settings && Object.keys(v.settings).length; });
+    let curVar = 0;
+    const settingsEntries = settingsEntriesHtml(imageSet[0]);
 
     const baseIds = basePromptIdsOf(p);
     const baseList = baseIds
@@ -4313,8 +4637,15 @@
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-image">' + imageTag(p.imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
-      '<div class="image-actions-row"><button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button><button class="btn-ghost" type="button" id="shareBtn">共有</button></div>' +
+      '<div class="modal-image" id="detailImageWrap">' + imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
+      '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
+        (hasVariants
+          ? '<div class="variant-switcher" id="variantSwitcher">' + imageSet.map(function (_, i) {
+              return '<button class="variant-switch-btn' + (i === 0 ? ' active' : '') + '" type="button" data-var-idx="' + i + '" title="' + (i === 0 ? '最初に投稿した画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
+            }).join('') + '</div>'
+          : '') +
+        '<div class="image-actions-btns"><button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button><button class="btn-ghost" type="button" id="shareBtn">共有</button></div>' +
+      '</div>' +
       fixContentBlock +
       baseBlock +
       parentBlock +
@@ -4322,32 +4653,60 @@
       fixLinksBlock +
       '<div class="detail-block">' +
         '<div class="block-head"><div class="label">PROMPT</div></div>' +
-        '<div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div>' +
+        '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? escapeHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
       '</div>' +
       '<div class="detail-block">' +
         '<div class="block-head"><div class="label">NEGATIVE PROMPT</div></div>' +
-        '<div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div>' +
+        '<div class="value" id="detailNegativeValue">' + (imageSet[0].negativePrompt ? escapeHtml(imageSet[0].negativePrompt) : '(入力なし)') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
       '</div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
-      (settingsEntries ? '<div class="detail-block"><div class="label">設定関係</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
+      (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
       fixAnswersBlock +
       childrenBlock;
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        navigator.clipboard.writeText(p[btn.dataset.copy] || '').then(function () {
+        navigator.clipboard.writeText(imageSet[curVar][btn.dataset.copy] || '').then(function () {
           btn.textContent = 'コピーしました';
           setTimeout(function () { btn.textContent = 'コピー'; }, 1500);
         });
       });
     });
+    if (hasVariants) {
+      const wrap = document.getElementById('detailImageWrap');
+      const promptValEl = document.getElementById('detailPromptValue');
+      const negValEl = document.getElementById('detailNegativeValue');
+      const settingsBlock = document.getElementById('detailSettingsBlock');
+      const settingsTableEl = document.getElementById('detailSettingsTable');
+      modalBody.querySelectorAll('.variant-switch-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          curVar = Number(btn.dataset.varIdx);
+          const cur = imageSet[curVar];
+          wrap.innerHTML = imageTag(cur.imageUrl, { size: 'w1000', alt: '生成画像' });
+          promptValEl.textContent = cur.prompt ? cur.prompt : '(入力なし)';
+          negValEl.textContent = cur.negativePrompt ? cur.negativePrompt : '(入力なし)';
+          if (settingsBlock && settingsTableEl) {
+            const entries = settingsEntriesHtml(cur);
+            settingsTableEl.innerHTML = entries;
+            settingsBlock.style.display = entries ? '' : 'none';
+          }
+          modalBody.querySelectorAll('.variant-switch-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+        });
+      });
+      // □2以降の画像はモーダルを開いた時点で読み込みを開始しておく(切替を即時にするため)
+      imageSet.slice(1).forEach(function (v) {
+        const pre = new Image();
+        pre.decoding = 'async';
+        pre.src = imageSrcFor(v.imageUrl, 'w1000');
+      });
+    }
     wireModalLikeButton();
     wireCommentToggle(p);
     wireAdminActionButtons(p);
-    document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage(p); });
+    document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage({ imageUrl: imageSet[curVar].imageUrl, title: p.title, id: p.id }); });
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
@@ -4689,6 +5048,9 @@
     document.getElementById('imageFormHeading').textContent = mode === 'fix' ? '修正依頼を投稿' : '画像を投稿';
     document.getElementById('fixContentField').style.display = mode === 'fix' ? '' : 'none';
     document.getElementById('fixRequestField').style.display = mode === 'image' ? '' : 'none';
+    const variantBtn = document.getElementById('variantModeBtn');
+    if (variantBtn) variantBtn.style.display = mode === 'image' ? '' : 'none';
+    if (mode !== 'image') setVariantMode(false);
     if (mode === 'prompt') rebuildPromptFormTagCloud(); else applyPostTagClamp();
   }
 
@@ -4798,6 +5160,7 @@
     const promptText = document.getElementById('pPromptInput').value.trim();
     const editing = isEditingPromptPost();
     if (!promptText) { pStatus.textContent = 'プロンプトを入力してください'; return; }
+    if (!pSelectedTags.length) { pStatus.textContent = 'タグを1つ以上選択してください(タグは必須です)'; return; }
     if (GAS_URL.indexOf('ここに') === 0) { pStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     btn.disabled = true;
@@ -6590,6 +6953,11 @@
     const editingImage = isEditingImagePost();
     const editingPrompt = isEditingPromptPost();
     const editingRequest = isEditingRequestPost();
+    const vBtn = document.getElementById('variantModeBtn');
+    if (vBtn) {
+      if (editingImage) { setVariantMode(false); vBtn.style.display = 'none'; }
+      else vBtn.style.display = currentPostMode() === 'image' ? '' : 'none';
+    }
     document.getElementById('submitBtn').textContent = editingImage ? '保存する' : '投稿する';
     document.getElementById('pSubmitBtn').textContent = editingPrompt ? '保存する' : '投稿する';
     document.getElementById('rSubmitBtn').textContent = editingRequest ? '保存する' : '投稿する';
@@ -7213,14 +7581,55 @@
     return allAnnounce.slice().sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
   }
 
+  const ANNOUNCE_READ_KEY = 'pr_announce_read';
+
+  function getAnnounceReadSet() {
+    try {
+      const raw = localStorage.getItem(ANNOUNCE_READ_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.map(String) : [];
+    } catch (e) { return []; }
+  }
+  function saveAnnounceReadSet(ids) {
+    try { localStorage.setItem(ANNOUNCE_READ_KEY, JSON.stringify(ids)); } catch (e) {}
+  }
+  function markAnnounceRead(id) {
+    const set = getAnnounceReadSet();
+    if (set.indexOf(String(id)) === -1) set.push(String(id));
+    // 現存しないお知らせの既読記録は掃除する(キャッシュが溜まりすぎないように)
+    const existing = {};
+    allAnnounce.forEach(function (a) { existing[String(a.id)] = true; });
+    saveAnnounceReadSet(set.filter(function (x) { return existing[x]; }));
+    renderAnnounceBar();
+  }
+
+  // 未読のお知らせを、タイトル直下に1行ずつ縦に積んで常に表示する(既読を押した行だけ消える)
   function renderAnnounceBar() {
     const bar = document.getElementById('announceBar');
     if (!bar) return;
-    const list = sortedAnnounce();
-    if (!list.length) { bar.style.display = 'none'; return; }
-    const latest = list[0];
-    document.getElementById('announceBarTitle').textContent = latest.title || '(無題)';
-    document.getElementById('announceBarDate').textContent = formatDateTime(latest.timestamp);
+    const readSet = getAnnounceReadSet();
+    const existing = {};
+    allAnnounce.forEach(function (a) { existing[String(a.id)] = true; });
+    const pruned = readSet.filter(function (x) { return existing[x]; });
+    if (pruned.length !== readSet.length) saveAnnounceReadSet(pruned);
+    const unread = sortedAnnounce().filter(function (a) { return pruned.indexOf(String(a.id)) === -1; });
+    bar.innerHTML = '';
+    if (!unread.length) { bar.style.display = 'none'; return; }
+    unread.forEach(function (a) {
+      const row = document.createElement('div');
+      row.className = 'announce-bar-row';
+      row.innerHTML =
+        '<button class="announce-bar-main" type="button">' +
+          '<span class="announce-bar-label">お知らせ</span>' +
+          '<span class="announce-bar-title">' + escapeHtml(a.title || '(無題)') + '</span>' +
+          '<span class="announce-bar-more">(クリックで詳細表示)</span>' +
+          '<span class="announce-bar-date">' + formatDateTime(a.timestamp) + '</span>' +
+        '</button>' +
+        '<button class="announce-bar-read" type="button" title="このお知らせを閉じます">既読</button>';
+      row.querySelector('.announce-bar-main').addEventListener('click', function () { openAnnounceDetail(a, null); });
+      row.querySelector('.announce-bar-read').addEventListener('click', function () { markAnnounceRead(a.id); });
+      bar.appendChild(row);
+    });
     bar.style.display = '';
   }
 
@@ -7236,11 +7645,9 @@
     return adminMode ? '<button class="comment-del" type="button" data-del-announce="' + escapeHtml(String(a.id)) + '">削除</button>' : '';
   }
 
+  // 履歴一覧: タイトルと投稿日時の見出しだけを並べ、クリックで詳細(全文)を開く
   function openAnnounceModal() {
     const list = sortedAnnounce();
-    if (!list.length) return;
-    const latest = list[0];
-    const past = list.slice(1);
     const overlay = document.getElementById('announceOverlay');
     const body = document.getElementById('announceBody');
     body.innerHTML = '' +
@@ -7248,21 +7655,48 @@
         '<h3 class="modal-title">お知らせ</h3>' +
         '<div class="modal-top-actions"><button class="modal-close" type="button" id="announceCloseBtn">✕ 閉じる</button></div>' +
       '</div>' +
-      '<div class="announce-modal-latest">' + announceDelBtnHtml(latest) +
-        '<div class="announce-modal-title">' + escapeHtml(latest.title || '(無題)') + '</div>' +
-        '<div class="announce-modal-date">' + formatDateTime(latest.timestamp) + '</div>' +
-        '<div class="announce-modal-text">' + escapeHtml(latest.body || '') + '</div>' +
-        announceImagesHtml(latest) +
-      '</div>' +
-      (past.length ? '<div class="announce-past-head">過去のお知らせ</div>' + past.map(function (a) {
-        return '<div class="announce-modal-item">' + announceDelBtnHtml(a) +
-          '<div class="announce-modal-title">' + escapeHtml(a.title || '(無題)') + '</div>' +
-          '<div class="announce-modal-date">' + formatDateTime(a.timestamp) + '</div>' +
-          '<div class="announce-modal-text">' + escapeHtml(a.body || '') + '</div>' +
-          announceImagesHtml(a) +
+      (list.length ? list.map(function (a) {
+        return '<div class="announce-list-item" data-ann-id="' + escapeHtml(String(a.id)) + '">' + announceDelBtnHtml(a) +
+          '<span class="ali-title">' + escapeHtml(a.title || '(無題)') + '</span>' +
+          '<span class="ali-date">' + formatDateTime(a.timestamp) + '</span>' +
         '</div>';
-      }).join('') : '');
+      }).join('') : '<div class="linked-empty">お知らせはまだありません。</div>');
     document.getElementById('announceCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
+    body.querySelectorAll('.announce-list-item').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('[data-del-announce]')) return;
+        const a = allAnnounce.find(function (x) { return String(x.id) === el.dataset.annId; });
+        if (a) openAnnounceDetail(a, openAnnounceModal);
+      });
+    });
+    body.querySelectorAll('[data-del-announce]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.stopPropagation(); adminDeleteAnnounce(btn.dataset.delAnnounce); });
+    });
+    openOverlay(overlay);
+  }
+
+  // 個別詳細(全文)。ヘッダの「閉じる」の左に「既読」を置く。back があれば一覧へ戻るボタンも出す
+  function openAnnounceDetail(a, back) {
+    const overlay = document.getElementById('announceOverlay');
+    const body = document.getElementById('announceBody');
+    body.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">お知らせ</h3>' +
+        '<div class="modal-top-actions">' +
+          (back ? '<button class="announce-detail-back" type="button" id="announceBackBtn">← 一覧へ戻る</button>' : '') +
+          '<button class="announce-detail-read" type="button" id="announceDetailReadBtn">既読</button>' +
+          '<button class="modal-close" type="button" id="announceCloseBtn">✕ 閉じる</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="announce-modal-latest">' + announceDelBtnHtml(a) +
+        '<div class="announce-modal-title">' + escapeHtml(a.title || '(無題)') + '</div>' +
+        '<div class="announce-modal-date">' + formatDateTime(a.timestamp) + '</div>' +
+        '<div class="announce-modal-text">' + escapeHtml(a.body || '') + '</div>' +
+        announceImagesHtml(a) +
+      '</div>';
+    document.getElementById('announceCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
+    document.getElementById('announceDetailReadBtn').addEventListener('click', function () { markAnnounceRead(a.id); overlay.classList.remove('open'); });
+    if (back) document.getElementById('announceBackBtn').addEventListener('click', function () { back(); });
     body.querySelectorAll('.ref-open').forEach(function (el) {
       el.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(el.dataset.refUrl); });
     });
@@ -7401,7 +7835,7 @@
     }
   }
 
-  document.getElementById('announceBar').addEventListener('click', openAnnounceModal);
+  document.getElementById('announceListBtn').addEventListener('click', openAnnounceModal);
   document.getElementById('announceOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
   document.getElementById('announceComposeOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
   document.getElementById('adminAnnounceBtn').addEventListener('click', openAnnounceComposeModal);
