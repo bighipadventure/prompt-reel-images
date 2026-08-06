@@ -1237,6 +1237,7 @@
       <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
       <button class="admin-btn admin-opts-btn admin-badge-btn" type="button" id="adminContactsBtn" style="display:none;">連絡一覧<span class="contact-badge" id="contactBadge">0</span></button>
       <button class="admin-btn admin-opts-btn" type="button" id="adminAnnounceBtn" style="display:none;">お知らせを投稿</button>
+      <button class="admin-btn" type="button" id="refreshBtn" title="ページを再読み込みせずに、新しい投稿などを取り込みます(再ログイン不要)">更新</button>
       <button class="admin-btn" type="button" id="announceListBtn">お知らせ</button>
       <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
     </div>
@@ -1847,6 +1848,10 @@
       <div class="feature-item opt-only-board">
         <div class="feature-name">掲示板</div>
         <div class="feature-desc">作品に紐づかない雑談・質問の場です。スレッドを立てて、各スレッドに返信していく形式で、並び順の切り替え(投稿順・最新の返信がある順・勢い順)や画像の添付もできます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">更新</div>
+        <div class="feature-desc">ヘッダー右上の「更新」ボタンを押すと、ページを再読み込みせずに新しい投稿などを取り込みます。ログイン画面を出している場合でも、再ログイン（再認証）は不要で、その場ですぐ最新の状態になります。他の人の新着を見たいときに、ブラウザの再読み込みの代わりに使ってください。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">お知らせ</div>
@@ -7972,6 +7977,26 @@
   }
 
   document.getElementById('announceListBtn').addEventListener('click', openAnnounceModal);
+
+  // 「更新」ボタン: ページを再読み込みせず(=再認証なし)に、既存の認証トークンのまま
+  // データだけ取り直して、新しい投稿などを取り込む。
+  document.getElementById('refreshBtn').addEventListener('click', async function () {
+    const btn = this;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = '更新中...';
+    try {
+      await reloadAllPosts();
+      rerenderActiveList();
+      if (document.getElementById('tab-databank') && document.getElementById('tab-databank').classList.contains('active')) renderDatabank();
+      if (document.getElementById('tab-board') && document.getElementById('tab-board').classList.contains('active')) renderBoard();
+      renderAnnounceBar();
+    } finally {
+      btn.textContent = orig;
+      btn.disabled = false;
+    }
+  });
   document.getElementById('announceOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
   document.getElementById('announceComposeOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
   document.getElementById('adminAnnounceBtn').addEventListener('click', openAnnounceComposeModal);
