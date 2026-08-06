@@ -1215,7 +1215,7 @@
 </head>
 <body>
 <div id="loginGate" class="login-gate">
-  <div id="loginChecking" class="login-checking"><div class="spinner red"></div><span>確認中...</span></div>
+  <div id="loginChecking" class="login-checking"><div class="spinner red"></div><span>認証中...</span></div>
   <div id="loginCard" class="login-card" style="display:none;">
     <div class="login-brand">Prompt Reel</div>
     <div class="login-sub">閲覧にはパスワードが必要です</div>
@@ -2099,7 +2099,7 @@
 
       <div class="qa-item">
         <div class="qa-q">サイトを開くとパスワードの入力を求められます。</div>
-        <div class="qa-a">管理者がログイン画面をオンにしている場合、サイトを開いた最初に合言葉(パスワード)の入力を求められます。仲間内だけで使うための簡単な入場制限です。パスワードが分からない・入場できない場合は、管理者に確認してください。一度正しく入力すると、その端末では次回以降は自動で入場します(管理者がパスワードを変更すると再入力が必要になります)。なお、サーバー(GAS)に接続できないときは「接続できません。再接続しています...」と表示され、接続が回復するまで自動で待ち続けます(この間は中身は表示されません)。</div>
+        <div class="qa-a">管理者がログイン画面をオンにしている場合、サイトを開いた最初に合言葉(パスワード)の入力を求められます。仲間内だけで使うための簡単な入場制限です。パスワードが分からない・入場できない場合は、管理者に確認してください。一度正しく入力すると、その端末では次回以降は自動で入場します(管理者がパスワードを変更すると再入力が必要になります)。認証を通すまでは投稿などの中身はサーバーから一切返されないため、URLを直接開いても中身は見えません。なお、サーバー(GAS)に接続できないときは「接続できません。再接続しています...」と表示され、接続が回復するまで自動で待ち続けます(この間は中身は表示されません)。</div>
       </div>
 
       <div class="qa-item">
@@ -3461,14 +3461,21 @@
   // ユーザーに見えないうちに読み込み完了させる。
   const LOAD_RETRY_TIMEOUTS = [20000, 40000, 70000]; // 20秒→40秒→70秒(合計最大約2分)
 
+  // ログイン認証トークン(loginAuth成功時に受け取る)。データ取得GETに付けてサーバ認証を通す。
+  // これが無い/不正だとサーバは何も返さない(URL直打ちでは中身が見えない)。
+  let siteAuthToken = '';
+  function authParam() { return siteAuthToken ? ('&token=' + encodeURIComponent(siteAuthToken)) : ''; }
+
   // stage: 'parents' | 'rest'。GAS側のdoGetが対応するstageパラメータ付きで取得する。
   async function fetchStageWithRetry(stage, onRetry) {
     let lastErr = null;
-    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'stage=' + stage;
+    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'stage=' + stage + authParam();
     for (let i = 0; i < LOAD_RETRY_TIMEOUTS.length; i++) {
       if (i > 0 && onRetry) onRetry(i + 1, LOAD_RETRY_TIMEOUTS.length);
       try {
-        return await jsonpRequest(url, LOAD_RETRY_TIMEOUTS[i]);
+        const data = await jsonpRequest(url, LOAD_RETRY_TIMEOUTS[i]);
+        if (data && data.locked) throw new Error('認証が必要です(locked)');
+        return data;
       } catch (err) {
         lastErr = err;
         console.error('読み込み試行(' + stage + ') ' + (i + 1) + '回目に失敗:', err);
@@ -3479,8 +3486,10 @@
 
   // 特定の投稿1件+直接関連する投稿+コメントだけを優先取得する(段階読み込みの完了を待たない)。
   async function fetchPostDetail(idOrShareId) {
-    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'detailId=' + encodeURIComponent(idOrShareId);
-    return jsonpRequest(url, 20000);
+    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'detailId=' + encodeURIComponent(idOrShareId) + authParam();
+    const data = await jsonpRequest(url, 20000);
+    if (data && data.locked) throw new Error('認証が必要です(locked)');
+    return data;
   }
 
   function rebuildDerivedArraysFromPosts() {
@@ -6742,7 +6751,7 @@
     const pw = ownerPasswordInput.value;
     if (!pw) { ownerAuthStatus.textContent = 'パスワードを入力してください'; return; }
     ownerAuthStatus.textContent = '';
-    showLoading('確認中...');
+    showLoading('認証中...');
     try {
       const result = await postAction({ action: 'ownerAuth', id: ownerAuthTarget.id, password: pw });
       if (result && result.success) {
@@ -7574,7 +7583,7 @@
         document.getElementById('loginCard').style.display = 'none';
         if (checkingText) checkingText.textContent = '接続できません。再接続しています...';
         await new Promise(function (r) { setTimeout(r, 3000); });
-        if (checkingText) checkingText.textContent = '確認中...';
+        if (checkingText) checkingText.textContent = '認証中...';
       }
     }
     if (cfg && cfg.enabled) {
@@ -7582,7 +7591,7 @@
       if (stored) {
         try {
           const r = await postAction({ action: 'loginAuth', password: stored });
-          if (r && r.success) { proceedToApp(); return; }
+          if (r && r.success) { siteAuthToken = r.token || ''; proceedToApp(); return; }
         } catch (e) { /* 再入力へ */ }
         localStorage.removeItem('pr_login_pw');
       }
@@ -7618,6 +7627,7 @@
     try {
       const r = await postAction({ action: 'loginAuth', password: pw });
       if (r && r.success) {
+        siteAuthToken = r.token || '';
         localStorage.setItem('pr_login_pw', pw);
         proceedToApp();
       } else {
