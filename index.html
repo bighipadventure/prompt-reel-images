@@ -381,7 +381,7 @@
   .detail-image{ flex: 0 0 260px; }
   .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
   .detail-text{ flex: 1 1 320px; min-width: 260px; }
-  .detail-block{ margin-bottom: 16px; }
+  .detail-block{ margin-bottom: 12px; }
   .detail-block .label{
     font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim);
     margin-bottom: 5px; letter-spacing: 0.05em;
@@ -434,14 +434,14 @@
     font-family:'Noto Sans JP',sans-serif; font-size: 12px; color: var(--ink-dim);
     display:flex; gap: 14px; flex-wrap:wrap; margin-bottom: 12px;
   }
-  .modal .row-tags{ max-width: none; margin-bottom: 16px; }
+  .modal .row-tags{ max-width: none; margin-bottom: 12px; }
   .modal .row .row-tags{ margin-bottom: 0; }
   .modal-image{ text-align:center; margin-top: 14px; }
   .modal-image img{ max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); }
   .modal-actions{ display:flex; gap: 10px; justify-content:center; margin: 12px 0 20px; }
   /* 画像のすぐ右下(コピー欄の上あたり)に置くダウンロード/共有ボタン。
      PROMPTエリアとの間を離すため下マージンを大きめに取る。 */
-  .image-actions-row{ display:flex; justify-content:flex-end; gap: 10px; margin: 14px 0 28px; align-items:center; }
+  .image-actions-row{ display:flex; justify-content:flex-end; gap: 10px; margin: 10px 0 12px; align-items:center; }
   .image-actions-row.has-variants{ justify-content:space-between; }
   .image-actions-btns{ display:flex; gap:10px; }
   .variant-switcher{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -455,7 +455,9 @@
   .variant-switch-btn.active{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .image-actions-row .btn-ghost{ padding: 6px 14px; font-size: 12px; }
   .block-head{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
-  .block-foot{ display:flex; justify-content:flex-end; margin-top:8px; }
+  /* コピーボタンは右寄せ・次ブロックの見出しは左寄せで横方向に干渉しないため、
+     負マージンで次の見出しをコピーボタンと同じ高さ帯まで引き上げてギュッと詰める。 */
+  .block-foot{ display:flex; justify-content:flex-end; margin-top:4px; margin-bottom:-20px; }
   .block-head .label{ margin-bottom: 0; }
   .btn-copy{
     background: var(--surface-2); color: var(--accent);
@@ -799,7 +801,7 @@
 
   .base-prompt-link{ font-weight: 500; word-break: break-word; }
   .linked-works-head{
-    font-size: 13px; font-weight: 700; margin: 24px 0 12px;
+    font-size: 13px; font-weight: 700; margin: 16px 0 10px;
     display:flex; align-items:center; gap: 8px;
   }
   .linked-works-head::before{
@@ -1148,7 +1150,7 @@
     background: var(--surface-2); color: var(--ink);
     border: 1px solid var(--line); border-radius: 10px;
     padding: 12px 16px; font-size: 13px; font-family:'Noto Sans JP',sans-serif;
-    margin: 20px 0 4px;
+    margin: 12px 0 4px;
   }
   .comment-toggle-btn:hover{ border-color: var(--accent); color: var(--accent); }
   .comment-toggle-btn .cmt-count{ color: var(--accent); font-weight:700; }
