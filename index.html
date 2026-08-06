@@ -1896,7 +1896,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">差分を同時に投稿</div>
-        <div class="feature-desc">同じ設定でSeed違いを量産したときなど、複数枚の画像を1つの投稿にまとめてアップロードできます。投稿フォーム右上の「差分を同時に投稿」を押すと、画像欄の下に差分画像を追加する枠が出ます。最初にアップした画像が ［1］（メイン）、追加した画像が ［2］［3］… になります。サムネイル列には ［1］（メイン画像）も並ぶので、［1］［2］［3］を同じ感覚でクリックして切り替えられ、その画像の詳細設定（プロンプト・ネガティブ・生成設定）をフォームに呼び出して個別に確認・修正できます（各画像の生成情報は自動で読み取られます）。閲覧するときは、詳細画面の画像の下に出る 1・2… のボタンで切り替えられ、プロンプトや設定も画像ごとに切り替わります。似た作品で一覧があふれるのを避けたいときは、こちらか「親にする投稿作品」による親子紐づけのどちらかを使ってください。</div>
+        <div class="feature-desc">同じ設定でSeed違いを量産したときなど、複数枚の画像を1つの投稿にまとめてアップロードできます。投稿フォーム右上の「差分を同時に投稿」を押すと、画像欄の下に差分画像を追加する枠が出ます。最初にアップした画像が ［1］（メイン）、追加した画像が ［2］［3］… になります。サムネイル列には ［1］（メイン画像）も並ぶので、［1］［2］［3］を同じ感覚でクリックして切り替えられ、その画像の詳細設定（プロンプト・ネガティブ・生成設定）をフォームに呼び出して個別に確認・修正できます（各画像の生成情報は自動で読み取られます）。閲覧するときは、詳細画面の画像の下に出る 1・2… のボタンで切り替えられ、プロンプトや設定も画像ごとに切り替わります。似た作品で一覧があふれるのを避けたいときは、こちらか「親にする投稿作品」による親子紐づけのどちらかを使ってください。投稿後に編集するときも、差分をまとめた投稿なら［1］［2］［3］すべてのページのプロンプト・設定を編集できます（差分を追加・削除することもできます）。</div>
       </div>
       <div class="feature-item inpaint-only">
         <div class="feature-name">修正後画像モード</div>
@@ -3047,13 +3047,21 @@
     }
   }
 
+  // 差分画像の表示src。新規差分はdataUrl、編集で読み込んだ既存差分はimageUrl(Drive)を使う
+  function variantImgSrc(v, size) {
+    if (!v) return '';
+    if (v.dataUrl) return v.dataUrl;
+    if (v.imageUrl) return imageSrcFor(v.imageUrl, size || 'w1000');
+    return '';
+  }
+
   // 指定スロットの内容をフォーム(プロンプト/ネガティブ/設定/プレビュー)へ反映する
   function loadSlot(idx) {
     const promptEl = document.getElementById('promptInput');
     const negEl = document.getElementById('negativeInput');
     let data, src;
     if (idx === 0) { data = mainSlot; src = mainSlot.previewSrc; }
-    else { data = variantImages[idx - 1]; src = data ? data.dataUrl : ''; }
+    else { data = variantImages[idx - 1]; src = variantImgSrc(data, 'w1000'); }
     if (!data) return;
     promptEl.value = data.prompt || ''; autoGrow(promptEl);
     negEl.value = data.negativePrompt || ''; autoGrow(negEl);
@@ -3100,7 +3108,7 @@
       const slotIdx = i + 1;
       const thumb = document.createElement('div');
       thumb.className = 'variant-thumb' + (activeSlot === slotIdx ? ' active' : '');
-      thumb.innerHTML = '<img src="' + escapeHtml(v.dataUrl) + '" alt="差分画像" title="クリックでこの差分の設定を編集">' +
+      thumb.innerHTML = '<img src="' + escapeHtml(variantImgSrc(v, 'w320')) + '" alt="差分画像" title="クリックでこの差分の設定を編集">' +
         '<span class="variant-num">' + (i + 2) + '</span>' +
         '<button class="variant-remove" type="button" title="削除">✕</button>';
       thumb.querySelector('img').addEventListener('click', function () { setActiveSlot(slotIdx); });
@@ -4177,16 +4185,14 @@
         payload.imageMime = file.type;
         payload.imageName = file.name;
       }
-      if (!editing && !isFix && variantMode && variantImages.length) {
+      // 差分: 新規投稿は variantMode 時、画像編集は常に送る(空配列=差分なしに更新)。
+      // 既存差分(imageUrl保持)は再アップロードせず、新規追加(dataUrl)だけ base64 送信する。
+      if (!isFix && (variantMode || editing)) {
         payload.variants = variantImages.map(function (v) {
-          return {
-            imageBase64: v.dataUrl,
-            imageMime: v.mime,
-            imageName: v.name,
-            prompt: v.prompt,
-            negativePrompt: v.negativePrompt,
-            settings: v.settings
-          };
+          if (v.dataUrl) {
+            return { imageBase64: v.dataUrl, imageMime: v.mime, imageName: v.name, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings };
+          }
+          return { imageUrl: v.imageUrl, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings };
         });
       }
 
@@ -7058,8 +7064,8 @@
     const editingRequest = isEditingRequestPost();
     const vBtn = document.getElementById('variantModeBtn');
     if (vBtn) {
-      if (editingImage) { setVariantMode(false); vBtn.style.display = 'none'; }
-      else vBtn.style.display = currentPostMode() === 'image' ? '' : 'none';
+      // 画像モード(新規・編集とも)で差分トグルを使える。fix/prompt/requestでは非表示
+      vBtn.style.display = (currentPostMode() === 'image') ? '' : 'none';
     }
     document.getElementById('submitBtn').textContent = editingImage ? '保存する' : '投稿する';
     document.getElementById('pSubmitBtn').textContent = editingPrompt ? '保存する' : '投稿する';
@@ -7120,6 +7126,20 @@
       renderFixRequestDisplay();
       clearSelectedImage();
       setInpaintMode(false);
+      // 差分の読み込み: 画像投稿の編集では既存の差分ページ([2]以降)も編集できるようにする。
+      // フォームは既に投稿値をセット済みなので、loadSlot は呼ばずにスロット状態だけ初期化する。
+      variantMode = false;
+      activeSlot = 0;
+      mainSlot = { prompt: '', negativePrompt: '', settings: {}, previewSrc: '' };
+      variantImages = [];
+      if (type === 'image') {
+        variantImages = (p.variants || []).map(function (v) {
+          return { imageUrl: v.imageUrl || '', prompt: v.prompt || '', negativePrompt: v.negativePrompt || '', settings: v.settings || {} };
+        });
+        if (variantImages.length) setVariantMode(true);
+      }
+      renderVariantStrip();
+      updateVariantEditUi();
     } else if (type === 'prompt') {
       document.getElementById('pTitleInput').value = p.title || '';
       document.getElementById('pAuthorInput').value = p.author || '';
