@@ -301,7 +301,6 @@
   .mode-toggle button.active{ background: var(--accent); color: #fff; }
 
   .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
-  .req-mark{ display:inline-block; font-size:10.5px; font-weight:700; color: var(--danger); border:1px solid var(--danger); border-radius:5px; padding:0 6px; margin:0 2px; vertical-align:middle; }
   .tag-pill{
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
@@ -1085,11 +1084,6 @@
   #variantStrip .attach-add-tile{ width:116px; height:116px; font-size:12px; }
   #variantStrip .attach-add-tile .plus{ font-size:30px; }
   .variant-remove{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
-  /* 差分の詳細設定を編集中に出すバナー */
-  .variant-edit-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; padding:9px 13px; border-radius:9px; background: var(--accent-dim); border:1px solid var(--accent); font-size:12.5px; color: var(--ink); }
-  .variant-edit-bar .veb-label{ font-weight:700; }
-  .variant-edit-bar .veb-back{ margin-left:auto; font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; background: var(--surface); color: var(--accent); border:1px solid var(--accent); border-radius:8px; padding:5px 12px; cursor:pointer; }
-  .variant-edit-bar .veb-note{ color: var(--ink-dim); }
   .dropzone.slot-locked{ cursor:not-allowed; }
   .dropzone.slot-locked .dz-title, .dropzone.slot-locked .dz-sub{ opacity:.5; }
   .ref-thumb{
@@ -1304,11 +1298,6 @@
           <div class="attach-add-tile" id="variantAddTile"><span class="plus">＋</span>差分を追加</div>
           <input type="file" id="variantInput" accept="image/*" multiple style="display:none;">
         </div>
-        <div class="variant-edit-bar" id="variantEditBar" style="display:none;">
-          <span class="veb-label" id="variantEditLabel"></span>
-          <span class="veb-note">この差分のプロンプト・設定を編集できます(画像はこの差分に固定)。</span>
-          <button class="veb-back" type="button" id="variantBackBtn">メイン画像に戻る</button>
-        </div>
       </div>
 
       <div class="inpaint-active-only" id="inpaintOriginalField">
@@ -1364,6 +1353,12 @@
         <span id="parentDisplay" class="base-prompt-display"></span>
       </div>
 
+      <label class="field-label">参考にした投稿作品(他の作品を参考にしたとき。子作品にはならず一覧に通常表示されます)</label>
+      <div class="base-prompt-select">
+        <button class="btn-ghost" id="pickReferenceBtn" type="button">参考作品を選択</button>
+        <span id="referenceDisplay" class="base-prompt-display"></span>
+      </div>
+
       <label class="field-label">応えるリクエスト(リクエストへの回答として投稿するとき)</label>
       <div class="base-prompt-select">
         <button class="btn-ghost" id="pickRequestBtn" type="button">リクエストを選択</button>
@@ -1382,7 +1377,7 @@
       <div class="settings-grid open" id="settingsGrid"></div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
-        <label class="field-label" style="margin:0;">タグ <span class="req-mark">必須</span>(クリックで選択 / もう一度クリックで解除)</label>
+        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
       </div>
       <div class="tag-cloud-wrap"><div class="tag-cloud" id="postTagCloud"></div>
@@ -1435,7 +1430,7 @@
       <div class="settings-grid open" id="pSettingsGrid"></div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
-        <label class="field-label" style="margin:0;">タグ <span class="req-mark">必須</span>(クリックで選択 / もう一度クリックで解除)</label>
+        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
       </div>
       <div class="tag-cloud-wrap"><div class="tag-cloud" id="pTagCloud"></div>
@@ -1853,7 +1848,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">お知らせ</div>
-        <div class="feature-desc">運営からのお知らせがあるときは、タイトル直下に未読のお知らせが1件ずつ縦に並んで常に表示されます。各行の「既読」ボタンを押すまで消えないので、複数のお知らせを見落としません。行をクリックすると、そのお知らせの全文モーダルが開きます(画像が添付されていれば一緒に表示)。全文モーダルの右上、「閉じる」の左にも「既読」ボタンがあります。ヘッダー右上の「お知らせ」ボタンを押すと、これまでのお知らせをタイトルと投稿日時の一覧で確認でき、項目をクリックすると全文を読み返せます。</div>
+        <div class="feature-desc">運営からのお知らせがあるときは、タイトル直下に未読のお知らせが1件ずつ縦に並んで表示されます（画面が埋まらないよう、ここに常時出るのは新しい3件までです）。各行の「既読」ボタンを押すまで消えないので、見落としません。行をクリックすると、そのお知らせの全文モーダルが開きます（画像が添付されていれば一緒に表示）。ヘッダー右上の「お知らせ」ボタンを押すと、これまでのお知らせをタイトルと投稿日時の一覧で確認でき、項目をクリックすると全文を読み返せます。既読にするのは各行の「既読」ボタンから行います。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">本ツールの使い方</div>
@@ -1901,7 +1896,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">差分を同時に投稿</div>
-        <div class="feature-desc">同じ設定でSeed違いを量産したときなど、複数枚の画像を1つの投稿にまとめてアップロードできます。投稿フォーム右上の「差分を同時に投稿」を押すと、画像欄の下に差分画像を追加する枠が出ます。最初にアップした画像が □1、追加した画像が □2・□3… になり、各画像の生成情報(プロンプト・設定)は自動で読み取られます。追加した差分サムネイルをクリックすると、その差分の詳細設定(プロンプト・ネガティブ・生成設定)をフォームに呼び出して個別に確認・修正できます(そのあいだ画像欄はその差分に固定され、「□1(メイン)に戻る」で元の画像に戻れます)。閲覧するときは、詳細画面の画像の下に出る 1・2… のボタンで切り替えられ、プロンプトや設定も画像ごとに切り替わります。似た作品で一覧があふれるのを避けたいときは、こちらか「親にする投稿作品」による親子紐づけのどちらかを使ってください。</div>
+        <div class="feature-desc">同じ設定でSeed違いを量産したときなど、複数枚の画像を1つの投稿にまとめてアップロードできます。投稿フォーム右上の「差分を同時に投稿」を押すと、画像欄の下に差分画像を追加する枠が出ます。最初にアップした画像が ［1］（メイン）、追加した画像が ［2］［3］… になります。サムネイル列には ［1］（メイン画像）も並ぶので、［1］［2］［3］を同じ感覚でクリックして切り替えられ、その画像の詳細設定（プロンプト・ネガティブ・生成設定）をフォームに呼び出して個別に確認・修正できます（各画像の生成情報は自動で読み取られます）。閲覧するときは、詳細画面の画像の下に出る 1・2… のボタンで切り替えられ、プロンプトや設定も画像ごとに切り替わります。似た作品で一覧があふれるのを避けたいときは、こちらか「親にする投稿作品」による親子紐づけのどちらかを使ってください。</div>
       </div>
       <div class="feature-item inpaint-only">
         <div class="feature-name">修正後画像モード</div>
@@ -1923,6 +1918,10 @@
       <div class="feature-item">
         <div class="feature-name">親にする投稿作品(画像 → 画像・1件のみ)</div>
         <div class="feature-desc">同じ設定でSeed違いを量産したときに使います。親を指定した作品(子)は一覧に並ばず、親の詳細の下に「この作品のバリエーション」としてまとまります。一覧が似た作品であふれるのを防ぐための仕組みです。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">参考にした投稿作品(画像 → 画像・1件のみ)</div>
+        <div class="feature-desc">「この作品を参考にして作りました」という関係です。投稿フォームの「参考作品を選択」から選びます。親子紐づけと違って<strong>子作品にはならない</strong>ので、あなたの投稿はこれまでどおり画像投稿一覧に表示されます。指定すると、詳細画面に「参考にした投稿作品」へのリンクが出て、元の作品をすぐ開けます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">応えるリクエスト(画像 → リクエスト・1件のみ)</div>
@@ -2507,6 +2506,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="referenceModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="referenceModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">参考にした投稿作品を選択</h3>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="referenceSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
+      <button class="btn-ghost" id="clearReferenceBtn" type="button">紐づけなしにする</button>
+    </div>
+    <div class="sort-chips" id="referenceSortChips" style="margin-bottom:14px;"></div>
+    <div class="list" id="referenceList"></div>
+    <div class="empty" id="referenceEmpty" style="display:none;">画像投稿がまだありません。</div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="requestModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="requestModalCloseBtn">✕ 閉じる</button>
@@ -2657,7 +2670,7 @@
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, ownerEdit: false, inpaint: false, loginEnabled: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
@@ -2672,6 +2685,7 @@
   let pKeywordMode = 'AND';
   let selectedBasePromptIds = [];
   let selectedParentId = '';
+  let selectedReferenceId = '';
   let selectedRequestId = '';
   let selectedFixRequestIds = [];
   let requestRefs = [];
@@ -2933,6 +2947,7 @@
     };
     reader.readAsDataURL(file);
     if (!inpaintMode) readImageMetadata(file);
+    if (variantMode) renderVariantStrip();
   });
 
   // ===== 修正後画像モード(inpaint) =====
@@ -3002,6 +3017,8 @@
     if (btn) { btn.classList.toggle('active', variantMode); btn.setAttribute('aria-pressed', variantMode ? 'true' : 'false'); }
     variantField.style.display = variantMode ? '' : 'none';
     if (!variantMode) {
+      // 差分編集中にオフにされたら、□1(メイン)の内容をフォームへ戻してから破棄する
+      if (activeSlot !== 0) { activeSlot = 0; loadSlot(0); }
       variantImages = [];
       activeSlot = 0;
       mainSlot = { prompt: '', negativePrompt: '', settings: {}, previewSrc: '' };
@@ -3055,19 +3072,30 @@
   }
 
   function updateVariantEditUi() {
-    const bar = document.getElementById('variantEditBar');
-    const label = document.getElementById('variantEditLabel');
     const locked = variantLocked();
-    if (bar) bar.style.display = locked ? '' : 'none';
-    if (locked && label) label.textContent = '差分 (' + (activeSlot + 1) + '枚目) を編集中';
     dropzone.classList.toggle('slot-locked', locked);
     document.getElementById('clearImageBtn').style.display = locked ? 'none' : '';
-    if (locked) { dropzoneLabel.textContent = '□1(メイン)に戻ると画像を変更できます'; }
+    if (locked) { dropzoneLabel.textContent = 'メイン画像を変えるには［1］を選んでください'; }
     else { setDropzoneState(dropzone.classList.contains('has-image'), !!adminEditingPost); }
+  }
+
+  // □1(メイン画像)の現在のプレビューsrc。差分編集中は退避したmainSlot側を使う
+  function mainImageSrc() {
+    return (activeSlot === 0) ? (previewImg.src || '') : (mainSlot.previewSrc || '');
   }
 
   function renderVariantStrip() {
     variantStrip.querySelectorAll('.variant-thumb').forEach(function (el) { el.remove(); });
+    // [1] = メイン画像。[2..]と同じ感覚で切り替えられるよう、先頭にサムネイルとして出す(画像がある時のみ)
+    const mainSrc = mainImageSrc();
+    if (mainSrc) {
+      const mThumb = document.createElement('div');
+      mThumb.className = 'variant-thumb' + (activeSlot === 0 ? ' active' : '');
+      mThumb.innerHTML = '<img src="' + escapeHtml(mainSrc) + '" alt="メイン画像" title="クリックでメイン画像(1)の設定を編集">' +
+        '<span class="variant-num">1</span>';
+      mThumb.querySelector('img').addEventListener('click', function () { setActiveSlot(0); });
+      variantStrip.insertBefore(mThumb, variantAddTile);
+    }
     variantImages.forEach(function (v, i) {
       const slotIdx = i + 1;
       const thumb = document.createElement('div');
@@ -3134,7 +3162,6 @@
   }
 
   document.getElementById('variantModeBtn').addEventListener('click', function () { setVariantMode(!variantMode); });
-  document.getElementById('variantBackBtn').addEventListener('click', function () { setActiveSlot(0); });
   variantAddTile.addEventListener('click', function () { variantInput.click(); });
   variantInput.addEventListener('change', function () { addVariantFiles(variantInput.files); variantInput.value = ''; });
   variantStrip.addEventListener('dragover', function (e) { e.preventDefault(); variantStrip.classList.add('drag-over'); });
@@ -4091,6 +4118,8 @@
     renderBasePromptDisplay();
     selectedParentId = '';
     renderParentDisplay();
+    selectedReferenceId = '';
+    renderReferenceDisplay();
     selectedRequestId = '';
     renderRequestDisplay();
     document.getElementById('fixContentInput').value = '';
@@ -4131,6 +4160,7 @@
         type: isFix ? 'fix' : 'image',
         basePromptId: selectedBasePromptIds.join(','),
         parentId: selectedParentId,
+        refId: isFix ? '' : selectedReferenceId,
         requestId: isFix ? '' : selectedRequestId,
         fixContent: isFix ? document.getElementById('fixContentInput').value : '',
         fixRequestId: isFix ? '' : selectedFixRequestIds.join(',')
@@ -4337,8 +4367,11 @@
     }
     if (options.dislike) {
       const disliked = !!dislikedPosts[p.id];
+      const dCount = options.dislikeCount
+        ? '<span data-dislike-count="' + p.id + '">' + (Number(p.dislikeCount) || 0) + '</span>'
+        : '';
       parts += '<button class="dislike-btn' + (disliked ? ' disliked' : '') + '" type="button" data-dislike="' + p.id + '" title="バッド">' +
-        '<img class="btn-icon" src="images/thumb_down.png" alt="バッド"><span data-dislike-count="' + p.id + '">' + (Number(p.dislikeCount) || 0) + '</span>' +
+        '<img class="btn-icon" src="images/thumb_down.png" alt="バッド">' + dCount +
       '</button>';
     }
     if (!opts.likeOnly && options.downloadCount) {
@@ -4584,6 +4617,15 @@
           (parent.title ? escapeHtml(parent.title) : '(無題)') + '</a></div></div>'
       : '';
 
+    const reference = p.refId
+      ? imagePosts.find(function (ip) { return String(ip.id) === String(p.refId); })
+      : null;
+    const referenceBlock = reference
+      ? '<div class="detail-block"><div class="label">参考にした投稿作品</div>' +
+          '<div class="value"><a href="#" class="reference-post-link" data-post-id="' + escapeHtml(String(reference.id)) + '">' +
+          (reference.title ? escapeHtml(reference.title) : '(無題)') + '</a></div></div>'
+      : '';
+
     const request = p.requestId
       ? requestPosts.find(function (rp) { return String(rp.id) === String(p.requestId); })
       : null;
@@ -4649,6 +4691,7 @@
       fixContentBlock +
       baseBlock +
       parentBlock +
+      referenceBlock +
       requestBlock +
       fixLinksBlock +
       '<div class="detail-block">' +
@@ -4723,6 +4766,13 @@
       parentLink.addEventListener('click', function (e) {
         e.preventDefault();
         openImageDetail(parentLink.dataset.postId);
+      });
+    }
+    const referenceLink = modalBody.querySelector('.reference-post-link');
+    if (referenceLink) {
+      referenceLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openImageDetail(referenceLink.dataset.postId);
       });
     }
 
@@ -5218,6 +5268,7 @@
   const basePromptEmptyEl = document.getElementById('basePromptEmpty');
   let basePromptSortKeys = [{ field: 'date', dir: 'desc' }];
   let parentSortKeys = [{ field: 'date', dir: 'desc' }];
+  let referenceSortKeys = [{ field: 'date', dir: 'desc' }];
 
   function renderPickerSortChips(container, fields, keys, onChange) {
     container.innerHTML = fields.map(function (f) {
@@ -5423,6 +5474,57 @@
   parentModalOverlay.addEventListener('click', function (e) { if (e.target === parentModalOverlay) closeParentModal(); });
   document.getElementById('parentSearch').addEventListener('input', function () { renderParentList(this.value); });
   document.getElementById('clearParentBtn').addEventListener('click', function () { selectedParentId = ''; renderParentDisplay(); closeParentModal(); });
+
+  // REFERENCE POST PICKER(参考にした投稿作品。親と違い子作品にはしない=一覧に通常表示)
+  const referenceModalOverlay = document.getElementById('referenceModalOverlay');
+  const referenceListEl = document.getElementById('referenceList');
+  const referenceEmptyEl = document.getElementById('referenceEmpty');
+
+  function renderReferenceDisplay() {
+    const el = document.getElementById('referenceDisplay');
+    if (!el) return;
+    const p = selectedReferenceId ? imagePosts.find(function (x) { return String(x.id) === String(selectedReferenceId); }) : null;
+    if (!p) { el.innerHTML = ''; return; }
+    el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="clearReferenceInline">×</button></span>';
+    document.getElementById('clearReferenceInline').addEventListener('click', function () { selectedReferenceId = ''; renderReferenceDisplay(); });
+  }
+  function renderReferenceList(q) {
+    q = (q || '').trim().toLowerCase();
+    const candidates = imagePosts.filter(function (p) {
+      return !p.parentId && (!adminEditingPost || String(p.id) !== String(adminEditingPost.id));
+    });
+    referenceEmptyEl.style.display = candidates.length ? 'none' : 'block';
+    const items = candidates.filter(function (p) {
+      if (!q) return true;
+      const hay = (String(p.title || '') + ' ' + String(p.author || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    items.sort(function (a, b) { return compareWithKeys(a, b, referenceSortKeys); });
+    referenceListEl.innerHTML = items.map(function (p) {
+      const selected = String(selectedReferenceId) === String(p.id);
+      return imageRowHtml(p, 'w320', { selected: selected, counts: false });
+    }).join('');
+    wirePickerRows(referenceListEl, function (id) {
+      selectedReferenceId = id;
+      renderReferenceDisplay();
+      closeReferenceModal();
+    });
+  }
+  function openReferenceModal() {
+    document.getElementById('referenceSearch').value = '';
+    renderPickerSortChips(document.getElementById('referenceSortChips'), SORT_FIELDS, referenceSortKeys, function () {
+      renderReferenceList(document.getElementById('referenceSearch').value);
+    });
+    renderReferenceList('');
+    openOverlay(referenceModalOverlay);
+  }
+  function closeReferenceModal() { referenceModalOverlay.classList.remove('open'); }
+
+  document.getElementById('pickReferenceBtn').addEventListener('click', openReferenceModal);
+  document.getElementById('referenceModalCloseBtn').addEventListener('click', closeReferenceModal);
+  referenceModalOverlay.addEventListener('click', function (e) { if (e.target === referenceModalOverlay) closeReferenceModal(); });
+  document.getElementById('referenceSearch').addEventListener('input', function () { renderReferenceList(this.value); });
+  document.getElementById('clearReferenceBtn').addEventListener('click', function () { selectedReferenceId = ''; renderReferenceDisplay(); closeReferenceModal(); });
 
   /* ===== REQUEST FEATURE ===== */
   const REF_MAX_DIM = 1280;
@@ -6774,6 +6876,7 @@
     { key: 'like', label: 'グッドボタン', desc: 'オフにすると全画面からグッドボタンが消えます' },
     { key: 'likeCount', label: 'グッド数の表示', desc: 'オフにするとグッド数を表示しません' },
     { key: 'dislike', label: 'バッドボタン', desc: 'オフにするとバッドボタンを非表示にします。オンのとき、しきい値に達した投稿は利用者から自動で非表示になります' },
+    { key: 'dislikeCount', label: 'バッド数の表示', desc: 'オフにするとバッド数を表示しません(バッドボタン自体は残ります)' },
     { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
     { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になり、各フォーム(投稿・掲示板・返信)の名前入力欄も隠れます' },
     { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
@@ -7008,6 +7111,8 @@
       renderBasePromptDisplay();
       selectedParentId = String(p.parentId || '');
       renderParentDisplay();
+      selectedReferenceId = String(p.refId || '');
+      renderReferenceDisplay();
       selectedRequestId = String(p.requestId || '');
       renderRequestDisplay();
       document.getElementById('fixContentInput').value = p.fixContent || '';
@@ -7615,7 +7720,8 @@
     const unread = sortedAnnounce().filter(function (a) { return pruned.indexOf(String(a.id)) === -1; });
     bar.innerHTML = '';
     if (!unread.length) { bar.style.display = 'none'; return; }
-    unread.forEach(function (a) {
+    // 画面がお知らせで埋まらないよう、バーに常時出すのは最新3件まで(残りは右上の一覧から)
+    unread.slice(0, 3).forEach(function (a) {
       const row = document.createElement('div');
       row.className = 'announce-bar-row';
       row.innerHTML =
@@ -7684,7 +7790,6 @@
         '<h3 class="modal-title">お知らせ</h3>' +
         '<div class="modal-top-actions">' +
           (back ? '<button class="announce-detail-back" type="button" id="announceBackBtn">← 一覧へ戻る</button>' : '') +
-          '<button class="announce-detail-read" type="button" id="announceDetailReadBtn">既読</button>' +
           '<button class="modal-close" type="button" id="announceCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
@@ -7695,7 +7800,6 @@
         announceImagesHtml(a) +
       '</div>';
     document.getElementById('announceCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
-    document.getElementById('announceDetailReadBtn').addEventListener('click', function () { markAnnounceRead(a.id); overlay.classList.remove('open'); });
     if (back) document.getElementById('announceBackBtn').addEventListener('click', function () { back(); });
     body.querySelectorAll('.ref-open').forEach(function (el) {
       el.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(el.dataset.refUrl); });
