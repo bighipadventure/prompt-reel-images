@@ -276,6 +276,9 @@
   .submit-row-left{ display:flex; align-items:center; gap:14px; }
   /* 投稿時の未入力必須項目のハイライト(レイアウトを動かさない outline 方式) */
   .required-missing{ outline: 2px solid var(--danger) !important; outline-offset: 2px; border-radius: 8px; }
+  /* 必須ハイライトの単位(見出し+入力を1つの枠で囲む)。ラップでラベルが:first-of-type=margin0になる分をラッパーが補う */
+  .req-field{ margin-top: 18px; }
+  #imageField{ margin-top: 0; }
   .btn-submit{
     background: var(--accent);
     color: #fff;
@@ -1332,6 +1335,7 @@
         </div>
       </div>
 
+      <div class="req-field" id="imageField">
       <label class="field-label inpaint-hidden-mode">画像</label>
       <label class="field-label inpaint-active-only" style="margin-top:0;">投稿する画像(修正後)</label>
       <div class="dropzone" id="dropzone">
@@ -1346,6 +1350,7 @@
         <div class="dz-sub" id="dropzoneSub">または<span class="dz-browse">クリックしてファイルを選択</span><br>PNG / JPEG / WebP の生成情報を自動で読み取ります</div>
         <div class="preview" id="previewWrap" style="display:none;"><span class="preview-frame"><img id="previewImg" alt="プレビュー"><button class="preview-clear" type="button" id="clearImageBtn" title="画像を取り消す">✕</button></span></div>
         <input type="file" id="imageInput">
+      </div>
       </div>
 
       <div id="variantField" style="display:none;">
@@ -1376,7 +1381,7 @@
         </div>
       </div>
 
-      <label class="field-label">投稿タイトル</label>
+      <label class="field-label" style="margin-top:18px;">投稿タイトル</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="titleInput" placeholder="例: 桜並木の少女">
 
       <div id="fixContentField" style="display:none;">
@@ -1441,6 +1446,7 @@
       <label class="field-label">生成設定(画像ドロップで自動入力)</label>
       <div class="settings-grid open" id="settingsGrid"></div>
 
+      <div class="req-field" id="tagsField">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
@@ -1452,8 +1458,9 @@
         <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="selectedTags"></div>
+      </div>
 
-      <div class="category-select-row">
+      <div class="category-select-row" id="categoryField">
         <label class="field-label" style="margin:0;">作品の属性</label>
         <div class="mode-toggle" id="categoryToggle">
           <button type="button" data-category="copyright">版権</button>
@@ -1491,8 +1498,10 @@
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pAuthorInput" list="dl_author" placeholder="匿名">
       </div>
 
+      <div class="req-field" id="pPromptField">
       <label class="field-label">プロンプト</label>
       <textarea id="pPromptInput" class="autogrow" placeholder="Positive prompt"></textarea>
+      </div>
 
       <label class="field-label">ネガティブプロンプト</label>
       <textarea id="pNegativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
@@ -1503,6 +1512,7 @@
       <label class="field-label">生成時の自分の環境</label>
       <div class="settings-grid open" id="pSettingsGrid"></div>
 
+      <div class="req-field" id="pTagsField">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
@@ -1514,6 +1524,7 @@
         <button class="btn-ghost" id="pAddNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="pSelectedTags"></div>
+      </div>
 
       <div class="submit-row">
         <div class="submit-row-left">
@@ -1544,8 +1555,10 @@
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="rAuthorInput" list="dl_author" placeholder="匿名">
       </div>
 
+      <div class="req-field" id="rBodyField">
       <label class="field-label">リクエスト内容</label>
       <textarea id="rBodyInput" class="autogrow" placeholder="どんな画像を生成してほしいか、できるだけ具体的に書いてください"></textarea>
+      </div>
 
       <label class="field-label">参考資料(複数可 / jpegに変換・縮小して保存されます)</label>
       <div class="attach-strip" id="rStrip"></div>
@@ -4286,9 +4299,9 @@
     const editing = isEditingImagePost();
 
     const missing = [];
-    if (!file && !editing) missing.push([document.getElementById('dropzone'), '画像']);
-    if (!selectedTags.length) missing.push([document.getElementById('postTagWrap'), 'タグ']);
-    if (!selectedCategory) missing.push([document.getElementById('categoryToggle'), 'ジャンル']);
+    if (!file && !editing) missing.push([document.getElementById('imageField'), '画像']);
+    if (!selectedTags.length) missing.push([document.getElementById('tagsField'), 'タグ']);
+    if (!selectedCategory) missing.push([document.getElementById('categoryField'), 'ジャンル']);
     if (missing.length) { reportMissing(statusText, missing); return; }
     if (GAS_URL.indexOf('ここに') === 0) { statusText.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
@@ -5382,8 +5395,8 @@
     const promptText = document.getElementById('pPromptInput').value.trim();
     const editing = isEditingPromptPost();
     const missing = [];
-    if (!promptText) missing.push([document.getElementById('pPromptInput'), 'プロンプト']);
-    if (!pSelectedTags.length) missing.push([document.getElementById('pTagWrap'), 'タグ']);
+    if (!promptText) missing.push([document.getElementById('pPromptField'), 'プロンプト']);
+    if (!pSelectedTags.length) missing.push([document.getElementById('pTagsField'), 'タグ']);
     if (missing.length) { reportMissing(pStatus, missing); return; }
     if (GAS_URL.indexOf('ここに') === 0) { pStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
@@ -5796,7 +5809,7 @@
     const rStatus = document.getElementById('rStatusText');
     const bodyText = document.getElementById('rBodyInput').value.trim();
     const editing = isEditingRequestPost();
-    if (!bodyText) { reportMissing(rStatus, [[document.getElementById('rBodyInput'), 'リクエスト内容']]); return; }
+    if (!bodyText) { reportMissing(rStatus, [[document.getElementById('rBodyField'), 'リクエスト内容']]); return; }
     if (GAS_URL.indexOf('ここに') === 0) { rStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     btn.disabled = true;
