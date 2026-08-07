@@ -274,6 +274,8 @@
 
   .submit-row{ margin-top: 22px; display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; }
   .submit-row-left{ display:flex; align-items:center; gap:14px; }
+  /* 投稿時の未入力必須項目のハイライト(レイアウトを動かさない outline 方式) */
+  .required-missing{ outline: 2px solid var(--danger) !important; outline-offset: 2px; border-radius: 8px; }
   .btn-submit{
     background: var(--accent);
     color: #fff;
@@ -422,6 +424,9 @@
     position: relative;
   }
   .modal-narrow{ max-width: 480px; }
+  .modal-options{ max-width: 660px; }
+  .modal-options .admin-modal-status{ margin-top: 2px; min-height: 4px; }
+  .modal-options .submit-row{ margin-top: 6px; }
   .modal-close{
     position: absolute; top: 14px; right: 14px;
     background: var(--surface-2); color: var(--ink);
@@ -1440,7 +1445,7 @@
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud-wrap"><div class="tag-cloud" id="postTagCloud"></div>
+      <div class="tag-cloud-wrap" id="postTagWrap"><div class="tag-cloud" id="postTagCloud"></div>
       <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button></div>
       <div class="tag-row" style="margin-top:10px;">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" placeholder="新しいタグを入力して追加">
@@ -1502,7 +1507,7 @@
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud-wrap"><div class="tag-cloud" id="pTagCloud"></div>
+      <div class="tag-cloud-wrap" id="pTagWrap"><div class="tag-cloud" id="pTagCloud"></div>
       <button class="show-all-tags" type="button" id="pShowAllTagsBtn" style="display:none;">全て表示</button></div>
       <div class="tag-row" style="margin-top:10px;">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pNewTagInput" placeholder="新しいタグを入力して追加">
@@ -2522,7 +2527,7 @@
 </div>
 
 <div class="modal-overlay" id="adminOptionsOverlay">
-  <div class="modal modal-narrow" id="adminOptionsBody"></div>
+  <div class="modal modal-options" id="adminOptionsBody"></div>
 </div>
 
 <div class="modal-overlay" id="announceOverlay">
@@ -4255,6 +4260,24 @@
     setVariantMode(false);
   }
 
+  // 未入力必須項目に赤枠を付ける。対象要素を一度操作すると自動で解除される。
+  function markMissing(el) {
+    if (!el || el.classList.contains('required-missing')) return;
+    el.classList.add('required-missing');
+    const clear = function () {
+      el.classList.remove('required-missing');
+      ['input', 'change', 'click', 'focusin'].forEach(function (ev) { el.removeEventListener(ev, clear, true); });
+    };
+    ['input', 'change', 'click', 'focusin'].forEach(function (ev) { el.addEventListener(ev, clear, true); });
+  }
+  // missing: [[element, ラベル], ...]。全箇所に赤枠を付け、状況欄に一覧表示し、先頭へスクロールする。
+  function reportMissing(statusEl, missing) {
+    missing.forEach(function (m) { markMissing(m[0]); });
+    if (statusEl) statusEl.textContent = '未入力の必須項目があります（赤枠の箇所）: ' + missing.map(function (m) { return m[1]; }).join(' / ');
+    const first = missing[0] && missing[0][0];
+    if (first && first.scrollIntoView) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
   document.getElementById('submitBtn').addEventListener('click', async function () {
     const submitBtn = this;
     // 差分編集中なら□1(メイン)へ戻し、編集内容を各スロットへ確定させる
@@ -4262,9 +4285,11 @@
     const file = imageInput.files[0];
     const editing = isEditingImagePost();
 
-    if (!file && !editing) { statusText.textContent = '画像を選択してください'; return; }
-    if (!selectedTags.length) { statusText.textContent = 'タグを1つ以上選択してください(タグは必須です)'; return; }
-    if (!selectedCategory) { statusText.textContent = '作品の属性(版権/オリジナル/その他)を選択してください'; return; }
+    const missing = [];
+    if (!file && !editing) missing.push([document.getElementById('dropzone'), '画像']);
+    if (!selectedTags.length) missing.push([document.getElementById('postTagWrap'), 'タグ']);
+    if (!selectedCategory) missing.push([document.getElementById('categoryToggle'), 'ジャンル']);
+    if (missing.length) { reportMissing(statusText, missing); return; }
     if (GAS_URL.indexOf('ここに') === 0) { statusText.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     submitBtn.disabled = true;
@@ -5356,8 +5381,10 @@
     const pStatus = document.getElementById('pStatusText');
     const promptText = document.getElementById('pPromptInput').value.trim();
     const editing = isEditingPromptPost();
-    if (!promptText) { pStatus.textContent = 'プロンプトを入力してください'; return; }
-    if (!pSelectedTags.length) { pStatus.textContent = 'タグを1つ以上選択してください(タグは必須です)'; return; }
+    const missing = [];
+    if (!promptText) missing.push([document.getElementById('pPromptInput'), 'プロンプト']);
+    if (!pSelectedTags.length) missing.push([document.getElementById('pTagWrap'), 'タグ']);
+    if (missing.length) { reportMissing(pStatus, missing); return; }
     if (GAS_URL.indexOf('ここに') === 0) { pStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     btn.disabled = true;
@@ -5769,7 +5796,7 @@
     const rStatus = document.getElementById('rStatusText');
     const bodyText = document.getElementById('rBodyInput').value.trim();
     const editing = isEditingRequestPost();
-    if (!bodyText) { rStatus.textContent = 'リクエスト内容を入力してください'; return; }
+    if (!bodyText) { reportMissing(rStatus, [[document.getElementById('rBodyInput'), 'リクエスト内容']]); return; }
     if (GAS_URL.indexOf('ここに') === 0) { rStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     btn.disabled = true;
@@ -7020,10 +7047,10 @@
 
   /* ===== ADMIN OPTIONS (オプション機能のオンオフ) ===== */
   const OPTION_GROUPS = [
+    { id: 'site', label: 'サイト全体', note: '' },
     { id: 'tabs', label: 'タブ表示', note: 'オフにしたタブは利用者のタブバーから消えます。表示中のタブをオフにすると、自動的に表示中の別タブへ切り替わります。修正依頼タブは「投稿フォーム」の修正依頼機能で制御します。' },
     { id: 'reaction', label: 'リアクション・数値', note: '' },
-    { id: 'post', label: '投稿フォーム', note: '' },
-    { id: 'site', label: 'サイト全体', note: '' }
+    { id: 'post', label: '投稿フォーム', note: '' }
   ];
   const OPTION_DEFS = [
     { key: 'tabPost', group: 'tabs', label: '投稿タブ', desc: 'オフにすると投稿タブを非表示にします' },
