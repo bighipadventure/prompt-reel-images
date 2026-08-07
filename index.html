@@ -926,6 +926,8 @@
   #fixRequestField{ margin-top: 18px; }
   #fixRequestField > .field-label{ margin-top: 0; }
   .link-field{ margin-top: 18px; }
+  /* 作品の属性(版権/オリジナル/その他): タグと投稿ボタンの間に1行で配置する必須選択 */
+  .category-select-row{ display:flex; align-items:center; gap:12px; margin:18px 0 6px; flex-wrap:wrap; }
   /* 編集用パスワード: 投稿ボタンと同じ行の右側に、1行横並びで配置する */
   .panel-head-row{ display:flex; align-items:flex-start; justify-content:space-between; gap: 20px; flex-wrap:wrap; margin-bottom: 16px; }
   .panel-head-row h2{ margin-bottom: 0; }
@@ -1442,6 +1444,15 @@
       </div>
       <div class="chips" id="selectedTags"></div>
 
+      <div class="category-select-row">
+        <label class="field-label" style="margin:0;">作品の属性</label>
+        <div class="mode-toggle" id="categoryToggle">
+          <button type="button" data-category="copyright">版権</button>
+          <button type="button" data-category="original">オリジナル</button>
+          <button type="button" data-category="other">その他</button>
+        </div>
+      </div>
+
       <div class="submit-row">
         <div class="submit-row-left">
           <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
@@ -1594,6 +1605,12 @@
 
     <div class="toolbar">
       <span class="count" id="postCount"></span>
+      <div class="mode-toggle" id="categoryFilterToggle">
+        <button type="button" data-catfilter="all">すべて</button>
+        <button type="button" data-catfilter="copyright">版権</button>
+        <button type="button" data-catfilter="original">オリジナル</button>
+        <button type="button" data-catfilter="other">その他</button>
+      </div>
       <div class="toolbar-right">
         <label class="panel-size-control" id="panelSizeControl">
           <span>表示サイズ</span>
@@ -2731,11 +2748,14 @@
   const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
+  let selectedCategory = ''; // 投稿フォーム用: 作品の属性(版権/オリジナル/その他)
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
   let tagMatchMode = 'AND'; // ONにしたタグ同士の絞り込み方: AND / OR / NOT
   let keywordMode = 'AND';
   let viewMode = 'list';
   let showChildren = false;
+  let categoryFilter = 'all';
+  try { categoryFilter = localStorage.getItem('pr_category_filter') || 'all'; } catch (e) { categoryFilter = 'all'; }
 
   let pSelectedTags = [];
   let pTagStates = {};
@@ -4019,6 +4039,21 @@
     renderList();
   });
 
+  function syncCategoryFilterButtons() {
+    document.querySelectorAll('#categoryFilterToggle button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.catfilter === categoryFilter);
+    });
+  }
+  syncCategoryFilterButtons();
+  document.querySelectorAll('#categoryFilterToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      categoryFilter = btn.dataset.catfilter;
+      try { localStorage.setItem('pr_category_filter', categoryFilter); } catch (e) {}
+      syncCategoryFilterButtons();
+      renderList();
+    });
+  });
+
   /* ---------- 投稿フォームのタグ選択 ---------- */
   const selectedTagsEl = document.getElementById('selectedTags');
   const postTagCloud = document.getElementById('postTagCloud');
@@ -4153,6 +4188,16 @@
     if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addNewTagBtn').click(); }
   });
 
+  function setSelectedCategory(cat) {
+    selectedCategory = cat;
+    document.querySelectorAll('#categoryToggle button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.category === cat);
+    });
+  }
+  document.querySelectorAll('#categoryToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () { setSelectedCategory(btn.dataset.category); });
+  });
+
   /* ---------- テキストエリア自動拡張 ---------- */
   function autoGrow(ta) {
     ta.style.height = 'auto';
@@ -4189,6 +4234,7 @@
     clearSettingsForm();
     selectedTags = [];
     renderChips();
+    setSelectedCategory('');
     selectedBasePromptIds = [];
     renderBasePromptDisplay();
     selectedParentId = '';
@@ -4214,6 +4260,7 @@
 
     if (!file && !editing) { statusText.textContent = '画像を選択してください'; return; }
     if (!selectedTags.length) { statusText.textContent = 'タグを1つ以上選択してください(タグは必須です)'; return; }
+    if (!selectedCategory) { statusText.textContent = '作品の属性(版権/オリジナル/その他)を選択してください'; return; }
     if (GAS_URL.indexOf('ここに') === 0) { statusText.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
 
     submitBtn.disabled = true;
@@ -4232,6 +4279,7 @@
         memo: document.getElementById('memoInput').value,
         settings: collectSettings(),
         tags: selectedTags,
+        category: selectedCategory,
         type: isFix ? 'fix' : 'image',
         basePromptId: selectedBasePromptIds.join(','),
         parentId: selectedParentId,
@@ -4484,6 +4532,7 @@
     let base = showChildren ? imagePosts.slice() : imagePosts.filter(function (p) { return !p.parentId; });
     if (showFixWorks && options.fixRequest) base = base.concat(fixPosts.slice());
     base = visiblePosts(base);
+    if (categoryFilter !== 'all') base = base.filter(function (p) { return p.category === categoryFilter; });
     let filtered = base.filter(passesTagFilter);
 
     const fAuthor = document.getElementById('filterAuthor').value.trim().toLowerCase();
@@ -7240,6 +7289,7 @@
       });
       selectedTags = (p.tags || []).slice();
       renderChips();
+      setSelectedCategory(p.category || '');
       selectedBasePromptIds = basePromptIdsOf(p);
       renderBasePromptDisplay();
       selectedParentId = String(p.parentId || '');
