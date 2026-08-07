@@ -841,6 +841,16 @@
   .opt-switch.on{ background:var(--accent-dim); border-color:var(--accent); }
   .opt-switch.on::after{ transform:translateX(20px); background:var(--accent); }
   .admin-modal-status{ font-size: 12px; color: var(--danger); min-height: 18px; margin-top: 10px; }
+  .opt-group-tabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+  .opt-group-tab{
+    padding:6px 12px; border-radius:999px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink-dim); cursor:pointer; font-size:12.5px; white-space:nowrap;
+  }
+  .opt-group-tab:hover{ color:var(--ink); }
+  .opt-group-tab.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .opt-group{ display:none; }
+  .opt-group.active{ display:block; }
+  .opt-group-note{ font-size:11.5px; color:var(--ink-dim); margin:2px 2px 8px; line-height:1.6; }
 
   /* ---- オプション機能の表示制御 ---- */
   body.opt-no-like .sort-chip[data-field="likeCount"],
@@ -855,6 +865,17 @@
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
   body.opt-no-boardvote .board-vote{ display:none; }
+  body.opt-no-tab-post .tab-btn[data-tab="post"],
+  body.opt-no-tab-browse .tab-btn[data-tab="browse"],
+  body.opt-no-tab-prompt .tab-btn[data-tab="promptBrowse"],
+  body.opt-no-tab-request .tab-btn[data-tab="requestBrowse"],
+  body.opt-no-tab-databank .tab-btn[data-tab="databank"],
+  body.opt-no-tab-usage .tab-btn[data-tab="usage"],
+  body.opt-no-tab-guide .tab-btn[data-tab="guide"]{ display:none; }
+  body.opt-no-link-baseprompt .link-field[data-link="basePrompt"],
+  body.opt-no-link-parent .link-field[data-link="parent"],
+  body.opt-no-link-reference .link-field[data-link="reference"],
+  body.opt-no-link-request .link-field[data-link="request"]{ display:none; }
   /* 使い方タブなど、機能説明をオプションと連動して隠すための共通クラス */
   body.opt-no-like .opt-only-like,
   body.opt-no-likecount .opt-only-likecount,
@@ -864,6 +885,27 @@
   body.opt-no-board .opt-only-board,
   body.opt-no-boardvote .opt-only-boardvote,
   body.opt-no-dislike .opt-only-dislike{ display:none !important; }
+  body.opt-no-tab-post .opt-only-tab-post,
+  body.opt-no-tab-browse .opt-only-tab-browse,
+  body.opt-no-tab-prompt .opt-only-tab-prompt,
+  body.opt-no-tab-request .opt-only-tab-request,
+  body.opt-no-tab-databank .opt-only-tab-databank,
+  body.opt-no-tab-usage .opt-only-tab-usage,
+  body.opt-no-tab-guide .opt-only-tab-guide,
+  body.opt-no-link-baseprompt .opt-only-link-baseprompt,
+  body.opt-no-link-parent .opt-only-link-parent,
+  body.opt-no-link-reference .opt-only-link-reference,
+  body.opt-no-link-request .opt-only-link-request{ display:none !important; }
+  body.opt-no-login .opt-only-login{ display:none !important; }
+  body.opt-no-login .qa-item.opt-only-login + .qa-item{ padding-top:4px; }
+  /* 機能リスト先頭を連続して隠したとき、可視の先頭に残る上罫線を消す */
+  body.opt-no-tab-post .feature-item.opt-only-tab-browse{ border-top:none; }
+  body.opt-no-tab-post.opt-no-tab-browse .feature-item.opt-only-tab-prompt{ border-top:none; }
+  body.opt-no-tab-post.opt-no-tab-browse.opt-no-tab-prompt .feature-item.opt-only-tab-request{ border-top:none; }
+  body.opt-no-tab-post.opt-no-tab-browse.opt-no-tab-prompt.opt-no-tab-request:not(.opt-fixrequest) .feature-item.opt-only-tab-databank{ border-top:none; }
+  body.opt-no-link-baseprompt .feature-item.opt-only-link-parent{ border-top:none; }
+  body.opt-no-link-baseprompt.opt-no-link-parent .feature-item.opt-only-link-reference{ border-top:none; }
+  body.opt-no-link-baseprompt.opt-no-link-parent.opt-no-link-reference .feature-item.opt-only-link-request{ border-top:none; }
   /* 修正依頼機能: オプションがオンのときだけ表示(オフ時は存在自体を見せない) */
   body:not(.opt-fixrequest) .fixrequest-only{ display:none !important; }
   /* 投稿者編集機能: オプションがオンのときだけ表示(オフ時は存在自体を見せない) */
@@ -883,6 +925,7 @@
   .author-field > .field-label{ margin-top: 0; }
   #fixRequestField{ margin-top: 18px; }
   #fixRequestField > .field-label{ margin-top: 0; }
+  .link-field{ margin-top: 18px; }
   /* 編集用パスワード: 投稿ボタンと同じ行の右側に、1行横並びで配置する */
   .panel-head-row{ display:flex; align-items:flex-start; justify-content:space-between; gap: 20px; flex-wrap:wrap; margin-bottom: 16px; }
   .panel-head-row h2{ margin-bottom: 0; }
@@ -1344,28 +1387,36 @@
       <label class="field-label">メモ(備考)</label>
       <textarea id="memoInput" class="autogrow" placeholder="補足・備考があれば"></textarea>
 
-      <label class="field-label">ベースにしたプロンプト例(複数選択可)</label>
-      <div class="base-prompt-select">
-        <button class="btn-ghost" id="pickBasePromptBtn" type="button">プロンプト例を選択</button>
-        <span id="basePromptDisplay" class="base-prompt-display"></span>
+      <div class="link-field" data-link="basePrompt">
+        <label class="field-label">ベースにしたプロンプト例(複数選択可)</label>
+        <div class="base-prompt-select">
+          <button class="btn-ghost" id="pickBasePromptBtn" type="button">プロンプト例を選択</button>
+          <span id="basePromptDisplay" class="base-prompt-display"></span>
+        </div>
       </div>
 
-      <label class="field-label">親にする投稿作品(同じ設定のバリエーションを投稿するとき)</label>
-      <div class="base-prompt-select">
-        <button class="btn-ghost" id="pickParentBtn" type="button">親作品を選択</button>
-        <span id="parentDisplay" class="base-prompt-display"></span>
+      <div class="link-field" data-link="parent">
+        <label class="field-label">親にする投稿作品(同じ設定のバリエーションを投稿するとき)</label>
+        <div class="base-prompt-select">
+          <button class="btn-ghost" id="pickParentBtn" type="button">親作品を選択</button>
+          <span id="parentDisplay" class="base-prompt-display"></span>
+        </div>
       </div>
 
-      <label class="field-label">参考にした投稿作品(他の作品を参考にしたとき。子作品にはならず一覧に通常表示されます)</label>
-      <div class="base-prompt-select">
-        <button class="btn-ghost" id="pickReferenceBtn" type="button">参考作品を選択</button>
-        <span id="referenceDisplay" class="base-prompt-display"></span>
+      <div class="link-field" data-link="reference">
+        <label class="field-label">参考にした投稿作品(他の作品を参考にしたとき。子作品にはならず一覧に通常表示されます)</label>
+        <div class="base-prompt-select">
+          <button class="btn-ghost" id="pickReferenceBtn" type="button">参考作品を選択</button>
+          <span id="referenceDisplay" class="base-prompt-display"></span>
+        </div>
       </div>
 
-      <label class="field-label">応えるリクエスト(リクエストへの回答として投稿するとき)</label>
-      <div class="base-prompt-select">
-        <button class="btn-ghost" id="pickRequestBtn" type="button">リクエストを選択</button>
-        <span id="requestDisplay" class="base-prompt-display"></span>
+      <div class="link-field" data-link="request">
+        <label class="field-label">応えるリクエスト(リクエストへの回答として投稿するとき)</label>
+        <div class="base-prompt-select">
+          <button class="btn-ghost" id="pickRequestBtn" type="button">リクエストを選択</button>
+          <span id="requestDisplay" class="base-prompt-display"></span>
+        </div>
       </div>
 
       <div id="fixRequestField" class="fixrequest-only">
@@ -1821,19 +1872,19 @@
 
     <section class="panel">
       <h2>タブごとにできること</h2>
-      <div class="feature-item">
+      <div class="feature-item opt-only-tab-post">
         <div class="feature-name">投稿</div>
         <div class="feature-desc">作品や依頼を投稿するタブです。上部のボタンで「画像を投稿」「プロンプト例を投稿」「リクエストを投稿」<span class="fixrequest-only">「修正依頼を投稿」</span>を切り替えます。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-tab-browse">
         <div class="feature-name">画像投稿一覧</div>
         <div class="feature-desc">投稿された画像作品が並びます。リスト表示とパネル表示を切り替えられ、並び順・絞り込み・キーワード検索・タグで探せます。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-tab-prompt">
         <div class="feature-name">プロンプト投稿一覧</div>
         <div class="feature-desc">画像なしのプロンプト例が並びます。画像一覧とほぼ同じ探し方ができます(リスト表示のみ)。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-tab-request">
         <div class="feature-name">リクエスト一覧</div>
         <div class="feature-desc">「こういう画像が見たい」という依頼が並びます。誰かが応えて投稿すると、その依頼の詳細に作品がまとまって表示されます。</div>
       </div>
@@ -1841,7 +1892,7 @@
         <div class="feature-name">修正依頼一覧</div>
         <div class="feature-desc">「この画像のここを直してほしい」という依頼が並びます。対応した作品は依頼の詳細にまとまって表示されます。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-tab-databank">
         <div class="feature-name">プロンプトデータバンク</div>
         <div class="feature-desc">みんなの投稿に実際に使われているプロンプト語を集計し、日本語訳つきの辞書にしたタブです。使いたい語をカートに集めてまとめてコピーできます。</div>
       </div>
@@ -1857,11 +1908,11 @@
         <div class="feature-name">お知らせ</div>
         <div class="feature-desc">運営からのお知らせがあるときは、タイトル直下に未読のお知らせが1件ずつ縦に並んで表示されます（画面が埋まらないよう、ここに常時出るのは新しい3件までです）。各行の「既読」ボタンを押すまで消えないので、見落としません。行をクリックすると、そのお知らせの全文モーダルが開きます（画像が添付されていれば一緒に表示）。ヘッダー右上の「お知らせ」ボタンを押すと、これまでのお知らせをタイトルと投稿日時の一覧で確認でき、項目をクリックすると全文を読み返せます。既読にするのは各行の「既読」ボタンから行います。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-tab-usage">
         <div class="feature-name">本ツールの使い方</div>
         <div class="feature-desc">このページです。いちばん下に管理者への連絡フォームがあります。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-tab-guide">
         <div class="feature-name">はじめてガイド</div>
         <div class="feature-desc">自分のパソコンで画像生成を始めるまでの手順(ソフトの導入・モデルの入手・初回生成)をまとめた別記事です。</div>
       </div>
@@ -1918,19 +1969,19 @@
           投稿フォームの下の方にあるピッカー(選択ボタン)から、他の投稿と関連づけられます。紐づけておくと、お互いの詳細画面から行き来できるようになります。
         </div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-link-baseprompt">
         <div class="feature-name">ベースにしたプロンプト例(画像 → プロンプト例・複数選択可)</div>
         <div class="feature-desc">「このプロンプト例を参考に作りました」という関係です。プロンプト例の詳細の下に、それをベースにした画像作品が一覧表示されます。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-link-parent">
         <div class="feature-name">親にする投稿作品(画像 → 画像・1件のみ)</div>
         <div class="feature-desc">同じ設定でSeed違いを量産したときに使います。親を指定した作品(子)は一覧に並ばず、親の詳細の下に「この作品のバリエーション」としてまとまります。一覧が似た作品であふれるのを防ぐための仕組みです。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-link-reference">
         <div class="feature-name">参考にした投稿作品(画像 → 画像・1件のみ)</div>
         <div class="feature-desc">「この作品を参考にして作りました」という関係です。投稿フォームの「参考作品を選択」から選びます。親子紐づけと違って<strong>子作品にはならない</strong>ので、あなたの投稿はこれまでどおり画像投稿一覧に表示されます。指定すると、詳細画面に「参考にした投稿作品」へのリンクが出て、元の作品をすぐ開けます。</div>
       </div>
-      <div class="feature-item">
+      <div class="feature-item opt-only-link-request">
         <div class="feature-name">応えるリクエスト(画像 → リクエスト・1件のみ)</div>
         <div class="feature-desc">「このリクエストに応えて作りました」という関係です。リクエストの詳細の下に、応えた作品が一覧表示されます。</div>
       </div>
@@ -2102,7 +2153,7 @@
     <section class="panel">
       <h2>よくある質問(Q&amp;A)</h2>
 
-      <div class="qa-item">
+      <div class="qa-item opt-only-login">
         <div class="qa-q">サイトを開くとパスワードの入力を求められます。</div>
         <div class="qa-a">管理者がログイン画面をオンにしている場合、サイトを開いた最初に合言葉(パスワード)の入力を求められます。仲間内だけで使うための簡単な入場制限です。パスワードが分からない・入場できない場合は、管理者に確認してください。一度正しく入力すると、その端末では次回以降は自動で入場します(管理者がパスワードを変更すると再入力が必要になります)。認証を通すまでは投稿などの中身はサーバーから一切返されないため、URLを直接開いても中身は見えません。なお、サーバー(GAS)に接続できないときは「接続できません。再接続しています...」と表示され、接続が回復するまで自動で待ち続けます(この間は中身は表示されません)。</div>
       </div>
@@ -2119,15 +2170,15 @@
 
       <div class="qa-item">
         <div class="qa-q">画像投稿とプロンプト例の投稿は何が違いますか？</div>
-        <div class="qa-a">画像投稿は「生成した画像そのもの」を共有する機能です。プロンプト例の投稿は「自分で考えたプロンプト」を作品として共有する機能で、画像は添付しません。画像を投稿するときに、参考にしたプロンプト例を「ベース」として紐づけられます。</div>
+        <div class="qa-a">画像投稿は「生成した画像そのもの」を共有する機能です。プロンプト例の投稿は「自分で考えたプロンプト」を作品として共有する機能で、画像は添付しません。<span class="opt-only-link-baseprompt">画像を投稿するときに、参考にしたプロンプト例を「ベース」として紐づけられます。</span></div>
       </div>
 
-      <div class="qa-item">
+      <div class="qa-item opt-only-link-baseprompt">
         <div class="qa-q">プロンプト例をベースにした画像は、どうやって探しますか？</div>
         <div class="qa-a">「プロンプト投稿一覧」でプロンプト例を開くと、その例をベースにして投稿された画像作品が、詳細の下に一覧で表示されます。逆に画像の詳細を開いたときは「ベースにしたプロンプト例」からその例へジャンプできます。</div>
       </div>
 
-      <div class="qa-item">
+      <div class="qa-item opt-only-link-parent">
         <div class="qa-q">同じ設定で生成した画像が何枚もあります。全部投稿してもいいですか？</div>
         <div class="qa-a">はい。ただし一覧が同じような作品であふれないように「親子紐づけ」を使ってください。まず1枚を普通に投稿し、2枚目以降は画像投稿フォームの「親にする投稿作品」でその作品を選んで投稿します。子になった作品は画像投稿一覧には表示されず、親の詳細を開くと「この作品のバリエーション」として下に一覧表示され、クリックで詳細を見られます。なお、一覧上部の「子も全て表示」を押すと、子の作品も含めてすべてを一覧(パネル表示を含む)に表示できます。</div>
       </div>
@@ -2152,7 +2203,7 @@
         <div class="qa-a">「まだ存在しない画像を作ってほしい」ときはリクエスト<span class="fixrequest-only">、「すでにある画像のここを直してほしい」ときは修正依頼</span>です。プロンプト例は依頼ではなく、自分の書いたプロンプトを共有する投稿です。</div>
       </div>
 
-      <div class="qa-item">
+      <div class="qa-item opt-only-tab-request">
         <div class="qa-q">投稿したリクエストに誰かが応えてくれたか、どこで分かりますか？</div>
         <div class="qa-a">リクエストの詳細を開くと、いちばん下に「このリクエストに応えて投稿された作品」が一覧表示されます。一覧の行にも回答作品の件数が出るので、そこでも確認できます。</div>
       </div>
@@ -2167,7 +2218,7 @@
         <div class="qa-a">タグは1行だけ表示され、あふれた分は隠れています。行の右端にある「全て表示」を押すと全タグの一覧が開きます。選んだタグは常に先頭に移動するので、選択中のタグが隠れてしまうことはありません。</div>
       </div>
 
-      <div class="qa-item">
+      <div class="qa-item opt-only-tab-databank">
         <div class="qa-q">プロンプトデータバンクの日本語訳が「—」だったり、意味が変だったりします。</div>
         <div class="qa-a">日本語訳は自動翻訳をもとに用意しており、新しく使われた語は少し時間をおくと自動で埋まります(「—」は未登録の状態です)。訳が不自然な語や、もっと良い訳・関連キーワードを足したい場合は、管理者が辞書を直接直せます。気になる訳があれば使い方タブ下部の連絡フォームから管理者へ知らせてください。</div>
       </div>
@@ -2677,7 +2728,7 @@
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let tagStates = {};    // 閲覧タブ用 { tagName: true } (ON状態のタグのみ保持)
@@ -4305,6 +4356,18 @@
     document.body.classList.toggle('opt-owneredit', !!options.ownerEdit);
     document.body.classList.toggle('opt-inpaint', !!options.inpaint);
     document.body.classList.toggle('opt-no-dislike', !options.dislike);
+    document.body.classList.toggle('opt-no-tab-post', !options.tabPost);
+    document.body.classList.toggle('opt-no-tab-browse', !options.tabBrowse);
+    document.body.classList.toggle('opt-no-tab-prompt', !options.tabPrompt);
+    document.body.classList.toggle('opt-no-tab-request', !options.tabRequest);
+    document.body.classList.toggle('opt-no-tab-databank', !options.tabDatabank);
+    document.body.classList.toggle('opt-no-tab-usage', !options.tabUsage);
+    document.body.classList.toggle('opt-no-tab-guide', !options.tabGuide);
+    document.body.classList.toggle('opt-no-link-baseprompt', !options.linkBasePrompt);
+    document.body.classList.toggle('opt-no-link-parent', !options.linkParent);
+    document.body.classList.toggle('opt-no-link-reference', !options.linkReference);
+    document.body.classList.toggle('opt-no-link-request', !options.linkRequest);
+    document.body.classList.toggle('opt-no-login', !options.loginEnabled);
     if (!options.inpaint && typeof setInpaintMode === 'function') setInpaintMode(false);
     document.querySelectorAll('.author-field').forEach(function (el) {
       el.style.display = options.author ? '' : 'none';
@@ -4321,6 +4384,15 @@
         document.getElementById('includeFixToggle').classList.remove('active');
       }
     }
+    ensureVisibleActiveTab();
+  }
+
+  function ensureVisibleActiveTab() {
+    const active = document.querySelector('.tab-btn.active');
+    if (active && getComputedStyle(active).display !== 'none') return;
+    const firstVisible = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'))
+      .find(function (b) { return getComputedStyle(b).display !== 'none'; });
+    if (firstVisible) switchTab(firstVisible.dataset.tab);
   }
 
   function commentsFor(postId) {
@@ -6894,20 +6966,37 @@
   }
 
   /* ===== ADMIN OPTIONS (オプション機能のオンオフ) ===== */
+  const OPTION_GROUPS = [
+    { id: 'tabs', label: 'タブ表示', note: 'オフにしたタブは利用者のタブバーから消えます。表示中のタブをオフにすると、自動的に表示中の別タブへ切り替わります。修正依頼タブは「投稿フォーム」の修正依頼機能で制御します。' },
+    { id: 'reaction', label: 'リアクション・数値', note: '' },
+    { id: 'post', label: '投稿フォーム', note: '' },
+    { id: 'site', label: 'サイト全体', note: '' }
+  ];
   const OPTION_DEFS = [
-    { key: 'like', label: 'グッドボタン', desc: 'オフにすると全画面からグッドボタンが消えます' },
-    { key: 'likeCount', label: 'グッド数の表示', desc: 'オフにするとグッド数を表示しません' },
-    { key: 'dislike', label: 'バッドボタン', desc: 'オフにするとバッドボタンを非表示にします。オンのとき、しきい値に達した投稿は利用者から自動で非表示になります' },
-    { key: 'dislikeCount', label: 'バッド数の表示', desc: 'オフにするとバッド数を表示しません(バッドボタン自体は残ります)' },
-    { key: 'downloadCount', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
-    { key: 'author', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になり、各フォーム(投稿・掲示板・返信)の名前入力欄も隠れます' },
-    { key: 'comment', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
-    { key: 'board', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
-    { key: 'boardVote', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
-    { key: 'fixRequest', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
-    { key: 'ownerEdit', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示されます。投稿者がパスワードを設定した投稿は、詳細画面の「編集」ボタンからそのパスワードを入力して本人が編集できます(オフのときは欄もボタンも表示されません)' },
-    { key: 'inpaint', label: '修正後画像モード', desc: 'オンにすると、画像投稿フォームの右上に「修正後画像モード」トグルが表示されます。トグルを押すと、元画像からプロンプト・生成設定だけを読み取り、実際に投稿する画像には修正後(inpaint など)の画像を選べます(オフのときはトグルごと表示されません)' },
-    { key: 'loginEnabled', label: 'ログイン画面', desc: 'オンにすると、サイトを開いたときにパスワード入力画面を表示します(変更は次回読み込みから反映)。パスワードや表示メッセージ・画像はadminシートで管理します' }
+    { key: 'tabPost', group: 'tabs', label: '投稿タブ', desc: 'オフにすると投稿タブを非表示にします' },
+    { key: 'tabBrowse', group: 'tabs', label: '画像投稿一覧タブ', desc: 'オフにすると画像投稿一覧タブを非表示にします' },
+    { key: 'tabPrompt', group: 'tabs', label: 'プロンプト投稿一覧タブ', desc: 'オフにするとプロンプト投稿一覧タブを非表示にします' },
+    { key: 'tabRequest', group: 'tabs', label: 'リクエスト一覧タブ', desc: 'オフにするとリクエスト一覧タブを非表示にします' },
+    { key: 'tabDatabank', group: 'tabs', label: 'プロンプトデータバンクタブ', desc: 'オフにするとプロンプトデータバンクタブを非表示にします' },
+    { key: 'board', group: 'tabs', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
+    { key: 'tabUsage', group: 'tabs', label: '本ツールの使い方タブ', desc: 'オフにすると使い方タブを非表示にします' },
+    { key: 'tabGuide', group: 'tabs', label: 'はじめてガイドタブ', desc: 'オフにするとはじめてガイドタブを非表示にします' },
+    { key: 'like', group: 'reaction', label: 'グッドボタン', desc: 'オフにすると全画面からグッドボタンが消えます' },
+    { key: 'likeCount', group: 'reaction', label: 'グッド数の表示', desc: 'オフにするとグッド数を表示しません' },
+    { key: 'dislike', group: 'reaction', label: 'バッドボタン', desc: 'オフにするとバッドボタンを非表示にします。オンのとき、しきい値に達した投稿は利用者から自動で非表示になります' },
+    { key: 'dislikeCount', group: 'reaction', label: 'バッド数の表示', desc: 'オフにするとバッド数を表示しません(バッドボタン自体は残ります)' },
+    { key: 'downloadCount', group: 'reaction', label: 'ダウンロード数の表示', desc: 'オフにするとDL数を表示しません' },
+    { key: 'comment', group: 'reaction', label: 'コメント機能', desc: 'オフにするとコメントの閲覧・投稿ができなくなります' },
+    { key: 'boardVote', group: 'reaction', label: '掲示板のグッド/バッド', desc: 'オフにすると掲示板のグッド/バッドボタンを非表示にします' },
+    { key: 'author', group: 'post', label: '投稿者名の表示', desc: 'オフにすると全員「匿名」表示になり、各フォーム(投稿・掲示板・返信)の名前入力欄も隠れます' },
+    { key: 'linkBasePrompt', group: 'post', label: '紐づけ: ベースにしたプロンプト例', desc: 'オフにすると投稿フォームから「ベースにしたプロンプト例」の選択欄を非表示にします' },
+    { key: 'linkParent', group: 'post', label: '紐づけ: 親にする投稿作品', desc: 'オフにすると投稿フォームから「親にする投稿作品(バリエーション)」の選択欄を非表示にします' },
+    { key: 'linkReference', group: 'post', label: '紐づけ: 参考にした投稿作品', desc: 'オフにすると投稿フォームから「参考にした投稿作品」の選択欄を非表示にします' },
+    { key: 'linkRequest', group: 'post', label: '紐づけ: 応えるリクエスト', desc: 'オフにすると投稿フォームから「応えるリクエスト」の選択欄を非表示にします' },
+    { key: 'fixRequest', group: 'post', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
+    { key: 'ownerEdit', group: 'post', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示されます。投稿者がパスワードを設定した投稿は、詳細画面の「編集」ボタンからそのパスワードを入力して本人が編集できます(オフのときは欄もボタンも表示されません)' },
+    { key: 'inpaint', group: 'post', label: '修正後画像モード', desc: 'オンにすると、画像投稿フォームの右上に「修正後画像モード」トグルが表示されます。トグルを押すと、元画像からプロンプト・生成設定だけを読み取り、実際に投稿する画像には修正後(inpaint など)の画像を選べます(オフのときはトグルごと表示されません)' },
+    { key: 'loginEnabled', group: 'site', label: 'ログイン画面', desc: 'オンにすると、サイトを開いたときにパスワード入力画面を表示します(変更は次回読み込みから反映)。パスワードや表示メッセージ・画像はadminシートで管理します' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
@@ -6921,18 +7010,7 @@
         '<div class="opt-desc">バッドがこの回数に達した投稿は、利用者の一覧・詳細から自動で非表示になります(管理者モードでは引き続き表示されます)</div></div>' +
         '<input type="number" min="1" step="1" id="dislikeThresholdInput" value="' + (Number(draftOptions.dislikeThreshold) || 10) + '" style="width:90px;">' +
       '</div>';
-    adminOptionsBody.innerHTML = '' +
-      '<div class="modal-header">' +
-        '<h3 class="modal-title">オプション機能</h3>' +
-        '<div class="modal-top-actions"><button class="modal-close" type="button" id="adminOptionsCloseBtn">✕ 閉じる</button></div>' +
-      '</div>' +
-      '<div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:8px;">オフにした機能は利用者の画面から非表示になります。</div>' +
-      OPTION_DEFS.map(function (o) {
-        return '<div class="opt-toggle-row">' +
-          '<div><div class="opt-label">' + o.label + '</div><div class="opt-desc">' + o.desc + '</div></div>' +
-          '<div class="opt-switch' + (draftOptions[o.key] ? ' on' : '') + '" data-opt="' + o.key + '"></div>' +
-        '</div>' + (o.key === 'dislike' ? dislikeThresholdRow : '');
-      }).join('') +
+    const loginPwRow =
       '<div class="opt-toggle-row">' +
         '<div><div class="opt-label">ログイン画面のパスワード</div>' +
         '<div class="opt-desc">サイトを開くときのパスワードを変更します(現在値は表示されません)。メッセージ・画像はadminシートのE1・E2で指定します</div></div>' +
@@ -6941,7 +7019,34 @@
           '<button class="btn-ghost" type="button" id="loginPwChangeBtn">変更</button>' +
         '</div>' +
       '</div>' +
-      '<div class="admin-modal-status" id="loginPwChangeStatus"></div>' +
+      '<div class="admin-modal-status" id="loginPwChangeStatus"></div>';
+    const optRowHtml = function (o) {
+      return '<div class="opt-toggle-row">' +
+        '<div><div class="opt-label">' + o.label + '</div><div class="opt-desc">' + o.desc + '</div></div>' +
+        '<div class="opt-switch' + (draftOptions[o.key] ? ' on' : '') + '" data-opt="' + o.key + '"></div>' +
+      '</div>';
+    };
+    adminOptionsBody.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">オプション機能</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="adminOptionsCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      '<div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:8px;">オフにした機能は利用者の画面から非表示になります。ジャンルごとにタブで分かれています。</div>' +
+      '<div class="opt-group-tabs">' +
+        OPTION_GROUPS.map(function (g, gi) {
+          return '<button type="button" class="opt-group-tab' + (gi === 0 ? ' active' : '') + '" data-group="' + g.id + '">' + g.label + '</button>';
+        }).join('') +
+      '</div>' +
+      OPTION_GROUPS.map(function (g, gi) {
+        const note = g.note ? '<div class="opt-group-note">' + g.note + '</div>' : '';
+        const rows = OPTION_DEFS.filter(function (o) { return o.group === g.id; }).map(function (o) {
+          let html = optRowHtml(o);
+          if (o.key === 'dislike') html += dislikeThresholdRow;
+          if (o.key === 'loginEnabled') html += loginPwRow;
+          return html;
+        }).join('');
+        return '<div class="opt-group' + (gi === 0 ? ' active' : '') + '" data-group="' + g.id + '">' + note + rows + '</div>';
+      }).join('') +
       '<div class="admin-modal-status" id="adminOptionsStatus"></div>' +
       '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>';
 
@@ -6950,6 +7055,12 @@
         const k = sw.dataset.opt;
         draftOptions[k] = !draftOptions[k];
         sw.classList.toggle('on', draftOptions[k]);
+      });
+    });
+    adminOptionsBody.querySelectorAll('.opt-group-tab').forEach(function (bt) {
+      bt.addEventListener('click', function () {
+        adminOptionsBody.querySelectorAll('.opt-group-tab').forEach(function (x) { x.classList.toggle('active', x === bt); });
+        adminOptionsBody.querySelectorAll('.opt-group').forEach(function (x) { x.classList.toggle('active', x.dataset.group === bt.dataset.group); });
       });
     });
     document.getElementById('adminOptionsCloseBtn').addEventListener('click', closeAdminOptionsModal);
@@ -6996,7 +7107,7 @@
       // 未知のキーが返却から欠落し、保存したはずの設定がオフに戻ってしまう。
       // 黙って戻さず原因を明示する。
       const returned = result.options || {};
-      const missing = ['fixRequest', 'dislike', 'ownerEdit', 'inpaint', 'loginEnabled'].filter(function (k) { return !(k in returned); });
+      const missing = ['fixRequest', 'dislike', 'ownerEdit', 'inpaint', 'loginEnabled', 'tabBrowse', 'linkBasePrompt'].filter(function (k) { return !(k in returned); });
       if (missing.length) {
         throw new Error('GAS側が新機能に未対応です。最新の Code.gs を貼り付けたうえで「デプロイを管理」→ 新しいバージョンとして更新し、setup を再実行してください。');
       }
