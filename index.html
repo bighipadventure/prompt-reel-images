@@ -3543,9 +3543,9 @@
   function authParam() { return siteAuthToken ? ('&token=' + encodeURIComponent(siteAuthToken)) : ''; }
 
   // stage: 'parents' | 'rest'。GAS側のdoGetが対応するstageパラメータ付きで取得する。
-  async function fetchStageWithRetry(stage, onRetry) {
+  async function fetchStageWithRetry(stage, onRetry, fresh) {
     let lastErr = null;
-    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'stage=' + stage + authParam();
+    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'stage=' + stage + (fresh ? '&fresh=1' : '') + authParam();
     for (let i = 0; i < LOAD_RETRY_TIMEOUTS.length; i++) {
       if (i > 0 && onRetry) onRetry(i + 1, LOAD_RETRY_TIMEOUTS.length);
       try {
@@ -3763,12 +3763,12 @@
   // 呼び出し側は戻り値の時点でposts/imagePosts/promptPosts/requestPosts/fixPostsが
   // すべて最新化されていることを前提にしてよい(新規投稿を確実に見つけて開くため)。
   // 既に stage=rest 済みでも、削除・変更を反映するため必ず両方取り直す。
-  async function reloadAllPosts() {
+  async function reloadAllPosts(fresh) {
     showLoading('読み込み中...');
     try {
-      const parentsData = await fetchStageWithRetry('parents');
+      const parentsData = await fetchStageWithRetry('parents', null, fresh);
       applyParentsData(parentsData);
-      const restData = await fetchStageWithRetry('rest');
+      const restData = await fetchStageWithRetry('rest', null, fresh);
       applyRestData(restData);
       restStageLoaded = true;
       restStageLoading = false;
@@ -8148,7 +8148,7 @@
     const orig = btn.textContent;
     btn.textContent = '更新中...';
     try {
-      await reloadAllPosts();
+      await reloadAllPosts(true);
       rerenderActiveList();
       if (document.getElementById('tab-databank') && document.getElementById('tab-databank').classList.contains('active')) renderDatabank();
       if (document.getElementById('tab-board') && document.getElementById('tab-board').classList.contains('active')) renderBoard();
