@@ -1291,6 +1291,7 @@
     <h1>Prompt Reel</h1>
     <div class="announce-bar" id="announceBar" style="display:none;"></div>
     <div class="header-admin-btns">
+      <button class="admin-btn admin-opts-btn" type="button" id="adminHiddenListBtn" style="display:none;">非表示</button>
       <button class="admin-btn admin-opts-btn" type="button" id="adminOptionsBtn" style="display:none;">オプション設定</button>
       <button class="admin-btn admin-opts-btn admin-badge-btn" type="button" id="adminContactsBtn" style="display:none;">連絡一覧<span class="contact-badge" id="contactBadge">0</span></button>
       <button class="admin-btn admin-opts-btn" type="button" id="adminAnnounceBtn" style="display:none;">お知らせを投稿</button>
@@ -1866,7 +1867,7 @@
         <div class="num">3</div>
         <div class="body">
           <strong>探す</strong><br>
-          一覧上部の「並び順」チップと「絞り込み」欄、タグクリックで目当ての作品を検索できます。パネル表示にすると右上のスライダーで表示サイズを調整できます。プロンプトそのものを探したいときは「プロンプトデータバンク」タブが便利です。
+          一覧上部の「並び順」チップと「絞り込み」欄、タグクリックで目当ての作品を検索できます。パネル表示にすると右上のスライダーで表示サイズを調整できます。<span class="opt-only-tab-databank">プロンプトそのものを探したいときは「プロンプトデータバンク」タブが便利です。</span>
         </div>
       </div>
       <div class="guide-step">
@@ -2118,7 +2119,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel opt-only-tab-databank">
       <h2>プロンプトデータバンクの使い方</h2>
       <div class="guide-step">
         <div class="body">
@@ -2543,6 +2544,10 @@
   <div class="modal modal-options" id="adminOptionsBody"></div>
 </div>
 
+<div class="modal-overlay" id="adminHiddenOverlay">
+  <div class="modal modal-options" id="adminHiddenBody"></div>
+</div>
+
 <div class="modal-overlay" id="announceOverlay">
   <div class="modal" id="announceBody"></div>
 </div>
@@ -2856,7 +2861,34 @@
     return options.dislike && !adminMode && (Number(p.dislikeCount) || 0) >= dislikeThreshold();
   }
   function visiblePosts(arr) {
-    return arr.filter(function (p) { return !isHiddenByDislike(p); });
+    return arr.filter(function (p) { return !isHiddenByDislike(p) && !isAdminHidden(p); });
+  }
+  // ---- 管理モード中だけ効く「投稿の非表示」(クライアント/端末ローカル。サーバや他利用者には一切影響しない) ----
+  let adminHiddenIds = new Set();
+  try { adminHiddenIds = new Set((JSON.parse(localStorage.getItem('pr_admin_hidden') || '[]') || []).map(String)); } catch (e) {}
+  function saveAdminHidden() { try { localStorage.setItem('pr_admin_hidden', JSON.stringify(Array.from(adminHiddenIds))); } catch (e) {} }
+  // 管理モード中のみ true。通常ログイン時は常に false=非表示は効かない。
+  function isAdminHidden(p) { return adminMode && !!p && adminHiddenIds.has(String(p.id)); }
+  function setPostHidden(id, on) {
+    id = String(id);
+    if (on) adminHiddenIds.add(id); else adminHiddenIds.delete(id);
+    saveAdminHidden();
+    updateAdminHiddenBtn();
+    rerenderActiveList();
+  }
+  function updateAdminHiddenBtn() {
+    const btn = document.getElementById('adminHiddenListBtn');
+    if (!btn) return;
+    const n = adminHiddenIds.size;
+    btn.textContent = '非表示' + (n ? ' (' + n + ')' : '');
+  }
+  function postTypeLabel(p) {
+    const t = (p && p.type) || 'image';
+    return t === 'prompt' ? 'プロンプト例' : t === 'request' ? 'リクエスト' : t === 'fix' ? '修正依頼' : '画像';
+  }
+  function findAnyPostById(id) {
+    id = String(id);
+    return imagePosts.concat(promptPosts, requestPosts, fixPosts).find(function (p) { return String(p.id) === id; }) || null;
   }
 
   let boardVotes = {};
@@ -6832,6 +6864,8 @@
     adminBtn.textContent = on ? '管理モード終了' : '管理画面';
     adminBtn.classList.toggle('on', on);
     document.getElementById('adminOptionsBtn').style.display = on ? '' : 'none';
+    document.getElementById('adminHiddenListBtn').style.display = on ? '' : 'none';
+    updateAdminHiddenBtn();
     document.getElementById('adminAnnounceBtn').style.display = on ? '' : 'none';
     document.getElementById('adminContactsBtn').style.display = on ? '' : 'none';
     document.body.classList.toggle('admin-on', on);
@@ -6941,7 +6975,9 @@
 
   function adminActionButtonsHtml(p) {
     if (adminMode) {
-      return '<button class="btn-ghost" type="button" id="adminEditBtn">管理者編集</button>' +
+      const hidden = !!p && adminHiddenIds.has(String(p.id));
+      return '<button class="btn-ghost" type="button" id="adminHideBtn">' + (hidden ? '非表示を解除' : '非表示') + '</button>' +
+        '<button class="btn-ghost" type="button" id="adminEditBtn">管理者編集</button>' +
         '<button class="btn-ghost" type="button" id="adminDeleteBtn" style="color:var(--danger); border-color:var(--danger);">削除</button>';
     }
     if (options.ownerEdit && p && p.hasEditPassword) {
@@ -6951,6 +6987,12 @@
   }
 
   function wireAdminActionButtons(p) {
+    const hideBtn = document.getElementById('adminHideBtn');
+    if (hideBtn) hideBtn.addEventListener('click', function () {
+      const willHide = !adminHiddenIds.has(String(p.id));
+      setPostHidden(p.id, willHide);
+      closeModal();
+    });
     const editBtn = document.getElementById('adminEditBtn');
     const deleteBtn = document.getElementById('adminDeleteBtn');
     if (editBtn) editBtn.addEventListener('click', function () { openAdminEdit(p); });
@@ -7094,6 +7136,35 @@
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
   const adminOptionsBody = document.getElementById('adminOptionsBody');
   let draftOptions = {};
+
+  function openAdminHiddenModal() {
+    const body = document.getElementById('adminHiddenBody');
+    const ids = Array.from(adminHiddenIds);
+    const rows = ids.map(function (id) {
+      const p = findAnyPostById(id);
+      const label = p
+        ? '<div class="opt-label">' + escapeHtml(p.title || '(無題)') + '</div><div class="opt-desc">' + postTypeLabel(p) + '</div>'
+        : '<div class="opt-desc">(見つかりません / 読み込み待ち) ' + escapeHtml(String(id)) + '</div>';
+      return '<div class="opt-toggle-row"><div>' + label + '</div>' +
+        '<button class="btn-ghost" type="button" data-unhide="' + escapeHtml(String(id)) + '">非表示を解除</button></div>';
+    }).join('');
+    body.innerHTML =
+      '<div class="modal-header"><h3 class="modal-title">非表示中の投稿</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="adminHiddenCloseBtn">✕ 閉じる</button></div></div>' +
+      '<div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:8px;">管理モード中だけ一覧から隠している投稿です。通常の利用者や他の端末には影響しません。「非表示を解除」で元に戻ります。</div>' +
+      (ids.length ? rows : '<div class="opt-desc">非表示中の投稿はありません。</div>');
+    body.querySelectorAll('[data-unhide]').forEach(function (b) {
+      b.addEventListener('click', function () { setPostHidden(b.dataset.unhide, false); openAdminHiddenModal(); });
+    });
+    document.getElementById('adminHiddenCloseBtn').addEventListener('click', function () {
+      document.getElementById('adminHiddenOverlay').classList.remove('open');
+    });
+    openOverlay(document.getElementById('adminHiddenOverlay'));
+  }
+  document.getElementById('adminHiddenListBtn').addEventListener('click', openAdminHiddenModal);
+  document.getElementById('adminHiddenOverlay').addEventListener('click', function (e) {
+    if (e.target === document.getElementById('adminHiddenOverlay')) document.getElementById('adminHiddenOverlay').classList.remove('open');
+  });
 
   function openAdminOptionsModal() {
     draftOptions = Object.assign({}, options);
