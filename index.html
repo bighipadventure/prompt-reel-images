@@ -347,6 +347,11 @@
   }
   .count{ color: var(--ink-dim); font-size: 12px; font-family: 'Noto Sans JP', sans-serif; }
   .toolbar-right{ display:flex; align-items:center; gap: 12px; }
+  /* カテゴリフィルタ: 元の .mode-toggle デザインのまま、全ボタン等幅+件数だけ足す */
+  .seg-filter{ display:inline-grid; grid-auto-flow:column; grid-auto-columns:1fr; }
+  .seg-filter button{ display:flex; align-items:center; justify-content:center; gap:6px; }
+  .seg-filter .seg-count{ font-size:11px; opacity:.55; font-variant-numeric:tabular-nums; }
+  .seg-filter button.active .seg-count{ color:#fff; opacity:.85; }
 
   /* ---- 一覧(1投稿1行) ---- */
   .list{ display:flex; flex-direction: column; gap: 8px; }
@@ -884,6 +889,22 @@
   body.opt-no-tab-databank .tab-btn[data-tab="databank"],
   body.opt-no-tab-usage .tab-btn[data-tab="usage"],
   body.opt-no-tab-guide .tab-btn[data-tab="guide"]{ display:none; }
+  /* 動画機能オフ(opt-no-video)で、動画タブ・動画投稿モードボタン・使い方の動画説明を隠す */
+  body.opt-no-video .video-only{ display:none !important; }
+  /* 動画モード: 画像専用UIを隠す(inpaintトグル・差分) */
+  body.post-mode-video #inpaintModeBtn,
+  body.post-mode-video #variantField{ display:none !important; }
+  /* フォームの動画プレビュー */
+  .dropzone .preview video{ max-width:100%; max-height:420px; border-radius:8px; display:block; background:#000; }
+  /* 一覧サムネの動画バッジ(▶) */
+  .row-thumb.is-video::after{
+    content:"▶"; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.55); color:#fff; border-radius:999px; font-size:13px; padding-left:2px; pointer-events:none;
+  }
+  /* 詳細の動画プレーヤー */
+  .modal-image .video-frame{ position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; }
+  .modal-image .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
   body.opt-no-link-baseprompt .link-field[data-link="basePrompt"],
   body.opt-no-link-parent .link-field[data-link="parent"],
   body.opt-no-link-reference .link-field[data-link="reference"],
@@ -1304,6 +1325,7 @@
   <nav class="tabs">
     <button class="tab-btn" data-tab="post">投稿</button>
     <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
+    <button class="tab-btn video-only" data-tab="videoBrowse">動画投稿一覧</button>
     <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
     <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
     <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
@@ -1319,6 +1341,7 @@
     <div class="post-mode-tabs" id="postModeToggle">
       <button type="button" data-postmode="image" class="post-mode-btn active">画像を投稿</button>
       <button type="button" data-postmode="prompt" class="post-mode-btn">プロンプト例を投稿</button>
+      <button type="button" data-postmode="video" class="post-mode-btn video-only">動画を投稿</button>
       <button type="button" data-postmode="request" class="post-mode-btn">リクエストを投稿</button>
       <button type="button" data-postmode="fix" class="post-mode-btn fixrequest-only">修正依頼を投稿</button>
     </div>
@@ -1349,7 +1372,7 @@
         </div>
         <div class="dz-title" id="dropzoneLabel">ここに画像をドラッグ&ドロップ</div>
         <div class="dz-sub" id="dropzoneSub">または<span class="dz-browse">クリックしてファイルを選択</span><br>PNG / JPEG / WebP の生成情報を自動で読み取ります</div>
-        <div class="preview" id="previewWrap" style="display:none;"><span class="preview-frame"><img id="previewImg" alt="プレビュー"><button class="preview-clear" type="button" id="clearImageBtn" title="画像を取り消す">✕</button></span></div>
+        <div class="preview" id="previewWrap" style="display:none;"><span class="preview-frame"><img id="previewImg" alt="プレビュー"><video id="previewVideo" controls playsinline style="display:none;"></video><button class="preview-clear" type="button" id="clearImageBtn" title="取り消す">✕</button></span></div>
         <input type="file" id="imageInput">
       </div>
       </div>
@@ -1627,12 +1650,11 @@
     </div>
 
     <div class="toolbar">
-      <span class="count" id="postCount"></span>
-      <div class="mode-toggle" id="categoryFilterToggle">
-        <button type="button" data-catfilter="all">すべて</button>
-        <button type="button" data-catfilter="copyright">版権</button>
-        <button type="button" data-catfilter="original">オリジナル</button>
-        <button type="button" data-catfilter="other">その他</button>
+      <div class="mode-toggle seg-filter" id="categoryFilterToggle">
+        <button type="button" data-catfilter="all">すべて<span class="seg-count" data-count="all">0</span></button>
+        <button type="button" data-catfilter="copyright">版権<span class="seg-count" data-count="copyright">0</span></button>
+        <button type="button" data-catfilter="original">オリジナル<span class="seg-count" data-count="original">0</span></button>
+        <button type="button" data-catfilter="other">その他<span class="seg-count" data-count="other">0</span></button>
       </div>
       <div class="toolbar-right">
         <label class="panel-size-control" id="panelSizeControl">
@@ -1648,6 +1670,12 @@
 
     <div class="list" id="list"></div>
     <div class="empty" id="emptyState" style="display:none;">条件に一致する投稿がありません。</div>
+  </div>
+
+  <!-- ============ 動画投稿一覧タブ ============ -->
+  <div class="tab-panel" id="tab-videoBrowse">
+    <div class="list" id="videoList"></div>
+    <div class="empty" id="videoEmptyState" style="display:none;">まだ動画の投稿がありません。</div>
   </div>
 
   <!-- ============ プロンプト投稿一覧タブ ============ -->
@@ -1893,6 +1921,10 @@
         <div class="feature-name">画像投稿</div>
         <div class="feature-desc">生成した画像に、プロンプト・生成設定・タグ・メモを付けて共有します。「画像投稿一覧」タブに並びます。</div>
       </div>
+      <div class="feature-item video-only">
+        <div class="feature-name">動画投稿</div>
+        <div class="feature-desc">生成した動画を、画像投稿と同じようにプロンプト・タグ・ジャンル等を付けて共有します。「動画投稿一覧」タブに並びます。長い動画は投稿に失敗することがあります。</div>
+      </div>
       <div class="feature-item">
         <div class="feature-name">プロンプト例の投稿</div>
         <div class="feature-desc">自分で考えたオリジナルキャラやシチュエーションのプロンプトを、画像なしで1つの「作品」として共有します。「プロンプト投稿一覧」タブに並びます。</div>
@@ -1919,6 +1951,10 @@
       <div class="feature-item opt-only-tab-browse">
         <div class="feature-name">画像投稿一覧</div>
         <div class="feature-desc">投稿された画像作品が並びます。リスト表示とパネル表示を切り替えられ、並び順・絞り込み・キーワード検索・タグで探せます。</div>
+      </div>
+      <div class="feature-item video-only">
+        <div class="feature-name">動画投稿一覧</div>
+        <div class="feature-desc">投稿された動画作品が並びます。サムネイルの▶印が目印で、開くとその場で再生できます。</div>
       </div>
       <div class="feature-item opt-only-tab-prompt">
         <div class="feature-name">プロンプト投稿一覧</div>
@@ -2762,6 +2798,7 @@
   let promptPosts = [];
   let requestPosts = [];
   let fixPosts = [];
+  let videoPosts = [];
   let allComments = [];
   let allBoard = [];
   let allAnnounce = [];
@@ -2772,7 +2809,7 @@
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let selectedCategory = ''; // 投稿フォーム用: 作品の属性(版権/オリジナル/その他)
@@ -2888,7 +2925,7 @@
   }
   function findAnyPostById(id) {
     id = String(id);
-    return imagePosts.concat(promptPosts, requestPosts, fixPosts).find(function (p) { return String(p.id) === id; }) || null;
+    return imagePosts.concat(promptPosts, requestPosts, fixPosts, videoPosts).find(function (p) { return String(p.id) === id; }) || null;
   }
 
   let boardVotes = {};
@@ -2919,6 +2956,7 @@
       applyBrowseTagClamp();
     }
     if (name === 'promptBrowse') { renderPromptList(); applyPromptBrowseTagClamp(); }
+    if (name === 'videoBrowse') { renderVideoList(); }
     if (name === 'requestBrowse') { renderRequestList(); }
     if (name === 'fixBrowse') { renderFixList(); }
     if (name === 'databank') { renderDatabank(); }
@@ -3020,6 +3058,7 @@
   const imageInput = document.getElementById('imageInput');
   const previewWrap = document.getElementById('previewWrap');
   const previewImg = document.getElementById('previewImg');
+  const previewVideo = document.getElementById('previewVideo');
   const dropzoneLabel = document.getElementById('dropzoneLabel');
   const dropzoneSub = document.getElementById('dropzoneSub');
   let inpaintMode = false;
@@ -3036,6 +3075,8 @@
 
   function clearSelectedImage() {
     imageInput.value = '';
+    if (previewVideo) { previewVideo.style.display = 'none'; previewVideo.removeAttribute('src'); }
+    previewImg.style.display = '';
     if (adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt' && adminEditingPost.imageUrl) {
       previewImg.src = imageSrcFor(adminEditingPost.imageUrl, 'w1000');
       previewWrap.style.display = 'flex';
@@ -3067,18 +3108,28 @@
       imageInput.dispatchEvent(new Event('change'));
     }
   });
+  function isVideoFile(f) { return !!f && String(f.type || '').indexOf('video/') === 0; }
   imageInput.addEventListener('change', function () {
     if (variantLocked()) { imageInput.value = ''; return; }
     const file = imageInput.files[0];
-    if (!file) { previewWrap.style.display = 'none'; setDropzoneState(false, false); return; }
+    if (!file) { previewWrap.style.display = 'none'; previewVideo.removeAttribute('src'); setDropzoneState(false, false); return; }
     const reader = new FileReader();
     reader.onload = function () {
-      previewImg.src = reader.result;
+      if (isVideoFile(file)) {
+        previewImg.style.display = 'none';
+        previewVideo.src = reader.result;
+        previewVideo.style.display = '';
+      } else {
+        previewVideo.removeAttribute('src');
+        previewVideo.style.display = 'none';
+        previewImg.style.display = '';
+        previewImg.src = reader.result;
+      }
       previewWrap.style.display = 'flex';
       setDropzoneState(true, false);
     };
     reader.readAsDataURL(file);
-    if (!inpaintMode) readImageMetadata(file);
+    if (!inpaintMode && !isVideoFile(file)) readImageMetadata(file);
     if (variantMode) renderVariantStrip();
   });
 
@@ -3623,10 +3674,11 @@
   }
 
   function rebuildDerivedArraysFromPosts() {
-    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix'; });
+    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix' && p.type !== 'video'; });
     promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
     requestPosts = posts.filter(function (p) { return p.type === 'request'; });
     fixPosts = posts.filter(function (p) { return p.type === 'fix'; });
+    videoPosts = posts.filter(function (p) { return p.type === 'video'; });
   }
 
   function findLocalPost(idOrShareId) {
@@ -3691,6 +3743,13 @@
 
   // 一覧から詳細を開く共通処理。ローカルに本文がある投稿はスピナー無しで即表示し、
   // rest未完了でコメント・関連がまだ無い場合だけ背後で補完してモーダルを更新する。
+  function driveFileIdFromUrl(url) { const m = String(url || '').match(/[?&]id=([^&]+)/); return m ? m[1] : ''; }
+  function videoPlayerHtml(url) {
+    const id = driveFileIdFromUrl(url);
+    if (!id) return '<div class="value">(動画を表示できません)</div>';
+    return '<div class="video-frame"><iframe src="https://drive.google.com/file/d/' + id + '/preview" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe></div>';
+  }
+
   function openImageDetail(idOrShareId) {
     const local = findLocalPost(idOrShareId);
     if (local) {
@@ -4098,6 +4157,15 @@
       b.classList.toggle('active', b.dataset.catfilter === categoryFilter);
     });
   }
+  // 各カテゴリの件数(カテゴリ以外の全フィルタ適用後の集合で算出)をボタンのバッジに反映
+  function updateCategoryFilterCounts(arr) {
+    const counts = { all: arr.length, copyright: 0, original: 0, other: 0 };
+    arr.forEach(function (p) { if (p.category && counts[p.category] !== undefined) counts[p.category]++; });
+    document.querySelectorAll('#categoryFilterToggle .seg-count').forEach(function (el) {
+      const k = el.dataset.count;
+      el.textContent = counts[k] != null ? counts[k] : 0;
+    });
+  }
   syncCategoryFilterButtons();
   document.querySelectorAll('#categoryFilterToggle button').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -4330,8 +4398,9 @@
     const file = imageInput.files[0];
     const editing = isEditingImagePost();
 
+    const mode = currentPostMode();
     const missing = [];
-    if (!file && !editing) missing.push([document.getElementById('imageField'), '画像']);
+    if (!file && !editing) missing.push([document.getElementById('imageField'), mode === 'video' ? '動画' : '画像']);
     if (!selectedTags.length) missing.push([document.getElementById('tagsField'), 'タグ']);
     if (!selectedCategory) missing.push([document.getElementById('categoryField'), 'ジャンル']);
     if (missing.length) { reportMissing(statusText, missing); return; }
@@ -4342,9 +4411,10 @@
     statusText.textContent = '';
 
     try {
-      const mode = currentPostMode();
       const editingFix = editing && adminEditingPost && adminEditingPost.type === 'fix';
+      const editingVideo = editing && adminEditingPost && adminEditingPost.type === 'video';
       const isFix = editingFix || (!editing && mode === 'fix');
+      const isVideo = editingVideo || (!editing && mode === 'video');
       const payload = {
         title: document.getElementById('titleInput').value,
         author: document.getElementById('authorInput').value,
@@ -4354,7 +4424,7 @@
         settings: collectSettings(),
         tags: selectedTags,
         category: selectedCategory,
-        type: isFix ? 'fix' : 'image',
+        type: isFix ? 'fix' : (isVideo ? 'video' : 'image'),
         basePromptId: selectedBasePromptIds.join(','),
         parentId: selectedParentId,
         refId: isFix ? '' : selectedReferenceId,
@@ -4376,7 +4446,7 @@
       }
       // 差分: 新規投稿は variantMode 時、画像編集は常に送る(空配列=差分なしに更新)。
       // 既存差分(imageUrl保持)は再アップロードせず、新規追加(dataUrl)だけ base64 送信する。
-      if (!isFix && (variantMode || editing)) {
+      if (!isFix && !isVideo && (variantMode || editing)) {
         payload.variants = variantImages.map(function (v) {
           if (v.dataUrl) {
             return { imageBase64: v.dataUrl, imageMime: v.mime, imageName: v.name, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings };
@@ -4401,7 +4471,7 @@
 
       await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
-      switchTab(posted && posted.type === 'fix' ? 'fixBrowse' : 'browse');
+      switchTab(posted && posted.type === 'fix' ? 'fixBrowse' : (posted && posted.type === 'video' ? 'videoBrowse' : 'browse'));
       if (posted) openModal(posted);
     } catch (err) {
       statusText.textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
@@ -4415,7 +4485,6 @@
   /* ---------- 閲覧タブ:一覧描画 ---------- */
   const list = document.getElementById('list');
   const emptyState = document.getElementById('emptyState');
-  const postCount = document.getElementById('postCount');
 
   list.addEventListener('error', handleImageError, true);
 
@@ -4490,6 +4559,11 @@
     document.body.classList.toggle('opt-no-link-reference', !options.linkReference);
     document.body.classList.toggle('opt-no-link-request', !options.linkRequest);
     document.body.classList.toggle('opt-no-login', !options.loginEnabled);
+    document.body.classList.toggle('opt-no-video', !options.video);
+    if (!options.video) {
+      if (document.getElementById('tab-videoBrowse') && document.getElementById('tab-videoBrowse').classList.contains('active')) switchTab('browse');
+      if (currentPostMode() === 'video') setPostMode('image');
+    }
     if (!options.inpaint && typeof setInpaintMode === 'function') setInpaintMode(false);
     document.querySelectorAll('.author-field').forEach(function (el) {
       el.style.display = options.author ? '' : 'none';
@@ -4606,7 +4680,6 @@
     let base = showChildren ? imagePosts.slice() : imagePosts.filter(function (p) { return !p.parentId; });
     if (showFixWorks && options.fixRequest) base = base.concat(fixPosts.slice());
     base = visiblePosts(base);
-    if (categoryFilter !== 'all') base = base.filter(function (p) { return p.category === categoryFilter; });
     let filtered = base.filter(passesTagFilter);
 
     const fAuthor = document.getElementById('filterAuthor').value.trim().toLowerCase();
@@ -4623,8 +4696,10 @@
 
     filtered.sort(compareByKeys);
 
+    updateCategoryFilterCounts(filtered);
+    if (categoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === categoryFilter; });
+
     list.classList.toggle('panel-mode', viewMode === 'panel');
-    postCount.textContent = filtered.length + ' 件';
     emptyState.style.display = filtered.length ? 'none' : 'block';
 
     const thumbSize = viewMode === 'panel' ? 'w640' : 'w320';
@@ -4696,7 +4771,7 @@
       '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
         (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
         '<div class="row-main">' +
-          '<div class="row-thumb">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+          '<div class="row-thumb' + (p.type === 'video' ? ' is-video' : '') + '">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
             '<div class="row-title">' + title + '</div>' +
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
@@ -4896,7 +4971,7 @@
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-image" id="detailImageWrap">' + imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }) + '</div>' +
+      '<div class="modal-image" id="detailImageWrap">' + (p.type === 'video' ? videoPlayerHtml(imageSet[0].imageUrl) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' })) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
         (hasVariants
           ? '<div class="variant-switcher" id="variantSwitcher">' + imageSet.map(function (_, i) {
@@ -5148,8 +5223,26 @@
     }
   }
 
+  function renderVideoList() {
+    const listEl = document.getElementById('videoList');
+    const emptyEl = document.getElementById('videoEmptyState');
+    if (!restStageLoaded) {
+      listEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
+      emptyEl.style.display = 'none';
+      return;
+    }
+    const arr = visiblePosts(videoPosts.slice()).sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
+    emptyEl.style.display = arr.length ? 'none' : 'block';
+    const temp = document.createElement('div');
+    temp.innerHTML = arr.map(function (p) { return imageRowHtml(p, 'w320'); }).join('');
+    wireImageRows(temp);
+    listEl.innerHTML = '';
+    while (temp.firstChild) listEl.appendChild(temp.firstChild);
+  }
+
   function rerenderActiveList() {
     if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+    if (document.getElementById('tab-videoBrowse') && document.getElementById('tab-videoBrowse').classList.contains('active')) renderVideoList();
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
     if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
     if (document.getElementById('tab-fixBrowse') && document.getElementById('tab-fixBrowse').classList.contains('active')) renderFixList();
@@ -5307,14 +5400,21 @@
     document.querySelectorAll('#postModeToggle button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.postmode === mode);
     });
-    const showImageForm = mode === 'image' || mode === 'fix';
+    const showImageForm = mode === 'image' || mode === 'fix' || mode === 'video';
     document.getElementById('imagePostForm').style.display = showImageForm ? '' : 'none';
     document.getElementById('promptPostForm').style.display = mode === 'prompt' ? '' : 'none';
     document.getElementById('requestPostForm').style.display = mode === 'request' ? '' : 'none';
-    // 画像フォーム流用: fixモードなら修正依頼内容欄を表示、画像モードなら修正依頼ピッカーを表示
-    document.getElementById('imageFormHeading').textContent = mode === 'fix' ? '修正依頼を投稿' : '画像を投稿';
+    document.body.classList.toggle('post-mode-video', mode === 'video');
+    // 画像フォーム流用: fix=修正依頼内容欄、image=修正依頼ピッカー、video=動画用の見出し/受入形式
+    document.getElementById('imageFormHeading').textContent = mode === 'fix' ? '修正依頼を投稿' : (mode === 'video' ? '動画を投稿' : '画像を投稿');
     document.getElementById('fixContentField').style.display = mode === 'fix' ? '' : 'none';
     document.getElementById('fixRequestField').style.display = mode === 'image' ? '' : 'none';
+    document.getElementById('dropzoneLabel').textContent = mode === 'video' ? 'ここに動画をドラッグ&ドロップ' : DROPZONE_LABEL_DEFAULT;
+    document.getElementById('dropzoneSub').innerHTML = mode === 'video'
+      ? 'または<span class="dz-browse">クリックしてファイルを選択</span><br>mp4 / webm など。長い動画は投稿に失敗することがあります'
+      : DROPZONE_SUB_DEFAULT;
+    imageInput.setAttribute('accept', mode === 'video' ? 'video/*' : 'image/*');
+    if (mode === 'video') setInpaintMode(false);
     const variantBtn = document.getElementById('variantModeBtn');
     if (variantBtn) variantBtn.style.display = mode === 'image' ? '' : 'none';
     if (mode !== 'image') setVariantMode(false);
@@ -7114,6 +7214,7 @@
     { key: 'tabRequest', group: 'tabs', label: 'リクエスト一覧タブ', desc: 'オフにするとリクエスト一覧タブを非表示にします' },
     { key: 'tabDatabank', group: 'tabs', label: 'プロンプトデータバンクタブ', desc: 'オフにするとプロンプトデータバンクタブを非表示にします' },
     { key: 'board', group: 'tabs', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
+    { key: 'video', group: 'tabs', label: '動画投稿機能', desc: 'オフにすると「動画を投稿」モードと「動画投稿一覧」タブを非表示にします' },
     { key: 'tabUsage', group: 'tabs', label: '本ツールの使い方タブ', desc: 'オフにすると使い方タブを非表示にします' },
     { key: 'tabGuide', group: 'tabs', label: 'はじめてガイドタブ', desc: 'オフにするとはじめてガイドタブを非表示にします' },
     { key: 'like', group: 'reaction', label: 'グッドボタン', desc: 'オフにすると全画面からグッドボタンが消えます' },
