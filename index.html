@@ -406,7 +406,7 @@
     padding: 1px 7px; border-radius: 999px; white-space: nowrap;
     border: 1px solid transparent;
   }
-  .row-link-badge.lb-child{ color:#33bfa0; border-color: rgba(51,191,160,.5); background: rgba(51,191,160,.12); }
+  .row-link-badge.lb-child{ color:#cb5fc9; border-color: rgba(203,95,201,.5); background: rgba(203,95,201,.12); }
   .row-link-badge.lb-comment{ color:#9bb534; border-color: rgba(155,181,52,.5); background: rgba(155,181,52,.12); }
   .row-link-badge.lb-variant{ color:#c8715e; border-color: rgba(200,113,94,.5); background: rgba(200,113,94,.12); }
   .row-link-badge.lb-base{ color:#c9a227; border-color: rgba(201,162,39,.5); background: rgba(201,162,39,.12); }
@@ -908,6 +908,7 @@
   body.opt-no-author .author-filter{ display:none; }
   body.opt-no-author .author-field{ display:none !important; }
   body.opt-no-author .board-reply-namefield{ display:none !important; }
+  body.opt-no-author .board-edit-namefield{ display:none !important; }
   body.opt-no-author .dl-wrap:has(.author-filter){ display:none; }
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
@@ -1251,46 +1252,64 @@
   .board-attach-hint{ font-size:11.5px; color: var(--ink-dim); }
   .board-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .board-threads{ display:flex; flex-direction:column; gap:14px; }
-  /* ふたばちゃんねる風: スレッドをカード化し、スレタイ(赤系)・名前(緑)・引用(緑)で一目で構造が分かるように */
+  /* 掲示板: スレッドを1つのまとまりとして分かりやすく囲む(白めで太めの罫線) */
   .board-thread{
-    background: var(--surface); border:1px solid var(--line);
-    border-left:3px solid var(--accent); border-radius:10px;
-    padding:12px 16px 14px; position:relative;
+    background: var(--surface); border:2px solid rgba(255,255,255,0.22);
+    border-radius:10px; padding:12px 16px 14px; position:relative;
   }
   .board-subject{
     font-size:15.5px; font-weight:800; line-height:1.4;
-    color:#ff9d6b; word-break:break-word; margin-bottom:4px; padding-right:60px;
+    color: var(--ink); word-break:break-word; margin-bottom:4px;
   }
+  /* メタ行(タイトル無しスレでは最上段になる)。管理ボタンとの重なりは body.admin-on 側で余白確保 */
   .board-op-meta{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; font-size:11.5px; }
-  .board-name{ font-weight:700; color:#8fc750; }
+  .board-name{ font-weight:700; color: var(--ink-dim); }
   .board-op-meta .comment-date{ font-size:11px; color: var(--ink-dim); }
   .board-reply-count{
     font-size:11px; color: var(--ink-dim);
     background: var(--surface-2); border:1px solid var(--line);
-    border-radius:999px; padding:1px 10px; margin-left:auto;
+    border-radius:999px; padding:1px 10px;
   }
+  .board-latest-reply{ font-size:11px; color: var(--ink-dim); }
   .board-op-body{ font-size:14px; line-height:1.75; white-space:pre-wrap; word-break:break-word; color: var(--ink); margin-top:8px; }
   .board-quote{ color:#7ea840; }
   .board-thread-body{ font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
   .board-replies{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
   .board-reply{
-    background: var(--surface-2); border:1px solid var(--line);
-    border-left:2px solid #4a5a34; border-radius:8px;
-    padding:9px 12px 10px; position:relative;
+    background: var(--surface-2); border:1px solid rgba(255,255,255,0.12);
+    border-radius:8px; padding:9px 12px 10px; position:relative;
   }
   .board-reply-head{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
-  .board-reply-no{ font-weight:800; color:#ff9d6b; font-size:12px; font-variant-numeric:tabular-nums; }
+  .board-reply-no{ font-weight:800; color: var(--ink); font-size:12px; font-variant-numeric:tabular-nums; }
   .board-reply-head .board-name{ font-size:12px; }
   .board-reply .comment-date{ font-size:10.5px; color: var(--ink-dim); }
   .board-reply-body{ font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
-  .board-thread-actions{ margin-top:12px; }
+  /* 返信する + 返信N件を表示 を横並びにして空きスペースを減らす */
+  .board-thread-actions{ margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .board-reply-form{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
   .board-reply-form textarea{ min-height:64px; }
   .board-reply-form .field-label{ margin-top:0; }
   .board-reply-form-row{ display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap; }
   .board-reply-status{ font-size:12px; color: var(--ink-dim); }
-  .board-replies-toggle{ margin-top:12px; background:none; border:0; padding:4px 0; color: var(--accent); font-size:12.5px; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; }
+  .board-replies-toggle{ margin-top:0; background:none; border:0; padding:4px 0; color: var(--accent); font-size:12.5px; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; }
   .board-replies-toggle:hover{ text-decoration:underline; }
+  /* 管理モード: 編集・削除ボタンは見出し行の中にインフローで置き、枠と重ならないようにする */
+  .board-op-head{ display:flex; align-items:flex-start; gap:10px; }
+  .board-op-headmain{ flex:1 1 auto; min-width:0; }
+  .board-reply-headrow{ display:flex; align-items:flex-start; gap:10px; margin-bottom:3px; }
+  .board-reply-headrow .board-reply-head{ flex:1 1 auto; min-width:0; margin-bottom:0; }
+  .board-admin-ctrls{ flex:0 0 auto; display:flex; align-items:center; gap:6px; }
+  .board-admin-ctrls .comment-del{ position:static; top:auto; right:auto; }
+  .board-edit-btn{
+    background:none; border:1px solid var(--line); color: var(--ink-dim);
+    border-radius:6px; font-size:11px; padding:3px 8px; cursor:pointer;
+    font-family:'Noto Sans JP',sans-serif;
+  }
+  .board-edit-btn:hover{ color: var(--ink); border-color: var(--ink-dim); }
+  .board-edit-form input, .board-edit-form textarea{ width:100%; box-sizing:border-box; }
+  .board-edit-form textarea{ min-height:84px; }
+  .board-edit-form .field-label{ margin-top:8px; }
+  .board-edit-status{ font-size:12px; color: var(--ink-dim); }
 
   /* ---- コメント ---- */
   .comment-toggle-btn{
@@ -1979,6 +1998,9 @@
         <label class="field-label">お名前(任意)</label>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="boardNameInput" placeholder="匿名で投稿できます">
       </div>
+
+      <label class="field-label">タイトル(任意)</label>
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="boardTitleInput" placeholder="スレッドのタイトル(未入力なら通常の投稿として表示)">
 
       <label class="field-label">メッセージ</label>
       <textarea id="boardBodyInput" class="autogrow" placeholder="ご自由にどうぞ"></textarea>
@@ -7071,38 +7093,89 @@
     return { subject: s.slice(0, nl).trim(), rest: s.slice(nl + 1).replace(/^\n+/, '') };
   }
 
+  // 管理モード時の操作ボタン群(編集・削除)。スレ/返信の右上にまとめて表示。
+  function boardAdminCtrls(id) {
+    if (!adminMode) return '';
+    const eid = escapeHtml(String(id));
+    return '<div class="board-admin-ctrls">' +
+      '<button class="board-edit-btn" type="button" data-edit-board-open="' + eid + '">編集</button>' +
+      '<button class="comment-del" type="button" data-del-board="' + eid + '">削除</button>' +
+    '</div>';
+  }
+
+  // 管理モード時のインライン編集フォーム(初期は非表示・値はレンダー後にJSで流し込む)
+  function boardEditForm(id, withTitle) {
+    if (!adminMode) return '';
+    const eid = escapeHtml(String(id));
+    return '<div class="board-edit-form" data-msg-id="' + eid + '" style="display:none;">' +
+      (withTitle ? '<label class="field-label">タイトル(任意)</label><input type="text" class="board-edit-title" autocomplete="off">' : '') +
+      '<div class="board-edit-namefield"><label class="field-label">お名前(任意)</label><input type="text" class="board-edit-name" autocomplete="off"></div>' +
+      '<label class="field-label">メッセージ</label><textarea class="board-edit-body"></textarea>' +
+      '<div class="board-reply-form-row">' +
+        '<button class="btn-submit board-edit-save" type="button" data-edit-board-save="' + eid + '">保存</button>' +
+        '<button class="btn-ghost board-edit-cancel" type="button">キャンセル</button>' +
+        '<span class="board-edit-status"></span>' +
+      '</div>' +
+    '</div>';
+  }
+
   function boardReplyHtml(r, no) {
     const name = r.name ? escapeHtml(r.name) : '匿名';
-    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(r.id)) + '">削除</button>' : '';
-    return '<div class="board-reply">' + delBtn +
-      '<div class="board-reply-head"><span class="board-reply-no">No.' + no + '</span><span class="board-name">' + name + '</span><span class="comment-date">' + formatDateTime(r.timestamp) + '</span></div>' +
-      '<div class="board-reply-body">' + boardBodyHtml(r.body) + '</div>' +
-      boardImagesHtml(r) +
+    return '<div class="board-reply">' +
+      '<div class="board-reply-main">' +
+        '<div class="board-reply-headrow">' +
+          '<div class="board-reply-head"><span class="board-reply-no">No.' + no + '</span><span class="board-name">' + name + '</span><span class="comment-date">' + formatDateTime(r.timestamp) + '</span></div>' +
+          boardAdminCtrls(r.id) +
+        '</div>' +
+        '<div class="board-reply-body">' + boardBodyHtml(r.body) + '</div>' +
+        boardImagesHtml(r) +
+      '</div>' +
+      boardEditForm(r.id, false) +
     '</div>';
   }
 
   function boardThreadHtml(t, replies) {
     const name = t.name ? escapeHtml(t.name) : '匿名';
-    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-board="' + escapeHtml(String(t.id)) + '">削除</button>' : '';
-    const parts = splitBoardSubject(t.body);
-    const subject = parts.subject ? escapeHtml(parts.subject) : '(無題)';
-    const opBody = parts.rest ? '<div class="board-op-body">' + boardBodyHtml(parts.rest) + '</div>' : '';
-    const repliesHtml = replies.length
-      ? '<button class="board-replies-toggle" type="button">返信 ' + replies.length + '件を表示 ▾</button>' +
-        '<div class="board-replies" style="display:none;">' + replies.map(function (r, i) { return boardReplyHtml(r, i + 1); }).join('') + '</div>'
+    const title = String(t.title || '').trim();
+    // 最新の返信の投稿日時を求める(返信の並び順に依存しないよう最大値を取る)
+    let latestReplyTs = null;
+    for (let i = 0; i < replies.length; i++) {
+      const ts = replies[i].timestamp;
+      if (!latestReplyTs || new Date(ts) > new Date(latestReplyTs)) latestReplyTs = ts;
+    }
+    // タイトルがある時だけスレタイ見出しを表示。無い時は通常の投稿(名前+日時→本文)として表示する。
+    const subjectBlock = title ? '<div class="board-subject">' + escapeHtml(title) + '</div>' : '';
+    const opBody = t.body ? '<div class="board-op-body">' + boardBodyHtml(t.body) + '</div>' : '';
+    const repliesBlock = replies.length
+      ? '<div class="board-replies" style="display:none;">' + replies.map(function (r, i) { return boardReplyHtml(r, i + 1); }).join('') + '</div>'
       : '';
-    return '<div class="comment-item board-thread" data-thread="' + escapeHtml(String(t.id)) + '">' + delBtn +
+    const toggleBtn = replies.length
+      ? '<button class="board-replies-toggle" type="button">返信 ' + replies.length + '件を表示 ▾</button>'
+      : '';
+    return '<div class="comment-item board-thread' + (title ? '' : ' board-thread-notitle') + '" data-thread="' + escapeHtml(String(t.id)) + '">' +
       '<div class="board-op">' +
-        '<div class="board-subject">' + subject + '</div>' +
-        '<div class="board-op-meta"><span class="board-name">' + name + '</span>' +
-          '<span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
-          '<span class="board-reply-count">💬 ' + replies.length + '</span></div>' +
+        '<div class="board-op-head">' +
+          '<div class="board-op-headmain">' +
+            subjectBlock +
+            '<div class="board-op-meta">' +
+              '<span class="board-name">' + name + '</span>' +
+              '<span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
+              '<span class="board-reply-count">💬 ' + replies.length + '</span>' +
+              (replies.length ? '<span class="board-latest-reply">最新の返信 ' + formatDateTime(latestReplyTs) + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          boardAdminCtrls(t.id) +
+        '</div>' +
         opBody +
       '</div>' +
+      boardEditForm(t.id, true) +
       boardImagesHtml(t) +
       boardVoteHtml(t) +
-      repliesHtml +
-      '<div class="board-thread-actions"><button class="btn-ghost board-reply-toggle" type="button">返信する</button></div>' +
+      '<div class="board-thread-actions">' +
+        '<button class="btn-ghost board-reply-toggle" type="button">返信する</button>' +
+        toggleBtn +
+      '</div>' +
+      repliesBlock +
       '<div class="board-reply-form" style="display:none;">' +
         '<div class="board-reply-namefield">' +
           '<label class="field-label">お名前(任意)</label>' +
@@ -7215,6 +7288,87 @@
     boardList.querySelectorAll('.board-reply-submit').forEach(function (btn) {
       btn.addEventListener('click', function () { submitBoardReply(btn.dataset.replySubmit, btn); });
     });
+    // 管理: インライン編集フォームの値を流し込む(エスケープ事故を避けるためデータから直接セット)
+    boardList.querySelectorAll('.board-edit-form').forEach(function (form) {
+      const msg = allBoard.find(function (m) { return String(m.id) === String(form.dataset.msgId); });
+      if (!msg) return;
+      const tEl = form.querySelector('.board-edit-title');
+      if (tEl) tEl.value = msg.title || '';
+      const nEl = form.querySelector('.board-edit-name');
+      if (nEl) nEl.value = msg.name || '';
+      const bEl = form.querySelector('.board-edit-body');
+      if (bEl) bEl.value = msg.body || '';
+    });
+    boardList.querySelectorAll('[data-edit-board-open]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const box = btn.closest('.board-thread, .board-reply');
+        if (!box) return;
+        const form = box.querySelector('.board-edit-form');
+        const disp = box.querySelector('.board-op, .board-reply-main');
+        if (form) form.style.display = '';
+        if (disp) disp.style.display = 'none';
+        if (form) { const ta = form.querySelector('.board-edit-body'); if (ta) ta.focus(); }
+      });
+    });
+    boardList.querySelectorAll('.board-edit-cancel').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const form = btn.closest('.board-edit-form');
+        const box = btn.closest('.board-thread, .board-reply');
+        const disp = box && box.querySelector('.board-op, .board-reply-main');
+        if (form) form.style.display = 'none';
+        if (disp) disp.style.display = '';
+      });
+    });
+    boardList.querySelectorAll('.board-edit-save').forEach(function (btn) {
+      btn.addEventListener('click', function () { saveBoardEdit(btn.dataset.editBoardSave, btn); });
+    });
+  }
+
+  async function saveBoardEdit(id, btn) {
+    const form = btn.closest('.board-edit-form');
+    if (!form) return;
+    const titleEl = form.querySelector('.board-edit-title');
+    const nameEl = form.querySelector('.board-edit-name');
+    const bodyEl = form.querySelector('.board-edit-body');
+    const statusEl = form.querySelector('.board-edit-status');
+    const bodyVal = bodyEl.value.trim();
+    const titleVal = titleEl ? titleEl.value.trim() : '';
+    const msg0 = allBoard.find(function (m) { return String(m.id) === String(id); });
+    const hasImg = !!(msg0 && msg0.images && msg0.images.length);
+    if (!bodyVal && !titleVal && !hasImg) { statusEl.textContent = '内容を入力してください'; return; }
+    statusEl.textContent = '';
+    btn.disabled = true;
+    showLoading('保存中...');
+    try {
+      const result = await postAction({
+        action: 'adminEditBoard',
+        password: adminPassword,
+        id: id,
+        title: titleEl ? titleEl.value : '',
+        name: nameEl.value,
+        body: bodyVal
+      });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      const msg = allBoard.find(function (m) { return String(m.id) === String(id); });
+      if (msg) {
+        msg.body = (result.body != null ? result.body : bodyVal);
+        msg.name = (result.name != null ? result.name : nameEl.value.trim());
+        if (titleEl) msg.title = (result.title != null ? result.title : titleEl.value.trim());
+      }
+      renderBoard();
+    } catch (err) {
+      statusEl.textContent = '保存に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  }
+
+  // 投稿者名オプションがOFFの時は名前を入力させない。ただし管理モードなら「管理者」名義で投稿する。
+  function boardSubmitName(inputEl) {
+    if (options.author) return inputEl ? inputEl.value : '';
+    return adminMode ? '管理者' : '';
   }
 
   async function submitBoardReply(threadId, btn) {
@@ -7224,14 +7378,15 @@
     const bodyEl = form.querySelector('.board-reply-body');
     const statusEl = form.querySelector('.board-reply-status');
     const body = bodyEl.value.trim();
-    if (!body) { statusEl.textContent = '返信を入力してください'; return; }
+    const hasImg = (replyRefs[threadId] || []).length > 0;
+    if (!body && !hasImg) { statusEl.textContent = '返信か画像を入力してください'; return; }
     statusEl.textContent = '';
     btn.disabled = true;
     showLoading('送信中...');
     try {
       const result = await postAction({
         action: 'board',
-        name: nameEl.value,
+        name: boardSubmitName(nameEl),
         body: body,
         parentId: threadId,
         images: (replyRefs[threadId] || []).map(function (r) { return r.dataUrl; })
@@ -7261,19 +7416,23 @@
     const btn = this;
     const status = document.getElementById('boardStatus');
     const body = document.getElementById('boardBodyInput').value.trim();
-    if (!body) { status.textContent = 'メッセージを入力してください'; return; }
+    const title = document.getElementById('boardTitleInput').value.trim();
+    // スレッドはタイトルか画像があれば本文が空でも投稿可(親スレ的な使い方)
+    if (!body && !title && boardRefs.length === 0) { status.textContent = 'タイトル・メッセージ・画像のいずれかを入力してください'; return; }
     status.textContent = '';
     btn.disabled = true;
     showLoading('送信中...');
     try {
       const result = await postAction({
         action: 'board',
-        name: document.getElementById('boardNameInput').value,
+        name: boardSubmitName(document.getElementById('boardNameInput')),
+        title: document.getElementById('boardTitleInput').value,
         body: body,
         images: boardRefs.map(function (r) { return r.dataUrl; })
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       if (result.message) allBoard.push(result.message);
+      document.getElementById('boardTitleInput').value = '';
       document.getElementById('boardBodyInput').value = '';
       resetAutogrow();
       boardRefs = [];
