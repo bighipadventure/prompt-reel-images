@@ -72,7 +72,9 @@
   .tabs{
     display:flex; gap: 8px;
     margin: 26px 0 24px;
+    visibility: hidden; /* オプション確定までタブを隠す(ちらつき防止) */
   }
+  body.tabs-ready .tabs{ visibility: visible; }
   .tab-btn{
     font-size: 15px;
     background: var(--surface);
@@ -4056,6 +4058,7 @@
     } catch (err) {
       statusText.textContent = '読み込みに失敗しました(通信が不安定な可能性があります)。ページを再読み込みしてください。';
       console.error(err);
+      document.body.classList.add('tabs-ready');
     } finally {
       // 親の画像投稿の読み込みが終わった時点で読み込み中表示を解除する。
       // 子画像・プロンプト例・リクエスト・修正依頼・コメント・掲示板・辞書は続けて背後で取得する。
@@ -4799,6 +4802,7 @@
       }
     }
     ensureVisibleActiveTab();
+    document.body.classList.add('tabs-ready');
   }
 
   function ensureVisibleActiveTab() {
@@ -8435,6 +8439,14 @@
       }
     }
     if (cfg && cfg.enabled) {
+      // 「認証中...」の間にオプション(タブ表示など)を先に確定させておく。
+      // これで「読み込み中...」へ切り替わった瞬間から、オンのタブだけが
+      // 最初から見えている状態になり、認証中→読み込み中の見た目がシームレスに繋がる。
+      // (古いCode.gsでoptionsが返らない場合は何もしない=従来どおりparents到着時に確定)
+      if (cfg.options) {
+        options = Object.assign({}, DEFAULT_OPTIONS, cfg.options);
+        applyOptionsToUi();
+      }
       const stored = localStorage.getItem('pr_login_pw');
       if (stored) {
         try {
@@ -8446,6 +8458,7 @@
       showLoginGate(cfg);
       return;
     }
+    // ログイン無効時は従来どおり: タブは stage=parents 到着後の applyOptionsToUi() で確定する
     proceedToApp();
   }
 
