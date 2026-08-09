@@ -895,6 +895,27 @@
   body.opt-no-tab-databank .tab-btn[data-tab="databank"],
   body.opt-no-tab-usage .tab-btn[data-tab="usage"],
   body.opt-no-tab-guide .tab-btn[data-tab="guide"]{ display:none; }
+  /* リンク機能オフ(opt-no-tab-link)でリンクタブを隠す */
+  body.opt-no-tab-link .link-only{ display:none !important; }
+  /* 管理モード中だけ表示する要素 */
+  .admin-only{ display:none; }
+  body.admin-on .admin-only{ display:inline-flex; }
+  /* リンクタブ */
+  .links-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .links-head h2{ margin:0; }
+  .links-intro{ margin:10px 0 0; font-size:12.5px; color:var(--ink-dim); }
+  .links-intro code{ background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 5px; font-size:12px; }
+  .links-list{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+  .link-genre-head{ margin-top:18px; margin-bottom:2px; font-size:12px; font-weight:700; letter-spacing:.04em; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:5px; }
+  .link-genre-head:first-child{ margin-top:0; }
+  .link-card{ background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .link-card .link-card-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .link-card .link-title{ font-weight:700; font-size:15px; color:var(--ink); }
+  .link-card .link-desc{ margin-top:6px; font-size:13px; color:var(--ink-dim); white-space:pre-wrap; line-height:1.7; }
+  .link-card .link-url{ display:inline-block; margin-top:6px; font-size:13px; color:var(--accent); text-decoration:none; word-break:break-all; }
+  .link-card .link-url:hover{ text-decoration:underline; }
+  .link-card .link-admin-actions{ display:flex; gap:8px; flex-shrink:0; }
+  .link-card .link-admin-actions button{ padding:4px 10px; font-size:12px; }
   /* 動画機能オフ(opt-no-video)で、動画タブ・動画投稿モードボタン・使い方の動画説明を隠す */
   body.opt-no-video .video-only{ display:none !important; }
   /* 動画モード: 画像専用UIを隠す(inpaintトグル・差分) */
@@ -1337,6 +1358,7 @@
     <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
     <button class="tab-btn" data-tab="databank">プロンプトデータバンク</button>
     <button class="tab-btn" data-tab="board">掲示板</button>
+    <button class="tab-btn link-only" data-tab="links">リンク</button>
     <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
     <button class="tab-btn" data-tab="guide">はじめてガイド</button>
   </nav>
@@ -1680,6 +1702,63 @@
 
   <!-- ============ 動画投稿一覧タブ ============ -->
   <div class="tab-panel" id="tab-videoBrowse">
+
+    <div class="search-panel">
+      <div class="search-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="vSortChips"></div>
+      </div>
+      <div class="search-row">
+        <span class="label">絞り込み</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="vFilterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="vFilterModel" list="dl_vset_wanModel" placeholder="Model">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="vFilterSampler" list="dl_vset_sampler" placeholder="Sampler">
+        <button class="clear-tags" id="vClearFiltersBtn" type="button">絞り込みをクリア</button>
+      </div>
+      <div class="search-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="vFilterKeyword" placeholder="タイトル・プロンプト等を検索（スペース区切り）">
+        <div class="mode-toggle" id="vKeywordModeToggle">
+          <button type="button" data-kwmode="AND" class="active">AND</button>
+          <button type="button" data-kwmode="OR">OR</button>
+          <button type="button" data-kwmode="NOT">NOT</button>
+        </div>
+      </div>
+      <div class="search-row">
+        <span class="label" style="margin-left:0;">タグで絞込</span>
+        <div class="mode-toggle" id="vTagMatchModeToggle">
+          <button type="button" data-tagmode="AND" class="active">AND</button>
+          <button type="button" data-tagmode="OR">OR</button>
+          <button type="button" data-tagmode="NOT">NOT</button>
+        </div>
+        <button class="clear-tags" id="vClearTagsBtn" type="button">タグ選択をクリア</button>
+      </div>
+      <div class="tag-cloud-wrap"><div class="tag-cloud" id="vTagCloud"></div>
+      <button class="show-all-tags" type="button" id="vShowAllTagsBtn" style="display:none;">全て表示</button></div>
+      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
+        投稿された動画の一覧です。タグはクリックでON/OFF切替。ON中のタグ同士の絞り込み方はAND/OR/NOTで指定します。
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="mode-toggle seg-filter" id="vCategoryFilterToggle">
+        <button type="button" data-catfilter="all">すべて<span class="seg-count" data-count="all">0</span></button>
+        <button type="button" data-catfilter="copyright">版権<span class="seg-count" data-count="copyright">0</span></button>
+        <button type="button" data-catfilter="original">オリジナル<span class="seg-count" data-count="original">0</span></button>
+        <button type="button" data-catfilter="other">その他<span class="seg-count" data-count="other">0</span></button>
+      </div>
+      <div class="toolbar-right">
+        <label class="panel-size-control" id="vPanelSizeControl">
+          <span>表示サイズ</span>
+          <input type="range" id="vPanelSizeRange" min="140" max="520" step="20" value="260">
+        </label>
+        <div class="mode-toggle" id="vViewModeToggle">
+          <button type="button" data-view="list" class="active">リスト表示</button>
+          <button type="button" data-view="panel">パネル表示</button>
+        </div>
+      </div>
+    </div>
+
     <div class="list" id="videoList"></div>
     <div class="empty" id="videoEmptyState" style="display:none;">まだ動画の投稿がありません。</div>
   </div>
@@ -1877,6 +1956,20 @@
 
     <div class="board-threads" id="boardList"></div>
     <div class="empty" id="boardEmpty" style="display:none;">まだスレッドがありません。最初のスレッドを立ててみましょう。</div>
+  </div>
+
+  <!-- ============ リンクタブ ============ -->
+  <div class="tab-panel" id="tab-links">
+    <section class="panel">
+      <div class="links-head">
+        <h2>リンク</h2>
+        <button class="btn-ghost admin-only" type="button" id="addLinkBtn">＋ リンクを追加</button>
+      </div>
+      <p class="links-intro">関連サイトや資料へのリンク集です。</p>
+    </section>
+
+    <div class="links-list" id="linksList"></div>
+    <div class="empty" id="linksEmpty" style="display:none;">まだリンクがありません。</div>
   </div>
 
   <!-- ============ 本ツールの使い方タブ ============ -->
@@ -2530,6 +2623,23 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="vBrowseTagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="vBrowseTagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <div class="mode-toggle" id="vBrowseTagModalMatchModeToggle">
+        <button type="button" data-tagmode="AND">AND</button>
+        <button type="button" data-tagmode="OR">OR</button>
+        <button type="button" data-tagmode="NOT">NOT</button>
+      </div>
+      <button class="clear-tags" type="button" id="vClearBrowseTagsModalBtn">タグ選択をクリア</button>
+    </div>
+    <p class="tag-modal-hint">クリックでON/OFF切替</p>
+    <div class="tag-cloud" id="vBrowseTagModalCloud"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="pTagModalCloseBtn">✕ 閉じる</button>
@@ -2596,6 +2706,25 @@
 
 <div class="modal-overlay" id="announceComposeOverlay">
   <div class="modal" id="announceComposeBody"></div>
+</div>
+
+<div class="modal-overlay" id="linkComposeOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="linkComposeCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" id="linkComposeTitle" style="margin-right:90px;">リンクを追加</h3>
+    <label class="field-label">タイトル</label>
+    <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="linkTitleInput" placeholder="表示名">
+    <label class="field-label">ジャンル(任意)</label>
+    <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="linkGenreInput" list="dl_link_genre" placeholder="同じジャンル名でまとめて表示されます">
+    <label class="field-label">説明(任意)</label>
+    <textarea id="linkDescInput" class="autogrow" placeholder="どんなリンクか"></textarea>
+    <label class="field-label">URL</label>
+    <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="linkUrlInput" placeholder="https://...">
+    <div class="submit-row">
+      <button class="btn-submit" id="linkSubmitBtn" type="button">保存する</button>
+      <span class="status" id="linkComposeStatus"></span>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="contactsOverlay">
@@ -2714,6 +2843,7 @@
 </div>
 
 <datalist id="dl_author"></datalist>
+<datalist id="dl_link_genre"></datalist>
 
 <script>
   // ▼▼▼ ここをデプロイしたウェブアプリのURLに書き換えてください ▼▼▼
@@ -2742,6 +2872,38 @@
     { key: 'betaScheduleBeta',  label: 'Beta schedule beta',  type: 'text' },
     { key: 'version',           label: 'Version',             type: 'text' }
   ];
+
+  // 動画投稿(type=video)専用の生成設定。ComfyUI の Wan2.2 ワークフローを想定した項目。
+  // 画像投稿の SETTINGS_FIELDS とはキー空間を分け、動画モードのときだけフォームに出す。
+  const VIDEO_SETTINGS_FIELDS = [
+    { key: 'wanModel',      label: 'Model (Wan2.2)',       type: 'text' },
+    { key: 'wanVariant',    label: 'Variant (T2V/I2V/TI2V)', type: 'text' },
+    { key: 'wanSize',       label: 'Model Size (14B/5B)',  type: 'text' },
+    { key: 'loras',         label: 'LoRA',                 type: 'text' },
+    { key: 'vae',           label: 'VAE',                  type: 'text' },
+    { key: 'clip',          label: 'CLIP / Text Encoder',  type: 'text' },
+    { key: 'sampler',       label: 'Sampler',              type: 'text' },
+    { key: 'scheduler',     label: 'Scheduler',            type: 'text' },
+    { key: 'steps',         label: 'Steps',                type: 'number' },
+    { key: 'cfg',           label: 'CFG',                  type: 'number' },
+    { key: 'shift',         label: 'Shift',                type: 'number' },
+    { key: 'width',         label: 'Width',                type: 'number' },
+    { key: 'height',        label: 'Height',               type: 'number' },
+    { key: 'length',        label: 'Length (frames)',      type: 'number' },
+    { key: 'fps',           label: 'FPS',                  type: 'number' },
+    { key: 'seed',          label: 'Seed',                 type: 'text' },
+    { key: 'denoise',       label: 'Denoise',              type: 'number' }
+  ];
+
+  // 投稿(または生成設定オブジェクト)の種別に応じて、使う設定項目の定義を返す。
+  function settingsFieldsFor(holder) {
+    return (holder && holder.type === 'video') ? VIDEO_SETTINGS_FIELDS : SETTINGS_FIELDS;
+  }
+  // 画像・動画いずれの既知キーも「動的キー」に混ざらないよう、両方をまとめて既知扱いする。
+  function allKnownSettingKeys() {
+    return SETTINGS_FIELDS.map(function (f) { return f.key; })
+      .concat(VIDEO_SETTINGS_FIELDS.map(function (f) { return f.key; }));
+  }
 
   const PARAM_KEY_MAP = {
     'Steps': 'samplingSteps',
@@ -2808,6 +2970,7 @@
   let allComments = [];
   let allBoard = [];
   let allAnnounce = [];
+  let allLinks = [];
   let announceRefs = [];
   // 段階読み込みの状態。stage=parentsで一覧を出した後、stage=restを背後で読み込む。
   // rest完了までは、個別に開かれた投稿ごとに detailId= で優先取得する(ensurePostLoaded)。
@@ -2815,7 +2978,7 @@
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let selectedCategory = ''; // 投稿フォーム用: 作品の属性(版権/オリジナル/その他)
@@ -2883,6 +3046,23 @@
     { key: 'checkpoint',    label: 'Checkpoint' }
   ];
   let sortKeys = [{ field: 'date', dir: 'desc' }]; // クリック順=優先順位
+
+  // ---- 動画投稿一覧(画像一覧と同等の並び替え・絞り込み) ----
+  const VIDEO_SORT_FIELDS = [
+    { key: 'date',          label: '日時' },
+    { key: 'likeCount',     label: 'グッド' },
+    { key: 'downloadCount', label: 'ダウンロード' },
+    { key: 'author',        label: '投稿者' },
+    { key: 'wanModel',      label: 'Model' },
+    { key: 'sampler',       label: 'Sampler' }
+  ];
+  let vSortKeys = [{ field: 'date', dir: 'desc' }];
+  let vTagStates = {};
+  let vTagMatchMode = 'AND';
+  let vKeywordMode = 'AND';
+  let vViewMode = 'list';
+  let vCategoryFilter = 'all';
+  try { vCategoryFilter = localStorage.getItem('pr_video_category_filter') || 'all'; } catch (e) { vCategoryFilter = 'all'; }
 
   let likedPosts = {};
   try { likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}'); } catch (e) { likedPosts = {}; }
@@ -2962,11 +3142,12 @@
       applyBrowseTagClamp();
     }
     if (name === 'promptBrowse') { renderPromptList(); applyPromptBrowseTagClamp(); }
-    if (name === 'videoBrowse') { renderVideoList(); }
+    if (name === 'videoBrowse') { renderVideoList(); applyVideoTagClamp(); }
     if (name === 'requestBrowse') { renderRequestList(); }
     if (name === 'fixBrowse') { renderFixList(); }
     if (name === 'databank') { renderDatabank(); }
     if (name === 'board') { renderBoard(); }
+    if (name === 'links') { renderLinksList(); }
     if (name === 'post') { applyPostTagClamp(); if (currentPostMode() === 'prompt') applyPromptFormTagClamp(); }
     syncCartLayout();
   }
@@ -2978,10 +3159,32 @@
   const settingsGrid = document.getElementById('settingsGrid');
   let dynamicSettingKeys = [];
 
+  function activeBaseSettingsFields() {
+    return currentPostMode() === 'video' ? VIDEO_SETTINGS_FIELDS : SETTINGS_FIELDS;
+  }
   function allSettingsFields() {
-    const base = SETTINGS_FIELDS.map(function (f) { return { key: f.key, label: f.label, id: 'set_' + f.key }; });
+    const videoMode = activeBaseSettingsFields() === VIDEO_SETTINGS_FIELDS;
+    const base = activeBaseSettingsFields().map(function (f) { return { key: f.key, label: f.label, id: (videoMode ? 'vset_' : 'set_') + f.key }; });
     const dyn = dynamicSettingKeys.map(function (k, i) { return { key: k, label: k, id: 'setx_' + i }; });
     return base.concat(dyn);
+  }
+  // datalist は画像・動画どちらのモードでも常に必要なので、両方の設定項目を合わせた定義を返す。
+  function unionSettingsFieldDefs() {
+    const out = [];
+    SETTINGS_FIELDS.forEach(function (f) { out.push({ key: f.key, id: 'set_' + f.key }); });
+    VIDEO_SETTINGS_FIELDS.forEach(function (f) { out.push({ key: f.key, id: 'vset_' + f.key }); });
+    dynamicSettingKeys.forEach(function (k, i) { out.push({ key: k, id: 'setx_' + i }); });
+    return out;
+  }
+  function ensureUnionDatalists() {
+    unionSettingsFieldDefs().forEach(function (f) {
+      const dlId = 'dl_' + f.id;
+      if (!document.getElementById(dlId)) {
+        const dl = document.createElement('datalist');
+        dl.id = dlId;
+        document.body.appendChild(dl);
+      }
+    });
   }
 
   function currentSettingsValues() {
@@ -3015,7 +3218,7 @@
   }
 
   function collectDynamicKeysFromPosts() {
-    const base = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    const base = allKnownSettingKeys();
     const set = {};
     dynamicSettingKeys.forEach(function (k) { set[k] = true; });
     posts.forEach(function (p) {
@@ -3041,7 +3244,7 @@
   // 設定オブジェクト(prompt等の生成設定)をフォームへ反映する。未知キーは動的欄として追加。
   function loadSettingsIntoForm(settingsObj) {
     settingsObj = settingsObj || {};
-    const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
+    const baseKeys = allKnownSettingKeys();
     Object.keys(settingsObj).forEach(function (k) {
       if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
     });
@@ -3796,11 +3999,13 @@
     browseDirty = true;
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
+    if (data.links) { allLinks = data.links; renderLinksListIfActive(); }
     applyOptionsToUi();
     rebuildDerivedArraysFromPosts();
     collectDynamicKeysFromPosts();
     rebuildSettingsGrid();
     rebuildTagUI();
+    rebuildVideoTagUI();
     rebuildPostTagCloud();
     rebuildDatalists();
     rebuildPromptFormTagCloud();
@@ -3817,6 +4022,7 @@
     allComments = data.comments || [];
     allBoard = data.board || [];
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
+    if (data.links) { allLinks = data.links; renderLinksListIfActive(); }
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     buildInternalDict(data.dictionary);
     applyOptionsToUi();
@@ -3824,6 +4030,7 @@
     collectDynamicKeysFromPosts();
     rebuildSettingsGrid();
     rebuildTagUI();
+    rebuildVideoTagUI();
     rebuildPostTagCloud();
     rebuildDatalists();
     rebuildPromptFormTagCloud();
@@ -3960,7 +4167,8 @@
 
   function rebuildDatalists() {
     fillDatalist('dl_author', uniqueFieldValues(function (p) { return p.author; }));
-    allSettingsFields().forEach(function (f) {
+    ensureUnionDatalists();
+    unionSettingsFieldDefs().forEach(function (f) {
       fillDatalist('dl_' + f.id, uniqueFieldValues(function (p) { return p.settings && p.settings[f.key]; }));
     });
   }
@@ -4560,6 +4768,8 @@
     document.body.classList.toggle('opt-no-tab-databank', !options.tabDatabank);
     document.body.classList.toggle('opt-no-tab-usage', !options.tabUsage);
     document.body.classList.toggle('opt-no-tab-guide', !options.tabGuide);
+    document.body.classList.toggle('opt-no-tab-link', !options.tabLink);
+    if (!options.tabLink && document.getElementById('tab-links') && document.getElementById('tab-links').classList.contains('active')) switchTab('browse');
     document.body.classList.toggle('opt-no-link-baseprompt', !options.linkBasePrompt);
     document.body.classList.toggle('opt-no-link-parent', !options.linkParent);
     document.body.classList.toggle('opt-no-link-reference', !options.linkReference);
@@ -4835,12 +5045,13 @@
   }
 
   /* ---------- パネル表示:画像の縦横比を反映したグリッド配置 ---------- */
-  function layoutPanelGrid() {
-    const cs = getComputedStyle(list);
+  function layoutPanelGrid() { layoutPanelGridFor(list); }
+  function layoutPanelGridFor(listEl) {
+    const cs = getComputedStyle(listEl);
     const rowUnit = parseFloat(cs.getPropertyValue('grid-auto-rows')) || 8;
     const gap = parseFloat(cs.getPropertyValue('column-gap') || cs.getPropertyValue('gap')) || 6;
 
-    list.querySelectorAll('.row').forEach(function (item) {
+    listEl.querySelectorAll('.row').forEach(function (item) {
       // 行内の最初の img は .row-counts のグッド/バッドアイコン(16x16)なので、
       // ここで拾うと全カードが正方形になる。必ずサムネイルを指定すること。
       const img = item.querySelector('.row-thumb img');
@@ -4866,9 +5077,14 @@
 
   let panelResizeTimer = null;
   window.addEventListener('resize', function () {
-    if (viewMode !== 'panel') return;
+    const imgPanel = viewMode === 'panel';
+    const vidPanel = vViewMode === 'panel' && document.getElementById('tab-videoBrowse') && document.getElementById('tab-videoBrowse').classList.contains('active');
+    if (!imgPanel && !vidPanel) return;
     clearTimeout(panelResizeTimer);
-    panelResizeTimer = setTimeout(layoutPanelGrid, 150);
+    panelResizeTimer = setTimeout(function () {
+      if (imgPanel) layoutPanelGrid();
+      if (vidPanel) layoutPanelGridFor(document.getElementById('videoList'));
+    }, 150);
   });
 
   /* ---------- 詳細モーダル ---------- */
@@ -4880,13 +5096,14 @@
   function openModal(p) {
     openDetailPostId = p.id;
 
-    const imageSet = [{ imageUrl: p.imageUrl, prompt: p.prompt, negativePrompt: p.negativePrompt, settings: p.settings }]
+    const imageSet = [{ imageUrl: p.imageUrl, prompt: p.prompt, negativePrompt: p.negativePrompt, settings: p.settings, type: p.type }]
       .concat((p.variants || []).map(function (v) {
         return {
           imageUrl: v.imageUrl,
           prompt: v.prompt || p.prompt,
           negativePrompt: v.negativePrompt || p.negativePrompt,
-          settings: (v.settings && Object.keys(v.settings).length) ? v.settings : p.settings
+          settings: (v.settings && Object.keys(v.settings).length) ? v.settings : p.settings,
+          type: p.type
         };
       }));
     const hasVariants = imageSet.length > 1;
@@ -5229,22 +5446,246 @@
     }
   }
 
+  const videoListEl = document.getElementById('videoList');
+  const videoEmptyEl = document.getElementById('videoEmptyState');
+  videoListEl.addEventListener('error', handleImageError, true);
+
+  function vPassesTagFilter(post) {
+    const tags = post.tags || [];
+    const selected = Object.keys(vTagStates).filter(function (t) { return vTagStates[t]; });
+    if (!selected.length) return true;
+    if (vTagMatchMode === 'NOT') return !selected.some(function (t) { return tags.includes(t); });
+    return vTagMatchMode === 'AND'
+      ? selected.every(function (t) { return tags.includes(t); })
+      : selected.some(function (t) { return tags.includes(t); });
+  }
+
+  function updateVideoCategoryCounts(arr) {
+    const counts = { all: arr.length, copyright: 0, original: 0, other: 0 };
+    arr.forEach(function (p) { if (p.category && counts[p.category] !== undefined) counts[p.category]++; });
+    document.querySelectorAll('#vCategoryFilterToggle .seg-count').forEach(function (el) {
+      const k = el.dataset.count;
+      el.textContent = counts[k] != null ? counts[k] : 0;
+    });
+  }
+
+  let vBrowseFiltered = [];
+  let vBrowseThumbSize = 'w320';
+  let vBrowseShown = 0;
+  let vBrowseObserver = null;
+
   function renderVideoList() {
-    const listEl = document.getElementById('videoList');
-    const emptyEl = document.getElementById('videoEmptyState');
     if (!restStageLoaded) {
-      listEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
-      emptyEl.style.display = 'none';
+      videoListEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
+      videoEmptyEl.style.display = 'none';
       return;
     }
-    const arr = visiblePosts(videoPosts.slice()).sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
-    emptyEl.style.display = arr.length ? 'none' : 'block';
-    const temp = document.createElement('div');
-    temp.innerHTML = arr.map(function (p) { return imageRowHtml(p, 'w320'); }).join('');
-    wireImageRows(temp);
-    listEl.innerHTML = '';
-    while (temp.firstChild) listEl.appendChild(temp.firstChild);
+    let filtered = visiblePosts(videoPosts.slice()).filter(vPassesTagFilter);
+
+    const fAuthor = document.getElementById('vFilterAuthor').value.trim().toLowerCase();
+    const fModel = document.getElementById('vFilterModel').value.trim().toLowerCase();
+    const fSampler = document.getElementById('vFilterSampler').value.trim().toLowerCase();
+    const keywords = parseKeywords(document.getElementById('vFilterKeyword').value);
+    filtered = filtered.filter(function (p) {
+      if (!matchesTextFilter(p, fAuthor, function (x) { return x.author; })) return false;
+      if (!matchesTextFilter(p, fModel, function (x) { return x.settings && x.settings.wanModel; })) return false;
+      if (!matchesTextFilter(p, fSampler, function (x) { return x.settings && x.settings.sampler; })) return false;
+      if (!matchKeywords(postKeywordHaystack(p), keywords, vKeywordMode)) return false;
+      return true;
+    });
+
+    filtered.sort(function (a, b) { return compareWithKeys(a, b, vSortKeys); });
+
+    updateVideoCategoryCounts(filtered);
+    if (vCategoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === vCategoryFilter; });
+
+    videoListEl.classList.toggle('panel-mode', vViewMode === 'panel');
+    videoEmptyEl.style.display = filtered.length ? 'none' : 'block';
+
+    vBrowseThumbSize = vViewMode === 'panel' ? 'w640' : 'w320';
+    vBrowseFiltered = filtered;
+    vBrowseShown = 0;
+    videoListEl.innerHTML = '';
+    appendVideoPage();
+
+    if (vViewMode === 'panel') layoutPanelGridFor(videoListEl);
   }
+
+  function appendVideoPage() {
+    const slice = vBrowseFiltered.slice(vBrowseShown, vBrowseShown + BROWSE_PAGE);
+    if (slice.length) {
+      const temp = document.createElement('div');
+      temp.innerHTML = slice.map(function (p) { return imageRowHtml(p, vBrowseThumbSize); }).join('');
+      wireImageRows(temp, { detailOnly: true });
+      while (temp.firstChild) videoListEl.appendChild(temp.firstChild);
+      vBrowseShown += slice.length;
+    }
+    updateVideoSentinel();
+    if (vViewMode === 'panel') layoutPanelGridFor(videoListEl);
+  }
+
+  function updateVideoSentinel() {
+    let sentinel = document.getElementById('vBrowseSentinel');
+    if (vBrowseShown >= vBrowseFiltered.length) {
+      if (sentinel) { if (vBrowseObserver) vBrowseObserver.unobserve(sentinel); sentinel.remove(); }
+      return;
+    }
+    if (!sentinel) {
+      sentinel = document.createElement('div');
+      sentinel.id = 'vBrowseSentinel';
+      sentinel.setAttribute('aria-hidden', 'true');
+      sentinel.style.height = '1px';
+    }
+    if (videoListEl.parentNode) videoListEl.parentNode.insertBefore(sentinel, videoListEl.nextSibling);
+    if (!vBrowseObserver) {
+      vBrowseObserver = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) appendVideoPage();
+      }, { rootMargin: '800px 0px' });
+    }
+    vBrowseObserver.observe(sentinel);
+  }
+
+  /* ---------- 動画一覧: 並び替え・絞り込み・タグの配線 ---------- */
+  const vSortChips = document.getElementById('vSortChips');
+  function renderVSortChips() {
+    vSortChips.innerHTML = VIDEO_SORT_FIELDS.map(function (f) {
+      const idx = vSortKeys.findIndex(function (k) { return k.field === f.key; });
+      const active = idx !== -1;
+      const dir = active ? vSortKeys[idx].dir : '';
+      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
+      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' +
+        badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    }).join('');
+    vSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        const field = chip.dataset.field;
+        const idx = vSortKeys.findIndex(function (k) { return k.field === field; });
+        if (idx === -1) vSortKeys.push({ field: field, dir: 'desc' });
+        else if (vSortKeys[idx].dir === 'desc') vSortKeys[idx].dir = 'asc';
+        else vSortKeys.splice(idx, 1);
+        renderVSortChips();
+        renderVideoList();
+      });
+    });
+  }
+
+  ['vFilterAuthor', 'vFilterModel', 'vFilterSampler', 'vFilterKeyword'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', renderVideoList);
+  });
+  document.querySelectorAll('#vKeywordModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      vKeywordMode = btn.dataset.kwmode;
+      document.querySelectorAll('#vKeywordModeToggle button').forEach(function (b) { b.classList.toggle('active', b.dataset.kwmode === vKeywordMode); });
+      renderVideoList();
+    });
+  });
+  document.getElementById('vClearFiltersBtn').addEventListener('click', function () {
+    ['vFilterAuthor', 'vFilterModel', 'vFilterSampler', 'vFilterKeyword'].forEach(function (id) { document.getElementById(id).value = ''; });
+    renderVideoList();
+  });
+
+  function syncVTagMatchModeButtons() {
+    document.querySelectorAll('#vTagMatchModeToggle button, #vBrowseTagModalMatchModeToggle button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tagmode === vTagMatchMode);
+    });
+  }
+  document.querySelectorAll('#vTagMatchModeToggle button, #vBrowseTagModalMatchModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      vTagMatchMode = btn.dataset.tagmode;
+      syncVTagMatchModeButtons();
+      renderVideoList();
+    });
+  });
+  document.getElementById('vClearTagsBtn').addEventListener('click', function () {
+    vTagStates = {};
+    rebuildVideoTagUI();
+    renderVideoList();
+  });
+
+  const vTagCloud = document.getElementById('vTagCloud');
+  const vShowAllTagsBtn = document.getElementById('vShowAllTagsBtn');
+  function rebuildVideoTagUI() {
+    const tags = allUniqueTags();
+    Object.keys(vTagStates).forEach(function (t) { if (!tags.includes(t)) delete vTagStates[t]; });
+    vTagCloud.innerHTML = tagDisplayOrder('videoBrowse', tags, vTagStates).map(function (t) {
+      const cls = vTagStates[t] ? 'state-include' : '';
+      return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+    vTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (vTagStates[t]) delete vTagStates[t]; else vTagStates[t] = true;
+        rebuildVideoTagUI();
+        renderVideoList();
+      });
+    });
+    applyVideoTagClamp();
+  }
+  function applyVideoTagClamp() { applyTagCloudClamp(vTagCloud, vShowAllTagsBtn, 2); }
+
+  const vBrowseTagModalOverlay = document.getElementById('vBrowseTagModalOverlay');
+  const vBrowseTagModalCloud = document.getElementById('vBrowseTagModalCloud');
+  function renderVideoTagModalCloud() {
+    const tags = allUniqueTags();
+    vBrowseTagModalCloud.innerHTML = tags.map(function (t) {
+      const cls = vTagStates[t] ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+    vBrowseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (vTagStates[t]) delete vTagStates[t]; else vTagStates[t] = true;
+        rebuildVideoTagUI();
+        renderVideoTagModalCloud();
+        renderVideoList();
+      });
+    });
+  }
+  vShowAllTagsBtn.addEventListener('click', function () { renderVideoTagModalCloud(); openOverlay(vBrowseTagModalOverlay); });
+  document.getElementById('vBrowseTagModalCloseBtn').addEventListener('click', function () { vBrowseTagModalOverlay.classList.remove('open'); });
+  vBrowseTagModalOverlay.addEventListener('click', function (e) { if (e.target === vBrowseTagModalOverlay) vBrowseTagModalOverlay.classList.remove('open'); });
+  document.getElementById('vClearBrowseTagsModalBtn').addEventListener('click', function () {
+    vTagStates = {};
+    rebuildVideoTagUI();
+    renderVideoTagModalCloud();
+    renderVideoList();
+  });
+
+  function syncVideoCategoryButtons() {
+    document.querySelectorAll('#vCategoryFilterToggle button').forEach(function (b) { b.classList.toggle('active', b.dataset.catfilter === vCategoryFilter); });
+  }
+  document.querySelectorAll('#vCategoryFilterToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      vCategoryFilter = btn.dataset.catfilter;
+      try { localStorage.setItem('pr_video_category_filter', vCategoryFilter); } catch (e) {}
+      syncVideoCategoryButtons();
+      renderVideoList();
+    });
+  });
+
+  const vPanelSizeControl = document.getElementById('vPanelSizeControl');
+  const vPanelSizeRange = document.getElementById('vPanelSizeRange');
+  function syncVideoPanelSizeControl() { vPanelSizeControl.classList.toggle('active', vViewMode === 'panel'); }
+  videoListEl.style.setProperty('--panel-col', vPanelSizeRange.value + 'px');
+  vPanelSizeRange.addEventListener('input', function () {
+    videoListEl.style.setProperty('--panel-col', this.value + 'px');
+    if (vViewMode === 'panel') layoutPanelGridFor(videoListEl);
+  });
+  document.querySelectorAll('#vViewModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#vViewModeToggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      vViewMode = btn.dataset.view;
+      syncVideoPanelSizeControl();
+      renderVideoList();
+    });
+  });
+
+  syncVTagMatchModeButtons();
+  syncVideoCategoryButtons();
+  syncVideoPanelSizeControl();
+  renderVSortChips();
 
   function rerenderActiveList() {
     if (document.getElementById('tab-browse').classList.contains('active')) renderList();
@@ -5252,6 +5693,7 @@
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
     if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
     if (document.getElementById('tab-fixBrowse') && document.getElementById('tab-fixBrowse').classList.contains('active')) renderFixList();
+    if (document.getElementById('tab-links') && document.getElementById('tab-links').classList.contains('active')) renderLinksList();
   }
 
   function sharePost(p, btn) {
@@ -5424,6 +5866,7 @@
     const variantBtn = document.getElementById('variantModeBtn');
     if (variantBtn) variantBtn.style.display = mode === 'image' ? '' : 'none';
     if (mode !== 'image') setVariantMode(false);
+    rebuildSettingsGrid();
     if (mode === 'prompt') rebuildPromptFormTagCloud(); else applyPostTagClamp();
   }
 
@@ -6900,8 +7343,9 @@
 
   // PROMPT DETAIL MODAL
   function settingsEntriesHtml(p) {
-    const knownKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
-    return SETTINGS_FIELDS
+    const fields = settingsFieldsFor(p);
+    const knownKeys = fields.map(function (f) { return f.key; });
+    return fields
       .filter(function (f) { return p.settings && p.settings[f.key]; })
       .map(function (f) { return '<div><span>' + escapeHtml(f.label) + '</span>' + escapeHtml(p.settings[f.key]) + '</div>'; }).join('') +
       (p.settings ? Object.keys(p.settings) : [])
@@ -7221,6 +7665,7 @@
     { key: 'tabDatabank', group: 'tabs', label: 'プロンプトデータバンクタブ', desc: 'オフにするとプロンプトデータバンクタブを非表示にします' },
     { key: 'board', group: 'tabs', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
     { key: 'video', group: 'tabs', label: '動画投稿機能', desc: 'オフにすると「動画を投稿」モードと「動画投稿一覧」タブを非表示にします' },
+    { key: 'tabLink', group: 'tabs', label: 'リンクタブ', desc: 'オフにするとリンクタブを非表示にします' },
     { key: 'tabUsage', group: 'tabs', label: '本ツールの使い方タブ', desc: 'オフにすると使い方タブを非表示にします' },
     { key: 'tabGuide', group: 'tabs', label: 'はじめてガイドタブ', desc: 'オフにするとはじめてガイドタブを非表示にします' },
     { key: 'like', group: 'reaction', label: 'グッドボタン', desc: 'オフにすると全画面からグッドボタンが消えます' },
@@ -7389,7 +7834,7 @@
       // 未知のキーが返却から欠落し、保存したはずの設定がオフに戻ってしまう。
       // 黙って戻さず原因を明示する。
       const returned = result.options || {};
-      const missing = ['fixRequest', 'dislike', 'ownerEdit', 'inpaint', 'loginEnabled', 'tabBrowse', 'linkBasePrompt'].filter(function (k) { return !(k in returned); });
+      const missing = ['fixRequest', 'dislike', 'ownerEdit', 'inpaint', 'loginEnabled', 'tabBrowse', 'tabLink', 'linkBasePrompt'].filter(function (k) { return !(k in returned); });
       if (missing.length) {
         throw new Error('GAS側が新機能に未対応です。最新の Code.gs を貼り付けたうえで「デプロイを管理」→ 新しいバージョンとして更新し、setup を再実行してください。');
       }
@@ -7441,6 +7886,7 @@
     rebuildDerivedArraysFromPosts();
     collectDynamicKeysFromPosts();
     rebuildTagUI();
+    rebuildVideoTagUI();
     rebuildPostTagCloud();
     rebuildDatalists();
     rebuildPromptFormTagCloud();
@@ -7448,6 +7894,7 @@
     renderRequestDisplay();
     renderFixRequestDisplay();
     if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+    if (document.getElementById('tab-videoBrowse') && document.getElementById('tab-videoBrowse').classList.contains('active')) renderVideoList();
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
     if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
     if (document.getElementById('tab-fixBrowse').classList.contains('active')) renderFixList();
@@ -7508,7 +7955,7 @@
     adminEditingPost = p;
     closeModal();
     switchTab('post');
-    setPostMode(type === 'prompt' || type === 'request' ? type : (type === 'fix' ? 'fix' : 'image'));
+    setPostMode(type === 'prompt' || type === 'request' ? type : (type === 'fix' ? 'fix' : (type === 'video' ? 'video' : 'image')));
 
     if (isImage) {
       document.getElementById('titleInput').value = p.title || '';
@@ -7590,7 +8037,7 @@
   // 保存成功時は呼び出し側が別途モーダルを開くため、そちらでは使わない(cancelAdminEdit(false)を渡す)。
   async function reopenPostDetail(p) {
     const type = p.type || 'image';
-    switchTab(type === 'prompt' ? 'promptBrowse' : type === 'request' ? 'requestBrowse' : type === 'fix' ? 'fixBrowse' : 'browse');
+    switchTab(type === 'prompt' ? 'promptBrowse' : type === 'request' ? 'requestBrowse' : type === 'fix' ? 'fixBrowse' : type === 'video' ? 'videoBrowse' : 'browse');
     const post = await ensurePostLoaded(p.id) || p;
     if (isHiddenByDislike(post)) return;
     if (post.type === 'prompt') openPromptModal(post);
@@ -8394,6 +8841,146 @@
   document.getElementById('announceOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
   document.getElementById('announceComposeOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
   document.getElementById('adminAnnounceBtn').addEventListener('click', openAnnounceComposeModal);
+
+  /* ===== LINKS(リンク集) ===== */
+  const linksListEl = document.getElementById('linksList');
+  const linksEmptyEl = document.getElementById('linksEmpty');
+  let editingLinkId = null;
+
+  function safeLinkUrl(url) {
+    const s = String(url || '').trim();
+    return /^https?:\/\//i.test(s) ? s : '';
+  }
+
+  function renderLinksListIfActive() {
+    if (document.getElementById('tab-links') && document.getElementById('tab-links').classList.contains('active')) renderLinksList();
+  }
+
+  function linkCardHtml(l) {
+    const url = safeLinkUrl(l.url);
+    const urlHtml = url
+      ? '<a class="link-url" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(l.url) + ' ↗</a>'
+      : (l.url ? '<span class="link-url" style="color:var(--ink-dim);">' + escapeHtml(l.url) + '</span>' : '');
+    const adminActions = adminMode
+      ? '<div class="link-admin-actions">' +
+          '<button class="btn-ghost" type="button" data-edit-link="' + escapeHtml(String(l.id)) + '">編集</button>' +
+          '<button class="btn-ghost" type="button" data-del-link="' + escapeHtml(String(l.id)) + '">削除</button>' +
+        '</div>'
+      : '';
+    return '<div class="link-card">' +
+      '<div class="link-card-head">' +
+        '<div class="link-title">' + escapeHtml(l.title || '(無題)') + '</div>' +
+        adminActions +
+      '</div>' +
+      (l.description ? '<div class="link-desc">' + escapeHtml(l.description) + '</div>' : '') +
+      urlHtml +
+    '</div>';
+  }
+
+  function renderLinksList() {
+    // ジャンル別プルダウン候補(スプレッドシートで指定されたジャンル)
+    fillDatalist('dl_link_genre', sortJa(Array.from(new Set(allLinks.map(function (l) { return String(l.genre || '').trim(); }).filter(Boolean)))));
+
+    if (!restStageLoaded && !allLinks.length) {
+      linksListEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
+      linksEmptyEl.style.display = 'none';
+      return;
+    }
+    linksEmptyEl.style.display = allLinks.length ? 'none' : 'block';
+
+    // スプレッドシートの行順どおりに、ジャンルごとにまとめて描画する
+    // (ジャンルの並び順・グループ内の並び順ともにシートの行順に従う)。
+    const order = [];
+    const groups = {};
+    allLinks.forEach(function (l) {
+      const g = String(l.genre || '').trim();
+      if (!(g in groups)) { groups[g] = []; order.push(g); }
+      groups[g].push(l);
+    });
+
+    linksListEl.innerHTML = order.map(function (g) {
+      const head = g ? '<div class="link-genre-head">' + escapeHtml(g) + '</div>' : '';
+      return head + groups[g].map(linkCardHtml).join('');
+    }).join('');
+
+    linksListEl.querySelectorAll('[data-edit-link]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const l = allLinks.find(function (x) { return String(x.id) === btn.dataset.editLink; });
+        if (l) openLinkCompose(l);
+      });
+    });
+    linksListEl.querySelectorAll('[data-del-link]').forEach(function (btn) {
+      btn.addEventListener('click', function () { deleteLink(btn.dataset.delLink); });
+    });
+  }
+
+  function openLinkCompose(link) {
+    editingLinkId = link ? link.id : null;
+    document.getElementById('linkComposeTitle').textContent = link ? 'リンクを編集' : 'リンクを追加';
+    document.getElementById('linkTitleInput').value = link ? (link.title || '') : '';
+    document.getElementById('linkGenreInput').value = link ? (link.genre || '') : '';
+    document.getElementById('linkDescInput').value = link ? (link.description || '') : '';
+    document.getElementById('linkUrlInput').value = link ? (link.url || '') : '';
+    document.getElementById('linkComposeStatus').textContent = '';
+    document.querySelectorAll('#linkComposeOverlay textarea.autogrow').forEach(autoGrow);
+    openOverlay(document.getElementById('linkComposeOverlay'));
+  }
+
+  async function submitLink() {
+    const status = document.getElementById('linkComposeStatus');
+    const title = document.getElementById('linkTitleInput').value.trim();
+    const genre = document.getElementById('linkGenreInput').value.trim();
+    const description = document.getElementById('linkDescInput').value.trim();
+    const url = document.getElementById('linkUrlInput').value.trim();
+    status.textContent = '';
+    if (!title) { status.textContent = 'タイトルを入力してください'; return; }
+    if (!url) { status.textContent = 'URLを入力してください'; return; }
+    const btn = document.getElementById('linkSubmitBtn');
+    btn.disabled = true;
+    showLoading('保存中...');
+    try {
+      const result = await postAction({
+        action: editingLinkId ? 'linkUpdate' : 'linkAdd',
+        password: adminPassword,
+        id: editingLinkId || undefined,
+        title: title, description: description, url: url, genre: genre
+      });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      if (result.link) {
+        const idx = allLinks.findIndex(function (x) { return String(x.id) === String(result.link.id); });
+        if (idx === -1) allLinks.push(result.link); else allLinks[idx] = result.link;
+      }
+      renderLinksList();
+      document.getElementById('linkComposeOverlay').classList.remove('open');
+    } catch (err) {
+      status.textContent = '保存に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteLink(id) {
+    if (!window.confirm('このリンクを削除しますか？')) return;
+    showLoading('削除中...');
+    try {
+      const result = await postAction({ action: 'linkDelete', password: adminPassword, id: id });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      allLinks = allLinks.filter(function (l) { return String(l.id) !== String(id); });
+      renderLinksList();
+    } catch (err) {
+      window.alert('削除に失敗しました: ' + (err.message || err));
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  document.getElementById('addLinkBtn').addEventListener('click', function () { openLinkCompose(null); });
+  document.getElementById('linkSubmitBtn').addEventListener('click', submitLink);
+  document.getElementById('linkComposeCloseBtn').addEventListener('click', function () { document.getElementById('linkComposeOverlay').classList.remove('open'); });
+  document.getElementById('linkComposeOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
 
   // ===== EDIT PASSWORD TOOLTIP =====
   function initEditPwTooltip() {
