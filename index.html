@@ -901,9 +901,11 @@
   .admin-only{ display:none; }
   body.admin-on .admin-only{ display:inline-flex; }
   /* リンクタブ */
-  .links-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  #tab-links .panel{ padding-top:16px; padding-bottom:16px; }
+  .links-head{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .links-head h2{ margin:0; }
-  .links-intro{ margin:10px 0 0; font-size:12.5px; color:var(--ink-dim); }
+  .links-head #addLinkBtn{ margin-left:auto; }
+  .links-intro{ margin:0; font-size:12.5px; color:var(--ink-dim); }
   .links-intro code{ background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 5px; font-size:12px; }
   .links-list{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
   .link-genre-head{ margin-top:18px; margin-bottom:2px; font-size:12px; font-weight:700; letter-spacing:.04em; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:5px; }
@@ -1963,9 +1965,9 @@
     <section class="panel">
       <div class="links-head">
         <h2>リンク</h2>
+        <p class="links-intro">関連サイトや資料へのリンク集です。</p>
         <button class="btn-ghost admin-only" type="button" id="addLinkBtn">＋ リンクを追加</button>
       </div>
-      <p class="links-intro">関連サイトや資料へのリンク集です。</p>
     </section>
 
     <div class="links-list" id="linksList"></div>
