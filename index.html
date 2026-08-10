@@ -1287,18 +1287,16 @@
   /* 返信する + 返信N件を表示 を横並びにして空きスペースを減らす */
   .board-thread-actions{ margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .board-reply-form{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
-  .board-reply-form textarea{ min-height:64px; }
+  .board-reply-form textarea{ min-height:64px; resize:none; }
   .board-reply-form .field-label{ margin-top:0; }
   .board-reply-form-row{ display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap; }
   .board-reply-status{ font-size:12px; color: var(--ink-dim); }
   .board-replies-toggle{ margin-top:0; background:none; border:0; padding:4px 0; color: var(--accent); font-size:12.5px; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; }
   .board-replies-toggle:hover{ text-decoration:underline; }
-  /* 管理モード: 編集・削除ボタンは見出し行の中にインフローで置き、枠と重ならないようにする */
-  .board-op-head{ display:flex; align-items:flex-start; gap:10px; }
-  .board-op-headmain{ flex:1 1 auto; min-width:0; }
-  .board-reply-headrow{ display:flex; align-items:flex-start; gap:10px; margin-bottom:3px; }
-  .board-reply-headrow .board-reply-head{ flex:1 1 auto; min-width:0; margin-bottom:0; }
+  /* 管理モード: 編集・削除ボタンは各カードの右下に置く(他要素の邪魔にならず、編集中も消えない) */
   .board-admin-ctrls{ flex:0 0 auto; display:flex; align-items:center; gap:6px; }
+  .board-thread-actions .board-admin-ctrls{ margin-left:auto; }
+  .board-card-foot{ display:flex; justify-content:flex-end; margin-top:8px; }
   .board-admin-ctrls .comment-del{ position:static; top:auto; right:auto; }
   .board-edit-btn{
     background:none; border:1px solid var(--line); color: var(--ink-dim);
@@ -1307,7 +1305,7 @@
   }
   .board-edit-btn:hover{ color: var(--ink); border-color: var(--ink-dim); }
   .board-edit-form input, .board-edit-form textarea{ width:100%; box-sizing:border-box; }
-  .board-edit-form textarea{ min-height:84px; }
+  .board-edit-form textarea{ min-height:84px; resize:none; }
   .board-edit-form .field-label{ margin-top:8px; }
   .board-edit-status{ font-size:12px; color: var(--ink-dim); }
 
@@ -7123,14 +7121,12 @@
     const name = r.name ? escapeHtml(r.name) : '匿名';
     return '<div class="board-reply">' +
       '<div class="board-reply-main">' +
-        '<div class="board-reply-headrow">' +
-          '<div class="board-reply-head"><span class="board-reply-no">No.' + no + '</span><span class="board-name">' + name + '</span><span class="comment-date">' + formatDateTime(r.timestamp) + '</span></div>' +
-          boardAdminCtrls(r.id) +
-        '</div>' +
+        '<div class="board-reply-head"><span class="board-reply-no">No.' + no + '</span><span class="board-name">' + name + '</span><span class="comment-date">' + formatDateTime(r.timestamp) + '</span></div>' +
         '<div class="board-reply-body">' + boardBodyHtml(r.body) + '</div>' +
         boardImagesHtml(r) +
       '</div>' +
       boardEditForm(r.id, false) +
+      (adminMode ? '<div class="board-card-foot">' + boardAdminCtrls(r.id) + '</div>' : '') +
     '</div>';
   }
 
@@ -7154,17 +7150,12 @@
       : '';
     return '<div class="comment-item board-thread' + (title ? '' : ' board-thread-notitle') + '" data-thread="' + escapeHtml(String(t.id)) + '">' +
       '<div class="board-op">' +
-        '<div class="board-op-head">' +
-          '<div class="board-op-headmain">' +
-            subjectBlock +
-            '<div class="board-op-meta">' +
-              '<span class="board-name">' + name + '</span>' +
-              '<span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
-              '<span class="board-reply-count">💬 ' + replies.length + '</span>' +
-              (replies.length ? '<span class="board-latest-reply">最新の返信 ' + formatDateTime(latestReplyTs) + '</span>' : '') +
-            '</div>' +
-          '</div>' +
-          boardAdminCtrls(t.id) +
+        subjectBlock +
+        '<div class="board-op-meta">' +
+          '<span class="board-name">' + name + '</span>' +
+          '<span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
+          '<span class="board-reply-count">💬 ' + replies.length + '</span>' +
+          (replies.length ? '<span class="board-latest-reply">最新の返信 ' + formatDateTime(latestReplyTs) + '</span>' : '') +
         '</div>' +
         opBody +
       '</div>' +
@@ -7174,6 +7165,7 @@
       '<div class="board-thread-actions">' +
         '<button class="btn-ghost board-reply-toggle" type="button">返信する</button>' +
         toggleBtn +
+        boardAdminCtrls(t.id) +
       '</div>' +
       repliesBlock +
       '<div class="board-reply-form" style="display:none;">' +
