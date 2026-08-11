@@ -571,6 +571,9 @@
   .dl-item-empty:hover{ background: none; color: var(--ink-dim); }
   .search-row .dl-wrap{ flex: 1 1 150px; width: auto; }
   .tag-row .dl-wrap{ flex: 1 1 160px; width: auto; }
+  .tag-ac-wrap{ position: relative; flex: 1 1 160px; display: flex; min-width: 0; }
+  .tag-ac-wrap > input[type="text"]{ flex: 1 1 auto; min-width: 0; }
+  .dl-item.active{ background: var(--accent-dim); color: var(--accent); }
 
   /* ---- ソートチップ ---- */
   .sort-chips{ display:flex; flex-wrap:wrap; gap: 8px; }
@@ -1567,7 +1570,7 @@
       <div class="tag-cloud-wrap" id="postTagWrap"><div class="tag-cloud" id="postTagCloud"></div>
       <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button></div>
       <div class="tag-row" style="margin-top:10px;">
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" list="dl_all_tags" placeholder="新しいタグを入力して追加(既存タグから予測変換)">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" placeholder="新しいタグを入力して追加(既存タグから予測変換)">
         <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="selectedTags"></div>
@@ -4299,6 +4302,100 @@
     (root || document).querySelectorAll('input[list]').forEach(attachDatalistDropdown);
   }
 
+  // ===== TAG AUTOCOMPLETE (画像投稿タグ) =====
+  function attachTagAutocomplete(input, addFn) {
+    if (!input || input.dataset.acWrapped) return;
+    input.dataset.acWrapped = '1';
+
+    const wrap = document.createElement('span');
+    wrap.className = 'tag-ac-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    let menu = null;
+    let items = [];
+    let activeIndex = -1;
+
+    function closeMenu() {
+      if (menu) { menu.remove(); menu = null; }
+      items = [];
+      activeIndex = -1;
+    }
+
+    function buildMenu() {
+      const q = input.value.trim().toLowerCase();
+      let cands = allUniqueTags().filter(function (t) { return !selectedTags.includes(t); });
+      if (q) {
+        cands = cands.filter(function (t) { return t.toLowerCase().includes(q); })
+          .sort(function (a, b) {
+            const ap = a.toLowerCase().startsWith(q) ? 0 : 1;
+            const bp = b.toLowerCase().startsWith(q) ? 0 : 1;
+            return ap - bp;
+          });
+      }
+      cands = cands.slice(0, 30);
+      if (!q || !cands.length) { closeMenu(); return; }
+
+      if (!menu) {
+        menu = document.createElement('div');
+        menu.className = 'dl-menu';
+        wrap.appendChild(menu);
+      }
+      items = cands;
+      activeIndex = -1;
+      menu.innerHTML = cands.map(function (t, i) {
+        return '<div class="dl-item" data-i="' + i + '">' + escapeHtml(t) + '</div>';
+      }).join('');
+      menu.querySelectorAll('.dl-item').forEach(function (el) {
+        el.addEventListener('mousedown', function (ev) {
+          ev.preventDefault();
+          commit(items[parseInt(el.dataset.i, 10)]);
+        });
+      });
+    }
+
+    function setActive(i) {
+      const els = menu ? menu.querySelectorAll('.dl-item') : [];
+      if (!els.length) return;
+      if (i < 0) i = els.length - 1;
+      if (i >= els.length) i = 0;
+      activeIndex = i;
+      els.forEach(function (el, idx) { el.classList.toggle('active', idx === activeIndex); });
+      els[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+
+    function commit(tag) {
+      if (!tag) return;
+      input.value = tag;
+      addFn();
+      closeMenu();
+    }
+
+    input.addEventListener('input', buildMenu);
+    input.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === 'ArrowDown') {
+        if (!menu) { buildMenu(); if (menu) setActive(0); }
+        else setActive(activeIndex + 1);
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        if (menu) { setActive(activeIndex - 1); e.preventDefault(); }
+      } else if (e.key === 'Tab') {
+        if (menu && items.length) {
+          setActive(activeIndex + 1);
+          e.preventDefault();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (menu && activeIndex >= 0) commit(items[activeIndex]);
+        else addFn();
+      } else if (e.key === 'Escape') {
+        if (menu) { closeMenu(); e.preventDefault(); }
+      }
+    });
+    input.addEventListener('blur', function () { setTimeout(closeMenu, 120); });
+  }
+
   function allUniqueTags() {
     const set = new Set();
     posts.forEach(function (p) { (p.tags || []).forEach(function (t) { set.add(t); }); });
@@ -4593,8 +4690,8 @@
     if (v && !selectedTags.includes(v)) { selectedTags.push(v); renderChips(); }
     input.value = '';
   });
-  document.getElementById('newTagInput').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addNewTagBtn').click(); }
+  attachTagAutocomplete(document.getElementById('newTagInput'), function () {
+    document.getElementById('addNewTagBtn').click();
   });
 
   function setSelectedCategory(cat) {
