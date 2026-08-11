@@ -4594,21 +4594,23 @@
     pills.forEach(function (p) { p.style.display = ''; });
     container.style.maxHeight = '';
     if (pills.length === 0) { btn.style.display = 'none'; return; }
-    btn.style.display = '';
-    const firstTop = pills[0].getBoundingClientRect().top;
-    function sameRow(el) { return Math.abs(el.getBoundingClientRect().top - firstTop) <= 2; }
-    pills.forEach(function (p) { if (!sameRow(p)) p.style.display = 'none'; });
-    for (let i = pills.length - 1; i >= 0 && !sameRow(btn); i--) {
-      if (pills[i].style.display !== 'none') pills[i].style.display = 'none';
-    }
-    const anyHidden = pills.some(function (p) { return p.style.display === 'none'; });
-    btn.style.display = anyHidden ? '' : 'none';
-    // 保険: 測定タイミング(タブ表示直後やフォーム編集直後)の都合で全滅した場合、
-    // タグが丸ごと消えて見えてしまうので全表示に戻す。
-    if (pills.length && pills.every(function (p) { return p.style.display === 'none'; })) {
-      pills.forEach(function (p) { p.style.display = ''; });
+
+    const wrap = btn.parentNode;
+    if (!wrap || wrap.offsetParent === null || wrap.clientWidth === 0) {
       btn.style.display = 'none';
+      requestAnimationFrame(function () {
+        if (wrap && wrap.offsetParent !== null && wrap.clientWidth > 0) applyTagCloudClamp(container, btn, maxRows);
+      });
+      return;
     }
+
+    btn.style.display = 'none';
+    const firstTop = pills[0].offsetTop;
+    let hiddenAny = false;
+    pills.forEach(function (p) {
+      if (Math.abs(p.offsetTop - firstTop) > 2) { p.style.display = 'none'; hiddenAny = true; }
+    });
+    btn.style.display = hiddenAny ? '' : 'none';
   }
 
   function applyPostTagClamp() { applyTagCloudClamp(postTagCloud, showAllTagsBtn, POST_TAG_MAX_ROWS); }
