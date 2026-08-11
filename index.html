@@ -299,6 +299,16 @@
     padding: 20px 22px;
     margin-bottom: 20px;
   }
+  .search-toolbar{ display:flex; justify-content:flex-end; margin-bottom: 10px; }
+  .search-toggle-btn{
+    font-family:'Noto Sans JP',sans-serif; font-size: 12px;
+    background: var(--surface-2); color: var(--ink-dim);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  .search-toggle-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  #browseSearchPanel.search-collapsed > *:not(.sort-row){ display: none; }
+  #browseSearchPanel.search-collapsed .sort-row{ margin-bottom: 0; }
   .search-row{ display:flex; align-items:center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
   .search-row:last-child{ margin-bottom: 0; }
   .search-row .label{
@@ -1709,8 +1719,11 @@
   <!-- ============ 閲覧タブ ============ -->
   <div class="tab-panel active" id="tab-browse">
 
-    <div class="search-panel">
-      <div class="search-row">
+    <div class="search-toolbar">
+      <button type="button" class="search-toggle-btn" id="toggleSearchAreaBtn">検索エリアを非表示</button>
+    </div>
+    <div class="search-panel" id="browseSearchPanel">
+      <div class="search-row sort-row">
         <span class="label">並び順</span>
         <div class="sort-chips" id="sortChips"></div>
         <div class="row-right-toggles">
@@ -3124,6 +3137,16 @@
   ];
   let sortKeys = [{ field: 'date', dir: 'desc' }]; // クリック順=優先順位
 
+  const BROWSE_SORT_OPTIONS = [
+    { label: '新しい順',            field: 'date',          dir: 'desc' },
+    { label: '古い順',              field: 'date',          dir: 'asc' },
+    { label: 'グッドが多い順',       field: 'likeCount',     dir: 'desc' },
+    { label: 'ダウンロードが多い順',  field: 'downloadCount', dir: 'desc' },
+    { label: '投稿者名順',           field: 'author',        dir: 'asc' },
+    { label: 'UI Preset順',         field: 'uiPreset',      dir: 'asc' },
+    { label: 'Checkpoint順',        field: 'checkpoint',    dir: 'asc' }
+  ];
+
   // ---- 動画投稿一覧(画像一覧と同等の並び替え・絞り込み) ----
   const VIDEO_SORT_FIELDS = [
     { key: 'date',          label: '日時' },
@@ -4483,27 +4506,16 @@
   /* ---------- 複合ソートチップ ---------- */
   const sortChips = document.getElementById('sortChips');
   function renderSortChips() {
-    sortChips.innerHTML = SORT_FIELDS.map(function (f) {
-      const idx = sortKeys.findIndex(function (k) { return k.field === f.key; });
-      const active = idx !== -1;
-      const dir = active ? sortKeys[idx].dir : '';
-      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
-      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
-      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' +
-        badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    const cur = sortKeys[0] || {};
+    sortChips.innerHTML = BROWSE_SORT_OPTIONS.map(function (o) {
+      const active = cur.field === o.field && cur.dir === o.dir;
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + o.field +
+        '" data-dir="' + o.dir + '">' + o.label + '</span>';
     }).join('');
 
     sortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
-        const field = chip.dataset.field;
-        const idx = sortKeys.findIndex(function (k) { return k.field === field; });
-        if (idx === -1) {
-          sortKeys.push({ field: field, dir: 'desc' });
-        } else if (sortKeys[idx].dir === 'desc') {
-          sortKeys[idx].dir = 'asc';
-        } else {
-          sortKeys.splice(idx, 1);
-        }
+        sortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
         renderSortChips();
         renderList();
       });
@@ -4615,6 +4627,22 @@
 
   function applyPostTagClamp() { applyTagCloudClamp(postTagCloud, showAllTagsBtn, POST_TAG_MAX_ROWS); }
   function applyBrowseTagClamp() { applyTagCloudClamp(tagCloud, showAllBrowseTagsBtn, BROWSE_TAG_MAX_ROWS); }
+
+  // ===== 検索エリアの表示/非表示 =====
+  const browseSearchPanel = document.getElementById('browseSearchPanel');
+  const toggleSearchAreaBtn = document.getElementById('toggleSearchAreaBtn');
+  function applySearchAreaCollapsed(collapsed) {
+    browseSearchPanel.classList.toggle('search-collapsed', collapsed);
+    toggleSearchAreaBtn.textContent = collapsed ? '検索エリアを表示' : '検索エリアを非表示';
+    if (!collapsed) applyBrowseTagClamp();
+  }
+  let searchAreaCollapsed = false;
+  try { searchAreaCollapsed = localStorage.getItem('pr_browse_search_collapsed') === '1'; } catch (e) {}
+  toggleSearchAreaBtn.addEventListener('click', function () {
+    searchAreaCollapsed = !searchAreaCollapsed;
+    try { localStorage.setItem('pr_browse_search_collapsed', searchAreaCollapsed ? '1' : ''); } catch (e) {}
+    applySearchAreaCollapsed(searchAreaCollapsed);
+  });
 
   /* ---------- タグ選択モーダル(投稿フォーム用) ---------- */
   const tagModalOverlay = document.getElementById('tagModalOverlay');
@@ -9417,6 +9445,7 @@
   renderBoardRefThumbs();
   renderSortChips();
   renderBoardSortChips();
+  applySearchAreaCollapsed(searchAreaCollapsed);
   syncCartLayout();
   startApp();
 </script>
