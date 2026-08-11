@@ -86,6 +86,10 @@
   }
   .tab-btn:hover{ color: var(--ink); }
   .tab-btn.active{ background: var(--accent); color: #fff; border-color: var(--accent); }
+  /* デスクトップでは box を作らずそのまま子ボタンをタブ列に流し込む(見た目は従来どおり)。
+     スマホでは media query 側でドロップダウンパネルに変える。 */
+  .tabs-more-panel{ display: contents; }
+  .tab-more-btn{ display: none; }
   .tab-panel{ display:none; }
   .tab-panel.active{ display:block; }
 
@@ -1415,9 +1419,35 @@
     header h1{ font-size: 23px; }
     .admin-btn{ font-size: 11.5px; padding: 6px 11px; }
 
-    /* ---- タブ: 幅が足りないと1文字ずつ縦積みに潰れてしまうため、折り返し表示にする ---- */
-    .tabs{ flex-wrap: wrap; gap: 6px; margin: 18px 0 18px; }
+    /* ---- タブ: 「投稿/画像投稿一覧/掲示板」だけを常時1行に表示し、
+       それ以外は「☰ その他」ボタンからのドロップダウンにまとめる ---- */
+    .tabs{ flex-wrap: wrap; gap: 6px; margin: 18px 0 18px; align-items: flex-start; }
     .tab-btn{ flex: 0 0 auto; white-space: nowrap; padding: 8px 14px; font-size: 13px; }
+    .tab-more-btn{
+      display: inline-flex; align-items: center; gap: 6px;
+      flex: 0 0 auto; white-space: nowrap;
+      font-size: 13px; padding: 8px 14px; border-radius: 8px;
+      background: var(--surface); color: var(--ink-dim);
+      border: 1px solid var(--line); cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .tab-more-btn[aria-expanded="true"]{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+    /* デスクトップでは display:contents で素通りさせている中身を、
+       スマホではドロップダウンパネルとして箱に入れて折りたたむ */
+    .tabs-more-panel{
+      display: none;
+      order: 10;
+      width: 100%;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 2px;
+      padding: 8px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    .tabs.show-more .tabs-more-panel{ display: flex; }
+    .tabs-more-panel .tab-btn{ width: 100%; text-align: center; }
 
     /* ---- パネル・検索エリアの余白を詰める ---- */
     .panel{ padding: 16px; }
@@ -1427,19 +1457,25 @@
     .toolbar{ gap: 8px; }
     .toolbar-right{ width: 100%; justify-content: space-between; }
     .panel-size-control input[type="range"]{ width: 100px; }
+    /* 検索エリアを非表示中は、並び順チップを新しい順/古い順/グッドが多い順だけに絞る */
+    #browseSearchPanel.search-collapsed .sort-chip[data-field="downloadCount"],
+    #browseSearchPanel.search-collapsed .sort-chip[data-field="author"],
+    #browseSearchPanel.search-collapsed .sort-chip[data-field="uiPreset"],
+    #browseSearchPanel.search-collapsed .sort-chip[data-field="checkpoint"]{ display: none; }
 
     /* ---- カテゴリフィルタ: 等幅グリッドだと文字が折り返してしまうため、内容幅で折り返す ---- */
     .seg-filter{ display: flex; flex-wrap: wrap; width: 100%; }
     .seg-filter button{ flex: 1 1 auto; font-size: 12px; padding: 8px 10px; }
 
-    /* ---- 一覧カード ---- */
+    /* ---- 一覧カード: グッド/バッドボタンがタイトルに被るため、カード上では非表示にする
+       (詳細画面のグッド/バッドはそのまま残す) ---- */
     .row-main{ gap: 10px; padding: 10px 12px; }
     .row-thumb{ width: 76px; height: 76px; }
     .row-title{ font-size: 13.5px; }
     .row-meta{ font-size: 11px; gap: 8px; }
-    .row-counts{ top: 8px; right: 10px; }
-    .row-counts + .row-main .row-title{ padding-right: 90px; }
-    .prompt-row .row-counts + .row-main .row-title{ padding-right: 64px; }
+    .row-counts{ display: none; }
+    .row-counts + .row-main .row-title{ padding-right: 0; }
+    .prompt-row .row-counts + .row-main .row-title{ padding-right: 0; }
 
     /* ---- 詳細モーダル ---- */
     .modal-overlay{ padding: 16px 8px; }
@@ -1488,18 +1524,25 @@
     </div>
   </header>
 
-  <nav class="tabs">
+  <nav class="tabs" id="tabsNav">
     <button class="tab-btn" data-tab="post">投稿</button>
     <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
-    <button class="tab-btn video-only" data-tab="videoBrowse">動画投稿一覧</button>
-    <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
-    <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
-    <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
-    <button class="tab-btn" data-tab="databank">プロンプトデータバンク</button>
+    <span class="tabs-more-panel" data-more-group="1">
+      <button class="tab-btn video-only" data-tab="videoBrowse">動画投稿一覧</button>
+      <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
+      <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
+      <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
+      <button class="tab-btn" data-tab="databank">プロンプトデータバンク</button>
+    </span>
     <button class="tab-btn" data-tab="board">掲示板</button>
-    <button class="tab-btn link-only" data-tab="links">リンク</button>
-    <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
-    <button class="tab-btn" data-tab="guide">はじめてガイド</button>
+    <button type="button" class="tab-more-btn" id="tabMoreBtn" aria-haspopup="true" aria-expanded="false">
+      <span aria-hidden="true">☰</span> その他
+    </button>
+    <span class="tabs-more-panel" data-more-group="2">
+      <button class="tab-btn link-only" data-tab="links">リンク</button>
+      <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
+      <button class="tab-btn" data-tab="guide">はじめてガイド</button>
+    </span>
   </nav>
 
   <!-- ============ 投稿タブ ============ -->
@@ -3303,7 +3346,26 @@
     syncCartLayout();
   }
   document.querySelectorAll('.tab-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
+    btn.addEventListener('click', function () {
+      switchTab(btn.dataset.tab);
+      closeTabsMoreMenu();
+    });
+  });
+
+  // スマホ表示: 「☰ その他」ボタンで、まとめたタブのドロップダウンを開閉する
+  const tabsNav = document.getElementById('tabsNav');
+  const tabMoreBtn = document.getElementById('tabMoreBtn');
+  function closeTabsMoreMenu() {
+    tabsNav.classList.remove('show-more');
+    tabMoreBtn.setAttribute('aria-expanded', 'false');
+  }
+  tabMoreBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    const open = tabsNav.classList.toggle('show-more');
+    tabMoreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', function (e) {
+    if (tabsNav.classList.contains('show-more') && !tabsNav.contains(e.target)) closeTabsMoreMenu();
   });
 
   /* ---------- 設定グリッド生成 ---------- */
@@ -4696,7 +4758,15 @@
     if (!collapsed) applyBrowseTagClamp();
   }
   let searchAreaCollapsed = false;
-  try { searchAreaCollapsed = localStorage.getItem('pr_browse_search_collapsed') === '1'; } catch (e) {}
+  try {
+    const storedCollapsed = localStorage.getItem('pr_browse_search_collapsed');
+    if (storedCollapsed === null) {
+      // 未設定(初回訪問)の場合のみ、スマホでは「検索エリアを非表示」をデフォルトにする
+      searchAreaCollapsed = window.matchMedia('(max-width: 680px)').matches;
+    } else {
+      searchAreaCollapsed = storedCollapsed === '1';
+    }
+  } catch (e) {}
   toggleSearchAreaBtn.addEventListener('click', function () {
     searchAreaCollapsed = !searchAreaCollapsed;
     try { localStorage.setItem('pr_browse_search_collapsed', searchAreaCollapsed ? '1' : ''); } catch (e) {}
