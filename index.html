@@ -299,7 +299,6 @@
     padding: 20px 22px;
     margin-bottom: 20px;
   }
-  .search-toolbar{ display:flex; justify-content:flex-end; margin-bottom: 10px; }
   .search-toggle-btn{
     font-family:'Noto Sans JP',sans-serif; font-size: 12px;
     background: var(--surface-2); color: var(--ink-dim);
@@ -1719,15 +1718,13 @@
   <!-- ============ 閲覧タブ ============ -->
   <div class="tab-panel active" id="tab-browse">
 
-    <div class="search-toolbar">
-      <button type="button" class="search-toggle-btn" id="toggleSearchAreaBtn">検索エリアを非表示</button>
-    </div>
     <div class="search-panel" id="browseSearchPanel">
       <div class="search-row sort-row">
         <span class="label">並び順</span>
         <div class="sort-chips" id="sortChips"></div>
         <div class="row-right-toggles">
           <button type="button" class="sort-chip" id="includeChildrenToggle" title="バリエーション(子作品)も一覧にすべて表示します(パネル表示を含む)">子も全て表示</button>
+          <button type="button" class="search-toggle-btn" id="toggleSearchAreaBtn">検索エリアを非表示</button>
           <button type="button" class="sort-chip fixrequest-only" id="includeFixToggle" title="修正依頼の投稿も一覧にすべて表示します(パネル表示を含む)">修正依頼作品も表示</button>
         </div>
       </div>
@@ -1758,9 +1755,6 @@
       </div>
       <div class="tag-cloud-wrap"><div class="tag-cloud" id="tagCloud"></div>
       <button class="show-all-tags" type="button" id="showAllBrowseTagsBtn" style="display:none;">全て表示</button></div>
-      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
-        タグはクリックでON/OFF切替。ON中のタグ同士の絞り込み方はAND/OR/NOTで指定(例: ANDをONにしてタグを複数ONにすると、それらすべてを含む投稿だけを表示)。
-      </div>
     </div>
 
     <div class="toolbar">
@@ -4604,25 +4598,33 @@
   function applyTagCloudClamp(container, btn, maxRows) {
     const pills = Array.from(container.querySelectorAll('.tag-pill'));
     pills.forEach(function (p) { p.style.display = ''; });
+    btn.style.display = 'none';
     container.style.maxHeight = '';
-    if (pills.length === 0) { btn.style.display = 'none'; return; }
+    if (pills.length === 0) return;
 
     const wrap = btn.parentNode;
     if (!wrap || wrap.offsetParent === null || wrap.clientWidth === 0) {
-      btn.style.display = 'none';
       requestAnimationFrame(function () {
         if (wrap && wrap.offsetParent !== null && wrap.clientWidth > 0) applyTagCloudClamp(container, btn, maxRows);
       });
       return;
     }
 
-    btn.style.display = 'none';
     const firstTop = pills[0].offsetTop;
-    let hiddenAny = false;
+    let overflowed = false;
     pills.forEach(function (p) {
-      if (Math.abs(p.offsetTop - firstTop) > 2) { p.style.display = 'none'; hiddenAny = true; }
+      if (Math.abs(p.offsetTop - firstTop) > 2) { p.style.display = 'none'; overflowed = true; }
     });
-    btn.style.display = hiddenAny ? '' : 'none';
+    if (!overflowed) return; // 全ピルが1行に収まっているのでボタン不要
+
+    // ボタンを表示すると、その分だけ幅を食って1行目からあふれることがある。
+    // ボタンが確実に1行目に収まるまで、可視ピルを末尾から1つずつ隠して詰め直す。
+    btn.style.display = '';
+    let visiblePills = pills.filter(function (p) { return p.style.display !== 'none'; });
+    while (visiblePills.length && btn.offsetTop - firstTop > 2) {
+      visiblePills.pop().style.display = 'none';
+      visiblePills = pills.filter(function (p) { return p.style.display !== 'none'; });
+    }
   }
 
   function applyPostTagClamp() { applyTagCloudClamp(postTagCloud, showAllTagsBtn, POST_TAG_MAX_ROWS); }
@@ -5330,6 +5332,20 @@
     panelResizeTimer = setTimeout(function () {
       if (imgPanel) layoutPanelGrid();
       if (vidPanel) layoutPanelGridFor(document.getElementById('videoList'));
+    }, 150);
+  });
+
+  // タグクラウドの「1行に収める」判定は幅に依存するため、ブラウザ幅が変わったら
+  // 表示中のタグクラウドすべてで数え直す(非表示のものは applyTagCloudClamp 内で自動スキップされる)。
+  let tagClampResizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(tagClampResizeTimer);
+    tagClampResizeTimer = setTimeout(function () {
+      applyPostTagClamp();
+      applyBrowseTagClamp();
+      applyPromptFormTagClamp();
+      applyPromptBrowseTagClamp();
+      applyVideoTagClamp();
     }, 150);
   });
 
