@@ -1398,6 +1398,63 @@
     border-radius: 2px; background: var(--accent);
   }
   .feature-desc{ font-size: 13.5px; line-height: 1.95; color: var(--ink-dim); padding-left: 12px; }
+
+  /* ============================================================
+     スマホ向け最適化(PCのレイアウトは上記のまま変更しない)
+     ============================================================ */
+  @media (max-width: 680px){
+    body{ padding: 20px 14px 76px; }
+
+    /* ---- ヘッダー: 「更新/お知らせ/管理画面」ボタンが絶対配置のままだと
+       タイトルに重なってしまうため、通常のフロー配置に切り替えて下へ回す ---- */
+    header .header-admin-btns{
+      position: static;
+      justify-content: flex-start;
+      margin: 14px 0 2px;
+    }
+    header h1{ font-size: 23px; }
+    .admin-btn{ font-size: 11.5px; padding: 6px 11px; }
+
+    /* ---- タブ: 幅が足りないと1文字ずつ縦積みに潰れてしまうため、折り返し表示にする ---- */
+    .tabs{ flex-wrap: wrap; gap: 6px; margin: 18px 0 18px; }
+    .tab-btn{ flex: 0 0 auto; white-space: nowrap; padding: 8px 14px; font-size: 13px; }
+
+    /* ---- パネル・検索エリアの余白を詰める ---- */
+    .panel{ padding: 16px; }
+    .search-panel{ padding: 14px; }
+    .search-row{ gap: 8px; margin-bottom: 12px; }
+    .row-right-toggles{ margin-left: 0; width: 100%; }
+    .toolbar{ gap: 8px; }
+    .toolbar-right{ width: 100%; justify-content: space-between; }
+    .panel-size-control input[type="range"]{ width: 100px; }
+
+    /* ---- カテゴリフィルタ: 等幅グリッドだと文字が折り返してしまうため、内容幅で折り返す ---- */
+    .seg-filter{ display: flex; flex-wrap: wrap; width: 100%; }
+    .seg-filter button{ flex: 1 1 auto; font-size: 12px; padding: 8px 10px; }
+
+    /* ---- 一覧カード ---- */
+    .row-main{ gap: 10px; padding: 10px 12px; }
+    .row-thumb{ width: 76px; height: 76px; }
+    .row-title{ font-size: 13.5px; }
+    .row-meta{ font-size: 11px; gap: 8px; }
+    .row-counts{ top: 8px; right: 10px; }
+    .row-counts + .row-main .row-title{ padding-right: 90px; }
+    .prompt-row .row-counts + .row-main .row-title{ padding-right: 64px; }
+
+    /* ---- 詳細モーダル ---- */
+    .modal-overlay{ padding: 16px 8px; }
+    .modal{ padding: 18px 16px 20px; border-radius: 12px; }
+    .modal-title{ font-size: 17px; }
+    .modal-top-actions button.btn-ghost{ padding: 6px 10px; font-size: 11.5px; }
+
+    /* ---- 投稿フォーム ---- */
+    .dropzone{ min-height: 200px; padding: 22px 16px; }
+    .post-mode-btn{ padding: 8px 14px; font-size: 13px; }
+
+    /* ---- プロンプトデータバンクのカート ---- */
+    .cart-actions{ width: 100%; }
+    .cart-copy, .cart-clear{ flex: 1 1 auto; }
+  }
 </style>
 </head>
 <body>
