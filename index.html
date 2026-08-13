@@ -5147,7 +5147,7 @@
     return String(value || '').split(/[\s\u3000]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
   }
   function postKeywordHaystack(p) {
-    return (String(p.title || '') + ' ' + String(p.prompt || '') + ' ' + String(p.negativePrompt || '') + ' ' + String(p.memo || '')).toLowerCase();
+    return (String(p.title || '') + ' ' + String(p.prompt || '') + ' ' + String(p.negativePrompt || '') + ' ' + String(p.memo || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
   }
   function matchKeywords(haystack, keywords, mode) {
     if (!keywords.length) return true;
@@ -7050,7 +7050,7 @@
 
   function passesRequestKeyword(p, keywords) {
     if (!keywords.length) return true;
-    const haystack = (String(p.title || '') + ' ' + String(p.prompt || '')).toLowerCase();
+    const haystack = (String(p.title || '') + ' ' + String(p.prompt || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
     if (rKeywordMode === 'NOT') return !keywords.some(function (k) { return haystack.indexOf(k) !== -1; });
     return rKeywordMode === 'OR'
       ? keywords.some(function (k) { return haystack.indexOf(k) !== -1; })
