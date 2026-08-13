@@ -310,8 +310,8 @@
     padding: 7px 14px; cursor: pointer;
   }
   .search-toggle-btn:hover{ border-color: var(--accent); color: var(--accent); }
-  #browseSearchPanel.search-collapsed > *:not(.sort-row){ display: none; }
-  #browseSearchPanel.search-collapsed .sort-row{ margin-bottom: 0; }
+  .search-panel.search-collapsed > *:not(.sort-row){ display: none; }
+  .search-panel.search-collapsed .sort-row{ margin-bottom: 0; }
   .search-row{ display:flex; align-items:center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
   .search-row:last-child{ margin-bottom: 0; }
   .search-row .label{
@@ -1426,6 +1426,8 @@
        それ以外は「☰ その他」ボタンからのドロップダウンにまとめる ---- */
     .tabs{ flex-wrap: wrap; gap: 6px; margin: 18px 0 18px; align-items: flex-start; }
     .tab-btn{ flex: 0 0 auto; white-space: nowrap; padding: 8px 14px; font-size: 13px; }
+    /* ☰その他ボタンと上段タブの高さを揃える(表示モデルと行高を統一) */
+    .tabs > .tab-btn, .tab-more-btn{ display: inline-flex; align-items: center; line-height: 1.4; }
     .tab-more-btn{
       display: inline-flex; align-items: center; gap: 6px;
       flex: 0 0 auto; white-space: nowrap;
@@ -1901,9 +1903,12 @@
   <div class="tab-panel" id="tab-videoBrowse">
 
     <div class="search-panel">
-      <div class="search-row">
+      <div class="search-row sort-row">
         <span class="label">並び順</span>
         <div class="sort-chips" id="vSortChips"></div>
+        <div class="row-right-toggles">
+          <button type="button" class="search-toggle-btn" id="vToggleSearchAreaBtn">検索エリアを非表示</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
@@ -1964,9 +1969,12 @@
   <div class="tab-panel" id="tab-promptBrowse">
 
     <div class="search-panel">
-      <div class="search-row">
+      <div class="search-row sort-row">
         <span class="label">並び順</span>
         <div class="sort-chips" id="pSortChips"></div>
+        <div class="row-right-toggles">
+          <button type="button" class="search-toggle-btn" id="pToggleSearchAreaBtn">検索エリアを非表示</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label">絞り込み</span>
@@ -2011,9 +2019,12 @@
   <div class="tab-panel" id="tab-requestBrowse">
 
     <div class="search-panel">
-      <div class="search-row">
+      <div class="search-row sort-row">
         <span class="label">並び順</span>
         <div class="sort-chips" id="rSortChips"></div>
+        <div class="row-right-toggles">
+          <button type="button" class="search-toggle-btn" id="rToggleSearchAreaBtn">検索エリアを非表示</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label">キーワード検索</span>
@@ -2039,9 +2050,12 @@
   <div class="tab-panel" id="tab-fixBrowse">
 
     <div class="search-panel">
-      <div class="search-row">
+      <div class="search-row sort-row">
         <span class="label">並び順</span>
         <div class="sort-chips" id="fSortChips"></div>
+        <div class="row-right-toggles">
+          <button type="button" class="search-toggle-btn" id="fToggleSearchAreaBtn">検索エリアを非表示</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label">キーワード検索</span>
@@ -4789,6 +4803,44 @@
     try { localStorage.setItem('pr_browse_search_collapsed', searchAreaCollapsed ? '1' : ''); } catch (e) {}
     applySearchAreaCollapsed(searchAreaCollapsed);
   });
+
+  // ===== 他タブの検索エリアも画像一覧と同じ折りたたみ挙動にする =====
+  function setupSearchCollapse(panel, toggleBtn, storageKey, onExpand) {
+    if (!panel || !toggleBtn) return;
+    function apply(collapsed, isInit) {
+      panel.classList.toggle('search-collapsed', collapsed);
+      toggleBtn.textContent = collapsed ? '検索エリアを表示' : '検索エリアを非表示';
+      if (!collapsed && !isInit && onExpand) onExpand();
+    }
+    let collapsed = false;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored === null) collapsed = window.matchMedia('(max-width: 680px)').matches;
+      else collapsed = stored === '1';
+    } catch (e) {}
+    toggleBtn.addEventListener('click', function () {
+      collapsed = !collapsed;
+      try { localStorage.setItem(storageKey, collapsed ? '1' : ''); } catch (e) {}
+      apply(collapsed, false);
+    });
+    apply(collapsed, true);
+  }
+  setupSearchCollapse(
+    document.querySelector('#tab-videoBrowse .search-panel'),
+    document.getElementById('vToggleSearchAreaBtn'),
+    'pr_video_search_collapsed', function () { applyVideoTagClamp(); });
+  setupSearchCollapse(
+    document.querySelector('#tab-promptBrowse .search-panel'),
+    document.getElementById('pToggleSearchAreaBtn'),
+    'pr_prompt_search_collapsed', function () { applyPromptBrowseTagClamp(); });
+  setupSearchCollapse(
+    document.querySelector('#tab-requestBrowse .search-panel'),
+    document.getElementById('rToggleSearchAreaBtn'),
+    'pr_request_search_collapsed', null);
+  setupSearchCollapse(
+    document.querySelector('#tab-fixBrowse .search-panel'),
+    document.getElementById('fToggleSearchAreaBtn'),
+    'pr_fix_search_collapsed', null);
 
   /* ---------- タグ選択モーダル(投稿フォーム用) ---------- */
   const tagModalOverlay = document.getElementById('tagModalOverlay');
