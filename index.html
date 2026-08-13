@@ -3272,6 +3272,29 @@
     { label: 'Checkpoint順',        field: 'checkpoint',    dir: 'asc' }
   ];
 
+  const VIDEO_SORT_OPTIONS = [
+    { label: '新しい順',            field: 'date',          dir: 'desc' },
+    { label: '古い順',              field: 'date',          dir: 'asc' },
+    { label: 'グッドが多い順',       field: 'likeCount',     dir: 'desc' },
+    { label: 'ダウンロードが多い順',  field: 'downloadCount', dir: 'desc' },
+    { label: '投稿者名順',           field: 'author',        dir: 'asc' },
+    { label: 'Model順',             field: 'wanModel',      dir: 'asc' },
+    { label: 'Sampler順',           field: 'sampler',       dir: 'asc' }
+  ];
+  const PROMPT_SORT_OPTIONS = [
+    { label: '新しい順',      field: 'date',       dir: 'desc' },
+    { label: '古い順',        field: 'date',       dir: 'asc' },
+    { label: 'グッドが多い順', field: 'likeCount',  dir: 'desc' },
+    { label: '投稿者名順',     field: 'author',     dir: 'asc' },
+    { label: 'Checkpoint順',  field: 'checkpoint', dir: 'asc' }
+  ];
+  const REQUEST_SORT_OPTIONS = [
+    { label: '新しい順',      field: 'date',      dir: 'desc' },
+    { label: '古い順',        field: 'date',      dir: 'asc' },
+    { label: 'グッドが多い順', field: 'likeCount', dir: 'desc' },
+    { label: '投稿者名順',     field: 'author',    dir: 'asc' }
+  ];
+
   // ---- 動画投稿一覧(画像一覧と同等の並び替え・絞り込み) ----
   const VIDEO_SORT_FIELDS = [
     { key: 'date',          label: '日時' },
@@ -6006,22 +6029,15 @@
   /* ---------- 動画一覧: 並び替え・絞り込み・タグの配線 ---------- */
   const vSortChips = document.getElementById('vSortChips');
   function renderVSortChips() {
-    vSortChips.innerHTML = VIDEO_SORT_FIELDS.map(function (f) {
-      const idx = vSortKeys.findIndex(function (k) { return k.field === f.key; });
-      const active = idx !== -1;
-      const dir = active ? vSortKeys[idx].dir : '';
-      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
-      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
-      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' +
-        badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    const cur = vSortKeys[0] || {};
+    vSortChips.innerHTML = VIDEO_SORT_OPTIONS.map(function (o) {
+      const active = cur.field === o.field && cur.dir === o.dir;
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + o.field +
+        '" data-dir="' + o.dir + '">' + o.label + '</span>';
     }).join('');
     vSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
-        const field = chip.dataset.field;
-        const idx = vSortKeys.findIndex(function (k) { return k.field === field; });
-        if (idx === -1) vSortKeys.push({ field: field, dir: 'desc' });
-        else if (vSortKeys[idx].dir === 'desc') vSortKeys[idx].dir = 'asc';
-        else vSortKeys.splice(idx, 1);
+        vSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
         renderVSortChips();
         renderVideoList();
       });
@@ -6971,13 +6987,11 @@
   rList.addEventListener('error', handleImageError, true);
 
   function renderRSortChips() {
-    const sortHtml = REQUEST_SORT_FIELDS.map(function (f) {
-      const idx = rSortKeys.findIndex(function (k) { return k.field === f.key; });
-      const active = idx !== -1;
-      const dir = active ? rSortKeys[idx].dir : '';
-      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
-      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
-      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    const cur = rSortKeys[0] || {};
+    const sortHtml = REQUEST_SORT_OPTIONS.map(function (o) {
+      const active = cur.field === o.field && cur.dir === o.dir;
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + o.field +
+        '" data-dir="' + o.dir + '">' + o.label + '</span>';
     }).join('');
     const answeredLabel = rAnsweredFilter === 'only' ? '回答済みのみ' : (rAnsweredFilter === 'hide' ? '未回答のみ' : '回答済み');
     const answeredHtml = '<span class="sort-chip' + (rAnsweredFilter ? ' active' : '') + '" data-answered-chip>' + answeredLabel + '</span>';
@@ -6985,11 +6999,7 @@
 
     rSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
       chip.addEventListener('click', function () {
-        const field = chip.dataset.field;
-        const idx = rSortKeys.findIndex(function (k) { return k.field === field; });
-        if (idx === -1) rSortKeys.push({ field: field, dir: 'desc' });
-        else if (rSortKeys[idx].dir === 'desc') rSortKeys[idx].dir = 'asc';
-        else rSortKeys.splice(idx, 1);
+        rSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
         renderRSortChips();
         renderRequestList();
       });
@@ -7085,13 +7095,11 @@
   }
 
   function renderFSortChips() {
-    const sortHtml = REQUEST_SORT_FIELDS.map(function (f) {
-      const idx = fSortKeys.findIndex(function (k) { return k.field === f.key; });
-      const active = idx !== -1;
-      const dir = active ? fSortKeys[idx].dir : '';
-      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
-      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
-      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    const cur = fSortKeys[0] || {};
+    const sortHtml = REQUEST_SORT_OPTIONS.map(function (o) {
+      const active = cur.field === o.field && cur.dir === o.dir;
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + o.field +
+        '" data-dir="' + o.dir + '">' + o.label + '</span>';
     }).join('');
     const answeredLabel = fAnsweredFilter === 'only' ? '対応済みのみ' : (fAnsweredFilter === 'hide' ? '未対応のみ' : '対応済み');
     fSortChips.innerHTML = sortHtml +
@@ -7099,11 +7107,7 @@
 
     fSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
       chip.addEventListener('click', function () {
-        const field = chip.dataset.field;
-        const idx = fSortKeys.findIndex(function (k) { return k.field === field; });
-        if (idx === -1) fSortKeys.push({ field: field, dir: 'desc' });
-        else if (fSortKeys[idx].dir === 'desc') fSortKeys[idx].dir = 'asc';
-        else fSortKeys.splice(idx, 1);
+        fSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
         renderFSortChips();
         renderFixList();
       });
@@ -7806,21 +7810,15 @@
 
   // PROMPT BROWSE: ソート
   function renderPromptSortChips() {
-    pSortChips.innerHTML = PROMPT_SORT_FIELDS.map(function (f) {
-      const idx = pSortKeys.findIndex(function (k) { return k.field === f.key; });
-      const active = idx !== -1;
-      const dir = active ? pSortKeys[idx].dir : '';
-      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
-      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
-      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+    const cur = pSortKeys[0] || {};
+    pSortChips.innerHTML = PROMPT_SORT_OPTIONS.map(function (o) {
+      const active = cur.field === o.field && cur.dir === o.dir;
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + o.field +
+        '" data-dir="' + o.dir + '">' + o.label + '</span>';
     }).join('');
     pSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
-        const field = chip.dataset.field;
-        const idx = pSortKeys.findIndex(function (k) { return k.field === field; });
-        if (idx === -1) pSortKeys.push({ field: field, dir: 'desc' });
-        else if (pSortKeys[idx].dir === 'desc') pSortKeys[idx].dir = 'asc';
-        else pSortKeys.splice(idx, 1);
+        pSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
         renderPromptSortChips();
         renderPromptList();
       });
