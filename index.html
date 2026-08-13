@@ -5115,8 +5115,14 @@
 
       await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
-      switchTab(posted && posted.type === 'fix' ? 'fixBrowse' : (posted && posted.type === 'video' ? 'videoBrowse' : 'browse'));
+      const destTab = posted && posted.type === 'fix' ? 'fixBrowse' : (posted && posted.type === 'video' ? 'videoBrowse' : 'browse');
+      switchTab(destTab);
       if (posted) openModal(posted);
+      if (editing) {
+        if (destTab === 'browse') restoreBrowseScrollTo(editReturnScrollY);
+        else if (destTab === 'videoBrowse') restoreScrollPaginated(editReturnScrollY, function () { return vBrowseShown < vBrowseFiltered.length; }, appendVideoPage);
+        else if (destTab === 'fixBrowse') window.scrollTo(0, editReturnScrollY);
+      }
     } catch (err) {
       statusText.textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
       console.error(err);
@@ -5370,6 +5376,7 @@
   let browseObserver = null;
   let browseDirty = true;      // データ/フィルタ変更で true。タブ切替時の再描画要否判定に使う
   let browseScrollY = 0;       // 画像一覧タブのスクロール位置(タブ切替をまたいで保持)
+  let editReturnScrollY = 0;   // 編集ボタンを押した時点のスクロール位置(保存後にそこへ戻す)
 
   function appendBrowsePage() {
     const slice = browseFiltered.slice(browseShown, browseShown + BROWSE_PAGE);
@@ -5382,6 +5389,19 @@
     }
     updateBrowseSentinel();
     if (viewMode === 'panel') layoutPanelGrid();
+  }
+
+  // 指定スクロール位置まで戻す。無限スクロールで未描画の分は、その位置に届くまでページを追記してから戻す
+  function restoreScrollPaginated(targetY, hasMore, loadMore) {
+    if (!(targetY > 0)) { window.scrollTo(0, 0); return; }
+    let guard = 0;
+    while (hasMore() && document.documentElement.scrollHeight < targetY + window.innerHeight && guard++ < 500) {
+      loadMore();
+    }
+    window.scrollTo(0, targetY);
+  }
+  function restoreBrowseScrollTo(targetY) {
+    restoreScrollPaginated(targetY, function () { return browseShown < browseFiltered.length; }, appendBrowsePage);
   }
 
   // カード上のタグクリックで、画像一覧の「タグで絞り込み」をトグルして再描画する
@@ -6503,6 +6523,7 @@
       switchTab('promptBrowse');
       const posted = promptPosts.find(function (p) { return String(p.id) === String(targetId); });
       if (posted) openPromptModal(posted);
+      if (editing) window.scrollTo(0, editReturnScrollY);
     } catch (err) {
       document.getElementById('pStatusText').textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
       console.error(err);
@@ -6913,6 +6934,7 @@
       switchTab('requestBrowse');
       const posted = requestPosts.find(function (p) { return String(p.id) === String(targetId); });
       if (posted) openRequestModal(posted);
+      if (editing) window.scrollTo(0, editReturnScrollY);
     } catch (err) {
       document.getElementById('rStatusText').textContent = (editing ? '保存に失敗しました: ' : '投稿に失敗しました: ') + (err.message || err);
       console.error(err);
@@ -8569,6 +8591,7 @@
   }
 
   function openAdminEdit(p) {
+    editReturnScrollY = window.scrollY;
     ownerEditPassword = '';
     const type = p.type || 'image';
     const isImage = type !== 'prompt' && type !== 'request';
