@@ -7917,7 +7917,7 @@
   }
 
   function promptDerivedCount(p) {
-    return imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1 && !ip.parentId; }).length;
+    return imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1; }).length;
   }
 
   function promptRowHtml(p, opts) {
@@ -7975,7 +7975,7 @@
 
   function openPromptModal(p) {
     const settingsEntries = settingsEntriesHtml(p);
-    const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1 && !ip.parentId; });
+    const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1; });
     linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const linkedHtml = linked.length
       ? linked.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('')
