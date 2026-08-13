@@ -1409,6 +1409,9 @@
   @media (max-width: 680px){
     body{ padding: 20px 14px 76px; }
 
+    /* ---- お知らせバーはスマホでは非表示(作品閲覧を優先) ---- */
+    .announce-bar{ display: none; }
+
     /* ---- ヘッダー: 「更新/お知らせ/管理画面」ボタンが絶対配置のままだと
        タイトルに重なってしまうため、通常のフロー配置に切り替えて下へ回す ---- */
     header .header-admin-btns{
@@ -1476,6 +1479,20 @@
     .row-counts{ display: none; }
     .row-counts + .row-main .row-title{ padding-right: 0; }
     .prompt-row .row-counts + .row-main .row-title{ padding-right: 0; }
+
+    /* ---- 画像投稿一覧: リスト表示を2列サムネイルグリッドにする(Pixivスマホ版風) ---- */
+    #list:not(.panel-mode){ display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    #list:not(.panel-mode) .row{ border-radius: 10px; }
+    #list:not(.panel-mode) .row-main{ flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+    #list:not(.panel-mode) .row-thumb{ width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 0; }
+    #list:not(.panel-mode) .row-body{ padding: 8px 10px 10px; gap: 4px; }
+    #list:not(.panel-mode) .row-title{
+      font-size: 12.5px; white-space: normal; line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    #list:not(.panel-mode) .row-meta{ font-size: 10.5px; gap: 0; }
+    #list:not(.panel-mode) .row-meta > span:not(.meta-author){ display: none; }
+    #list:not(.panel-mode) .row-tags{ display: none; }
 
     /* ---- 詳細モーダル ---- */
     .modal-overlay{ padding: 16px 8px; }
