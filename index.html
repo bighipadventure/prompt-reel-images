@@ -1418,20 +1418,24 @@
       position: static;
       justify-content: flex-start;
       margin: 14px 0 2px;
+      width: 100%; gap: 6px;
     }
     header h1{ font-size: 23px; }
-    .admin-btn{ font-size: 11.5px; padding: 6px 11px; }
+    .admin-btn{ font-size: 11.5px; padding: 7px 8px; flex: 1 1 0; text-align: center; }
 
     /* ---- タブ: 「投稿/画像投稿一覧/掲示板」だけを常時1行に表示し、
        それ以外は「☰ その他」ボタンからのドロップダウンにまとめる ---- */
-    .tabs{ flex-wrap: wrap; gap: 6px; margin: 18px 0 18px; align-items: flex-start; }
-    .tab-btn{ flex: 0 0 auto; white-space: nowrap; padding: 8px 14px; font-size: 13px; }
-    /* ☰その他ボタンと上段タブの高さを揃える(表示モデルと行高を統一) */
-    .tabs > .tab-btn, .tab-more-btn{ display: inline-flex; align-items: center; line-height: 1.4; }
+    .tabs{ flex-wrap: wrap; gap: 6px; margin: 18px 0 18px; align-items: stretch; }
+    .tab-btn{ white-space: nowrap; padding: 9px 10px; font-size: 13px; }
+    /* 上段タブと☰その他を横幅いっぱいに広げ、文字は天地・左右中央に揃える */
+    .tabs > .tab-btn, .tab-more-btn{
+      flex: 1 1 auto;
+      display: inline-flex; align-items: center; justify-content: center;
+      line-height: 1;
+    }
     .tab-more-btn{
-      display: inline-flex; align-items: center; gap: 6px;
-      flex: 0 0 auto; white-space: nowrap;
-      font-size: 13px; padding: 8px 14px; border-radius: 8px;
+      gap: 6px; white-space: nowrap;
+      font-size: 13px; padding: 9px 10px; border-radius: 8px;
       background: var(--surface); color: var(--ink-dim);
       border: 1px solid var(--line); cursor: pointer;
       font-family: 'Noto Sans JP', sans-serif;
@@ -1459,9 +1463,16 @@
     .search-panel{ padding: 14px; }
     .search-row{ gap: 8px; margin-bottom: 12px; }
     .row-right-toggles{ margin-left: 0; width: 100%; }
+    /* 並び順チップと右側トグルを横幅いっぱいに(隙間を残さない) */
+    .sort-row .sort-chips{ width: 100%; }
+    .sort-row .sort-chips .sort-chip{ flex: 1 1 auto; justify-content: center; }
+    .row-right-toggles > button{ flex: 1 1 auto; justify-content: center; }
     .toolbar{ gap: 8px; }
     .toolbar-right{ width: 100%; justify-content: space-between; }
     .panel-size-control input[type="range"]{ width: 100px; }
+    /* リスト/パネル表示トグルを横幅いっぱいに */
+    #viewModeToggle{ flex: 1 1 auto; }
+    #viewModeToggle button{ flex: 1 1 auto; }
     /* 検索エリアを非表示中は、並び順チップを新しい順/古い順/グッドが多い順だけに絞る */
     #browseSearchPanel.search-collapsed .sort-chip[data-field="downloadCount"],
     #browseSearchPanel.search-collapsed .sort-chip[data-field="author"],
