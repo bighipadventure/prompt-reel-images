@@ -830,8 +830,26 @@
 
   .full-image-overlay{ padding:0; align-items:stretch; justify-content:stretch; }
   .full-image-inner{ position:relative; width:100%; height:100%; display:flex; flex-direction:column; }
-  .full-image-wrap{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding: 56px 16px 8px; }
+  .full-image-wrap{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding: 56px 16px 8px; position: relative; }
   .full-image-wrap img{ max-width:100%; max-height:100%; object-fit:contain; border-radius: 6px; }
+  /* パネル表示のフル画像で、差分(複数枚)があるときに中央下部へ出す切替ボタン */
+  .full-image-variants{
+    position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    display:flex; gap:6px; flex-wrap:wrap; justify-content:center;
+    max-width: calc(100% - 32px);
+    padding:6px; border-radius:10px;
+    background: rgba(10,11,24,0.62);
+  }
+  .full-image-variants:empty{ display:none; }
+  .fiv-btn{
+    min-width:30px; height:30px; padding:0 8px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:'Noto Sans JP',sans-serif; font-size:13px;
+    border-radius:7px; border:1px solid var(--line);
+    background: var(--surface-2); color: var(--ink-dim); cursor:pointer;
+  }
+  .fiv-btn:hover{ color: var(--accent); border-color: var(--accent); }
+  .fiv-btn.active{ background: var(--accent); color:#fff; border-color: var(--accent); }
   .full-image-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding: 12px 16px 22px; }
 
   /* ---- 投稿モード切替 / プロンプト連携 ---- */
@@ -1421,7 +1439,7 @@
       width: 100%; gap: 6px;
     }
     header h1{ font-size: 23px; }
-    .admin-btn{ font-size: 11.5px; padding: 7px 8px; flex: 1 1 0; text-align: center; }
+    .admin-btn{ font-size: 11.5px; padding: 7px 10px; flex: 1 1 auto; text-align: center; white-space: nowrap; }
 
     /* ---- タブ: 「投稿/画像投稿一覧/掲示板」だけを常時1行に表示し、
        それ以外は「☰ その他」ボタンからのドロップダウンにまとめる ---- */
@@ -1467,6 +1485,18 @@
     .sort-row .sort-chips{ width: 100%; }
     .sort-row .sort-chips .sort-chip{ flex: 1 1 auto; justify-content: center; }
     .row-right-toggles > button{ flex: 1 1 auto; justify-content: center; }
+
+    /* 検索エリアを非表示中は「並び順」ラベルも隠す(閲覧優先) */
+    .search-panel.search-collapsed .sort-row .label{ display: none; }
+    /* 検索エリアを表示したときは、各行を「小見出し→入力→クリア」の順に縦へ整理する */
+    .search-panel .search-row{ flex-direction: column; align-items: stretch; gap: 8px; }
+    .search-panel .search-row > .filter-input{ flex: 0 0 auto; width: 100%; }
+    .search-panel .search-row .dl-wrap{ flex: 0 0 auto; width: 100%; }
+    .search-panel .search-row .mode-toggle{ width: 100%; }
+    .search-panel .search-row .mode-toggle button{ flex: 1 1 auto; }
+    .search-panel .search-row .clear-tags{ margin-left: 0; align-self: flex-end; }
+    /* 「子も全て表示」「検索エリアを非表示」を並び順の上に出す */
+    .sort-row .row-right-toggles{ order: -1; }
     .toolbar{ gap: 8px; }
     .toolbar-right{ width: 100%; justify-content: space-between; }
     .panel-size-control input[type="range"]{ width: 100px; }
@@ -2963,7 +2993,7 @@
 <div class="modal-overlay full-image-overlay" id="fullImageOverlay">
   <div class="full-image-inner">
     <button class="modal-close" type="button" id="fullImageCloseBtn">✕ 閉じる</button>
-    <div class="full-image-wrap"><img id="fullImageImg" alt="画像"></div>
+    <div class="full-image-wrap"><img id="fullImageImg" alt="画像"><div class="full-image-variants" id="fullImageVariants"></div></div>
     <div class="full-image-actions">
       <button class="btn-ghost" type="button" id="fullImageDetailBtn">詳細を表示</button>
       <button class="btn-ghost" type="button" id="fullImageDownloadBtn">オリジナル画像をダウンロード</button>
@@ -5840,16 +5870,39 @@
   /* ---------- フルスクリーン画像モーダル(パネル表示用) ---------- */
   const fullImageOverlay = document.getElementById('fullImageOverlay');
   const fullImageImg = document.getElementById('fullImageImg');
+  const fullImageVariants = document.getElementById('fullImageVariants');
+
+  // 差分(1枚のメイン + variants)を中央下部の[1][2][3…]で切り替える
+  function renderFullImageVariants(imgs) {
+    if (!fullImageVariants) return;
+    if (!imgs || imgs.length <= 1) { fullImageVariants.innerHTML = ''; return; }
+    fullImageVariants.innerHTML = imgs.map(function (_, i) {
+      return '<button type="button" class="fiv-btn' + (i === 0 ? ' active' : '') +
+        '" data-fiv-idx="' + i + '" title="' + (i === 0 ? 'メイン画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
+    }).join('');
+    fullImageVariants.querySelectorAll('.fiv-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const idx = Number(btn.dataset.fivIdx);
+        fullImageImg.src = '';
+        fullImageImg.src = imageSrcFor(imgs[idx], 'w1000');
+        fullImageVariants.querySelectorAll('.fiv-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      });
+    });
+  }
 
   function openFullImageModal(p) {
-    fullImageImg.src = '';
-    fullImageImg.src = imageSrcFor(p.imageUrl, 'w1000');
     fullImageOverlay.dataset.id = p.id;
+    const imgs = [p.imageUrl].concat((p.variants || []).map(function (v) { return v.imageUrl; })).filter(Boolean);
+    fullImageImg.src = '';
+    fullImageImg.src = imageSrcFor(imgs[0], 'w1000');
+    renderFullImageVariants(imgs);
     openOverlay(fullImageOverlay);
   }
   function closeFullImageModal() {
     fullImageOverlay.classList.remove('open');
     fullImageImg.src = '';
+    if (fullImageVariants) fullImageVariants.innerHTML = '';
   }
   function currentFullImagePost() {
     return posts.find(function (p) { return String(p.id) === String(fullImageOverlay.dataset.id); });
