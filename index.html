@@ -999,6 +999,13 @@
   /* 動画モード: 画像専用UIを隠す(inpaintトグル・差分) */
   body.post-mode-video #inpaintModeBtn,
   body.post-mode-video #variantField{ display:none !important; }
+  /* 動画モード: 画像専用の紐づけピッカーを隠し、動画専用ピッカーだけ出す */
+  body.post-mode-video .link-field[data-link="basePrompt"],
+  body.post-mode-video .link-field[data-link="parent"],
+  body.post-mode-video .link-field[data-link="reference"],
+  body.post-mode-video .link-field[data-link="request"]{ display:none; }
+  .video-post-only{ display:none; }
+  body.post-mode-video .video-post-only{ display:block; }
   /* フォームの動画プレビュー */
   .dropzone .preview video{ max-width:100%; max-height:420px; border-radius:8px; display:block; background:#000; }
   /* 一覧サムネの動画バッジ(▶) */
@@ -1726,6 +1733,14 @@
         <div class="base-prompt-select">
           <button class="btn-ghost" id="pickReferenceBtn" type="button">参考作品を選択</button>
           <span id="referenceDisplay" class="base-prompt-display"></span>
+        </div>
+      </div>
+
+      <div class="link-field video-post-only" data-link="videoSource">
+        <label class="field-label">動画の元になった画像作品(この動画を作る元にした画像を選ぶと、その画像の詳細下部に動画がぶら下がります)</label>
+        <div class="base-prompt-select">
+          <button class="btn-ghost" id="pickVideoSourceBtn" type="button">元の画像作品を選択</button>
+          <span id="videoSourceDisplay" class="base-prompt-display"></span>
         </div>
       </div>
 
@@ -3056,6 +3071,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="videoSourceModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="videoSourceModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">動画の元になった画像作品を選択</h3>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="videoSourceSearch" placeholder="タイトル・タグ・投稿者で検索" style="flex:1 1 200px; width:auto;">
+      <button class="btn-ghost" id="clearVideoSourceBtn" type="button">紐づけなしにする</button>
+    </div>
+    <div class="sort-chips" id="videoSourceSortChips" style="margin-bottom:14px;"></div>
+    <div class="list" id="videoSourceList"></div>
+    <div class="empty" id="videoSourceEmpty" style="display:none;">画像投稿がまだありません。</div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="requestModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="requestModalCloseBtn">✕ 閉じる</button>
@@ -3261,29 +3290,14 @@
   let selectedBasePromptIds = [];
   let selectedParentId = '';
   let selectedReferenceId = '';
+  let selectedVideoSourceId = '';
   let selectedRequestId = '';
   let selectedFixRequestIds = [];
   let requestRefs = [];
-  // 各タブで最後に選んだ並び順を localStorage に記録し、次回もその並び順で開く
-  function loadSortKey(storageKey, defField, defDir) {
-    try {
-      const o = JSON.parse(localStorage.getItem(storageKey) || 'null');
-      if (o && typeof o.field === 'string' && o.field && (o.dir === 'asc' || o.dir === 'desc')) {
-        return [{ field: o.field, dir: o.dir }];
-      }
-    } catch (e) {}
-    return [{ field: defField, dir: defDir }];
-  }
-  function saveSortKey(storageKey, keys) {
-    try {
-      const k = keys && keys[0];
-      if (k) localStorage.setItem(storageKey, JSON.stringify({ field: k.field, dir: k.dir }));
-    } catch (e) {}
-  }
-  let rSortKeys = loadSortKey('pr_sort_request', 'date', 'desc');
+  let rSortKeys = [{ field: 'date', dir: 'desc' }];
   let rKeywordMode = 'AND';
   let rAnsweredFilter = ''; // '' | 'only' | 'hide'
-  let fSortKeys = loadSortKey('pr_sort_fix', 'date', 'desc');
+  let fSortKeys = [{ field: 'date', dir: 'desc' }];
   let fKeywordMode = 'AND';
   let fAnsweredFilter = ''; // '' | 'only' | 'hide'
   let showFixWorks = false;
@@ -3309,7 +3323,7 @@
     { key: 'author',     label: '投稿者' },
     { key: 'checkpoint', label: 'Checkpoint' }
   ];
-  let pSortKeys = loadSortKey('pr_sort_prompt', 'date', 'desc');
+  let pSortKeys = [{ field: 'date', dir: 'desc' }];
 
   const REQUEST_SORT_FIELDS = [
     { key: 'date',      label: '日時' },
@@ -3325,7 +3339,7 @@
     { key: 'uiPreset',      label: 'UI Preset' },
     { key: 'checkpoint',    label: 'Checkpoint' }
   ];
-  let sortKeys = loadSortKey('pr_sort_browse', 'date', 'desc'); // クリック順=優先順位
+  let sortKeys = [{ field: 'date', dir: 'desc' }]; // クリック順=優先順位
 
   const BROWSE_SORT_OPTIONS = [
     { label: '新しい順',            field: 'date',          dir: 'desc' },
@@ -3369,7 +3383,7 @@
     { key: 'wanModel',      label: 'Model' },
     { key: 'sampler',       label: 'Sampler' }
   ];
-  let vSortKeys = loadSortKey('pr_sort_video', 'date', 'desc');
+  let vSortKeys = [{ field: 'date', dir: 'desc' }];
   let vTagStates = {};
   let vTagMatchMode = 'AND';
   let vKeywordMode = 'AND';
@@ -4748,7 +4762,6 @@
     sortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         sortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
-        saveSortKey('pr_sort_browse', sortKeys);
         renderSortChips();
         renderList();
       });
@@ -5073,6 +5086,8 @@
     renderParentDisplay();
     selectedReferenceId = '';
     renderReferenceDisplay();
+    selectedVideoSourceId = '';
+    renderVideoSourceDisplay();
     selectedRequestId = '';
     renderRequestDisplay();
     document.getElementById('fixContentInput').value = '';
@@ -5138,6 +5153,7 @@
         basePromptId: selectedBasePromptIds.join(','),
         parentId: selectedParentId,
         refId: isFix ? '' : selectedReferenceId,
+        videoSourceId: isVideo ? selectedVideoSourceId : '',
         requestId: isFix ? '' : selectedRequestId,
         fixContent: isFix ? document.getElementById('fixContentInput').value : '',
         fixRequestId: isFix ? '' : selectedFixRequestIds.join(',')
@@ -5708,6 +5724,15 @@
           (reference.title ? escapeHtml(reference.title) : '(無題)') + '</a></div></div>'
       : '';
 
+    const videoSource = (p.type === 'video' && p.videoSourceId)
+      ? imagePosts.find(function (ip) { return String(ip.id) === String(p.videoSourceId); })
+      : null;
+    const videoSourceBlock = videoSource
+      ? '<div class="detail-block"><div class="label">動画の元になった画像作品</div>' +
+          '<div class="value"><a href="#" class="video-source-link" data-post-id="' + escapeHtml(String(videoSource.id)) + '">' +
+          (videoSource.title ? escapeHtml(videoSource.title) : '(無題)') + '</a></div></div>'
+      : '';
+
     const request = p.requestId
       ? requestPosts.find(function (rp) { return String(rp.id) === String(p.requestId); })
       : null;
@@ -5722,6 +5747,20 @@
     const childrenBlock = children.length
       ? '<div class="linked-works-head">この作品のバリエーション(' + children.length + '件)</div>' +
         '<div class="list" id="childWorks">' + children.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
+      : '';
+
+    const sourceVideos = videoPosts.filter(function (v) { return String(v.videoSourceId) === String(p.id); });
+    sourceVideos.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const sourceVideosBlock = (options.video && sourceVideos.length)
+      ? '<div class="linked-works-head">この画像を元にした動画(' + sourceVideos.length + '件)</div>' +
+        '<div class="list" id="sourceVideoWorks">' + sourceVideos.map(function (v) { return imageRowHtml(v, 'w320'); }).join('') + '</div>'
+      : '';
+
+    const referencedBy = imagePosts.filter(function (ip) { return String(ip.refId) === String(p.id); });
+    referencedBy.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const referencedByBlock = referencedBy.length
+      ? '<div class="linked-works-head">この作品を参考にした投稿(' + referencedBy.length + '件)</div>' +
+        '<div class="list" id="referencedByWorks">' + referencedBy.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
       : '';
 
     // この画像が対応している修正依頼(画像投稿)へのリンク
@@ -5774,6 +5813,7 @@
       baseBlock +
       parentBlock +
       referenceBlock +
+      videoSourceBlock +
       requestBlock +
       fixLinksBlock +
       '<div class="detail-block">' +
@@ -5790,7 +5830,9 @@
       (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
       fixAnswersBlock +
-      childrenBlock;
+      childrenBlock +
+      sourceVideosBlock +
+      referencedByBlock;
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -5858,6 +5900,14 @@
       });
     }
 
+    const videoSourceLink = modalBody.querySelector('.video-source-link');
+    if (videoSourceLink) {
+      videoSourceLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openImageDetail(videoSourceLink.dataset.postId);
+      });
+    }
+
     const requestLink = modalBody.querySelector('.request-post-link');
     if (requestLink) {
       requestLink.addEventListener('click', async function (e) {
@@ -5869,6 +5919,12 @@
 
     const childWorks = document.getElementById('childWorks');
     if (childWorks) wireImageRows(childWorks, { detailOnly: true });
+
+    const sourceVideoWorks = document.getElementById('sourceVideoWorks');
+    if (sourceVideoWorks) wireImageRows(sourceVideoWorks, { detailOnly: true });
+
+    const referencedByWorks = document.getElementById('referencedByWorks');
+    if (referencedByWorks) wireImageRows(referencedByWorks, { detailOnly: true });
 
     modalBody.querySelectorAll('.fix-post-link').forEach(function (fixLink) {
       fixLink.addEventListener('click', function (e) {
@@ -6147,7 +6203,6 @@
     vSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         vSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
-        saveSortKey('pr_sort_video', vSortKeys);
         renderVSortChips();
         renderVideoList();
       });
@@ -6887,6 +6942,58 @@
   document.getElementById('referenceSearch').addEventListener('input', function () { renderReferenceList(this.value); });
   document.getElementById('clearReferenceBtn').addEventListener('click', function () { selectedReferenceId = ''; renderReferenceDisplay(); closeReferenceModal(); });
 
+  /* ===== VIDEO SOURCE PICKER(動画の元になった画像作品) ===== */
+  const videoSourceModalOverlay = document.getElementById('videoSourceModalOverlay');
+  const videoSourceListEl = document.getElementById('videoSourceList');
+  const videoSourceEmptyEl = document.getElementById('videoSourceEmpty');
+  let videoSourceSortKeys = [{ field: 'date', dir: 'desc' }];
+
+  function renderVideoSourceDisplay() {
+    const el = document.getElementById('videoSourceDisplay');
+    if (!el) return;
+    const p = selectedVideoSourceId ? imagePosts.find(function (x) { return String(x.id) === String(selectedVideoSourceId); }) : null;
+    if (!p) { el.innerHTML = ''; return; }
+    el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="clearVideoSourceInline">×</button></span>';
+    document.getElementById('clearVideoSourceInline').addEventListener('click', function () { selectedVideoSourceId = ''; renderVideoSourceDisplay(); });
+  }
+  function renderVideoSourceList(q) {
+    q = (q || '').trim().toLowerCase();
+    const candidates = imagePosts.filter(function (p) {
+      return !p.parentId;
+    });
+    videoSourceEmptyEl.style.display = candidates.length ? 'none' : 'block';
+    const items = candidates.filter(function (p) {
+      if (!q) return true;
+      const hay = (String(p.title || '') + ' ' + String(p.author || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    items.sort(function (a, b) { return compareWithKeys(a, b, videoSourceSortKeys); });
+    videoSourceListEl.innerHTML = items.map(function (p) {
+      const selected = String(selectedVideoSourceId) === String(p.id);
+      return imageRowHtml(p, 'w320', { selected: selected, counts: false });
+    }).join('');
+    wirePickerRows(videoSourceListEl, function (id) {
+      selectedVideoSourceId = id;
+      renderVideoSourceDisplay();
+      closeVideoSourceModal();
+    });
+  }
+  function openVideoSourceModal() {
+    document.getElementById('videoSourceSearch').value = '';
+    renderPickerSortChips(document.getElementById('videoSourceSortChips'), SORT_FIELDS, videoSourceSortKeys, function () {
+      renderVideoSourceList(document.getElementById('videoSourceSearch').value);
+    });
+    renderVideoSourceList('');
+    openOverlay(videoSourceModalOverlay);
+  }
+  function closeVideoSourceModal() { videoSourceModalOverlay.classList.remove('open'); }
+
+  document.getElementById('pickVideoSourceBtn').addEventListener('click', openVideoSourceModal);
+  document.getElementById('videoSourceModalCloseBtn').addEventListener('click', closeVideoSourceModal);
+  videoSourceModalOverlay.addEventListener('click', function (e) { if (e.target === videoSourceModalOverlay) closeVideoSourceModal(); });
+  document.getElementById('videoSourceSearch').addEventListener('input', function () { renderVideoSourceList(this.value); });
+  document.getElementById('clearVideoSourceBtn').addEventListener('click', function () { selectedVideoSourceId = ''; renderVideoSourceDisplay(); closeVideoSourceModal(); });
+
   /* ===== REQUEST FEATURE ===== */
   const REF_MAX_DIM = 1280;
   const REF_JPEG_QUALITY = 0.82;
@@ -7112,7 +7219,6 @@
     rSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         rSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
-        saveSortKey('pr_sort_request', rSortKeys);
         renderRSortChips();
         renderRequestList();
       });
@@ -7221,7 +7327,6 @@
     fSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         fSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
-        saveSortKey('pr_sort_fix', fSortKeys);
         renderFSortChips();
         renderFixList();
       });
@@ -7933,7 +8038,6 @@
     pSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         pSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
-        saveSortKey('pr_sort_prompt', pSortKeys);
         renderPromptSortChips();
         renderPromptList();
       });
@@ -8712,6 +8816,8 @@
       renderParentDisplay();
       selectedReferenceId = String(p.refId || '');
       renderReferenceDisplay();
+      selectedVideoSourceId = String(p.videoSourceId || '');
+      renderVideoSourceDisplay();
       selectedRequestId = String(p.requestId || '');
       renderRequestDisplay();
       document.getElementById('fixContentInput').value = p.fixContent || '';
