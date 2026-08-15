@@ -2946,7 +2946,7 @@
     <div id="guideVideo" class="guide-variant" style="display:none;">
     <section class="panel">
       <div class="guide-note">
-        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませる。動画は<strong>「ComfyUI」を入れて構築する編</strong>と、その後の<strong>プロンプトの書き方編</strong>に分かれている。まず環境を作り、動かせるようになってからプロンプトを詰めるとよい。
+        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませる。動画は<strong>「ComfyUI」を入れて構築する編</strong>(モードの切り替え方=STEP 4 を含む)と、その後の<strong>プロンプトの書き方編</strong>に分かれている。まず環境を作り、動かせるようになってからプロンプトを詰めるとよい。
       </div>
     </section>
 
@@ -3002,7 +3002,49 @@
     </section>
 
     <section class="panel">
-      <h2>STEP 4. はじめての動画生成</h2>
+      <h2>STEP 4. モードの切り替え方(T2V / I2V / FL2V / R2V)</h2>
+      <div class="guide-step">
+        <div class="body">
+          ComfyUIには<strong>「モードを選ぶボタン」があるわけではない</strong>。どのノード構成・どの入力を使うかでモードが決まる。一番簡単なのは、目的別のテンプレートをそのまま開くこと。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          <strong>テンプレートから開く(おすすめ)</strong>: メニューの <strong>Template Library → Video</strong> で「<strong>MiniMax H3</strong>」を検索すると、<code>T2V</code> / <code>I2V</code> / <code>R2V</code> の3つのテンプレートが用意されている。作りたいモードのものを選べば、対応するノード構成がそのまま開く。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>ノードの接続で切り替える(T2V / I2V / FL2V)</strong>: T2V・I2V・FL2V は同じ <code>MiniMaxH3ImageToVideo</code> ノード(<code>fl2va</code> 系モデル)を共用し、<code>first_frame</code> / <code>last_frame</code> という入力に画像を繋ぐかどうかでモードが変わる。すでにワークフローを組んでいる場合は、この接続の有無が実質的な「モード切り替え」になる。
+          <table class="guide-table">
+            <thead><tr><th>入力への画像接続</th><th>モード</th><th>内容</th></tr></thead>
+            <tbody>
+              <tr><td>どちらも繋がない</td><td><code>T2V</code></td><td>テキストのみで生成</td></tr>
+              <tr><td><code>first_frame</code> に繋ぐ</td><td><code>I2V</code></td><td>最初のフレームを指定して生成</td></tr>
+              <tr><td><code>first_frame</code> と <code>last_frame</code> 両方に繋ぐ</td><td><code>FL2V</code></td><td>最初と最後のフレームを指定して生成</td></tr>
+            </tbody>
+          </table>
+          <div class="guide-note">入力画像を無効化・削除すれば T2V 相当に戻る。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>R2V(参照から引き継ぐ)は別ノード</strong>: 参照画像・参照動画・参照音声から、人物・スタイル・モーション・カメラワーク・声などを引き継ぐ生成には <code>MiniMaxH3ReferenceToVideo</code> ノードを使う。
+          <div class="guide-warn"><strong>注意:</strong> R2V は <code>ref2va</code> という、T2V/I2V が使う <code>fl2va</code> とは<strong>別の重み(モデル)</strong>を使う。R2Vをやるにはモデルファイルごと差し替える必要がある。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>プロンプト表記の T2VA / I2VA / FL2VA / L2VA は別の話</strong>。これは<strong>ComfyUIのUI設定項目ではなく、MiniMax公式の「プロンプトの書き方ガイド」上の分類</strong>。MiniMaxは各基本モードについて公式の書き方ガイド(タイムライン構成・カメラワーク・音声の書き方など)を公開しており、末尾の「A」は音声(Audio)付きの生成を表す。<strong>どのノード構成を使っているかに応じて、対応する書き方を選ぶ</strong>という位置づけで、後半「プロンプトの書き方」編と下部のプロンプト作成ツール(モードボタン)がこれに当たる。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 5. はじめての動画生成</h2>
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
@@ -3047,6 +3089,9 @@
           </table>
           <div class="guide-note">
             画像から動かす(I2VA)・最初と最後を指定する(FL2VA)・最後から逆算する(L2VA)場合は、プロンプトの<strong>先頭に「画像対応行」</strong>を1行入れて、どの画像が何秒地点かを対応づける。テキストのみのT2VAでは画像対応行は不要。
+          </div>
+          <div class="guide-note">
+            ここで選ぶのは<strong>プロンプトの「書き方」</strong>であって、ComfyUIのボタン操作ではない(ComfyUI側のモード切り替えは<strong>STEP 4</strong>を参照)。おおまかな対応は、ComfyUIで <code>T2V</code>→<code>T2VA</code>、<code>I2V</code>→<code>I2VA</code>、<code>FL2V</code>→<code>FL2VA</code>(最後のフレームだけ指定するなら <code>L2VA</code>)、参照から作る <code>R2V</code>→<code>Ref2VA</code>。使っているノード構成に合わせて書き方を選ぶ。
           </div>
         </div>
       </div>
