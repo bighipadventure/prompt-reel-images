@@ -419,14 +419,15 @@
     padding: 1px 7px; border-radius: 999px; white-space: nowrap;
     border: 1px solid transparent;
   }
-  .row-link-badge.lb-child{ color:#cb5fc9; border-color: rgba(203,95,201,.5); background: rgba(203,95,201,.12); }
+  .row-link-badge.lb-child{ color:#4f7fe0; border-color: rgba(79,127,224,.5); background: rgba(79,127,224,.14); }
   .row-link-badge.lb-comment{ color:#9bb534; border-color: rgba(155,181,52,.5); background: rgba(155,181,52,.12); }
   .row-link-badge.lb-variant{ color:#c8715e; border-color: rgba(200,113,94,.5); background: rgba(200,113,94,.12); }
   .row-link-badge.lb-base{ color:#c9a227; border-color: rgba(201,162,39,.5); background: rgba(201,162,39,.12); }
-  .row-link-badge.lb-ref{ color:#e46a9a; border-color: rgba(228,106,154,.5); background: rgba(228,106,154,.12); }
-  .row-link-badge.lb-req{ color:#57c785; border-color: rgba(87,199,133,.5); background: rgba(87,199,133,.12); }
+  .row-link-badge.lb-ref{ color:#ef85a3; border-color: rgba(239,133,163,.5); background: rgba(239,133,163,.14); }
+  .row-link-badge.lb-req{ color:#4db6e6; border-color: rgba(77,182,230,.5); background: rgba(77,182,230,.12); }
   .row-link-badge.lb-fix{ color:#e0824f; border-color: rgba(224,130,79,.5); background: rgba(224,130,79,.12); }
   .row-link-badge.lb-parent{ color:#b98cff; border-color: rgba(185,140,255,.5); background: rgba(185,140,255,.12); }
+  .row-link-badge.lb-video{ color:#57c785; border-color: rgba(87,199,133,.5); background: rgba(87,199,133,.12); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
   .detail-image{ flex: 0 0 260px; }
   .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
@@ -2773,17 +2774,21 @@
   </div>
   <div class="tab-panel" id="tab-guide">
     <div class="guide-switch" id="guideSwitch">
-      <button type="button" class="active" data-guide="image">画像の作り方</button>
+      <button type="button" class="active" data-guide="setup">初期設定</button>
+      <button type="button" data-guide="image">画像の作り方</button>
       <button type="button" class="video-only" data-guide="video">動画の作り方</button>
     </div>
 
-    <div id="guideImage" class="guide-variant">
+    <div id="guideSetup" class="guide-variant">
     <section class="panel">
       <h2>準備するもの</h2>
       <div class="guide-step">
         <div class="body">
-          Windowsパソコン(できればNVIDIA GeForceのグラフィックボード搭載機)。VRAM 8GB以上あると快適。空き容量は数十GB単位で余裕を見ておく。画像生成は自分のパソコンの中だけで完結するので、アカウント登録や課金は不要。
+          Windowsパソコン(できればNVIDIA GeForceのグラフィックボード搭載機)。VRAM 8GB以上あると快適。空き容量は数十GB単位で余裕を見ておく。画像・動画生成は自分のパソコンの中だけで完結するので、アカウント登録や課金は不要。
         </div>
+      </div>
+      <div class="guide-note">
+        この「初期設定」タブでは、画像でも動画でも共通して必要になる土台「Stability Matrix」の用意までを説明する。ここまで終えたら、<strong>画像を作りたい人は「画像の作り方」タブ、動画を作りたい人は「動画の作り方」タブ</strong>に進む(どちらもStability Matrixが用意済みである前提)。
       </div>
     </section>
 
@@ -2792,7 +2797,7 @@
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
-          「Stability Matrix」という無料アプリを使うと、画像生成用のソフト(Forge Neoなど)やモデルをまとめて管理できて楽。公式サイト(<a href="https://lykos.ai/" target="_blank" rel="noopener">https://lykos.ai/</a>)、またはGitHubの配布ページ(<a href="https://github.com/LykosAI/StabilityMatrix/releases" target="_blank" rel="noopener">https://github.com/LykosAI/StabilityMatrix/releases</a>)から <strong>StabilityMatrix-win-x64.zip</strong> のようなWindows用ファイルをダウンロードする。</div>
+          「Stability Matrix」という無料アプリを使うと、画像・動画生成用のソフト(Forge Neoや ComfyUI など)やモデルをまとめて管理できて楽。公式サイト(<a href="https://lykos.ai/" target="_blank" rel="noopener">https://lykos.ai/</a>)、またはGitHubの配布ページ(<a href="https://github.com/LykosAI/StabilityMatrix/releases" target="_blank" rel="noopener">https://github.com/LykosAI/StabilityMatrix/releases</a>)から <strong>StabilityMatrix-win-x64.zip</strong> のようなWindows用ファイルをダウンロードする。</div>
       </div>
       <div class="guide-step">
         <div class="num">2</div>
@@ -2807,10 +2812,21 @@
           中にある <strong>StabilityMatrix.exe</strong> をダブルクリックして起動。グラフィックボードのスペックチェックで問題がなければ、利用規約に同意して先へ進む。「Portableモード」のチェックは基本つけたままでOK。
         </div>
       </div>
+      <div class="guide-note">
+        ここまでが画像・動画共通の初期設定。次は目的に応じてタブを切り替える:<strong>画像 → 「画像の作り方」(Forge Neo)</strong> / <strong>動画 → 「動画の作り方」(ComfyUI)</strong>。
+      </div>
+    </section>
+    </div>
+
+    <div id="guideImage" class="guide-variant" style="display:none;">
+    <section class="panel">
+      <div class="guide-note">
+        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませてから戻ってくる。ここからは画像生成ソフト「Forge Neo」を入れて画像を作れるようにする。
+      </div>
     </section>
 
     <section class="panel">
-      <h2>STEP 2. Forge Neo をインストールする</h2>
+      <h2>STEP 1. Forge Neo をインストールする</h2>
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
@@ -2820,13 +2836,13 @@
       <div class="guide-step">
         <div class="num">2</div>
         <div class="body">
-          かなり大きなファイルを大量にダウンロードするので、セットアップ完了までそこそこ時間がかかる。待っている間にSTEP3のモデル探しを進めておくとよい。
+          かなり大きなファイルを大量にダウンロードするので、セットアップ完了までそこそこ時間がかかる。待っている間にSTEP2のモデル探しを進めておくとよい。
         </div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>STEP 3. モデル(Checkpoint)をダウンロードして配置する</h2>
+      <h2>STEP 2. モデル(Checkpoint)をダウンロードして配置する</h2>
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
@@ -2844,7 +2860,7 @@
     </section>
 
     <section class="panel">
-      <h2>STEP 4. Forge Neo を起動する</h2>
+      <h2>STEP 3. Forge Neo を起動する</h2>
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
@@ -2858,7 +2874,7 @@
     </section>
 
     <section class="panel">
-      <h2>STEP 5. はじめての画像生成</h2>
+      <h2>STEP 4. はじめての画像生成</h2>
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
@@ -2923,10 +2939,83 @@
 
     <div id="guideVideo" class="guide-variant" style="display:none;">
     <section class="panel">
+      <div class="guide-note">
+        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませる。動画は<strong>「ComfyUI」を入れて構築する編</strong>と、その後の<strong>プロンプトの書き方編</strong>に分かれている。まず環境を作り、動かせるようになってからプロンプトを詰めるとよい。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 1. ComfyUI をインストールする</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          Stability Matrix内でインストールするパッケージの一覧から <strong>「ComfyUI」</strong> を選んでインストールする。ComfyUIはノード(箱)を線でつないで処理の流れを組む方式で、動画生成のような複雑な手順に向いている。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          かなり大きなファイルをダウンロードするので、セットアップ完了まで時間がかかる。待っている間にSTEP2のモデル探しを進めておくとよい。
+          <div class="guide-warn"><strong>注意:</strong> 動画生成は画像より重い。VRAMが少ない環境では、後述の軽量モデル(5B系)や短い尺・低解像度から始めるのが安全。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 2. 動画モデル(Wan2.2)を配置する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          このサイトの動画投稿は <strong>Wan2.2</strong> 系(ComfyUI)を想定している。用途に合わせて、テキストから作る <code>T2V</code> / 画像から動かす <code>I2V</code> / 両対応の <code>TI2V</code> のモデルを選ぶ。まずは扱いやすい構成から試すとよい。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          モデル本体は Stability Matrix のモデルブラウザや配布元から入手し、<strong>ComfyUIの所定フォルダに配置</strong>する(拡散モデルは <code>models/diffusion_models</code>、VAEは <code>models/vae</code>、テキストエンコーダ(CLIP)は <code>models/text_encoders</code> など)。Stability Matrix経由で入れると配置先を自動で振り分けてくれることが多い。
+          <div class="guide-note">14B系は高品質だがVRAMを多く使い、5B系は軽くて速い。手持ちのグラフィックボードに合わせて選ぶ。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 3. ワークフローを読み込む</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          ComfyUIは「ワークフロー」という処理の設計図(ノードのつながり)を読み込んで使う。Wan2.2向けのワークフロー(公式のサンプルや配布されている <code>.json</code>)を <strong>ComfyUIの画面にドラッグ&ドロップ</strong>すると、必要なノードが一括で並ぶ。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          読み込んだら、モデル読み込み系のノードで <strong>STEP2で配置したモデル・VAE・CLIPを選び直す</strong>(ファイル名が一致していないと赤く表示される)。足りないノードがある場合は ComfyUI Manager から不足分を導入する。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 4. はじめての動画生成</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          プロンプト欄に作りたい内容を入力し、尺(フレーム数)・FPS・解像度を<strong>控えめ</strong>に設定して実行する。最初は短く小さくして、まず1本通すことを優先する。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          生成できたら、このサイトの「動画を投稿」から共有できる。投稿時の生成設定欄(Wan2.2)に、使ったModel/Variant/Steps/CFGなどを記録しておくと、後から自分でも見返せて再現しやすい。
+          <div class="guide-warn"><strong>重い・落ちるとき:</strong> 解像度と尺を下げる、5B系の軽量モデルに変える、他の重いアプリを閉じる、の順で試す。動画は画像よりVRAM消費が大きい点に注意。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>この動画ガイドについて</h2>
       <div class="guide-step">
         <div class="body">
-          ここでは動画生成モデル <strong>MiniMax H3</strong> を前提に、プロンプト(指示文)の書き方の基本をまとめる。H3は<strong>映像と音声(会話・効果音・BGM)を1つのプロンプトでまとめて指示する</strong>のが特徴で、決まった型に沿って書くほど意図が伝わりやすい。
+          ここから下は<strong>プロンプトの書き方編</strong>。動画生成モデル <strong>MiniMax H3</strong> を前提に、プロンプト(指示文)の書き方の基本をまとめる。H3は<strong>映像と音声(会話・効果音・BGM)を1つのプロンプトでまとめて指示する</strong>のが特徴で、決まった型に沿って書くほど意図が伝わりやすい。
           <div class="guide-note">
             型に沿って書くと意図は伝わりやすくなるが、カット・声・文字・動き・フレームの一致が毎回完全に再現される保証はない。1回の生成で変える要素は1つに絞り、同じ合否基準で見比べながら詰めていくのが基本。
           </div>
@@ -5739,6 +5828,10 @@
     if (p.requestId) s += '<span class="row-link-badge lb-req">リクエスト回答</span>';
     if (fixRequestIdsOf(p).length) s += '<span class="row-link-badge lb-fix">修正依頼回答</span>';
     if (p.parentId) s += '<span class="row-link-badge lb-parent">差分(親作品あり)</span>';
+    if (options.video && p.type !== 'video') {
+      const vc = videoPosts.filter(function (v) { return String(v.videoSourceId) === String(p.id); }).length;
+      if (vc) s += '<span class="row-link-badge lb-video">動画 ' + vc + '件</span>';
+    }
     return s;
   }
 
@@ -5910,9 +6003,8 @@
       ? imagePosts.find(function (ip) { return String(ip.id) === String(p.videoSourceId); })
       : null;
     const videoSourceBlock = videoSource
-      ? '<div class="detail-block"><div class="label">動画の元になった画像作品</div>' +
-          '<div class="value"><a href="#" class="video-source-link" data-post-id="' + escapeHtml(String(videoSource.id)) + '">' +
-          (videoSource.title ? escapeHtml(videoSource.title) : '(無題)') + '</a></div></div>'
+      ? '<div class="linked-works-head">動画の元になった画像作品</div>' +
+        '<div class="list" id="videoSourceWorks">' + imageRowHtml(videoSource, 'w320') + '</div>'
       : '';
 
     const request = p.requestId
@@ -5994,7 +6086,6 @@
       fixContentBlock +
       baseBlock +
       parentBlock +
-      videoSourceBlock +
       requestBlock +
       fixLinksBlock +
       '<div class="detail-block">' +
@@ -6002,9 +6093,9 @@
         '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? escapeHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
       '</div>' +
-      '<div class="detail-block">' +
+      '<div class="detail-block" id="detailNegativeBlock"' + (imageSet[0].negativePrompt ? '' : ' style="display:none;"') + '>' +
         '<div class="block-head"><div class="label">NEGATIVE PROMPT</div></div>' +
-        '<div class="value" id="detailNegativeValue">' + (imageSet[0].negativePrompt ? escapeHtml(imageSet[0].negativePrompt) : '(入力なし)') + '</div>' +
+        '<div class="value" id="detailNegativeValue">' + escapeHtml(imageSet[0].negativePrompt || '') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
       '</div>' +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
@@ -6012,6 +6103,7 @@
       commentToggleHtml(p) +
       fixAnswersBlock +
       childrenBlock +
+      videoSourceBlock +
       sourceVideosBlock +
       referenceSourceBlock +
       referencedByBlock;
@@ -6028,6 +6120,7 @@
       const wrap = document.getElementById('detailImageWrap');
       const promptValEl = document.getElementById('detailPromptValue');
       const negValEl = document.getElementById('detailNegativeValue');
+      const negBlockEl = document.getElementById('detailNegativeBlock');
       const settingsBlock = document.getElementById('detailSettingsBlock');
       const settingsTableEl = document.getElementById('detailSettingsTable');
       modalBody.querySelectorAll('.variant-switch-btn').forEach(function (btn) {
@@ -6036,7 +6129,8 @@
           const cur = imageSet[curVar];
           wrap.innerHTML = imageTag(cur.imageUrl, { size: 'w1000', alt: '生成画像' });
           promptValEl.textContent = cur.prompt ? cur.prompt : '(入力なし)';
-          negValEl.textContent = cur.negativePrompt ? cur.negativePrompt : '(入力なし)';
+          negValEl.textContent = cur.negativePrompt || '';
+          if (negBlockEl) negBlockEl.style.display = cur.negativePrompt ? '' : 'none';
           if (settingsBlock && settingsTableEl) {
             const entries = settingsEntriesHtml(cur);
             settingsTableEl.innerHTML = entries;
@@ -6055,7 +6149,7 @@
     wireModalLikeButton();
     wireCommentToggle(p);
     wireAdminActionButtons(p);
-    document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage({ imageUrl: imageSet[curVar].imageUrl, title: p.title, id: p.id }); });
+    document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage({ imageUrl: imageSet[curVar].imageUrl, title: p.title, id: p.id, type: p.type }); });
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
@@ -6069,11 +6163,17 @@
           nativeVideo.dataset.srcidx = String(idx);
           nativeVideo.src = srcs[idx];
           nativeVideo.load();
+          const rp = nativeVideo.play();
+          if (rp && rp.catch) rp.catch(function () {});
           return;
         }
         const fb = nativeVideo.dataset.fallback;
         const frame = nativeVideo.closest('.video-frame');
         if (frame && fb) frame.innerHTML = '<iframe src="' + fb + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>';
+      });
+      // loop属性が効かない配信でも確実に繰り返すための保険
+      nativeVideo.addEventListener('ended', function () {
+        try { nativeVideo.currentTime = 0; const rp = nativeVideo.play(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {}
       });
       const tryPlay = nativeVideo.play();
       if (tryPlay && tryPlay.catch) tryPlay.catch(function () {});
@@ -6097,13 +6197,8 @@
     const referenceSourceWorks = document.getElementById('referenceSourceWorks');
     if (referenceSourceWorks) wireImageRows(referenceSourceWorks, { detailOnly: true });
 
-    const videoSourceLink = modalBody.querySelector('.video-source-link');
-    if (videoSourceLink) {
-      videoSourceLink.addEventListener('click', function (e) {
-        e.preventDefault();
-        openImageDetail(videoSourceLink.dataset.postId);
-      });
-    }
+    const videoSourceWorks = document.getElementById('videoSourceWorks');
+    if (videoSourceWorks) wireImageRows(videoSourceWorks, { detailOnly: true });
 
     const requestLink = modalBody.querySelector('.request-post-link');
     if (requestLink) {
@@ -6141,8 +6236,11 @@
     modalBody.innerHTML = '';
   }
 
+  let modalDownOnOverlay = false;
+  modalOverlay.addEventListener('mousedown', function (e) { modalDownOnOverlay = (e.target === modalOverlay); });
   modalOverlay.addEventListener('click', function (e) {
-    if (e.target === modalOverlay) closeModal();
+    if (e.target === modalOverlay && modalDownOnOverlay) closeModal();
+    modalDownOnOverlay = false;
   });
 
   /* ---------- フルスクリーン画像モーダル(パネル表示用) ---------- */
@@ -6572,7 +6670,22 @@
 
   async function downloadImage(p) {
     const id = driveFileId(p.imageUrl);
-    const filename = p.title || ('image_' + p.id);
+    const isVideo = p.type === 'video';
+    const filename = p.title || ((isVideo ? 'video_' : 'image_') + p.id);
+    if (isVideo) {
+      // 動画は実ファイルをDriveのダウンロードURLから取得する(imageUrlはポスターJPEGなので使わない)。
+      // 直リンクへのfetchはCORSで不可なため、アンカー遷移でDriveにダウンロードさせる。
+      if (id) {
+        const a = document.createElement('a');
+        a.href = 'https://drive.usercontent.google.com/download?id=' + id + '&export=download';
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    } else {
     const originalUrl = id ? ('https://lh3.googleusercontent.com/d/' + id + '=s0') : p.imageUrl;
     try {
       const res = await fetch(originalUrl);
@@ -6599,6 +6712,7 @@
         a.click();
         a.remove();
       }
+    }
     }
 
     p.downloadCount = (Number(p.downloadCount) || 0) + 1;
@@ -8410,7 +8524,7 @@
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div></div>' +
-      '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div></div><div class="value">' + (p.negativePrompt ? escapeHtml(p.negativePrompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div></div>' +
+      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div></div><div class="value">' + escapeHtml(p.negativePrompt) + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div></div>' : '') +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
@@ -10122,17 +10236,22 @@
       }
     ];
 
-    // ----- 画像/動画 切替 -----
+    // ----- 初期設定/画像/動画 切替 -----
     var guideSwitch = document.getElementById('guideSwitch');
-    var guideImage = document.getElementById('guideImage');
-    var guideVideo = document.getElementById('guideVideo');
-    if (guideSwitch && guideImage && guideVideo) {
+    var guideVariants = {
+      setup: document.getElementById('guideSetup'),
+      image: document.getElementById('guideImage'),
+      video: document.getElementById('guideVideo')
+    };
+    if (guideSwitch) {
       guideSwitch.querySelectorAll('button').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var target = btn.dataset.guide;
           guideSwitch.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
-          guideImage.style.display = target === 'image' ? '' : 'none';
-          guideVideo.style.display = target === 'video' ? '' : 'none';
+          Object.keys(guideVariants).forEach(function (key) {
+            var el = guideVariants[key];
+            if (el) el.style.display = (key === target) ? '' : 'none';
+          });
         });
       });
     }
