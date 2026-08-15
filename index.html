@@ -671,6 +671,51 @@
   }
   .guide-warn strong{ color: var(--danger); }
   .guide-source{ font-size:11.5px; color:var(--ink-dim); margin-top:6px; }
+  /* ---- はじめてガイド: 画像/動画 切替 ---- */
+  .guide-switch{ display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:22px; }
+  .guide-switch button{
+    background: var(--surface-2); color: var(--ink-dim); border-radius:0;
+    padding: 10px 22px; font-size: 14px; font-weight:600; font-family:'Noto Sans JP',sans-serif;
+  }
+  .guide-switch button.active{ background: var(--accent); color:#fff; }
+  .guide-switch button + button{ border-left:1px solid var(--line); }
+  .guide-table{
+    width:100%; border-collapse:collapse; margin:10px 0 4px; font-size:12.5px; line-height:1.7;
+    font-family:'Noto Sans JP',sans-serif;
+  }
+  .guide-table th, .guide-table td{ border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  .guide-table th{ background: var(--surface-2); color: var(--ink); font-weight:600; }
+  .guide-table td code, .guide-step code, .guide-note code{ background: var(--surface-2); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:11.5px; }
+  .guide-code{
+    background:#0d0d0f; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:8px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size:12px; line-height:1.7;
+    color:#cdd6e4; white-space:pre-wrap; word-break:break-word; overflow-x:auto;
+  }
+  /* ---- H3 プロンプト作成ツール ---- */
+  .h3-builder{ display:flex; flex-direction:column; gap:16px; }
+  .h3-section{ background: var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .h3-section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .h3-section-title{ font-family:'Noto Sans JP',sans-serif; font-size:13.5px; font-weight:600; color: var(--ink); }
+  .h3-section-key{ font-family: ui-monospace, Menlo, Consolas, monospace; font-size:11px; color: var(--accent); }
+  .h3-hint{ font-size:11.5px; color: var(--ink-dim); line-height:1.7; margin:6px 0 10px; font-family:'Noto Sans JP',sans-serif; }
+  .h3-rows{ display:flex; flex-direction:column; gap:8px; }
+  .h3-row{ display:flex; gap:8px; align-items:flex-start; }
+  .h3-row textarea{
+    flex:1 1 auto; width:auto; min-height:40px; resize:vertical;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size:12.5px; line-height:1.6;
+  }
+  .h3-row-del{
+    flex:0 0 auto; background: var(--surface); color: var(--ink-dim);
+    border:1px solid var(--line); border-radius:8px; padding:8px 11px; cursor:pointer; font-size:13px;
+  }
+  .h3-row-del:hover{ border-color: var(--danger); color: var(--danger); }
+  .h3-add-row{ margin-top:10px; font-size:12px; padding:7px 14px; }
+  .h3-output-wrap{ margin-top:4px; }
+  .h3-output{
+    width:100%; min-height:200px; resize:vertical; background:#0d0d0f; color:#cdd6e4;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size:12.5px; line-height:1.7;
+  }
+  .h3-output-actions{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
   a{ color: var(--accent); text-decoration: none; }
   a:hover{ text-decoration: underline; }
 
@@ -1017,6 +1062,7 @@
   /* 詳細の動画プレーヤー */
   .modal-image .video-frame{ position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; }
   .modal-image .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .modal-image .video-frame video{ position:absolute; inset:0; width:100%; height:100%; border:0; background:#000; object-fit:contain; }
   body.opt-no-link-baseprompt .link-field[data-link="basePrompt"],
   body.opt-no-link-parent .link-field[data-link="parent"],
   body.opt-no-link-reference .link-field[data-link="reference"],
@@ -2432,7 +2478,7 @@
       </div>
       <div class="feature-item opt-only-link-reference">
         <div class="feature-name">参考にした投稿作品(画像 → 画像・1件のみ)</div>
-        <div class="feature-desc">「この作品を参考にして作りました」という関係です。投稿フォームの「参考作品を選択」から選びます。親子紐づけと違って<strong>子作品にはならない</strong>ので、あなたの投稿はこれまでどおり画像投稿一覧に表示されます。指定すると、詳細画面に「参考にした投稿作品」へのリンクが出て、元の作品をすぐ開けます。</div>
+        <div class="feature-desc">「この作品を参考にして作りました」という関係です。投稿フォームの「参考作品を選択」から選びます。親子紐づけと違って<strong>子作品にはならない</strong>ので、あなたの投稿はこれまでどおり画像投稿一覧に表示されます。指定すると、あなたの投稿の詳細画面の下部に「参考にした投稿作品」として元の作品が一覧でぶら下がり、そこから元の作品をすぐ開けます。逆に、参考にされた側の作品の詳細下部には「この作品を参考にした投稿」が一覧で表示されます。</div>
       </div>
       <div class="feature-item opt-only-link-request">
         <div class="feature-name">応えるリクエスト(画像 → リクエスト・1件のみ)</div>
@@ -2726,6 +2772,12 @@
     </section>
   </div>
   <div class="tab-panel" id="tab-guide">
+    <div class="guide-switch" id="guideSwitch">
+      <button type="button" class="active" data-guide="image">画像の作り方</button>
+      <button type="button" class="video-only" data-guide="video">動画の作り方</button>
+    </div>
+
+    <div id="guideImage" class="guide-variant">
     <section class="panel">
       <h2>準備するもの</h2>
       <div class="guide-step">
@@ -2867,6 +2919,129 @@
         参考: <a href="https://wikiwiki.jp/sd_toshiaki/%E5%88%9D%E3%82%81%E3%81%A6%E3%81%AEforge%20neo" target="_blank" rel="noopener">としあきdiffusion Wiki* - 初めてのforge neo</a>
       </div>
     </section>
+    </div>
+
+    <div id="guideVideo" class="guide-variant" style="display:none;">
+    <section class="panel">
+      <h2>この動画ガイドについて</h2>
+      <div class="guide-step">
+        <div class="body">
+          ここでは動画生成モデル <strong>MiniMax H3</strong> を前提に、プロンプト(指示文)の書き方の基本をまとめる。H3は<strong>映像と音声(会話・効果音・BGM)を1つのプロンプトでまとめて指示する</strong>のが特徴で、決まった型に沿って書くほど意図が伝わりやすい。
+          <div class="guide-note">
+            型に沿って書くと意図は伝わりやすくなるが、カット・声・文字・動き・フレームの一致が毎回完全に再現される保証はない。1回の生成で変える要素は1つに絞り、同じ合否基準で見比べながら詰めていくのが基本。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 1. まずモードを選ぶ</h2>
+      <div class="guide-step">
+        <div class="body">
+          手元にある素材(画像)に合わせて、5つのモードから選ぶ。名前が難しそうという理由で選ばず、<strong>持っている入力素材で決める</strong>のがコツ。
+          <table class="guide-table">
+            <thead><tr><th>モード</th><th>入力素材</th><th>向いている用途</th></tr></thead>
+            <tbody>
+              <tr><td><code>T2VA</code></td><td>なし(テキストのみ)</td><td>文章だけで新しい映像と音声を作る</td></tr>
+              <tr><td><code>I2VA</code></td><td>最初のフレーム1枚</td><td>用意した冒頭の1枚を動かす</td></tr>
+              <tr><td><code>FL2VA</code></td><td>最初と最後のフレーム</td><td>始まりと終わりを固定し、その間の変化を作る</td></tr>
+              <tr><td><code>L2VA</code></td><td>最後のフレーム1枚</td><td>結末の1枚から逆算して手前を作る</td></tr>
+              <tr><td><code>Ref2VA</code></td><td>参照画像・動画・音声の組合せ</td><td>複数素材から人物・動き・声などを取り込む(上級)</td></tr>
+            </tbody>
+          </table>
+          <div class="guide-note">
+            画像から動かす(I2VA)・最初と最後を指定する(FL2VA)・最後から逆算する(L2VA)場合は、プロンプトの<strong>先頭に「画像対応行」</strong>を1行入れて、どの画像が何秒地点かを対応づける。テキストのみのT2VAでは画像対応行は不要。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 2. 基本は3つのフィールドで組み立てる</h2>
+      <div class="guide-step">
+        <div class="body">
+          H3のプロンプトは、<strong>映像の流れ・物理的な音・視聴者だけに聞こえる音楽</strong>の3層に分けて書く。それぞれ決まったラベルを付ける。
+          <table class="guide-table">
+            <thead><tr><th>フィールド</th><th>ここに書くもの</th></tr></thead>
+            <tbody>
+              <tr><td><code>integrated_multimodal_description</code></td><td>ショット・動作・カメラ・会話・歌・画面に出す文字・その瞬間に同期する音を、<strong>再生順</strong>に書く</td></tr>
+              <tr><td><code>overall_soundscape</code></td><td>雨・風・足音・衣擦れ・呼吸などの<strong>環境音・物理音</strong>。会話の全文はここに繰り返さない</td></tr>
+              <tr><td><code>non_diegetic_music</code></td><td>視聴者だけに聞こえる<strong>BGM(劇伴)</strong>。不要なら <code>N/A</code> と書く</td></tr>
+            </tbody>
+          </table>
+          <div class="guide-note">
+            全体を完全な無音にしたいときだけ <code>overall_soundscape: N/A</code> を使う。シーン内のラジオや演奏など「登場人物にも聞こえる音楽」は、音楽欄ではなく映像タイムライン側の出来事として書く。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 3. ショット・カメラ・時間の書き方</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body"><strong>ショットは <code>[Shot 1]</code> <code>[Shot 2]</code> …と番号で区切る。</strong> 最初のショットには時刻を付けない。2つ目以降のカットだけ、先頭に <code>At 00:03.000</code> のような時刻を、動画の長さの範囲で<strong>昇順</strong>に付ける。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">1つのショット内で続く動きに時刻を付けない(時刻はカット位置を表す)。カットがない範囲の変化は「ショットの中間で〜」のように文章で書く。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body"><strong>カメラは「動きの種類 → 移動量 → 速度」の順で具体的に。</strong> 「映画的なカメラ」より「カメラが低速かつ小さい移動量で前進する」のように、結果が一意に決まる書き方にする。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 4. 会話・効果音・環境音・音楽を分ける</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body"><strong>会話や歌は映像タイムライン側に書く。</strong> 声には初登場順に <code>(S1)</code> <code>(S2)</code> …と固定IDを割り当て、別のショットでも同じ声には同じIDを使う。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body"><strong>実際に話す言葉は <code>&lt;d&gt;</code> タグの中だけに入れる。</strong> 中身は「言語タグ + セリフ本文」のみ。話し方・動作・IDなどの説明はタグの外に書く。例: <code>The woman (S1) says: &lt;d&gt;[Japanese] 北を見つけて。&lt;/d&gt;</code></div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">画面に出す文字は<strong>半角ダブルクォート</strong>で正確に囲む(句読点も含めそのまま)。ただし文字が完全に描画される保証はないので、生成後に確認する。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>STEP 5. 生成前チェックリスト</h2>
+      <div class="guide-step">
+        <div class="body">
+          生成ボタンを押す前に、ざっと見返す。
+          <div class="guide-note">
+            □ 選んだモードが手元の素材と合っている &nbsp; □ 必要なら画像対応行が先頭にある &nbsp; □ <code>[Shot 1]</code> に時刻が付いておらず、以降のカット時刻が昇順で長さ内 &nbsp; □ 同じ被写体の説明がショット間でブレていない &nbsp; □ 声ごとに <code>(Sx)</code> が1つで固定 &nbsp; □ セリフが <code>&lt;d&gt;</code> の中だけにある &nbsp; □ 環境音がタイムラインか <code>overall_soundscape</code> にある &nbsp; □ BGMが不要なら <code>non_diegetic_music: N/A</code>
+          </div>
+        </div>
+      </div>
+      <div class="guide-source">
+        参考: <a href="https://domoai.app/ja/blog/minimax-h3-prompt-guide" target="_blank" rel="noopener">DomoAI - MiniMax H3プロンプトガイド：T2VA・I2VA・音声</a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>プロンプト作成ツール</h2>
+      <div class="guide-step">
+        <div class="body">
+          各フィールドごとに独立して下書きし、最後に貼り付け用のプロンプトへ統合できる。各セクションは<strong>「＋行を追加」</strong>で入力欄を自由に増やせる(ショットや音の要素を1行ずつ足していく想定)。どの動画でも使う基本の書き出しは、あらかじめ入れてある。
+        </div>
+      </div>
+      <div class="h3-builder" id="h3Builder"></div>
+      <div class="h3-output-wrap">
+        <label class="field-label" style="margin-top:18px;">統合プロンプト(貼り付け用)</label>
+        <textarea class="h3-output" id="h3Output" readonly spellcheck="false"></textarea>
+        <div class="h3-output-actions">
+          <button class="btn-submit" type="button" id="h3CopyBtn">プロンプトをコピー</button>
+          <button class="btn-ghost" type="button" id="h3ResetBtn">初期状態に戻す</button>
+          <span class="status" id="h3CopyStatus"></span>
+        </div>
+      </div>
+    </section>
+    </div>
   </div>
 
 </div>
@@ -4299,10 +4474,18 @@
   // 一覧から詳細を開く共通処理。ローカルに本文がある投稿はスピナー無しで即表示し、
   // rest未完了でコメント・関連がまだ無い場合だけ背後で補完してモーダルを更新する。
   function driveFileIdFromUrl(url) { const m = String(url || '').match(/[?&]id=([^&]+)/); return m ? m[1] : ''; }
+  function videoStreamUrls(id) {
+    return [
+      'https://drive.usercontent.google.com/download?id=' + id + '&export=download',
+      'https://drive.google.com/uc?export=download&id=' + id
+    ];
+  }
   function videoPlayerHtml(url) {
     const id = driveFileIdFromUrl(url);
     if (!id) return '<div class="value">(動画を表示できません)</div>';
-    return '<div class="video-frame"><iframe src="https://drive.google.com/file/d/' + id + '/preview" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe></div>';
+    const srcs = videoStreamUrls(id);
+    const preview = 'https://drive.google.com/file/d/' + id + '/preview';
+    return '<div class="video-frame"><video class="video-native" src="' + escapeHtml(srcs[0]) + '" data-fileid="' + escapeHtml(id) + '" data-srcidx="0" data-fallback="' + escapeHtml(preview) + '" loop muted autoplay controls playsinline preload="auto"></video></div>';
   }
 
   function openImageDetail(idOrShareId) {
@@ -5718,10 +5901,9 @@
     const reference = p.refId
       ? imagePosts.find(function (ip) { return String(ip.id) === String(p.refId); })
       : null;
-    const referenceBlock = reference
-      ? '<div class="detail-block"><div class="label">参考にした投稿作品</div>' +
-          '<div class="value"><a href="#" class="reference-post-link" data-post-id="' + escapeHtml(String(reference.id)) + '">' +
-          (reference.title ? escapeHtml(reference.title) : '(無題)') + '</a></div></div>'
+    const referenceSourceBlock = reference
+      ? '<div class="linked-works-head">参考にした投稿作品</div>' +
+        '<div class="list" id="referenceSourceWorks">' + imageRowHtml(reference, 'w320') + '</div>'
       : '';
 
     const videoSource = (p.type === 'video' && p.videoSourceId)
@@ -5812,7 +5994,6 @@
       fixContentBlock +
       baseBlock +
       parentBlock +
-      referenceBlock +
       videoSourceBlock +
       requestBlock +
       fixLinksBlock +
@@ -5832,6 +6013,7 @@
       fixAnswersBlock +
       childrenBlock +
       sourceVideosBlock +
+      referenceSourceBlock +
       referencedByBlock;
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
@@ -5877,6 +6059,26 @@
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
+    const nativeVideo = modalBody.querySelector('.video-native');
+    if (nativeVideo) {
+      nativeVideo.addEventListener('error', function () {
+        const srcs = videoStreamUrls(nativeVideo.dataset.fileid || '');
+        let idx = Number(nativeVideo.dataset.srcidx || '0');
+        if (idx + 1 < srcs.length) {
+          idx += 1;
+          nativeVideo.dataset.srcidx = String(idx);
+          nativeVideo.src = srcs[idx];
+          nativeVideo.load();
+          return;
+        }
+        const fb = nativeVideo.dataset.fallback;
+        const frame = nativeVideo.closest('.video-frame');
+        if (frame && fb) frame.innerHTML = '<iframe src="' + fb + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>';
+      });
+      const tryPlay = nativeVideo.play();
+      if (tryPlay && tryPlay.catch) tryPlay.catch(function () {});
+    }
+
     modalBody.querySelectorAll('.base-prompt-link').forEach(function (baseLink) {
       baseLink.addEventListener('click', async function (e) {
         e.preventDefault();
@@ -5892,13 +6094,8 @@
         openImageDetail(parentLink.dataset.postId);
       });
     }
-    const referenceLink = modalBody.querySelector('.reference-post-link');
-    if (referenceLink) {
-      referenceLink.addEventListener('click', function (e) {
-        e.preventDefault();
-        openImageDetail(referenceLink.dataset.postId);
-      });
-    }
+    const referenceSourceWorks = document.getElementById('referenceSourceWorks');
+    if (referenceSourceWorks) wireImageRows(referenceSourceWorks, { detailOnly: true });
 
     const videoSourceLink = modalBody.querySelector('.video-source-link');
     if (videoSourceLink) {
@@ -9881,6 +10078,199 @@
   applySearchAreaCollapsed(searchAreaCollapsed);
   syncCartLayout();
   startApp();
+</script>
+
+<script>
+// ===== はじめてガイド: 画像/動画 切替 + H3プロンプト作成ツール =====
+(function () {
+  function init() {
+    var GUIDE_TOOL_SETTINGS = {
+      copyDoneText: 'コピーしました',
+      copyResetMs: 1500,
+      addRowLabel: '＋ 行を追加',
+      rowDeleteLabel: '×'
+    };
+
+    var H3_BUILDER_SECTIONS = [
+      {
+        key: 'align',
+        title: '画像対応行(I2VA / FL2VA / L2VA では先頭に置く)',
+        outputLabel: '',
+        hint: 'どの画像が何秒地点のフレームかを対応づける行。テキストだけから作る(T2VA)場合は空にする。',
+        defaults: ['For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.']
+      },
+      {
+        key: 'imd',
+        title: '映像タイムライン',
+        outputLabel: 'integrated_multimodal_description:',
+        hint: 'ショット・動作・カメラ・会話・同期音を再生順に。1行=1ショットの目安。Shot 2以降は先頭にカット時刻(例: At 00:03.000)を昇順で。',
+        defaults: ['[Shot 1] ']
+      },
+      {
+        key: 'soundscape',
+        title: '環境音・物理音',
+        outputLabel: 'overall_soundscape:',
+        hint: '雨・風・足音・衣擦れ・呼吸など。会話の全文はここに書かない。',
+        defaults: ['']
+      },
+      {
+        key: 'music',
+        title: '視聴者だけに聞こえる音楽(BGM)',
+        outputLabel: 'non_diegetic_music:',
+        hint: '劇伴の楽器・テンポ・音量変化など。不要なら N/A。',
+        defaults: ['N/A']
+      }
+    ];
+
+    // ----- 画像/動画 切替 -----
+    var guideSwitch = document.getElementById('guideSwitch');
+    var guideImage = document.getElementById('guideImage');
+    var guideVideo = document.getElementById('guideVideo');
+    if (guideSwitch && guideImage && guideVideo) {
+      guideSwitch.querySelectorAll('button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var target = btn.dataset.guide;
+          guideSwitch.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          guideImage.style.display = target === 'image' ? '' : 'none';
+          guideVideo.style.display = target === 'video' ? '' : 'none';
+        });
+      });
+    }
+
+    // ----- H3 プロンプト作成ツール -----
+    var builderEl = document.getElementById('h3Builder');
+    var outputEl = document.getElementById('h3Output');
+    if (!builderEl || !outputEl) return;
+
+    function makeRow(value) {
+      var row = document.createElement('div');
+      row.className = 'h3-row';
+      var ta = document.createElement('textarea');
+      ta.className = 'h3-row-input';
+      ta.value = value || '';
+      ta.setAttribute('spellcheck', 'false');
+      ta.addEventListener('input', rebuildOutput);
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'h3-row-del';
+      del.textContent = GUIDE_TOOL_SETTINGS.rowDeleteLabel;
+      del.addEventListener('click', function () {
+        var rows = row.parentNode.querySelectorAll('.h3-row');
+        if (rows.length <= 1) { ta.value = ''; rebuildOutput(); return; }
+        row.parentNode.removeChild(row);
+        rebuildOutput();
+      });
+      row.appendChild(ta);
+      row.appendChild(del);
+      return row;
+    }
+
+    function renderSections() {
+      builderEl.innerHTML = '';
+      H3_BUILDER_SECTIONS.forEach(function (section) {
+        var wrap = document.createElement('div');
+        wrap.className = 'h3-section';
+        wrap.dataset.key = section.key;
+
+        var head = document.createElement('div');
+        head.className = 'h3-section-head';
+        var title = document.createElement('span');
+        title.className = 'h3-section-title';
+        title.textContent = section.title;
+        head.appendChild(title);
+        if (section.outputLabel) {
+          var key = document.createElement('span');
+          key.className = 'h3-section-key';
+          key.textContent = section.outputLabel;
+          head.appendChild(key);
+        }
+        wrap.appendChild(head);
+
+        if (section.hint) {
+          var hint = document.createElement('div');
+          hint.className = 'h3-hint';
+          hint.textContent = section.hint;
+          wrap.appendChild(hint);
+        }
+
+        var rows = document.createElement('div');
+        rows.className = 'h3-rows';
+        (section.defaults.length ? section.defaults : ['']).forEach(function (v) {
+          rows.appendChild(makeRow(v));
+        });
+        wrap.appendChild(rows);
+
+        var add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'btn-ghost h3-add-row';
+        add.textContent = GUIDE_TOOL_SETTINGS.addRowLabel;
+        add.addEventListener('click', function () {
+          rows.appendChild(makeRow(''));
+          rebuildOutput();
+        });
+        wrap.appendChild(add);
+
+        builderEl.appendChild(wrap);
+      });
+    }
+
+    function rebuildOutput() {
+      var parts = [];
+      builderEl.querySelectorAll('.h3-section').forEach(function (wrap) {
+        var key = wrap.dataset.key;
+        var section = H3_BUILDER_SECTIONS.filter(function (s) { return s.key === key; })[0];
+        var lines = [];
+        wrap.querySelectorAll('.h3-row-input').forEach(function (ta) {
+          if (ta.value.trim() !== '') lines.push(ta.value.replace(/\s+$/, ''));
+        });
+        if (section.outputLabel) {
+          var body = lines.join('\n');
+          parts.push(body ? section.outputLabel + ' ' + body : section.outputLabel);
+        } else if (lines.length) {
+          parts.push(lines.join('\n'));
+        }
+      });
+      outputEl.value = parts.join('\n\n');
+    }
+
+    renderSections();
+    rebuildOutput();
+
+    var copyBtn = document.getElementById('h3CopyBtn');
+    var copyStatus = document.getElementById('h3CopyStatus');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var done = function () {
+          if (copyStatus) {
+            copyStatus.textContent = GUIDE_TOOL_SETTINGS.copyDoneText;
+            setTimeout(function () { copyStatus.textContent = ''; }, GUIDE_TOOL_SETTINGS.copyResetMs);
+          }
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(outputEl.value).then(done, function () { outputEl.select(); document.execCommand('copy'); done(); });
+        } else {
+          outputEl.select();
+          document.execCommand('copy');
+          done();
+        }
+      });
+    }
+
+    var resetBtn = document.getElementById('h3ResetBtn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        renderSections();
+        rebuildOutput();
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
 </script>
 </body>
 </html>
