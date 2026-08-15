@@ -699,6 +699,12 @@
   .h3-section-title{ font-family:'Noto Sans JP',sans-serif; font-size:13.5px; font-weight:600; color: var(--ink); }
   .h3-section-key{ font-family: ui-monospace, Menlo, Consolas, monospace; font-size:11px; color: var(--accent); }
   .h3-hint{ font-size:11.5px; color: var(--ink-dim); line-height:1.7; margin:6px 0 10px; font-family:'Noto Sans JP',sans-serif; }
+  .h3-modes{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+  .h3-mode-btn{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; background: var(--surface); color: var(--ink-dim); border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; line-height:1.25; text-align:left; }
+  .h3-mode-btn:hover{ border-color: var(--accent); }
+  .h3-mode-btn.active{ background: var(--accent); color:#fff; border-color: var(--accent); }
+  .h3-mode-name{ font-size:12.5px; font-weight:600; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .h3-mode-desc{ font-size:10.5px; opacity:.9; }
   .h3-rows{ display:flex; flex-direction:column; gap:8px; }
   .h3-row{ display:flex; gap:8px; align-items:flex-start; }
   .h3-row textarea{
@@ -2956,24 +2962,25 @@
         <div class="num">2</div>
         <div class="body">
           かなり大きなファイルをダウンロードするので、セットアップ完了まで時間がかかる。待っている間にSTEP2のモデル探しを進めておくとよい。
-          <div class="guide-warn"><strong>注意:</strong> 動画生成は画像より重い。VRAMが少ない環境では、後述の軽量モデル(5B系)や短い尺・低解像度から始めるのが安全。</div>
+          <div class="guide-warn"><strong>注意:</strong> 動画生成は画像より重い。VRAMが少ない環境では、軽量版のモデルや短い尺・低解像度から始めるのが安全。</div>
         </div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>STEP 2. 動画モデル(Wan2.2)を配置する</h2>
+      <h2>STEP 2. 動画モデルを配置する</h2>
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
-          このサイトの動画投稿は <strong>Wan2.2</strong> 系(ComfyUI)を想定している。用途に合わせて、テキストから作る <code>T2V</code> / 画像から動かす <code>I2V</code> / 両対応の <code>TI2V</code> のモデルを選ぶ。まずは扱いやすい構成から試すとよい。
+          使いたい動画生成モデルを用意する。ComfyUIには様々な動画生成モデルがあり、<strong>モデルごとに必要なファイル・使い方・プロンプトのクセが異なる</strong>。用途(テキストから作る/画像から動かす など)に合わせてモデルを選ぶ。まずは扱いやすい構成から試すとよい。
+          <div class="guide-note">このガイドの後半「プロンプトの書き方」は、現時点では <strong>MiniMax H3</strong> を前提に解説している。環境構築の手順自体はモデルによらず共通の考え方だが、細かい設定やプロンプトの書式は選んだモデルに合わせること(将来はモデルごとに分けて説明する予定)。</div>
         </div>
       </div>
       <div class="guide-step">
         <div class="num">2</div>
         <div class="body">
-          モデル本体は Stability Matrix のモデルブラウザや配布元から入手し、<strong>ComfyUIの所定フォルダに配置</strong>する(拡散モデルは <code>models/diffusion_models</code>、VAEは <code>models/vae</code>、テキストエンコーダ(CLIP)は <code>models/text_encoders</code> など)。Stability Matrix経由で入れると配置先を自動で振り分けてくれることが多い。
-          <div class="guide-note">14B系は高品質だがVRAMを多く使い、5B系は軽くて速い。手持ちのグラフィックボードに合わせて選ぶ。</div>
+          モデル本体は Stability Matrix のモデルブラウザや配布元から入手し、<strong>ComfyUIの所定フォルダに配置</strong>する(拡散モデルは <code>models/diffusion_models</code>、VAEは <code>models/vae</code>、テキストエンコーダは <code>models/text_encoders</code> など)。<strong>必要なファイルの種類はモデルによって違う</strong>ので、選んだモデルの配布ページの指示に従う。Stability Matrix経由で入れると配置先を自動で振り分けてくれることが多い。
+          <div class="guide-note">同じモデルでも軽量版が用意されていることがある。VRAMが少ないうちは軽い方から試すと安定しやすい。</div>
         </div>
       </div>
     </section>
@@ -2983,7 +2990,7 @@
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
-          ComfyUIは「ワークフロー」という処理の設計図(ノードのつながり)を読み込んで使う。Wan2.2向けのワークフロー(公式のサンプルや配布されている <code>.json</code>)を <strong>ComfyUIの画面にドラッグ&ドロップ</strong>すると、必要なノードが一括で並ぶ。
+          ComfyUIは「ワークフロー」という処理の設計図(ノードのつながり)を読み込んで使う。<strong>使うモデル向けのワークフロー</strong>(公式のサンプルや配布されている <code>.json</code>)を <strong>ComfyUIの画面にドラッグ&ドロップ</strong>すると、必要なノードが一括で並ぶ。
         </div>
       </div>
       <div class="guide-step">
@@ -3005,8 +3012,8 @@
       <div class="guide-step">
         <div class="num">2</div>
         <div class="body">
-          生成できたら、このサイトの「動画を投稿」から共有できる。投稿時の生成設定欄(Wan2.2)に、使ったModel/Variant/Steps/CFGなどを記録しておくと、後から自分でも見返せて再現しやすい。
-          <div class="guide-warn"><strong>重い・落ちるとき:</strong> 解像度と尺を下げる、5B系の軽量モデルに変える、他の重いアプリを閉じる、の順で試す。動画は画像よりVRAM消費が大きい点に注意。</div>
+          生成できたら、このサイトの「動画を投稿」から共有できる。投稿時の生成設定欄に、使ったモデル名やMode/Variant/Steps/CFGなどを記録しておくと、後から自分でも見返せて再現しやすい。
+          <div class="guide-warn"><strong>重い・落ちるとき:</strong> 解像度と尺を下げる、軽量版のモデルに変える、他の重いアプリを閉じる、の順で試す。動画は画像よりVRAM消費が大きい点に注意。</div>
         </div>
       </div>
     </section>
@@ -3116,7 +3123,12 @@
       <h2>プロンプト作成ツール</h2>
       <div class="guide-step">
         <div class="body">
-          各フィールドごとに独立して下書きし、最後に貼り付け用のプロンプトへ統合できる。各セクションは<strong>「＋行を追加」</strong>で入力欄を自由に増やせる(ショットや音の要素を1行ずつ足していく想定)。どの動画でも使う基本の書き出しは、あらかじめ入れてある。
+          各フィールドごとに独立して下書きし、最後に貼り付け用のプロンプトへ統合できる。各セクションは<strong>「＋行を追加」</strong>で入力欄を自由に増やせる(ショットや音の要素を1行ずつ足していく想定)。先頭の<strong>「画像対応行」はモードボタン(T2VA / I2VA / FL2VA / L2VA)で切り替え</strong>られ、押すだけでそのモードの書き出しに差し替わる(テキストから作るT2VAは画像対応行なし)。そのほか、どの動画でも使う基本の書き出しはあらかじめ入れてある。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>統合プロンプトのフィールド間には空行が入る</strong>が、H3は各フィールドのラベル(<code>integrated_multimodal_description:</code> など)で内容を判別するため、空行は解釈に影響しない(見やすさ優先でそのままにしている)。
         </div>
       </div>
       <div class="h3-builder" id="h3Builder"></div>
@@ -3430,12 +3442,12 @@
     { key: 'version',           label: 'Version',             type: 'text' }
   ];
 
-  // 動画投稿(type=video)専用の生成設定。ComfyUI の Wan2.2 ワークフローを想定した項目。
-  // 画像投稿の SETTINGS_FIELDS とはキー空間を分け、動画モードのときだけフォームに出す。
+  // 動画投稿(type=video)専用の生成設定。ComfyUI などの動画生成ワークフローで一般的な項目。
+  // 特定モデルを前提にしたラベルは付けない(モデルは今後変わり得るため)。キーは既存データ互換のため変更しない。
   const VIDEO_SETTINGS_FIELDS = [
-    { key: 'wanModel',      label: 'Model (Wan2.2)',       type: 'text' },
-    { key: 'wanVariant',    label: 'Variant (T2V/I2V/TI2V)', type: 'text' },
-    { key: 'wanSize',       label: 'Model Size (14B/5B)',  type: 'text' },
+    { key: 'wanModel',      label: 'Model',                type: 'text' },
+    { key: 'wanVariant',    label: 'Mode / Variant',       type: 'text' },
+    { key: 'wanSize',       label: 'Model Size',           type: 'text' },
     { key: 'loras',         label: 'LoRA',                 type: 'text' },
     { key: 'vae',           label: 'VAE',                  type: 'text' },
     { key: 'clip',          label: 'CLIP / Text Encoder',  type: 'text' },
@@ -10208,9 +10220,16 @@
     var H3_BUILDER_SECTIONS = [
       {
         key: 'align',
-        title: '画像対応行(I2VA / FL2VA / L2VA では先頭に置く)',
+        title: '画像対応行(モードで先頭行が切り替わる)',
         outputLabel: '',
-        hint: 'どの画像が何秒地点のフレームかを対応づける行。テキストだけから作る(T2VA)場合は空にする。',
+        hint: '使うプロンプトモードを選ぶと、先頭に置く画像対応行が入れ替わる。時刻(例: 8.00-second)や画像枚数は、動画の尺や用意した素材に合わせて書き換える。',
+        defaultMode: 'I2VA',
+        modes: [
+          { id: 'T2VA', label: 'T2VA', desc: 'テキストから作る(画像なし)', lines: [] },
+          { id: 'I2VA', label: 'I2VA', desc: '最初のフレームに固定', lines: ['For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.'] },
+          { id: 'FL2VA', label: 'FL2VA', desc: '最初と最後をつなぐ', lines: ['How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns with the 8.00-second mark of the target video.'] },
+          { id: 'L2VA', label: 'L2VA', desc: '最後のフレームから逆算', lines: ['How the reference pictures align with the target video — <Picture 1> (from [Shot 1]) aligns with the 8.00-second mark of the target video.'] }
+        ],
         defaults: ['For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.']
       },
       {
@@ -10284,6 +10303,11 @@
       return row;
     }
 
+    function setRows(rowsEl, lines) {
+      rowsEl.innerHTML = '';
+      (lines && lines.length ? lines : ['']).forEach(function (v) { rowsEl.appendChild(makeRow(v)); });
+    }
+
     function renderSections() {
       builderEl.innerHTML = '';
       H3_BUILDER_SECTIONS.forEach(function (section) {
@@ -10314,6 +10338,34 @@
 
         var rows = document.createElement('div');
         rows.className = 'h3-rows';
+
+        if (section.modes) {
+          var modesWrap = document.createElement('div');
+          modesWrap.className = 'h3-modes';
+          var startMode = section.defaultMode || section.modes[0].id;
+          section.modes.forEach(function (m) {
+            var mb = document.createElement('button');
+            mb.type = 'button';
+            mb.className = 'h3-mode-btn' + (m.id === startMode ? ' active' : '');
+            var nm = document.createElement('span');
+            nm.className = 'h3-mode-name';
+            nm.textContent = m.label;
+            var ds = document.createElement('span');
+            ds.className = 'h3-mode-desc';
+            ds.textContent = m.desc;
+            mb.appendChild(nm);
+            mb.appendChild(ds);
+            mb.addEventListener('click', function () {
+              modesWrap.querySelectorAll('.h3-mode-btn').forEach(function (x) { x.classList.remove('active'); });
+              mb.classList.add('active');
+              setRows(rows, m.lines);
+              rebuildOutput();
+            });
+            modesWrap.appendChild(mb);
+          });
+          wrap.appendChild(modesWrap);
+        }
+
         (section.defaults.length ? section.defaults : ['']).forEach(function (v) {
           rows.appendChild(makeRow(v));
         });
