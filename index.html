@@ -3264,10 +3264,26 @@
   let selectedRequestId = '';
   let selectedFixRequestIds = [];
   let requestRefs = [];
-  let rSortKeys = [{ field: 'date', dir: 'desc' }];
+  // 各タブで最後に選んだ並び順を localStorage に記録し、次回もその並び順で開く
+  function loadSortKey(storageKey, defField, defDir) {
+    try {
+      const o = JSON.parse(localStorage.getItem(storageKey) || 'null');
+      if (o && typeof o.field === 'string' && o.field && (o.dir === 'asc' || o.dir === 'desc')) {
+        return [{ field: o.field, dir: o.dir }];
+      }
+    } catch (e) {}
+    return [{ field: defField, dir: defDir }];
+  }
+  function saveSortKey(storageKey, keys) {
+    try {
+      const k = keys && keys[0];
+      if (k) localStorage.setItem(storageKey, JSON.stringify({ field: k.field, dir: k.dir }));
+    } catch (e) {}
+  }
+  let rSortKeys = loadSortKey('pr_sort_request', 'date', 'desc');
   let rKeywordMode = 'AND';
   let rAnsweredFilter = ''; // '' | 'only' | 'hide'
-  let fSortKeys = [{ field: 'date', dir: 'desc' }];
+  let fSortKeys = loadSortKey('pr_sort_fix', 'date', 'desc');
   let fKeywordMode = 'AND';
   let fAnsweredFilter = ''; // '' | 'only' | 'hide'
   let showFixWorks = false;
@@ -3293,7 +3309,7 @@
     { key: 'author',     label: '投稿者' },
     { key: 'checkpoint', label: 'Checkpoint' }
   ];
-  let pSortKeys = [{ field: 'date', dir: 'desc' }];
+  let pSortKeys = loadSortKey('pr_sort_prompt', 'date', 'desc');
 
   const REQUEST_SORT_FIELDS = [
     { key: 'date',      label: '日時' },
@@ -3309,7 +3325,7 @@
     { key: 'uiPreset',      label: 'UI Preset' },
     { key: 'checkpoint',    label: 'Checkpoint' }
   ];
-  let sortKeys = [{ field: 'date', dir: 'desc' }]; // クリック順=優先順位
+  let sortKeys = loadSortKey('pr_sort_browse', 'date', 'desc'); // クリック順=優先順位
 
   const BROWSE_SORT_OPTIONS = [
     { label: '新しい順',            field: 'date',          dir: 'desc' },
@@ -3353,7 +3369,7 @@
     { key: 'wanModel',      label: 'Model' },
     { key: 'sampler',       label: 'Sampler' }
   ];
-  let vSortKeys = [{ field: 'date', dir: 'desc' }];
+  let vSortKeys = loadSortKey('pr_sort_video', 'date', 'desc');
   let vTagStates = {};
   let vTagMatchMode = 'AND';
   let vKeywordMode = 'AND';
@@ -4732,6 +4748,7 @@
     sortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         sortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
+        saveSortKey('pr_sort_browse', sortKeys);
         renderSortChips();
         renderList();
       });
@@ -6130,6 +6147,7 @@
     vSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         vSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
+        saveSortKey('pr_sort_video', vSortKeys);
         renderVSortChips();
         renderVideoList();
       });
@@ -7094,6 +7112,7 @@
     rSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         rSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
+        saveSortKey('pr_sort_request', rSortKeys);
         renderRSortChips();
         renderRequestList();
       });
@@ -7202,6 +7221,7 @@
     fSortChips.querySelectorAll('.sort-chip[data-field]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         fSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
+        saveSortKey('pr_sort_fix', fSortKeys);
         renderFSortChips();
         renderFixList();
       });
@@ -7913,6 +7933,7 @@
     pSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         pSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
+        saveSortKey('pr_sort_prompt', pSortKeys);
         renderPromptSortChips();
         renderPromptList();
       });
