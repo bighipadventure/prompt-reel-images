@@ -70,11 +70,13 @@
 
   /* ---- タブ ---- */
   .tabs{
-    display:flex; gap: 8px;
+    display:flex; flex-wrap:nowrap; gap: 8px;
     margin: 26px 0 24px;
+    align-items: center;
     visibility: hidden; /* オプション確定までタブを隠す(ちらつき防止) */
   }
   body.tabs-ready .tabs{ visibility: visible; }
+  .tabs-visible{ display:flex; flex-wrap:nowrap; gap:8px; min-width:0; overflow:hidden; }
   .tab-btn{
     font-size: 15px;
     background: var(--surface);
@@ -83,13 +85,30 @@
     padding: 9px 22px;
     border-radius: 8px;
     cursor: pointer;
+    white-space: nowrap;
+    flex: 0 0 auto;
   }
   .tab-btn:hover{ color: var(--ink); }
   .tab-btn.active{ background: var(--accent); color: #fff; border-color: var(--accent); }
-  /* デスクトップでは box を作らずそのまま子ボタンをタブ列に流し込む(見た目は従来どおり)。
-     スマホでは media query 側でドロップダウンパネルに変える。 */
-  .tabs-more-panel{ display: contents; }
-  .tab-more-btn{ display: none; }
+  /* 幅が足りないときは折り返さず、右端のタブから「☰ その他」メニューへ収納する(JSで制御)。 */
+  .tab-more-wrap{ position: relative; flex: 0 0 auto; }
+  .tab-more-btn{
+    display: none; align-items: center; gap: 6px; white-space: nowrap;
+    font-size: 15px; background: var(--surface); color: var(--ink-dim);
+    border: 1px solid var(--line); padding: 9px 16px; border-radius: 8px; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .tab-more-btn:hover{ color: var(--ink); }
+  .tab-more-btn.visible{ display: inline-flex; }
+  .tabs.show-more .tab-more-btn{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .tab-more-menu{
+    display: none; position: absolute; right: 0; top: calc(100% + 6px);
+    flex-direction: column; gap: 6px; min-width: 190px; padding: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    z-index: 60; box-shadow: 0 10px 28px rgba(0,0,0,.45);
+  }
+  .tabs.show-more .tab-more-menu{ display: flex; }
+  .tab-more-menu .tab-btn{ width: 100%; text-align: left; }
   .tab-panel{ display:none; }
   .tab-panel.active{ display:block; }
 
@@ -1509,40 +1528,11 @@
     header h1{ font-size: 23px; }
     .admin-btn{ font-size: 11.5px; padding: 7px 10px; flex: 1 1 auto; text-align: center; white-space: nowrap; }
 
-    /* ---- タブ: 「投稿/画像投稿一覧/掲示板」だけを常時1行に表示し、
-       それ以外は「☰ その他」ボタンからのドロップダウンにまとめる ---- */
-    .tabs{ flex-wrap: wrap; gap: 6px; margin: 18px 0 18px; align-items: stretch; }
-    .tab-btn{ white-space: nowrap; padding: 9px 10px; font-size: 13px; }
-    /* 上段タブと☰その他を横幅いっぱいに広げ、文字は天地・左右中央に揃える */
-    .tabs > .tab-btn, .tab-more-btn{
-      flex: 1 1 auto;
-      display: inline-flex; align-items: center; justify-content: center;
-      line-height: 1;
-    }
-    .tab-more-btn{
-      gap: 6px; white-space: nowrap;
-      font-size: 13px; padding: 9px 10px; border-radius: 8px;
-      background: var(--surface); color: var(--ink-dim);
-      border: 1px solid var(--line); cursor: pointer;
-      font-family: 'Noto Sans JP', sans-serif;
-    }
-    .tab-more-btn[aria-expanded="true"]{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-    /* デスクトップでは display:contents で素通りさせている中身を、
-       スマホではドロップダウンパネルとして箱に入れて折りたたむ */
-    .tabs-more-panel{
-      display: none;
-      order: 10;
-      width: 100%;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 2px;
-      padding: 8px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-    }
-    .tabs.show-more .tabs-more-panel{ display: flex; }
-    .tabs-more-panel .tab-btn{ width: 100%; text-align: center; }
+    /* ---- タブ: 幅が足りなければ折り返さず、右端から「☰ その他」メニューへ収納(JS制御) ---- */
+    .tabs{ margin: 18px 0 18px; }
+    .tab-btn{ white-space: nowrap; padding: 9px 12px; font-size: 13px; }
+    .tab-more-btn{ font-size: 13px; padding: 9px 12px; }
+    .tab-more-menu{ min-width: 170px; }
 
     /* ---- パネル・検索エリアの余白を詰める ---- */
     .panel{ padding: 16px; }
@@ -1653,24 +1643,23 @@
   </header>
 
   <nav class="tabs" id="tabsNav">
-    <button class="tab-btn" data-tab="post">投稿</button>
-    <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
-    <span class="tabs-more-panel" data-more-group="1">
+    <div class="tabs-visible" id="tabsVisible">
+      <button class="tab-btn" data-tab="post">投稿</button>
+      <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
       <button class="tab-btn video-only" data-tab="videoBrowse">動画投稿一覧</button>
       <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
       <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
       <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
       <button class="tab-btn" data-tab="databank">プロンプトデータバンク</button>
-    </span>
-    <button class="tab-btn" data-tab="board">掲示板</button>
-    <button type="button" class="tab-more-btn" id="tabMoreBtn" aria-haspopup="true" aria-expanded="false">
-      <span aria-hidden="true">☰</span> その他
-    </button>
-    <span class="tabs-more-panel" data-more-group="2">
+      <button class="tab-btn" data-tab="board">掲示板</button>
       <button class="tab-btn link-only" data-tab="links">リンク</button>
       <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
       <button class="tab-btn" data-tab="guide">はじめてガイド</button>
-    </span>
+    </div>
+    <div class="tab-more-wrap" id="tabMoreWrap">
+      <button type="button" class="tab-more-btn" id="tabMoreBtn" aria-haspopup="true" aria-expanded="false"><span aria-hidden="true">☰</span> その他</button>
+      <div class="tab-more-menu" id="tabMoreMenu" role="menu"></div>
+    </div>
   </nav>
 
   <!-- ============ 投稿タブ ============ -->
@@ -2946,7 +2935,10 @@
     <div id="guideVideo" class="guide-variant" style="display:none;">
     <section class="panel">
       <div class="guide-note">
-        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませる。動画は<strong>「ComfyUI」を入れて構築する編</strong>(モードの切り替え方=STEP 4 を含む)と、その後の<strong>プロンプトの書き方編</strong>に分かれている。まず環境を作り、動かせるようになってからプロンプトを詰めるとよい。
+        <strong>用語の整理:</strong> <strong>ComfyUI</strong> は色々な動画生成モデルを動かせる<strong>ツール(土台)</strong>で、<strong>MiniMax H3</strong> はその上で動かす<strong>モデルの一つ</strong>。両者はイコールではない(ComfyUIでは Wan など他のモデルも動かせる)。このガイドは<strong>「ComfyUI に MiniMax H3 を載せて使う」前提</strong>で、(1)ツールの用意=ComfyUI の環境構築 と、(2)モデルの使い方=MiniMax H3 のモード切り替えとプロンプト、を順に説明する。
+      </div>
+      <div class="guide-note">
+        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませる。まず<strong>環境構築(STEP 1〜5)</strong>で動かせるようにし、動いたら<strong>MiniMax H3 のプロンプトの書き方</strong>を詰めるとよい。
       </div>
     </section>
 
@@ -2955,7 +2947,7 @@
       <div class="guide-step">
         <div class="num">1</div>
         <div class="body">
-          Stability Matrix内でインストールするパッケージの一覧から <strong>「ComfyUI」</strong> を選んでインストールする。ComfyUIはノード(箱)を線でつないで処理の流れを組む方式で、動画生成のような複雑な手順に向いている。
+          Stability Matrix内でインストールするパッケージの一覧から <strong>「ComfyUI」</strong> を選んでインストールする。ComfyUIはノード(箱)を線でつないで処理の流れを組む方式で、動画生成のような複雑な手順に向いている。<strong>ComfyUI自体は特定モデル専用ではなく</strong>、MiniMax H3 や Wan など様々なモデルを載せて動かせる土台。
         </div>
       </div>
       <div class="guide-step">
@@ -3002,7 +2994,7 @@
     </section>
 
     <section class="panel">
-      <h2>STEP 4. モードの切り替え方(T2V / I2V / FL2V / R2V)</h2>
+      <h2>STEP 4. モードの切り替え方(MiniMax H3: T2V / I2V / FL2V / R2V)</h2>
       <div class="guide-step">
         <div class="body">
           ComfyUIには<strong>「モードを選ぶボタン」があるわけではない</strong>。どのノード構成・どの入力を使うかでモードが決まる。一番簡単なのは、目的別のテンプレートをそのまま開くこと。
@@ -3806,12 +3798,42 @@
     });
   });
 
-  // スマホ表示: 「☰ その他」ボタンで、まとめたタブのドロップダウンを開閉する
+  // タブ: 幅に応じて右端から「☰ その他」メニューへ動的に収納する(折り返さない)
   const tabsNav = document.getElementById('tabsNav');
+  const tabsVisible = document.getElementById('tabsVisible');
+  const tabMoreWrap = document.getElementById('tabMoreWrap');
   const tabMoreBtn = document.getElementById('tabMoreBtn');
+  const tabMoreMenu = document.getElementById('tabMoreMenu');
+  const allTabBtns = Array.prototype.slice.call(tabsVisible.querySelectorAll('.tab-btn'));
   function closeTabsMoreMenu() {
     tabsNav.classList.remove('show-more');
     tabMoreBtn.setAttribute('aria-expanded', 'false');
+  }
+  function reflowTabs() {
+    if (!document.body.classList.contains('tabs-ready')) return;
+    if (tabsNav.clientWidth === 0) return; // 非表示中は測れないのでスキップ
+    // いったん全タブを元の順序で可視側へ戻す
+    allTabBtns.forEach(function (b) { tabsVisible.appendChild(b); });
+    tabMoreBtn.classList.remove('visible');
+    closeTabsMoreMenu();
+    const navW = tabsNav.clientWidth;
+    if (tabsVisible.scrollWidth <= navW) return; // 全部収まる → その他ボタン不要
+    tabMoreBtn.classList.add('visible');
+    const reserve = tabMoreWrap.offsetWidth + 8;
+    let guard = 0;
+    while (tabsVisible.scrollWidth > navW - reserve && guard < 60) {
+      const kids = Array.prototype.slice.call(tabsVisible.children).filter(function (b) {
+        return window.getComputedStyle(b).display !== 'none';
+      });
+      if (kids.length <= 1) break; // 最低1つは可視に残す
+      tabMoreMenu.insertBefore(kids[kids.length - 1], tabMoreMenu.firstChild);
+      guard++;
+    }
+  }
+  let _tabReflowRAF = null;
+  function scheduleReflowTabs() {
+    if (_tabReflowRAF) cancelAnimationFrame(_tabReflowRAF);
+    _tabReflowRAF = requestAnimationFrame(reflowTabs);
   }
   tabMoreBtn.addEventListener('click', function (e) {
     e.stopPropagation();
@@ -3821,6 +3843,7 @@
   document.addEventListener('click', function (e) {
     if (tabsNav.classList.contains('show-more') && !tabsNav.contains(e.target)) closeTabsMoreMenu();
   });
+  window.addEventListener('resize', scheduleReflowTabs);
 
   /* ---------- 設定グリッド生成 ---------- */
   const settingsGrid = document.getElementById('settingsGrid');
@@ -4730,6 +4753,7 @@
       statusText.textContent = '読み込みに失敗しました(通信が不安定な可能性があります)。ページを再読み込みしてください。';
       console.error(err);
       document.body.classList.add('tabs-ready');
+      if (typeof scheduleReflowTabs === 'function') scheduleReflowTabs();
     } finally {
       // 親の画像投稿の読み込みが終わった時点で読み込み中表示を解除する。
       // 子画像・プロンプト例・リクエスト・修正依頼・コメント・掲示板・辞書は続けて背後で取得する。
@@ -5645,6 +5669,7 @@
     }
     ensureVisibleActiveTab();
     document.body.classList.add('tabs-ready');
+    if (typeof scheduleReflowTabs === 'function') scheduleReflowTabs();
   }
 
   function ensureVisibleActiveTab() {
@@ -7342,6 +7367,11 @@
     }).join('');
     wirePickerRows(videoSourceListEl, function (id) {
       selectedVideoSourceId = id;
+      const srcPost = imagePosts.find(function (x) { return String(x.id) === String(id); });
+      if (srcPost) {
+        (srcPost.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+        renderChips();
+      }
       renderVideoSourceDisplay();
       closeVideoSourceModal();
     });
