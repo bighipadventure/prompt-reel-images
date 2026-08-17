@@ -691,6 +691,37 @@
   }
   .guide-warn strong{ color: var(--danger); }
   .guide-source{ font-size:11.5px; color:var(--ink-dim); margin-top:6px; }
+  /* ---- はじめてガイド: 目次(モダンなグループ化グリッド) ---- */
+  .guide-toc{
+    background: linear-gradient(180deg, rgba(0,150,250,0.07), rgba(38,38,41,0.35));
+    border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px 18px; margin-bottom:24px;
+  }
+  .guide-toc-head{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .guide-toc-head::before{ content:""; width:4px; height:15px; border-radius:2px; background: var(--accent); flex:none; }
+  .guide-toc-title{ font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:700; color: var(--ink); letter-spacing:.04em; }
+  .guide-toc-groups{ display:flex; flex-direction:column; gap:16px; }
+  .guide-toc-group-label{
+    font-family:'Noto Sans JP',sans-serif; font-size:10.5px; font-weight:700; color: var(--ink-dim);
+    letter-spacing:.12em; margin-bottom:8px; padding-left:2px;
+  }
+  .guide-toc-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:8px; }
+  .guide-toc-link{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Noto Sans JP',sans-serif; font-size:12.5px; line-height:1.3;
+    color: var(--ink); background: var(--surface); border:1px solid var(--line);
+    border-radius:10px; padding:9px 11px; cursor:pointer; text-decoration:none;
+    transition: border-color .15s ease, background .15s ease, transform .12s ease;
+  }
+  .guide-toc-link:hover{ border-color: var(--accent); background: var(--accent-dim); transform: translateY(-1px); }
+  .toc-badge{
+    flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+    min-width:24px; height:24px; padding:0 6px; border-radius:7px;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size:11px; font-weight:700;
+    background: var(--accent-dim); color: var(--accent); border:1px solid rgba(0,150,250,.35);
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .guide-toc-link:hover .toc-badge{ background: var(--accent); color:#fff; border-color: var(--accent); }
   /* ---- はじめてガイド: 画像/動画 切替 ---- */
   .guide-switch{ display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:22px; }
   .guide-switch button{
@@ -1511,6 +1542,33 @@
   /* ============================================================
      スマホ向け最適化(PCのレイアウトは上記のまま変更しない)
      ============================================================ */
+  /* ==== タブが5個(「☰ その他」を除く)まで収納された時点で、検索エリアから上だけを
+     スマホと同じ表示にする。JSが body.top-compact を付け外しする(680pxメディアクエリとは独立)。 ==== */
+  body.top-compact .announce-bar{ display: none; }
+  body.top-compact header .header-admin-btns{ position: static; justify-content: flex-start; margin: 14px 0 2px; width: 100%; gap: 6px; }
+  body.top-compact header h1{ font-size: 23px; }
+  body.top-compact .admin-btn{ font-size: 11.5px; padding: 7px 10px; flex: 1 1 auto; text-align: center; white-space: nowrap; }
+  body.top-compact .tabs{ margin: 18px 0 18px; }
+  body.top-compact .tab-more-menu{ min-width: 170px; }
+  body.top-compact .search-panel{ padding: 14px; }
+  body.top-compact .search-row{ gap: 8px; margin-bottom: 12px; }
+  body.top-compact .row-right-toggles{ margin-left: 0; width: 100%; }
+  body.top-compact .sort-row .sort-chips{ width: 100%; }
+  body.top-compact .sort-row .sort-chips .sort-chip{ flex: 1 1 auto; justify-content: center; }
+  body.top-compact .row-right-toggles > button{ flex: 1 1 auto; justify-content: center; }
+  body.top-compact .search-panel.search-collapsed .sort-row .label{ display: none; }
+  body.top-compact .search-panel .search-row{ flex-direction: column; align-items: stretch; gap: 8px; }
+  body.top-compact .search-panel .search-row > .filter-input{ flex: 0 0 auto; width: 100%; }
+  body.top-compact .search-panel .search-row .dl-wrap{ flex: 0 0 auto; width: 100%; }
+  body.top-compact .search-panel .search-row .mode-toggle{ width: 100%; }
+  body.top-compact .search-panel .search-row .mode-toggle button{ flex: 1 1 auto; }
+  body.top-compact .search-panel .search-row .clear-tags{ margin-left: 0; align-self: flex-end; }
+  body.top-compact .sort-row .row-right-toggles{ order: -1; }
+  body.top-compact #browseSearchPanel.search-collapsed .sort-chip[data-field="downloadCount"],
+  body.top-compact #browseSearchPanel.search-collapsed .sort-chip[data-field="author"],
+  body.top-compact #browseSearchPanel.search-collapsed .sort-chip[data-field="uiPreset"],
+  body.top-compact #browseSearchPanel.search-collapsed .sort-chip[data-field="checkpoint"]{ display: none; }
+
   @media (max-width: 680px){
     body{ padding: 20px 14px 76px; }
 
@@ -2811,16 +2869,99 @@
         ここまでが画像・動画共通の初期設定。次は目的に応じてタブを切り替える:<strong>画像 → 「画像の作り方」(Forge Neo)</strong> / <strong>動画 → 「動画の作り方」(ComfyUI)</strong>。
       </div>
     </section>
+
+    <section class="panel" id="setup-packages">
+      <h2>Stability Matrix で入れられる主なパッケージ</h2>
+      <div class="guide-step">
+        <div class="body">
+          Stability Matrix は20以上のパッケージ(生成ソフト)をワンクリックで入れ替え・管理できる。目的に合わせて選べばよい。<strong>まず始めるなら 画像=Forge Neo / 動画=ComfyUI でOK</strong>。他にもこんな選択肢がある(詳しい使い方はここでは触れない)。
+          <table class="guide-table">
+            <thead><tr><th>種類</th><th>パッケージ</th><th>ざっくり何ができる</th></tr></thead>
+            <tbody>
+              <tr><td rowspan="6">画像生成UI</td><td><strong>Forge Neo</strong> / Forge / reForge</td><td>軽くて速い定番。低VRAMでも動きやすい。<strong>このガイドの画像編はこれ</strong>。</td></tr>
+              <tr><td>Automatic1111 (SD WebUI)</td><td>いちばん有名な定番UI。拡張機能や解説記事が非常に豊富(更新はやや停滞気味)。</td></tr>
+              <tr><td>SD.Next</td><td>A1111系の高機能フォーク。新しいモデルへの対応が早め。</td></tr>
+              <tr><td>ComfyUI</td><td>ノードを繋いで組む上級者向け。動画や複雑な処理に強い。<strong>動画編はこれ</strong>。</td></tr>
+              <tr><td>SwarmUI</td><td>ComfyUIを裏側に使いつつ、入力は分かりやすい画面で行えるいいとこ取り。</td></tr>
+              <tr><td>Fooocus 系 (Fooocus / Ruined Fooocus / SimpleSDXL 等)</td><td>設定を極力隠した“おまかせ”UI。Midjournmyのような手軽さで綺麗に出る。初心者向け。</td></tr>
+              <tr><td>—</td><td>InvokeAI</td><td>洗練されたUI。キャンバス上での加筆・インペイント(部分修正)が得意。</td></tr>
+              <tr><td rowspan="3">学習(自分でLoRA等を作る)</td><td>Kohya's GUI</td><td>LoRA・追加学習の定番ツール。自分の絵柄・キャラを覚えさせたいとき。</td></tr>
+              <tr><td>OneTrainer</td><td>学習を1画面でまとめて行えるツール。</td></tr>
+              <tr><td>FluxGym</td><td>Flux系モデル向けのLoRA学習を簡単に行うツール。</td></tr>
+              <tr><td rowspan="2">動画</td><td>ComfyUI (+動画モデル)</td><td>MiniMax H3・Wan など各種動画モデルを載せて生成。<strong>動画編で使用</strong>。</td></tr>
+              <tr><td>CogStudio / Wan2GP など</td><td>動画生成に特化したパッケージ。低VRAM向けの構成もある。</td></tr>
+            </tbody>
+          </table>
+          <div class="guide-note">
+            対応パッケージは更新で増減する。最新の一覧は公式ドキュメント(<a href="https://docs.lykos.ai/stability-matrix/package-manager/supported-packages" target="_blank" rel="noopener">Supported Packages</a>)を参照。迷ったら定番(Forge Neo / ComfyUI / Fooocus)から。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="setup-features">
+      <h2>Stability Matrix の便利機能</h2>
+      <div class="guide-step">
+        <div class="body">
+          単なるインストーラーではなく、日々の作業がかなり楽になる機能が揃っている。
+          <table class="guide-table">
+            <thead><tr><th>機能</th><th>何が嬉しいか</th></tr></thead>
+            <tbody>
+              <tr><td>モデルブラウザ</td><td>CivitAI・Hugging Face からモデル/LoRA/Embedding を<strong>アプリ内で検索してワンクリック導入</strong>。サムネや情報も見られる。</td></tr>
+              <tr><td>モデルの共有フォルダ</td><td>ダウンロードしたモデルを<strong>複数のパッケージで共有</strong>。同じファイルを何度も置き直さなくて済む。</td></tr>
+              <tr><td>内蔵の生成画面 (Inference)</td><td>UIを起動しなくても<strong>Stability Matrix上でそのまま画像生成</strong>を試せる。ギャラリーやドラッグ&ドロップ入力つき。</td></tr>
+              <tr><td>ワンクリック更新</td><td>各パッケージやPythonライブラリのアップデートをボタンひとつでOK。</td></tr>
+              <tr><td>Python / Git 内蔵</td><td>これらを自分でインストール・設定する必要がない(依存関係の沼を回避)。</td></tr>
+              <tr><td>拡張機能の管理</td><td>A1111・ComfyUI・SD.Next などの拡張(プラグイン)を画面から追加・更新。</td></tr>
+              <tr><td>プロンプト補完・強調表示</td><td>入力中にタグを<strong>オートコンプリート</strong>、括弧などを色分け表示してミスを減らす。</td></tr>
+              <tr><td>フルポータブル</td><td>データフォルダごと<strong>別のドライブ・別PCへ移動</strong>できる。Windows/Linux/macOS対応。</td></tr>
+              <tr><td>メタデータ保持</td><td>生成画像に生成情報(プロンプト等)が埋め込まれ、後から設定を読み戻せる。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
     </div>
 
     <div id="guideImage" class="guide-variant" style="display:none;">
+    <nav class="guide-toc" aria-label="画像ガイド目次">
+      <div class="guide-toc-head"><span class="guide-toc-title">目次(画像)</span></div>
+      <div class="guide-toc-groups">
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">セットアップ（Forge Neo）</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="img-step-forge"><span class="toc-badge">1</span>Forge Neo導入</a>
+            <a class="guide-toc-link" data-scroll="img-step-models"><span class="toc-badge">2</span>モデルの入手</a>
+            <a class="guide-toc-link" data-scroll="img-step-launch"><span class="toc-badge">3</span>起動</a>
+            <a class="guide-toc-link" data-scroll="img-step-gen"><span class="toc-badge">4</span>はじめての生成</a>
+            <a class="guide-toc-link" data-scroll="img-tips"><span class="toc-badge">!</span>つまずきやすい点</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">プロンプト</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="img-prompt-intro"><span class="toc-badge">◆</span>考え方</a>
+            <a class="guide-toc-link" data-scroll="img-p1"><span class="toc-badge">P1</span>型で並べる</a>
+            <a class="guide-toc-link" data-scroll="img-p2"><span class="toc-badge">P2</span>強調・語順</a>
+            <a class="guide-toc-link" data-scroll="img-p3"><span class="toc-badge">P3</span>ネガティブ</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">ツール</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="img-meta"><span class="toc-badge">AI</span>AIに作ってもらう</a>
+            <a class="guide-toc-link" data-scroll="img-builder"><span class="toc-badge">★</span>プロンプト作成ツール</a>
+          </div>
+        </div>
+      </div>
+    </nav>
     <section class="panel">
       <div class="guide-note">
         このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませてから戻ってくる。ここからは画像生成ソフト「Forge Neo」を入れて画像を作れるようにする。
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="img-step-forge">
       <h2>STEP 1. Forge Neo をインストールする</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -2836,7 +2977,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="img-step-models">
       <h2>STEP 2. モデル(Checkpoint)をダウンロードして配置する</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -2854,7 +2995,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="img-step-launch">
       <h2>STEP 3. Forge Neo を起動する</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -2868,7 +3009,7 @@
       <div class="guide-note">初回起動時はPyTorchなど追加の部品を裏側でダウンロード・準備するため、ブラウザ画面が開くまで、また最初の1枚目の画像が生成されるまでにも数分〜十数分かかることがある。フリーズしたように見えても、進行状況(ログ)が動いていれば待っていればOK。</div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="img-step-gen">
       <h2>STEP 4. はじめての画像生成</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -2884,7 +3025,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="img-tips">
       <h2>初心者が特につまずきやすい点(Checkpoint / LoRA まわり)</h2>
       <div class="guide-step">
         <div class="body">
@@ -2930,9 +3071,165 @@
         参考: <a href="https://wikiwiki.jp/sd_toshiaki/%E5%88%9D%E3%82%81%E3%81%A6%E3%81%AEforge%20neo" target="_blank" rel="noopener">としあきdiffusion Wiki* - 初めてのforge neo</a>
       </div>
     </section>
+
+    <section class="panel" id="img-prompt-intro">
+      <h2>プロンプトの考え方（画像）</h2>
+      <div class="guide-step">
+        <div class="body">
+          画像のプロンプトは、<strong>描きたい要素を表す「タグ(語句)」をカンマで並べる</strong>のが基本。文章にしなくていい。動画編と同じで、<strong>1回に変えるのは1つ</strong>だけにして見比べると上達が早い。
+          <div class="guide-note">
+            効くタグや画風は<strong>モデル(Checkpoint)やLoRAによって変わる</strong>。いちばんの近道は、Civitaiなどで気に入った作例の<strong>プロンプトを真似る</strong>こと(多くの作例は使用プロンプトが公開されている)。配布ページの「推奨設定・推奨タグ」も必ず確認する。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="img-p1">
+      <h2>P1. 型に沿って並べる（順番の目安）</h2>
+      <div class="guide-step">
+        <div class="body">
+          何を書けばいいか迷ったら、次の順で1つずつ足していく。下部の<strong>プロンプト作成ツール</strong>はこの型で欄が分かれているので、埋めるだけで並ぶ。
+          <table class="guide-table">
+            <thead><tr><th>順番</th><th>書くこと</th><th>例</th></tr></thead>
+            <tbody>
+              <tr><td>1. 画質・全体</td><td>品質・精細さ</td><td>masterpiece, best quality</td></tr>
+              <tr><td>2. 被写体・人数</td><td>誰/何を、何人</td><td>1girl, solo</td></tr>
+              <tr><td>3. 外見</td><td>髪・目など</td><td>long black hair, blue eyes</td></tr>
+              <tr><td>4. 服装</td><td>服・小物</td><td>school uniform</td></tr>
+              <tr><td>5. 表情・ポーズ</td><td>表情や姿勢</td><td>smiling, sitting</td></tr>
+              <tr><td>6. 構図・カメラ</td><td>画角・アングル</td><td>upper body, from above</td></tr>
+              <tr><td>7. 背景・場所</td><td>場所・時間帯・天気</td><td>classroom, sunset</td></tr>
+              <tr><td>8. ライティング・雰囲気</td><td>光・色調</td><td>soft lighting</td></tr>
+              <tr><td>9. 画風</td><td>スタイル</td><td>anime style</td></tr>
+            </tbody>
+          </table>
+          <div class="guide-code">masterpiece, best quality, 1girl, solo, long black hair, blue eyes, school uniform, smiling, upper body, classroom, soft lighting, anime style</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="img-p2">
+      <h2>P2. 強調と語順のコツ</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body"><strong>強めたい語は <code>(word:1.2)</code>、弱めたい語は <code>(word:0.8)</code>。</strong> 数値は1.0が基準(WebUIの記法)。<code>(word)</code> と括弧で囲むだけでも約1.1倍。かけ過ぎ(1.4以上など)は絵が崩れやすい。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body"><strong>前に置いた語ほど効きやすい</strong>傾向。いちばん効かせたい要素は前の方に置く。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body"><strong>盛りすぎない。</strong> タグを増やすほど1つ1つは薄まる。狙いを絞った方がきれいに出やすい。</div>
+      </div>
+    </section>
+
+    <section class="panel" id="img-p3">
+      <h2>P3. ネガティブプロンプト（出したくない要素）</h2>
+      <div class="guide-step">
+        <div class="body">
+          崩れやすい要素や不要な要素は、<strong>Negative prompt 欄</strong>にまとめて入れると避けやすい。定番はこのあたり。
+          <div class="guide-code">lowres, worst quality, low quality, bad anatomy, bad hands, missing fingers, extra digits, blurry, jpeg artifacts</div>
+          <div class="guide-note">モデルによっては専用の<strong>ネガティブ用データ(Embedding)</strong>の使用を推奨していることがある。配布ページの指示を確認する。Anima系はカンマ後の半角スペースなど<strong>書き方のクセ</strong>があるので、効かないと感じたらまず書式を疑う(「つまずきやすい点」参照)。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="img-meta">
+      <h2>AIにプロンプトを作ってもらう（コピペ用）</h2>
+      <div class="guide-step">
+        <div class="body">
+          タグ並べに慣れないうちは、<strong>ChatGPTやClaudeなどのAIに任せる</strong>のが早い。下の指示文をコピーしてAIに貼り付け、最後に<strong>「描きたい絵の内容」を日本語で書き足す</strong>だけでタグ形式のプロンプトを出力してくれる。
+        </div>
+      </div>
+      <textarea class="h3-output" id="imgMetaPrompt" readonly spellcheck="false" style="min-height:230px;">あなたは画像生成AI(Stable Diffusion / Forge Neo など)用のプロンプト作成アシスタントです。私がこの後に書く「描きたい絵の内容」を、タグ形式のプロンプトに変換して出力してください。
+
+# ルール
+- プロンプトは英語のタグ(語句)を「カンマ + 半角スペース」で並べる。文章にはしない。
+- 並べる順番の目安: 画質 → 被写体・人数 → 外見(髪・目など) → 服装 → 表情・ポーズ → 構図・カメラ → 背景・場所 → ライティング・雰囲気 → 画風。
+- 強調は (word:1.2)、弱めは (word:0.8) の形(必要なときだけ)。要素は盛りすぎない。
+- 出したくない要素は Negative として分けて出す(例: lowres, bad anatomy, bad hands, blurry)。
+- 実在の人物名や特定ブランド名など権利的に問題になりうる指定は避け、特徴で表現する。
+
+# 出力形式(この2行だけ。前置き・解説は不要)
+Positive: (ここにカンマ区切りのタグ)
+Negative: (ここにカンマ区切りのタグ)
+
+# 描きたい絵の内容(ここに自由に書く)
+・被写体/人数:
+・外見・服装:
+・表情・ポーズ:
+・背景・場所:
+・雰囲気・画風:
+・使うモデルの系統(分かれば。SDXL系 / Anima系 など):
+</textarea>
+      <div class="h3-output-actions">
+        <button class="btn-submit" type="button" id="imgMetaCopyBtn">この指示文をコピー</button>
+        <span class="status" id="imgMetaCopyStatus"></span>
+      </div>
+    </section>
+
+    <section class="panel" id="img-builder">
+      <h2>プロンプト作成ツール</h2>
+      <div class="guide-step">
+        <div class="body">
+          要素ごとに欄を分けて下書きし、最後に貼り付け用のプロンプトへまとめる。各欄は<strong>「＋行を追加」</strong>で増やせる。よく使う品質タグとネガティブは最初から入れてある。完成した <strong>Positive / Negative</strong> をそれぞれコピーして、WebUIの各欄に貼り付ける。
+        </div>
+      </div>
+      <div class="h3-builder" id="imgBuilder"></div>
+      <div class="h3-output-wrap">
+        <label class="field-label" style="margin-top:18px;">Positive(貼り付け用)</label>
+        <textarea class="h3-output" id="imgOutput" readonly spellcheck="false" style="min-height:80px;"></textarea>
+        <div class="h3-output-actions">
+          <button class="btn-submit" type="button" id="imgCopyBtn">Positiveをコピー</button>
+          <span class="status" id="imgCopyStatus"></span>
+        </div>
+        <label class="field-label" style="margin-top:14px;">Negative(貼り付け用)</label>
+        <textarea class="h3-output" id="imgNegOutput" readonly spellcheck="false" style="min-height:56px;"></textarea>
+        <div class="h3-output-actions">
+          <button class="btn-submit" type="button" id="imgNegCopyBtn">Negativeをコピー</button>
+          <button class="btn-ghost" type="button" id="imgResetBtn">初期状態に戻す</button>
+          <span class="status" id="imgNegCopyStatus"></span>
+        </div>
+      </div>
+    </section>
     </div>
 
     <div id="guideVideo" class="guide-variant" style="display:none;">
+    <nav class="guide-toc" aria-label="動画ガイド目次">
+      <div class="guide-toc-head"><span class="guide-toc-title">目次(動画)</span></div>
+      <div class="guide-toc-groups">
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">環境構築（ComfyUI）</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="vid-step-comfy"><span class="toc-badge">1</span>ComfyUI導入</a>
+            <a class="guide-toc-link" data-scroll="vid-step-model"><span class="toc-badge">2</span>モデル配置</a>
+            <a class="guide-toc-link" data-scroll="vid-step-workflow"><span class="toc-badge">3</span>ワークフロー</a>
+            <a class="guide-toc-link" data-scroll="vid-step-mode"><span class="toc-badge">4</span>モード切替</a>
+            <a class="guide-toc-link" data-scroll="vid-step-gen"><span class="toc-badge">5</span>はじめての生成</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">プロンプト（MiniMax H3）</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="vid-prompt-intro"><span class="toc-badge">◆</span>考え方</a>
+            <a class="guide-toc-link" data-scroll="vid-p1"><span class="toc-badge">P1</span>場面とモード</a>
+            <a class="guide-toc-link" data-scroll="vid-p2"><span class="toc-badge">P2</span>映像を書く</a>
+            <a class="guide-toc-link" data-scroll="vid-p3"><span class="toc-badge">P3</span>カメラ</a>
+            <a class="guide-toc-link" data-scroll="vid-p4"><span class="toc-badge">P4</span>セリフ・声</a>
+            <a class="guide-toc-link" data-scroll="vid-p5"><span class="toc-badge">P5</span>音</a>
+            <a class="guide-toc-link" data-scroll="vid-p6"><span class="toc-badge">P6</span>組み立て・生成</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">ツール</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="vid-meta"><span class="toc-badge">AI</span>AIに作ってもらう</a>
+            <a class="guide-toc-link" data-scroll="vid-builder"><span class="toc-badge">★</span>プロンプト作成ツール</a>
+          </div>
+        </div>
+      </div>
+    </nav>
     <section class="panel">
       <div class="guide-note">
         <strong>用語の整理:</strong> <strong>ComfyUI</strong> は色々な動画生成モデルを動かせる<strong>ツール(土台)</strong>で、<strong>MiniMax H3</strong> はその上で動かす<strong>モデルの一つ</strong>。両者はイコールではない(ComfyUIでは Wan など他のモデルも動かせる)。このガイドは<strong>「ComfyUI に MiniMax H3 を載せて使う」前提</strong>で、(1)ツールの用意=ComfyUI の環境構築 と、(2)モデルの使い方=MiniMax H3 のモード切り替えとプロンプト、を順に説明する。
@@ -2942,7 +3239,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="vid-step-comfy">
       <h2>STEP 1. ComfyUI をインストールする</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -2959,7 +3256,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="vid-step-model">
       <h2>STEP 2. 動画モデルを配置する</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -2977,7 +3274,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="vid-step-workflow">
       <h2>STEP 3. ワークフローを読み込む</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -2993,7 +3290,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="vid-step-mode">
       <h2>STEP 4. モードの切り替え方(MiniMax H3: T2V / I2V / FL2V / R2V)</h2>
       <div class="guide-step">
         <div class="body">
@@ -3035,7 +3332,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="vid-step-gen">
       <h2>STEP 5. はじめての動画生成</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -3052,23 +3349,32 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="vid-prompt-intro">
       <h2>この動画ガイドについて</h2>
       <div class="guide-step">
         <div class="body">
-          ここから下は<strong>プロンプトの書き方編</strong>。動画生成モデル <strong>MiniMax H3</strong> を前提に、プロンプト(指示文)の書き方の基本をまとめる。H3は<strong>映像と音声(会話・効果音・BGM)を1つのプロンプトでまとめて指示する</strong>のが特徴で、決まった型に沿って書くほど意図が伝わりやすい。
+          ここから下は<strong>プロンプトの書き方編</strong>。動画生成モデル <strong>MiniMax H3</strong> を前提にする。コツは1つだけ覚えれば十分:<br>
+          <strong>H3のプロンプトは「説明」ではなく「台本」。</strong> 単語を並べるのではなく、<strong>再生していく順番に、画面で見えること・聞こえることを現在形で書く</strong>。これだけで結果が安定する。
           <div class="guide-note">
-            型に沿って書くと意図は伝わりやすくなるが、カット・声・文字・動き・フレームの一致が毎回完全に再現される保証はない。1回の生成で変える要素は1つに絞り、同じ合否基準で見比べながら詰めていくのが基本。
+            例えば「雨の駅にいる女性」だけだと動きが決まらない。「女性がホームへ歩く → 近づく電車の音で立ち止まる → 音の方へ振り向く」のように<strong>時間の流れ</strong>を書くと、H3は映像にしやすい。本文は英語、セリフや画面文字は指定した言語のまま。最大7,000文字まで書ける。
+          </div>
+          <div class="guide-warn">
+            型どおり書いても、カット・声・文字・動きが毎回100%そのまま再現される保証はない。<strong>1回の生成で変える要素は1つ</strong>に絞り、見比べながら少しずつ詰めるのが結局いちばん早い。
           </div>
         </div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>STEP 1. まずモードを選ぶ</h2>
+    <section class="panel" id="vid-p1">
+      <h2>STEP 1. 作りたい場面を一言で決めて、モードを選ぶ</h2>
       <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body"><strong>まず日本語で一言。</strong> 「雨の駅で女性が電車を待つ15秒」くらいでいい。ここが土台になる。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
         <div class="body">
-          手元にある素材(画像)に合わせて、5つのモードから選ぶ。名前が難しそうという理由で選ばず、<strong>持っている入力素材で決める</strong>のがコツ。
+          <strong>手元の素材でモードを選ぶ</strong>(名前で選ばず、持っている入力で決める)。
           <table class="guide-table">
             <thead><tr><th>モード</th><th>入力素材</th><th>向いている用途</th></tr></thead>
             <tbody>
@@ -3080,83 +3386,228 @@
             </tbody>
           </table>
           <div class="guide-note">
-            画像から動かす(I2VA)・最初と最後を指定する(FL2VA)・最後から逆算する(L2VA)場合は、プロンプトの<strong>先頭に「画像対応行」</strong>を1行入れて、どの画像が何秒地点かを対応づける。テキストのみのT2VAでは画像対応行は不要。
-          </div>
-          <div class="guide-note">
-            ここで選ぶのは<strong>プロンプトの「書き方」</strong>であって、ComfyUIのボタン操作ではない(ComfyUI側のモード切り替えは<strong>STEP 4</strong>を参照)。おおまかな対応は、ComfyUIで <code>T2V</code>→<code>T2VA</code>、<code>I2V</code>→<code>I2VA</code>、<code>FL2V</code>→<code>FL2VA</code>(最後のフレームだけ指定するなら <code>L2VA</code>)、参照から作る <code>R2V</code>→<code>Ref2VA</code>。使っているノード構成に合わせて書き方を選ぶ。
+            画像を使うモード(I2VA / FL2VA / L2VA)は、プロンプトの<strong>先頭に「画像対応行」</strong>を1行入れる(下部のツールのモードボタンで自動で入る)。テキストだけのT2VAは不要。<br>
+            ここで選ぶのは<strong>プロンプトの書き方</strong>で、ComfyUIのボタン操作ではない(ComfyUI側の切り替えは STEP 4 を参照。対応は T2V→T2VA / I2V→I2VA / FL2V→FL2VA / R2V→Ref2VA)。
           </div>
         </div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>STEP 2. 基本は3つのフィールドで組み立てる</h2>
+    <section class="panel" id="vid-p2">
+      <h2>STEP 2. 映像を「時間の流れ」で書く（メインの欄）</h2>
       <div class="guide-step">
         <div class="body">
-          H3のプロンプトは、<strong>映像の流れ・物理的な音・視聴者だけに聞こえる音楽</strong>の3層に分けて書く。それぞれ決まったラベルを付ける。
+          いちばん大事な欄が <code>integrated_multimodal_description</code>。ここに<strong>映像の中身を再生順・現在形で</strong>書く。動作・カット・カメラ・セリフ・その瞬間の音は、すべてこの欄に時系列で並べる。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          <strong>雰囲気語だけで終わらせない。</strong> 「見える出来事」を順番に書く。
           <table class="guide-table">
-            <thead><tr><th>フィールド</th><th>ここに書くもの</th></tr></thead>
+            <thead><tr><th>弱い例(動きが決まらない)</th><th>強い例(時間と動作がある)</th></tr></thead>
             <tbody>
-              <tr><td><code>integrated_multimodal_description</code></td><td>ショット・動作・カメラ・会話・歌・画面に出す文字・その瞬間に同期する音を、<strong>再生順</strong>に書く</td></tr>
-              <tr><td><code>overall_soundscape</code></td><td>雨・風・足音・衣擦れ・呼吸などの<strong>環境音・物理音</strong>。会話の全文はここに繰り返さない</td></tr>
-              <tr><td><code>non_diegetic_music</code></td><td>視聴者だけに聞こえる<strong>BGM(劇伴)</strong>。不要なら <code>N/A</code> と書く</td></tr>
+              <tr>
+                <td>cinematic, dramatic, a woman at a rainy station</td>
+                <td>A woman walks toward the platform, stops when she hears the approaching train, and turns toward the sound.</td>
+              </tr>
             </tbody>
           </table>
-          <div class="guide-note">
-            全体を完全な無音にしたいときだけ <code>overall_soundscape: N/A</code> を使う。シーン内のラジオや演奏など「登場人物にも聞こえる音楽」は、音楽欄ではなく映像タイムライン側の出来事として書く。
-          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>ショットは <code>[Shot 1]</code> から。</strong> 冒頭に軽くスタイルと画角を添えると安定する(例: <code>[Shot 1] Live-action, cinematic, a medium-wide shot frames ...</code>)。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>カットして場面を変えるときだけ時刻を付ける。</strong> 最初のショットに時刻は付けない。2つ目以降は先頭に <code>At 00:03.500,</code> のように、動画の長さの範囲で<strong>昇順</strong>で。遷移は <code>the camera cuts to</code> / <code>the shot transitions to</code> など。1つのショット内で続く動きには時刻を付けない。
+          <div class="guide-code">[Shot 1] Live-action, cinematic, a medium-wide shot frames a woman on a rainy platform checking her watch.
+[Shot 2] At 00:04.000, the camera cuts to a close-up of the train lights approaching through the rain.</div>
         </div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>STEP 3. ショット・カメラ・時間の書き方</h2>
-      <div class="guide-step">
-        <div class="num">1</div>
-        <div class="body"><strong>ショットは <code>[Shot 1]</code> <code>[Shot 2]</code> …と番号で区切る。</strong> 最初のショットには時刻を付けない。2つ目以降のカットだけ、先頭に <code>At 00:03.000</code> のような時刻を、動画の長さの範囲で<strong>昇順</strong>に付ける。</div>
-      </div>
-      <div class="guide-step">
-        <div class="num">2</div>
-        <div class="body">1つのショット内で続く動きに時刻を付けない(時刻はカット位置を表す)。カットがない範囲の変化は「ショットの中間で〜」のように文章で書く。</div>
-      </div>
-      <div class="guide-step">
-        <div class="num">3</div>
-        <div class="body"><strong>カメラは「動きの種類 → 移動量 → 速度」の順で具体的に。</strong> 「映画的なカメラ」より「カメラが低速かつ小さい移動量で前進する」のように、結果が一意に決まる書き方にする。</div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>STEP 4. 会話・効果音・環境音・音楽を分ける</h2>
-      <div class="guide-step">
-        <div class="num">1</div>
-        <div class="body"><strong>会話や歌は映像タイムライン側に書く。</strong> 声には初登場順に <code>(S1)</code> <code>(S2)</code> …と固定IDを割り当て、別のショットでも同じ声には同じIDを使う。</div>
-      </div>
-      <div class="guide-step">
-        <div class="num">2</div>
-        <div class="body"><strong>実際に話す言葉は <code>&lt;d&gt;</code> タグの中だけに入れる。</strong> 中身は「言語タグ + セリフ本文」のみ。話し方・動作・IDなどの説明はタグの外に書く。例: <code>The woman (S1) says: &lt;d&gt;[Japanese] 北を見つけて。&lt;/d&gt;</code></div>
-      </div>
-      <div class="guide-step">
-        <div class="num">3</div>
-        <div class="body">画面に出す文字は<strong>半角ダブルクォート</strong>で正確に囲む(句読点も含めそのまま)。ただし文字が完全に描画される保証はないので、生成後に確認する。</div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>STEP 5. 生成前チェックリスト</h2>
+    <section class="panel" id="vid-p3">
+      <h2>STEP 3. カメラの動きを足す</h2>
       <div class="guide-step">
         <div class="body">
-          生成ボタンを押す前に、ざっと見返す。
-          <div class="guide-note">
-            □ 選んだモードが手元の素材と合っている &nbsp; □ 必要なら画像対応行が先頭にある &nbsp; □ <code>[Shot 1]</code> に時刻が付いておらず、以降のカット時刻が昇順で長さ内 &nbsp; □ 同じ被写体の説明がショット間でブレていない &nbsp; □ 声ごとに <code>(Sx)</code> が1つで固定 &nbsp; □ セリフが <code>&lt;d&gt;</code> の中だけにある &nbsp; □ 環境音がタイムラインか <code>overall_soundscape</code> にある &nbsp; □ BGMが不要なら <code>non_diegetic_music: N/A</code>
-          </div>
+          カメラは<strong>文の中に自然な英語で</strong>書く(文末にタグを並べない)。順番は<strong>「動きの種類 → (必要なら)移動量 → 速度」</strong>。移動量が中くらい・速度が普通なら省略してOK。
+          <div class="guide-code">The camera pushes in with small amplitude at slow speed toward her hands.
+The camera pans right with large amplitude at fast speed, revealing the doorway.
+The camera holds a static shot as she exits the frame.</div>
         </div>
       </div>
-      <div class="guide-source">
-        参考: <a href="https://domoai.app/ja/blog/minimax-h3-prompt-guide" target="_blank" rel="noopener">DomoAI - MiniMax H3プロンプトガイド：T2VA・I2VA・音声</a>
+      <div class="guide-step">
+        <div class="body">
+          <strong>使える動き(Motion Type)</strong>:
+          <table class="guide-table">
+            <thead><tr><th>種類</th><th>意味</th></tr></thead>
+            <tbody>
+              <tr><td><code>Push In</code> / <code>Pull Out</code></td><td>カメラ本体が前後に動く</td></tr>
+              <tr><td><code>Zoom In</code> / <code>Zoom Out</code></td><td>ズーム(焦点距離の変更)</td></tr>
+              <tr><td><code>Pan Left</code> / <code>Pan Right</code></td><td>位置固定で左右に首振り</td></tr>
+              <tr><td><code>Truck Left</code> / <code>Truck Right</code></td><td>本体が水平に平行移動</td></tr>
+              <tr><td><code>Tilt Up</code> / <code>Tilt Down</code></td><td>位置固定で上下に角度変更</td></tr>
+              <tr><td><code>Pedestal Up</code> / <code>Pedestal Down</code></td><td>本体が垂直に昇降</td></tr>
+              <tr><td><code>Arc Shot</code></td><td>被写体の周りを円弧状に回る</td></tr>
+              <tr><td><code>Tracking Shot</code></td><td>動く被写体を追う</td></tr>
+              <tr><td><code>Static Shot</code></td><td>固定(動かさない)</td></tr>
+              <tr><td><code>POV</code></td><td>主観視点</td></tr>
+              <tr><td><code>Roll Clockwise</code> / <code>Counterclockwise</code></td><td>レンズ軸まわりの回転</td></tr>
+              <tr><td><code>Shake Slightly</code> / <code>Shake Strongly</code></td><td>揺れ・振動</td></tr>
+            </tbody>
+          </table>
+          <div class="guide-note">移動量は <code>with small amplitude</code> / <code>with large amplitude</code>、速度は <code>at slow speed</code> / <code>at fast speed</code>。中程度・標準速度なら書かない。</div>
+        </div>
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="vid-p4">
+      <h2>STEP 4. セリフ・声・画面の文字を足す</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body"><strong>話す人にID</strong>を付ける。初登場順に <code>(S1)</code> <code>(S2)</code> …。同じ人は別のショットでも同じID。複数人が同時に話すなら <code>(S1,S2)</code>。喋らない人にはIDを付けない。</div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>実際のセリフは <code>&lt;d&gt;</code> タグの中だけ。</strong> 中身は「<code>[言語]</code> + セリフ本文」。話し方や動作の説明はタグの外に書く。セリフは書き換え・翻訳せず<strong>そのまま</strong>(原文保持)。
+          <div class="guide-code">The woman (S1) says: &lt;d&gt;[Japanese] 次の駅で降ります。&lt;/d&gt;</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>ナレーション(口を動かさない声)</strong>は決まった言い方を使う: <code>says in an off-screen voiceover</code> の直後に <code>while the lips remain completely closed.</code> を付ける。
+          <div class="guide-code">The man (S1) says in an off-screen voiceover: &lt;d&gt;[Japanese] あの道を今も覚えている。&lt;/d&gt; while the lips remain completely closed.</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">4</div>
+        <div class="body">
+          <strong>応用タグ</strong>: カットをまたいでセリフを続けるなら、続く位置に <code>&lt;scenetrans&gt;</code>。動画の終わりでセリフが途切れるなら末尾に <code>&lt;cutoff&gt;</code>。
+          <div class="guide-code">&lt;d&gt;[Japanese] またここで会えるなんて &lt;scenetrans&gt; 何年ぶりだろう。&lt;/d&gt;
+&lt;d&gt;[Japanese] 待って、そのドアを開け— &lt;cutoff&gt;&lt;/d&gt;</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">5</div>
+        <div class="body"><strong>画面に映す文字</strong>(看板・テロップ)は半角ダブルクォートで正確に囲む(原文のまま)。例: <code>A sign reading "OPEN" glows by the door.</code> ただし文字が綺麗に描画される保証はないので、生成後に確認する。</div>
+      </div>
+    </section>
+
+    <section class="panel" id="vid-p5">
+      <h2>STEP 5. 音を足す（環境音とBGMは別々に）</h2>
+      <div class="guide-step">
+        <div class="body">
+          音は2つの欄に分ける。<strong>会話の中身はここに繰り返さない</strong>(会話はSTEP 4のメイン欄に書く)。
+          <table class="guide-table">
+            <thead><tr><th>欄</th><th>書くもの</th><th>ルール</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>overall_soundscape</code></td>
+                <td>環境音・物理音(雨、足音、ドア、呼吸など)</td>
+                <td>1〜4文の英文。無音にしたいときだけ <code>N/A</code></td>
+              </tr>
+              <tr>
+                <td><code>non_diegetic_music</code></td>
+                <td>観客だけに聞こえるBGM(劇伴)</td>
+                <td>1〜3文。楽器・テンポ・強弱を具体的に。BGM無しは <code>N/A</code></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="guide-code">overall_soundscape: Rain falls steadily on the platform roof. A distant train grows louder.
+non_diegetic_music: A soft piano motif at a slow tempo.</div>
+          <div class="guide-note">
+            「感動的な音楽」のような<strong>抽象語は避ける</strong>(具体的な音で書く)。登場人物にも聞こえる劇中の音楽(ラジオ・演奏など)はBGM欄ではなく、メイン欄の出来事として書く。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="vid-p6">
+      <h2>STEP 6. 決まった順に組み立てて、生成 → 直す</h2>
+      <div class="guide-step">
+        <div class="body">
+          最後に<strong>決まった順番</strong>で1つにまとめる。画像を使うモードは先頭に画像対応行、続けて3つの欄。下の<strong>プロンプト作成ツール</strong>を使えば、この形に自動で組み上がる。
+          <div class="guide-code">(画像を使うモードのみ)画像対応行
+
+integrated_multimodal_description: [Shot 1] ...(映像の流れ)...
+
+overall_soundscape: ...(環境音)...
+
+non_diegetic_music: ...(BGM。無ければ N/A)</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>生成前チェック</strong> →
+          <div class="guide-note">
+            □ モードが手元の素材と合っている &nbsp; □ 画像モードなら画像対応行が先頭にある &nbsp; □ <code>[Shot 1]</code> に時刻が無く、以降のカット時刻が昇順で長さ内 &nbsp; □ 同じ人物の見た目がショット間でブレていない &nbsp; □ 声ごとに <code>(Sx)</code> が固定 &nbsp; □ セリフが <code>&lt;d&gt;</code> の中だけ &nbsp; □ 環境音を <code>overall_soundscape</code> に、会話を重複させていない &nbsp; □ BGM不要なら <code>non_diegetic_music: N/A</code>
+          </div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body"><strong>生成したら直す。</strong> 一度で完璧は狙わない。気になる所を<strong>1つだけ</strong>直して再生成し、見比べる。これを繰り返すのが上達の近道。</div>
+      </div>
+      <div class="guide-source">
+        参考(MiniMax公式ほか): <a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_base_en.md" target="_blank" rel="noopener">Base Prompt Writing Guide</a> / <a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md" target="_blank" rel="noopener">Full-Reference Guide</a> / <a href="https://platform.minimaxi.com/docs/guides/video-prompt" target="_blank" rel="noopener">Video Prompt Guide</a>
+      </div>
+    </section>
+
+    <section class="panel" id="vid-meta">
+      <h2>AIにプロンプトを作ってもらう（コピペ用）</h2>
+      <div class="guide-step">
+        <div class="body">
+          英語や型に慣れないうちは、<strong>ChatGPTやClaudeなどのAIに“翻訳・整形”を任せる</strong>のが簡単。下の指示文をコピーしてAIに貼り付け、最後に<strong>「作りたい動画の内容」を日本語で書き足す</strong>だけで、H3用のプロンプトを出力してくれる。
+        </div>
+      </div>
+      <textarea class="h3-output" id="h3MetaPrompt" readonly spellcheck="false" style="min-height:260px;">あなたは動画生成モデル「MiniMax H3」用のプロンプト作成アシスタントです。私がこの後に書く「作りたい動画の内容」を、H3が理解できる形式のプロンプトに変換して出力してください。
+
+# 守るルール
+- 本文(映像・音の描写)は英語で書く。ただしセリフ・歌詞・画面に映す文字は、私が指定した言語のまま(翻訳しない)。
+- 命令形(「〜な動画を作って」等)は使わず、現在形で画面に起きていることを描写する(例: A woman walks toward the platform.)。
+- 抽象語の羅列(cinematic, dramatic 等)ではなく、視聴者が実際に見える/聞こえる出来事を再生順(時系列)に書く。
+- 出力は次の3つの欄だけ。ラベルは英語のまま、この順で書く:
+  integrated_multimodal_description: 映像の流れ(ショット・動作・カメラ・セリフ・その瞬間に同期する音)を再生順に。
+  overall_soundscape: 環境音・物理音を1〜4文の英文で。会話の中身はここに繰り返さない。無音なら N/A。
+  non_diegetic_music: 観客だけに聞こえるBGMを1〜3文で(楽器・テンポ・強弱を具体的に。抽象的な感情語は避ける)。無ければ N/A。
+- ショットは [Shot 1] から始める。最初のショットに時刻は付けない。カットする場合のみ [Shot 2] At 00:03.000, the camera cuts to ... のように昇順の時刻を付ける。
+- カメラは文中に自然な英語で「動きの種類 +(必要なら)with small/large amplitude + at slow/fast speed」の順で書く。中程度・標準速度は省略。使える動き: Push In/Pull Out, Zoom In/Out, Pan Left/Right, Truck Left/Right, Tilt Up/Down, Pedestal Up/Down, Arc Shot, Tracking Shot, Static Shot, POV, Roll Clockwise/Counterclockwise, Shake Slightly/Strongly。
+- 話す人には (S1)(S2) の固定IDを付ける。同じ人は別ショットでも同じID。同時発話は (S1,S2)。喋らない人にはIDを付けない。
+- セリフは <d>[言語] 本文</d> の中だけに入れる(例: <d>[Japanese] 次の駅で降ります。</d>)。セリフは書き換え・翻訳しない。
+- ナレーション(口を動かさない声)は says in an off-screen voiceover を使い、直後に while the lips remain completely closed. と書く。
+- 画面に映す文字は "..." で正確に囲む(原文のまま)。
+- 画像を使うモードのときは、先頭に画像対応行を1行入れる:
+  ・最初のフレーム(I2VA): For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
+  ・最初と最後(FL2VA): How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot N) aligns with the S.SS-second mark of the target video.
+  ・最後だけ(L2VA): How the reference pictures align with the target video — <Picture 1> (from [Shot 1]) aligns with the S.SS-second mark of the target video.
+  ・テキストのみ(T2VA): 画像対応行は不要。
+(S.SS は指定秒数、例 8.00。N は最終ショット番号。)
+
+# 進め方
+- モード / 動画の長さ / セリフの有無と言語 / 画面文字の有無 のうち不明な点があれば、私に1回だけまとめて質問する。分かる範囲で埋められるなら質問せず進めてよい。
+- 最終出力は、完成したプロンプト本文だけを1つのコードブロックで返す(前置き・解説は不要)。
+
+# 作りたい動画の内容(ここに自由に書く)
+・場面/雰囲気:
+・登場人物と見た目:
+・してほしい動作やカメラ:
+・セリフ(あれば。言語も):
+・動画の長さ:
+・使う画像(あれば。最初/最後 など):
+</textarea>
+      <div class="h3-output-actions">
+        <button class="btn-submit" type="button" id="h3MetaCopyBtn">この指示文をコピー</button>
+        <span class="status" id="h3MetaCopyStatus"></span>
+      </div>
+    </section>
+
+    <section class="panel" id="vid-builder">
       <h2>プロンプト作成ツール</h2>
       <div class="guide-step">
         <div class="body">
@@ -3817,7 +4268,10 @@
     tabMoreBtn.classList.remove('visible');
     closeTabsMoreMenu();
     const navW = tabsNav.clientWidth;
-    if (tabsVisible.scrollWidth <= navW) return; // 全部収まる → その他ボタン不要
+    if (tabsVisible.scrollWidth <= navW) { // 全部収まる → その他ボタン不要
+      document.body.classList.remove('top-compact');
+      return;
+    }
     tabMoreBtn.classList.add('visible');
     const reserve = tabMoreWrap.offsetWidth + 8;
     let guard = 0;
@@ -3829,6 +4283,11 @@
       tabMoreMenu.insertBefore(kids[kids.length - 1], tabMoreMenu.firstChild);
       guard++;
     }
+    // 可視タブ(「☰ その他」を除く)が5個以下になったら、検索エリアから上をスマホ表示に切り替える
+    const visibleTabCount = Array.prototype.slice.call(tabsVisible.children).filter(function (b) {
+      return b.classList.contains('tab-btn') && window.getComputedStyle(b).display !== 'none';
+    }).length;
+    document.body.classList.toggle('top-compact', visibleTabCount <= 5);
   }
   let _tabReflowRAF = null;
   function scheduleReflowTabs() {
@@ -10508,6 +10967,120 @@
         renderSections();
         rebuildOutput();
       });
+    }
+
+    // AIにプロンプトを作らせる用のコピペ指示文
+    var metaEl = document.getElementById('h3MetaPrompt');
+    var metaBtn = document.getElementById('h3MetaCopyBtn');
+    var metaStatus = document.getElementById('h3MetaCopyStatus');
+    if (metaBtn && metaEl) {
+      metaBtn.addEventListener('click', function () {
+        var done = function () {
+          if (metaStatus) {
+            metaStatus.textContent = GUIDE_TOOL_SETTINGS.copyDoneText;
+            setTimeout(function () { metaStatus.textContent = ''; }, GUIDE_TOOL_SETTINGS.copyResetMs);
+          }
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(metaEl.value).then(done, function () { metaEl.select(); document.execCommand('copy'); done(); });
+        } else {
+          metaEl.select();
+          document.execCommand('copy');
+          done();
+        }
+      });
+    }
+
+    // ----- 汎用: コピーボタン配線 -----
+    function wireCopyButton(btnId, statusId, srcEl) {
+      var b = document.getElementById(btnId);
+      var s = document.getElementById(statusId);
+      if (!b || !srcEl) return;
+      b.addEventListener('click', function () {
+        var done = function () {
+          if (s) { s.textContent = GUIDE_TOOL_SETTINGS.copyDoneText; setTimeout(function () { s.textContent = ''; }, GUIDE_TOOL_SETTINGS.copyResetMs); }
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(srcEl.value).then(done, function () { srcEl.select(); document.execCommand('copy'); done(); });
+        } else { srcEl.select(); document.execCommand('copy'); done(); }
+      });
+    }
+
+    // ----- 目次(TOC): クリックで該当セクションへスクロール -----
+    document.querySelectorAll('.guide-toc-link').forEach(function (link) {
+      link.addEventListener('click', function () {
+        var t = document.getElementById(link.dataset.scroll);
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // ----- 画像プロンプト作成ツール -----
+    var imgBuilderEl = document.getElementById('imgBuilder');
+    var imgOutputEl = document.getElementById('imgOutput');
+    var imgNegOutputEl = document.getElementById('imgNegOutput');
+    if (imgBuilderEl && imgOutputEl && imgNegOutputEl) {
+      var IMG_SECTIONS = [
+        { key: 'quality', title: '画質・全体', hint: '全体の品質・精細さ。', defaults: ['masterpiece, best quality, highly detailed'] },
+        { key: 'subject', title: '被写体・人数', hint: '誰/何を、何人か。', defaults: ['1girl, solo'] },
+        { key: 'appearance', title: '外見（髪・目など）', hint: '髪型・髪色・目の色など。', defaults: [''] },
+        { key: 'outfit', title: '服装・小物', hint: '服やアクセサリー。', defaults: [''] },
+        { key: 'pose', title: '表情・ポーズ・動作', hint: '表情や姿勢。', defaults: [''] },
+        { key: 'composition', title: '構図・カメラ', hint: 'full body / upper body / from above など。', defaults: [''] },
+        { key: 'background', title: '背景・場所・状況', hint: '場所・時間帯・天気など。', defaults: [''] },
+        { key: 'lighting', title: 'ライティング・雰囲気', hint: '光・色調・ムード。', defaults: [''] },
+        { key: 'style', title: '画風・スタイル', hint: 'anime / realistic / oil painting など。', defaults: [''] },
+        { key: 'negative', title: 'ネガティブ（出したくない要素）', hint: '別欄(Negative)としてまとめる。', defaults: ['lowres, worst quality, low quality, bad anatomy, bad hands, missing fingers, blurry'], negative: true }
+      ];
+      var imgRebuild = function () {
+        var pos = [], neg = [];
+        imgBuilderEl.querySelectorAll('.h3-section').forEach(function (wrap) {
+          var isNeg = wrap.dataset.negative === '1';
+          wrap.querySelectorAll('.h3-row-input').forEach(function (ta) {
+            var v = ta.value.trim();
+            if (v === '') return;
+            (isNeg ? neg : pos).push(v);
+          });
+        });
+        imgOutputEl.value = pos.join(', ');
+        imgNegOutputEl.value = neg.join(', ');
+      };
+      var imgMakeRow = function (value) {
+        var row = document.createElement('div'); row.className = 'h3-row';
+        var ta = document.createElement('textarea'); ta.className = 'h3-row-input'; ta.value = value || ''; ta.setAttribute('spellcheck', 'false');
+        ta.addEventListener('input', imgRebuild);
+        var del = document.createElement('button'); del.type = 'button'; del.className = 'h3-row-del'; del.textContent = GUIDE_TOOL_SETTINGS.rowDeleteLabel;
+        del.addEventListener('click', function () {
+          var rows = row.parentNode.querySelectorAll('.h3-row');
+          if (rows.length <= 1) { ta.value = ''; imgRebuild(); return; }
+          row.parentNode.removeChild(row); imgRebuild();
+        });
+        row.appendChild(ta); row.appendChild(del); return row;
+      };
+      var imgRenderSections = function () {
+        imgBuilderEl.innerHTML = '';
+        IMG_SECTIONS.forEach(function (section) {
+          var wrap = document.createElement('div'); wrap.className = 'h3-section'; wrap.dataset.key = section.key;
+          if (section.negative) wrap.dataset.negative = '1';
+          var head = document.createElement('div'); head.className = 'h3-section-head';
+          var title = document.createElement('span'); title.className = 'h3-section-title'; title.textContent = section.title; head.appendChild(title);
+          wrap.appendChild(head);
+          if (section.hint) { var hint = document.createElement('div'); hint.className = 'h3-hint'; hint.textContent = section.hint; wrap.appendChild(hint); }
+          var rows = document.createElement('div'); rows.className = 'h3-rows';
+          (section.defaults.length ? section.defaults : ['']).forEach(function (v) { rows.appendChild(imgMakeRow(v)); });
+          wrap.appendChild(rows);
+          var add = document.createElement('button'); add.type = 'button'; add.className = 'btn-ghost h3-add-row'; add.textContent = GUIDE_TOOL_SETTINGS.addRowLabel;
+          add.addEventListener('click', function () { rows.appendChild(imgMakeRow('')); imgRebuild(); });
+          wrap.appendChild(add);
+          imgBuilderEl.appendChild(wrap);
+        });
+      };
+      imgRenderSections();
+      imgRebuild();
+      wireCopyButton('imgCopyBtn', 'imgCopyStatus', imgOutputEl);
+      wireCopyButton('imgNegCopyBtn', 'imgNegCopyStatus', imgNegOutputEl);
+      wireCopyButton('imgMetaCopyBtn', 'imgMetaCopyStatus', document.getElementById('imgMetaPrompt'));
+      var imgReset = document.getElementById('imgResetBtn');
+      if (imgReset) imgReset.addEventListener('click', function () { imgRenderSections(); imgRebuild(); });
     }
   }
 
