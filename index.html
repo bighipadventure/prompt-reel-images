@@ -691,6 +691,15 @@
   }
   .guide-warn strong{ color: var(--danger); }
   .guide-source{ font-size:11.5px; color:var(--ink-dim); margin-top:6px; }
+  /* ---- 管理: バックアップ/復旧 節 ---- */
+  .opt-backup{ margin-top:22px; padding:14px 16px; background: var(--surface-2); border:1px solid var(--line); border-radius:10px; }
+  .opt-backup-title{ font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:700; color: var(--ink); margin-bottom:8px; }
+  .opt-backup-desc{ font-size:12px; line-height:1.7; color: var(--ink-dim); }
+  .opt-backup-desc code, .opt-backup-help code{ background: var(--surface); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:11px; }
+  .opt-backup-help{ margin-top:10px; font-size:12px; color: var(--ink-dim); }
+  .opt-backup-help > summary{ cursor:pointer; color: var(--accent); font-weight:600; }
+  .opt-backup-help ol{ margin:8px 0 0; padding-left:1.4em; display:flex; flex-direction:column; gap:6px; line-height:1.7; }
+  .opt-backup-note{ margin-top:8px; font-size:11px; line-height:1.7; }
   /* ---- はじめてガイド: 目次(モダンなグループ化グリッド) ---- */
   .guide-toc{
     background: linear-gradient(180deg, rgba(0,150,250,0.07), rgba(38,38,41,0.35));
@@ -9471,7 +9480,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         return '<div class="opt-group' + (gi === 0 ? ' active' : '') + '" data-group="' + g.id + '">' + note + rows + '</div>';
       }).join('') +
       '<div class="admin-modal-status" id="adminOptionsStatus"></div>' +
-      '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>';
+      '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>' +
+      '<div class="opt-backup">' +
+        '<div class="opt-backup-title">バックアップ / 復旧(Googleアカウント凍結対策)</div>' +
+        '<div class="opt-backup-desc">下のボタンで、保存フォルダ内に復旧用データ(<code>pr_backup.json</code>)を作り、全メディアのファイル名に復旧用IDを埋め込みます。そのうえで <strong>Googleドライブで「StableDiffusion_作品共有」フォルダを右クリック→ダウンロード(zip)</strong>すれば、そのzipだけで別アカウントに丸ごと復旧できます。<strong>定期的に(週1など)</strong>実行してください。</div>' +
+        '<div class="submit-row" style="margin-top:10px;"><button class="btn-submit" type="button" id="backupNowBtn">今すぐバックアップを作成</button></div>' +
+        '<div class="admin-modal-status" id="backupStatus"></div>' +
+        '<details class="opt-backup-help">' +
+          '<summary>復旧のしかた(凍結されてしまったとき)</summary>' +
+          '<ol>' +
+            '<li>新しいGoogleアカウントで空のスプレッドシートを作り、<code>Code.gs</code> を貼り付ける。</li>' +
+            '<li>新ドライブに保存フォルダを用意し、<code>FOLDER_ID</code>・<code>REF_FOLDER_ID</code> を新フォルダのIDへ書き換える。</li>' +
+            '<li>エディタで <code>setup()</code> を実行 → ウェブアプリとして再デプロイ → <code>index.html</code> の <code>GAS_URL</code> を新URLに更新。</li>' +
+            '<li>バックアップzipを展開し、中の <code>pr_backup.json</code> と <code>pr_</code> で始まる全メディアを、新しいメインフォルダにアップロード。</li>' +
+            '<li>エディタで <code>backupRestore("RESTORE")</code> を実行。ファイル名の復旧用IDを手がかりに全URLが自動で貼り替わり、全データ(投稿・コメント・掲示板・設定など)が復元されます。</li>' +
+          '</ol>' +
+          '<div class="opt-backup-note">※ 復旧は新アカウント側で1回だけ。詳しい手順は引き継ぎ書(HANDOVER)にも記載。定期実行したい場合はエディタで <code>installBackupTrigger()</code> を1回実行すると週1で自動作成されます(それでもzipダウンロードは手動)。</div>' +
+        '</details>' +
+      '</div>';
 
     adminOptionsBody.querySelectorAll('.opt-switch').forEach(function (sw) {
       sw.addEventListener('click', function () {
@@ -9489,7 +9515,29 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('adminOptionsCloseBtn').addEventListener('click', closeAdminOptionsModal);
     document.getElementById('adminOptionsSaveBtn').addEventListener('click', saveAdminOptions);
     document.getElementById('loginPwChangeBtn').addEventListener('click', changeLoginPassword);
+    var backupNowBtn = document.getElementById('backupNowBtn');
+    if (backupNowBtn) backupNowBtn.addEventListener('click', runBackupNow);
     openOverlay(adminOptionsOverlay);
+  }
+
+  async function runBackupNow() {
+    var status = document.getElementById('backupStatus');
+    if (status) status.textContent = '';
+    showLoading('バックアップ作成中...(件数が多いと数十秒かかることがあります)');
+    try {
+      const r = await postAction({ action: 'backup', password: adminPassword });
+      if (!r || !r.success) throw new Error((r && r.error) || '不明なエラー');
+      if (status) {
+        status.textContent = 'バックアップを作成しました。メディア ' + (r.referencedFiles || 0) + '件を確認(復旧用に改名 ' + (r.renamed || 0) + '件)。'
+          + (r.missingFiles ? ' 見つからないファイル ' + r.missingFiles + '件。' : '')
+          + ' このあとGoogleドライブでフォルダをzipダウンロードしてください。';
+      }
+    } catch (e) {
+      if (status) status.textContent = 'バックアップに失敗しました: ' + (e.message || e);
+      console.error(e);
+    } finally {
+      hideLoading();
+    }
   }
 
   async function changeLoginPassword() {
