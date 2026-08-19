@@ -9483,7 +9483,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>' +
       '<div class="opt-backup">' +
         '<div class="opt-backup-title">バックアップ / 復旧(Googleアカウント凍結対策)</div>' +
-        '<div class="opt-backup-desc">下のボタンで、保存フォルダ内に復旧用データ(<code>pr_backup.json</code>)を作り、全メディアのファイル名に復旧用IDを埋め込みます。そのうえで <strong>Googleドライブで「StableDiffusion_作品共有」フォルダを右クリック→ダウンロード(zip)</strong>すれば、そのzipだけで別アカウントに丸ごと復旧できます。<strong>定期的に(週1など)</strong>実行してください。</div>' +
+        '<div class="opt-backup-desc">画像・動画は<strong>アップロード時に自動で復旧用の名前</strong>になります。下のボタンは<strong>復旧用データ(<code>pr_backup.json</code>)を最新化</strong>し、そのまま<strong>保存フォルダを開く</strong>ので、<strong>右クリック→ダウンロード(zip)</strong>で保存できます。そのzip1つで別アカウントに丸ごと復旧できます。<strong>定期的に(週1など)</strong>実行してください。<br><span style="color:var(--ink-dim);">※ Googleの仕様上、フォルダのzip一括ダウンロード自体は自動化できない(手動の右クリック→ダウンロードが必要)ため、そこだけ手動です。</span></div>' +
         '<div class="submit-row" style="margin-top:10px;"><button class="btn-submit" type="button" id="backupNowBtn">今すぐバックアップを作成</button></div>' +
         '<div class="admin-modal-status" id="backupStatus"></div>' +
         '<details class="opt-backup-help">' +
@@ -9495,7 +9495,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
             '<li>バックアップzipを展開し、中の <code>pr_backup.json</code> と <code>pr_</code> で始まる全メディアを、新しいメインフォルダにアップロード。</li>' +
             '<li>エディタで <code>backupRestore("RESTORE")</code> を実行。ファイル名の復旧用IDを手がかりに全URLが自動で貼り替わり、全データ(投稿・コメント・掲示板・設定など)が復元されます。</li>' +
           '</ol>' +
-          '<div class="opt-backup-note">※ 復旧は新アカウント側で1回だけ。詳しい手順は引き継ぎ書(HANDOVER)にも記載。定期実行したい場合はエディタで <code>installBackupTrigger()</code> を1回実行すると週1で自動作成されます(それでもzipダウンロードは手動)。</div>' +
+          '<div class="opt-backup-note">※ 復旧は新アカウント側で1回だけ。詳しい手順は引き継ぎ書(HANDOVER)にも記載。定期実行したい場合はエディタで <code>installBackupTrigger()</code> を1回実行すると週1で自動作成されます(それでもzipダウンロードは手動)。<br>※ 投稿を削除すると、その本体画像・差分・動画ファイルも自動でゴミ箱へ移動します(参照されない孤児ファイルが残らない)。過去の削除で残ったファイルは、エディタで <code>cleanupOrphanFiles()</code>(まず件数確認)→ <code>cleanupOrphanFiles("CLEANUP")</code> で一括ゴミ箱送りできます(約30日は復元可)。</div>' +
         '</details>' +
       '</div>';
 
@@ -9523,14 +9523,46 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   async function runBackupNow() {
     var status = document.getElementById('backupStatus');
     if (status) status.textContent = '';
-    showLoading('バックアップ作成中...(件数が多いと数十秒かかることがあります)');
+    showLoading('バックアップ更新中...');
     try {
       const r = await postAction({ action: 'backup', password: adminPassword });
       if (!r || !r.success) throw new Error((r && r.error) || '不明なエラー');
       if (status) {
-        status.textContent = 'バックアップを作成しました。メディア ' + (r.referencedFiles || 0) + '件を確認(復旧用に改名 ' + (r.renamed || 0) + '件)。'
-          + (r.missingFiles ? ' 見つからないファイル ' + r.missingFiles + '件。' : '')
-          + ' このあとGoogleドライブでフォルダをzipダウンロードしてください。';
+        status.innerHTML = '';
+        const c = r.categories || {};
+        const line = document.createElement('div');
+        line.textContent = '復旧用データを更新しました。バックアップ対象: 画像 ' + (c.images || 0) + '件 / 動画 ' + (c.videos || 0) + '件 / 差分画像 ' + (c.variantFiles || 0) + '件 / 参考画像 ' + (c.refFiles || 0) + '件(いずれも復旧用の名前に統一済み)。'
+          + (r.missingFiles ? ' ※見つからないファイル ' + r.missingFiles + '件。' : '');
+        status.appendChild(line);
+
+        const line2 = document.createElement('div');
+        line2.style.marginTop = '6px';
+        line2.textContent = '次に、下のリンクからフォルダを開き、右クリック→ダウンロードでzip保存してください。';
+        status.appendChild(line2);
+
+        if (r.mainFolderId) {
+          const a = document.createElement('a');
+          a.href = 'https://drive.google.com/drive/folders/' + r.mainFolderId;
+          a.target = '_blank'; a.rel = 'noopener noreferrer';
+          a.textContent = '保存フォルダを開く(右クリック→ダウンロード)';
+          a.className = 'btn-ghost';
+          a.style.cssText = 'display:inline-block; margin-top:8px; text-decoration:none;';
+          status.appendChild(a);
+        }
+
+        if (r.refFolderSeparate && r.refFolderId) {
+          const warn = document.createElement('div');
+          warn.style.cssText = 'margin-top:10px; color: var(--danger);';
+          warn.textContent = '⚠ リクエスト/掲示板/お知らせの添付画像が別フォルダにあります。そのフォルダも別途zipダウンロードして一緒に保管してください（復旧時は両方の中身を新フォルダに入れます）。';
+          status.appendChild(warn);
+          const a2 = document.createElement('a');
+          a2.href = 'https://drive.google.com/drive/folders/' + r.refFolderId;
+          a2.target = '_blank'; a2.rel = 'noopener noreferrer';
+          a2.textContent = '参考資料フォルダを開く(こちらもダウンロード)';
+          a2.className = 'btn-ghost';
+          a2.style.cssText = 'display:inline-block; margin-top:6px; text-decoration:none;';
+          status.appendChild(a2);
+        }
       }
     } catch (e) {
       if (status) status.textContent = 'バックアップに失敗しました: ' + (e.message || e);
