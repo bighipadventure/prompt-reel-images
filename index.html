@@ -6796,6 +6796,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     openOverlay(modalOverlay);
     updateModalNav(p);
+    if (pendingListScrollId !== null && String(pendingListScrollId) === String(p.id)) {
+      pendingListScrollId = null;
+      scrollListToPost(p);
+    }
   }
 
   function closeModal() {
@@ -6854,17 +6858,32 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     modalOverlay.classList.add('has-post-nav');
     positionModalNav();
   }
+  // 矢印(前後)で移動したときだけ、背後のカード一覧もその作品位置へスクロール追従させる。
+  // (初回のカードクリックでは動かさない。閉じたときに一覧がその位置になる。)
+  let pendingListScrollId = null;
+  function scrollListToPost(p) {
+    if (!p) return;
+    const container = document.getElementById(p.type === 'video' ? 'videoList' : 'list');
+    if (!container) return;
+    const row = container.querySelector('.row[data-id="' + String(p.id).replace(/"/g, '\\"') + '"]');
+    if (row && row.scrollIntoView) row.scrollIntoView({ block: 'center' });
+  }
+  function navToPost(id) {
+    if (!id) return;
+    pendingListScrollId = id;
+    openImageDetail(id);
+  }
   (function wireModalNav() {
     var pb = document.getElementById('modalNavPrev');
     var nb = document.getElementById('modalNavNext');
-    if (pb) pb.addEventListener('click', function (e) { e.stopPropagation(); if (pb.dataset.targetId) openImageDetail(pb.dataset.targetId); });
-    if (nb) nb.addEventListener('click', function (e) { e.stopPropagation(); if (nb.dataset.targetId) openImageDetail(nb.dataset.targetId); });
+    if (pb) pb.addEventListener('click', function (e) { e.stopPropagation(); navToPost(pb.dataset.targetId); });
+    if (nb) nb.addEventListener('click', function (e) { e.stopPropagation(); navToPost(nb.dataset.targetId); });
     window.addEventListener('resize', positionModalNav);
     document.addEventListener('keydown', function (e) {
       if (!modalOverlay.classList.contains('open') || !modalOverlay.classList.contains('has-post-nav')) return;
       if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || '')) return;
-      if (e.key === 'ArrowLeft') { var t = pb && pb.dataset.targetId; if (t) { e.preventDefault(); openImageDetail(t); } }
-      else if (e.key === 'ArrowRight') { var t2 = nb && nb.dataset.targetId; if (t2) { e.preventDefault(); openImageDetail(t2); } }
+      if (e.key === 'ArrowLeft') { var t = pb && pb.dataset.targetId; if (t) { e.preventDefault(); navToPost(t); } }
+      else if (e.key === 'ArrowRight') { var t2 = nb && nb.dataset.targetId; if (t2) { e.preventDefault(); navToPost(t2); } }
     });
   })();
 
