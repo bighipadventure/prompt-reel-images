@@ -488,6 +488,20 @@
     position: relative;
   }
   .modal-narrow{ max-width: 480px; }
+  /* 詳細モーダルの前後移動ボタン(左右余白があるときだけJSで表示)。丸は付けず矢印文字だけ。 */
+  .modal-nav-btn{
+    position: fixed; top: 50%; transform: translateY(-50%);
+    z-index: 101; display: none; padding: 0;
+    width: 40px; height: 64px;
+    background: transparent; color: var(--ink-dim);
+    border: none; cursor: pointer;
+    font-size: 40px; line-height: 1; align-items: center; justify-content: center;
+    text-shadow: 0 1px 5px rgba(0,0,0,.7);
+    transition: color .15s ease, transform .12s ease;
+  }
+  .modal-nav-btn:hover{ color: var(--accent); }
+  .modal-nav-btn.prev:hover{ transform: translateY(-50%) translateX(-2px); }
+  .modal-nav-btn.next:hover{ transform: translateY(-50%) translateX(2px); }
   .modal-options{ max-width: 660px; }
   /* 非表示中の投稿モーダル: 画像一覧風のカードを広幅で並べ、右側に解除ボタン(天地中央) */
   .modal-hidden{ max-width: 900px; }
@@ -990,12 +1004,12 @@
   .base-prompt-display .chip span.chip-label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .base-prompt-display .chip button{ font-size: 14px; flex:0 0 auto; }
 
-  .prompt-row .row-main{ align-items: flex-start; }
+  .prompt-row .row-main{ align-items: center; }
   .prompt-snippet{
     font-size: 12.5px; color: var(--ink-dim); line-height: 1.6;
     max-height: 3.2em; overflow: hidden; white-space: pre-wrap; word-break: break-word;
   }
-  .row-derived{ color: var(--accent); }
+  .row-derived{ color: #c9a227; }
   .row-children{ color: var(--accent); }
   .row-comments{ color: var(--accent); }
   /* 子作品/コメント/差分は .row-link-badge lb-* のバッジ表示に統一(上のルールは旧経路用に残置) */
@@ -3646,6 +3660,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modalBody"></div>
+  <button type="button" class="modal-nav-btn prev" id="modalNavPrev" aria-label="前の作品">＜</button>
+  <button type="button" class="modal-nav-btn next" id="modalNavNext" aria-label="次の作品">＞</button>
 </div>
 
 <div class="modal-overlay" id="tagModalOverlay">
@@ -4025,6 +4041,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!el) return;
     el.classList.add('open');
     if (el.classList.contains('modal-overlay')) el.scrollTop = 0;
+    if (el === modalOverlay) { modalOverlay.classList.remove('has-post-nav'); hideModalNav(); }
   }
 
   let posts = [];
@@ -6778,13 +6795,78 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (fixAnswerWorks) wireImageRows(fixAnswerWorks, { detailOnly: true });
 
     openOverlay(modalOverlay);
+    updateModalNav(p);
   }
 
   function closeModal() {
     openDetailPostId = null;
     modalOverlay.classList.remove('open');
+    modalOverlay.classList.remove('has-post-nav');
+    hideModalNav();
     modalBody.innerHTML = '';
   }
+
+  // ===== 詳細モーダルの前後移動(左右にモーダル外の余白があるときだけ表示) =====
+  function hideModalNav() {
+    var pb = document.getElementById('modalNavPrev'); if (pb) pb.style.display = 'none';
+    var nb = document.getElementById('modalNavNext'); if (nb) nb.style.display = 'none';
+  }
+  function positionModalNav() {
+    var pb = document.getElementById('modalNavPrev');
+    var nb = document.getElementById('modalNavNext');
+    if (!pb || !nb) return;
+    if (!modalOverlay.classList.contains('open') || !modalOverlay.classList.contains('has-post-nav')) { hideModalNav(); return; }
+    var rect = modalBody.getBoundingClientRect();
+    var btnW = 40, gap = 12, zone = btnW + gap * 2; // ボタンを置くのに必要なモーダル外の余白
+    var midY = Math.round(window.innerHeight / 2);
+    if (pb.dataset.targetId && rect.left >= zone) {
+      pb.style.display = 'flex';
+      pb.style.top = midY + 'px';
+      pb.style.left = Math.round(rect.left - gap - btnW) + 'px';
+    } else { pb.style.display = 'none'; }
+    if (nb.dataset.targetId && (window.innerWidth - rect.right) >= zone) {
+      nb.style.display = 'flex';
+      nb.style.top = midY + 'px';
+      nb.style.left = Math.round(rect.right + gap) + 'px';
+    } else { nb.style.display = 'none'; }
+  }
+  function updateModalNav(p) {
+    var pb = document.getElementById('modalNavPrev');
+    var nb = document.getElementById('modalNavNext');
+    if (!pb || !nb || !p) return;
+    var listArr = (p.type === 'video') ? vBrowseFiltered : browseFiltered;
+    var idx = (listArr && listArr.length) ? listArr.findIndex(function (x) { return String(x.id) === String(p.id); }) : -1;
+    if (idx === -1) {
+      var other = (p.type === 'video') ? browseFiltered : vBrowseFiltered;
+      if (other && other.length) {
+        var j = other.findIndex(function (x) { return String(x.id) === String(p.id); });
+        if (j !== -1) { listArr = other; idx = j; }
+      }
+    }
+    if (idx === -1) {
+      pb.dataset.targetId = ''; nb.dataset.targetId = '';
+      modalOverlay.classList.remove('has-post-nav');
+      hideModalNav();
+      return;
+    }
+    pb.dataset.targetId = idx > 0 ? String(listArr[idx - 1].id) : '';
+    nb.dataset.targetId = idx < listArr.length - 1 ? String(listArr[idx + 1].id) : '';
+    modalOverlay.classList.add('has-post-nav');
+    positionModalNav();
+  }
+  (function wireModalNav() {
+    var pb = document.getElementById('modalNavPrev');
+    var nb = document.getElementById('modalNavNext');
+    if (pb) pb.addEventListener('click', function (e) { e.stopPropagation(); if (pb.dataset.targetId) openImageDetail(pb.dataset.targetId); });
+    if (nb) nb.addEventListener('click', function (e) { e.stopPropagation(); if (nb.dataset.targetId) openImageDetail(nb.dataset.targetId); });
+    window.addEventListener('resize', positionModalNav);
+    document.addEventListener('keydown', function (e) {
+      if (!modalOverlay.classList.contains('open') || !modalOverlay.classList.contains('has-post-nav')) return;
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || '')) return;
+      if (e.key === 'ArrowLeft') { var t = pb && pb.dataset.targetId; if (t) { e.preventDefault(); openImageDetail(t); } }
+      else if (e.key === 'ArrowRight') { var t2 = nb && nb.dataset.targetId; if (t2) { e.preventDefault(); openImageDetail(t2); } }
+    });
+  })();
 
   let modalDownOnOverlay = false;
   modalOverlay.addEventListener('mousedown', function (e) { modalDownOnOverlay = (e.target === modalOverlay); });
@@ -9010,11 +9092,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
     const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+    // このプロンプト例をベースにした投稿作品(紐づく作品)。最新のものをサムネイルにする。
+    const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1; });
+    linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const newest = linked[0];
+    const thumbHtml = newest
+      ? '<div class="row-thumb' + (newest.type === 'video' ? ' is-video' : '') + '">' + imageTag(newest.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
+      : '';
     return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
       (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>') +
-      '<div class="row-main"><div class="row-body">' +
+      '<div class="row-main">' + thumbHtml + '<div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
-      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + promptDerivedCount(p) + '件</span></div>' +
+      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span><span class="row-derived">派生作品 ' + linked.length + '件</span></div>' +
       tags +
       '</div></div></div>';
   }
