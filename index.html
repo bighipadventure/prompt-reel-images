@@ -488,20 +488,32 @@
     position: relative;
   }
   .modal-narrow{ max-width: 480px; }
-  /* 詳細モーダルの前後移動ボタン(左右余白があるときだけJSで表示)。丸は付けず矢印文字だけ。 */
+  /* 詳細モーダルの前後移動ボタン(左右余白があるときだけJSで表示)。
+     矢印は viewBox 中央に配置した SVG シェブロンで描画=左右完全対称(フォント/枠線角寄りの影響なし)。 */
   .modal-nav-btn{
     position: fixed; top: 50%; transform: translateY(-50%);
     z-index: 101; display: none; padding: 0;
-    width: 40px; height: 64px;
-    background: transparent; color: var(--ink-dim);
-    border: none; cursor: pointer;
-    font-size: 40px; line-height: 1; align-items: center; justify-content: center;
-    text-shadow: 0 1px 5px rgba(0,0,0,.7);
-    transition: color .15s ease, transform .12s ease;
+    width: 44px; height: 64px;
+    background: transparent; border: none; cursor: pointer;
+    align-items: center; justify-content: center;
+    color: var(--ink-dim);
+    transition: color .15s ease;
   }
+  .modal-nav-btn svg{ display: block; width: 26px; height: 26px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
   .modal-nav-btn:hover{ color: var(--accent); }
-  .modal-nav-btn.prev:hover{ transform: translateY(-50%) translateX(-2px); }
-  .modal-nav-btn.next:hover{ transform: translateY(-50%) translateX(2px); }
+  /* モダンなスクロールバー(投稿一覧=ページ と 詳細モーダル を統一) */
+  html, .modal-overlay{ scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  html::-webkit-scrollbar, .modal-overlay::-webkit-scrollbar{ width: 12px; }
+  html::-webkit-scrollbar-track, .modal-overlay::-webkit-scrollbar-track{ background: transparent; }
+  html::-webkit-scrollbar-thumb, .modal-overlay::-webkit-scrollbar-thumb{
+    background: var(--line); border-radius: 999px;
+    border: 3px solid transparent; background-clip: padding-box;
+  }
+  html::-webkit-scrollbar-thumb:hover, .modal-overlay::-webkit-scrollbar-thumb:hover{ background: var(--ink-dim); }
+  /* 詳細モーダル表示中は一覧(html)側のスクロールバーを隠す。幅は padding-right で補正して背景がずれないようにする。
+     スクロール自体は可能なので前後移動の一覧追従は維持され、モーダルオーバーレイ側のスクロールバーが同じ右端位置に出る。 */
+  html.modal-sb-hidden{ scrollbar-width: none; padding-right: var(--modal-sbw, 0px); }
+  html.modal-sb-hidden::-webkit-scrollbar{ width: 0; height: 0; display: none; }
   .modal-options{ max-width: 660px; }
   /* 非表示中の投稿モーダル: 画像一覧風のカードを広幅で並べ、右側に解除ボタン(天地中央) */
   .modal-hidden{ max-width: 900px; }
@@ -3660,8 +3672,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modalBody"></div>
-  <button type="button" class="modal-nav-btn prev" id="modalNavPrev" aria-label="前の作品">＜</button>
-  <button type="button" class="modal-nav-btn next" id="modalNavNext" aria-label="次の作品">＞</button>
+  <button type="button" class="modal-nav-btn prev" id="modalNavPrev" aria-label="前の作品"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 5 8 12 16 19"></polyline></svg></button>
+  <button type="button" class="modal-nav-btn next" id="modalNavNext" aria-label="次の作品"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 5 16 12 8 19"></polyline></svg></button>
 </div>
 
 <div class="modal-overlay" id="tagModalOverlay">
@@ -4037,11 +4049,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // モーダルを開く共通処理。
   // .modal-overlay 自体がスクロールコンテナなので、開くたびに先頭へ戻す
   // (前に開いたモーダルのスクロール位置が residual として残るのを防ぐ)。
+  // 詳細モーダル表示中は一覧(html)のスクロールバーを隠す。既にロック中なら再計算しない
+  // (前後移動でオーバーレイを開き直す際に補正幅が 0 に化けるのを防ぐ)。
+  function lockPageScrollbar() {
+    if (document.documentElement.classList.contains('modal-sb-hidden')) return;
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    document.documentElement.style.setProperty('--modal-sbw', sbw + 'px');
+    document.documentElement.classList.add('modal-sb-hidden');
+  }
+  function unlockPageScrollbar() {
+    document.documentElement.classList.remove('modal-sb-hidden');
+    document.documentElement.style.removeProperty('--modal-sbw');
+  }
+
   function openOverlay(el) {
     if (!el) return;
     el.classList.add('open');
     if (el.classList.contains('modal-overlay')) el.scrollTop = 0;
-    if (el === modalOverlay) { modalOverlay.classList.remove('has-post-nav'); hideModalNav(); }
+    if (el === modalOverlay) { modalOverlay.classList.remove('has-post-nav'); hideModalNav(); lockPageScrollbar(); }
   }
 
   let posts = [];
@@ -6817,6 +6842,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     modalOverlay.classList.remove('open');
     modalOverlay.classList.remove('has-post-nav');
     hideModalNav();
+    unlockPageScrollbar();
     modalBody.innerHTML = '';
   }
 
@@ -6831,7 +6857,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!pb || !nb) return;
     if (!modalOverlay.classList.contains('open') || !modalOverlay.classList.contains('has-post-nav')) { hideModalNav(); return; }
     var rect = modalBody.getBoundingClientRect();
-    var btnW = 40, gap = 12, zone = btnW + gap * 2; // ボタンを置くのに必要なモーダル外の余白
+    var btnW = 44, gap = 12, zone = btnW + gap * 2; // ボタンを置くのに必要なモーダル外の余白
     var midY = Math.round(window.innerHeight / 2);
     if (pb.dataset.targetId && rect.left >= zone) {
       pb.style.display = 'flex';
