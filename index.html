@@ -5997,8 +5997,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         fixRequestId: isFix ? '' : selectedFixRequestIds.join(',')
       };
       if (editing) {
-        payload.action = ownerEditPassword ? 'ownerUpdate' : 'adminUpdate';
-        payload.password = ownerEditPassword || adminPassword;
+        payload.action = ownerEditMode ? 'ownerUpdate' : 'adminUpdate';
+        payload.password = ownerEditMode ? ownerEditPassword : adminPassword;
         payload.id = adminEditingPost.id;
       } else if (options.ownerEdit) {
         payload.editPassword = document.getElementById('editPwInput').value;
@@ -6282,6 +6282,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     browseShown = 0;
     list.innerHTML = '';
     appendBrowsePage();
+    ensureBrowseFilled();
     browseDirty = false;
 
     if (viewMode === 'panel') layoutPanelGrid();
@@ -6312,7 +6313,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (viewMode === 'panel') layoutPanelGrid();
   }
 
-  // 指定スクロール位置まで戻す。無限スクロールで未描画の分は、その位置に届くまでページを追記してから戻す
+  // 再描画で先頭ページだけになった際、現在のスクロール位置がコンテンツより下だと
+  // センチネルが画面外(上)に来てそれ以降が読み込まれなくなる。現在のビューを満たすまでページを補充する。
+  function ensureBrowseFilled() {
+    let guard = 0;
+    while (browseShown < browseFiltered.length &&
+           document.documentElement.scrollHeight < window.scrollY + window.innerHeight + 1000 &&
+           guard++ < 1000) {
+      appendBrowsePage();
+    }
+  }
   function restoreScrollPaginated(targetY, hasMore, loadMore) {
     if (!(targetY > 0)) { window.scrollTo(0, 0); return; }
     let guard = 0;
@@ -7099,8 +7109,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     vBrowseShown = 0;
     videoListEl.innerHTML = '';
     appendVideoPage();
+    ensureVideoFilled();
 
     if (vViewMode === 'panel') layoutPanelGridFor(videoListEl);
+  }
+
+  function ensureVideoFilled() {
+    let guard = 0;
+    while (vBrowseShown < vBrowseFiltered.length &&
+           document.documentElement.scrollHeight < window.scrollY + window.innerHeight + 1000 &&
+           guard++ < 1000) {
+      appendVideoPage();
+    }
   }
 
   function appendVideoPage() {
@@ -7606,8 +7626,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         tags: pSelectedTags
       };
       if (editing) {
-        payload.action = ownerEditPassword ? 'ownerUpdate' : 'adminUpdate';
-        payload.password = ownerEditPassword || adminPassword;
+        payload.action = ownerEditMode ? 'ownerUpdate' : 'adminUpdate';
+        payload.password = ownerEditMode ? ownerEditPassword : adminPassword;
         payload.id = adminEditingPost.id;
         payload.basePromptId = '';
         payload.parentId = '';
@@ -8072,8 +8092,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         prompt: bodyText
       };
       if (editing) {
-        payload.action = ownerEditPassword ? 'ownerUpdate' : 'adminUpdate';
-        payload.password = ownerEditPassword || adminPassword;
+        payload.action = ownerEditMode ? 'ownerUpdate' : 'adminUpdate';
+        payload.password = ownerEditMode ? ownerEditPassword : adminPassword;
         payload.id = adminEditingPost.id;
         payload.keepReferenceImages = requestRefs.filter(function (r) { return r.kind === 'existing'; }).map(function (r) { return r.url; });
         payload.newReferenceImages = requestRefs.filter(function (r) { return r.kind === 'new'; }).map(function (r) { return r.dataUrl; });
@@ -9343,7 +9363,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<button class="btn-ghost" type="button" id="adminEditBtn">管理者編集</button>' +
         '<button class="btn-ghost" type="button" id="adminDeleteBtn" style="color:var(--danger); border-color:var(--danger);">削除</button>';
     }
-    if (options.ownerEdit && p && p.hasEditPassword) {
+    if (options.ownerEdit && p) {
       return '<button class="btn-ghost" type="button" id="ownerEditBtn">編集</button>';
     }
     return '';
@@ -9494,7 +9514,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'linkReference', group: 'post', label: '紐づけ: 参考にした投稿作品', desc: 'オフにすると投稿フォームから「参考にした投稿作品」の選択欄を非表示にします' },
     { key: 'linkRequest', group: 'post', label: '紐づけ: 応えるリクエスト', desc: 'オフにすると投稿フォームから「応えるリクエスト」の選択欄を非表示にします' },
     { key: 'fixRequest', group: 'post', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
-    { key: 'ownerEdit', group: 'post', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示されます。投稿者がパスワードを設定した投稿は、詳細画面の「編集」ボタンからそのパスワードを入力して本人が編集できます(オフのときは欄もボタンも表示されません)' },
+    { key: 'ownerEdit', group: 'post', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示され、詳細画面には常に「編集」ボタンが表示されます(表示の統一のため)。「編集」ボタンを押すとパスワード入力画面が出て、投稿時に設定したパスワードを入力した人だけが編集できます。パスワードを設定していない投稿はボタンは出ますが、どの値を入力しても編集できません(オフのときは欄もボタンも表示されません)' },
     { key: 'inpaint', group: 'post', label: '修正後画像モード', desc: 'オンにすると、画像投稿フォームの右上に「修正後画像モード」トグルが表示されます。トグルを押すと、元画像からプロンプト・生成設定だけを読み取り、実際に投稿する画像には修正後(inpaint など)の画像を選べます(オフのときはトグルごと表示されません)' },
     { key: 'loginEnabled', group: 'site', label: 'ログイン画面', desc: 'オンにすると、サイトを開いたときにパスワード入力画面を表示します(変更は次回読み込みから反映)。パスワードや表示メッセージ・画像はadminシートで管理します' }
   ];
@@ -9787,6 +9807,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // ADMIN EDIT (投稿フォームを流用)
   let adminEditingPost = null;
   let ownerEditPassword = '';
+  let ownerEditMode = false; // true=投稿者編集(ownerUpdate) / false=管理者編集(adminUpdate)
 
   function isEditingImagePost() {
     return !!adminEditingPost && (adminEditingPost.type || 'image') !== 'prompt' && adminEditingPost.type !== 'request';
@@ -9829,12 +9850,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function openOwnerEdit(p, password) {
     openAdminEdit(p);
-    ownerEditPassword = password;
+    ownerEditPassword = password || '';
+    ownerEditMode = true;
   }
 
   function openAdminEdit(p) {
     editReturnScrollY = window.scrollY;
     ownerEditPassword = '';
+    ownerEditMode = false;
     const type = p.type || 'image';
     const isImage = type !== 'prompt' && type !== 'request';
     adminEditingPost = p;
