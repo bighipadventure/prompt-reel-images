@@ -43,7 +43,7 @@
   html,body{ margin:0; padding:0; }
   /* 表示テキスト・画像など編集不可の場所に出る点滅キャレット(縦線)を消す。
      入力欄(input/textarea)のカーソルは残す。選択(ドラッグ)とコピーには影響しない。 */
-  html{ caret-color: transparent; }
+  html{ caret-color: transparent; overflow-y: scroll; }
   input, textarea, [contenteditable]{ caret-color: auto; }
   body{
     background: var(--bg);
