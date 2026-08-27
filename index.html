@@ -1185,6 +1185,7 @@
   body.post-mode-novel #fixRequestField,
   body.post-mode-novel .link-field[data-link="basePrompt"],
   body.post-mode-novel .link-field[data-link="parent"],
+  body.post-mode-novel .link-field[data-link="reference"],
   body.post-mode-novel .link-field[data-link="request"],
   body.post-mode-novel .link-field[data-link="videoSource"],
   body.post-mode-novel #variantModeBtn,
@@ -1227,6 +1228,18 @@
   }
   .novel-dz-clear:hover{ border-color:var(--danger); color:var(--danger); }
   .novel-scene-fields{ flex:1 1 260px; min-width:0; display:flex; flex-direction:column; gap:8px; }
+  /* 参考作品の選択欄。ノベル投稿モードのときだけ見出し行の右端に出す。
+     .base-prompt-display は既定で flex:1 1 200px のため、そのままだと
+     チップが単独の行へ折り返されて左寄せになる。ここでは幅を内容なりにし、
+     折り返したときも右端へ揃える。 */
+  .novel-ref-pick{
+    display:none; align-items:center; justify-content:flex-end;
+    gap:8px; flex-wrap:wrap; margin-left:auto; max-width:100%; min-width:0;
+  }
+  body.post-mode-novel .novel-ref-pick{ display:flex; }
+  .novel-ref-pick .base-prompt-display{ flex:0 1 auto; justify-content:flex-end; min-width:0; }
+  .novel-ref-pick .base-prompt-display .chip{ max-width:260px; }
+  .novel-ref-label{ font-family:'Noto Sans JP',sans-serif; font-size:11px; color:var(--ink-dim); }
   .novel-scene-count{
     font-family:'Noto Sans JP',sans-serif; font-size:10.5px; color:var(--ink-dim);
     border:1px solid var(--line); border-radius:999px; padding:2px 8px;
@@ -1244,6 +1257,13 @@
     flex:0 0 auto; cursor:grab; color:var(--ink-dim); font-size:13px;
     padding:2px 3px; user-select:none; line-height:1;
   }
+  .novel-scene-handle{
+    cursor:grab; color:var(--ink-dim); font-size:14px; padding:2px 4px;
+    user-select:none; line-height:1;
+  }
+  .novel-scene-handle:hover{ color:var(--accent); }
+  .novel-scene.dragging{ opacity:.45; }
+  .novel-scene.drop-target{ outline:1px dashed var(--accent); outline-offset:2px; }
   .novel-line-handle:hover{ color:var(--accent); }
   .novel-line-row.dragging{ opacity:.45; }
   .novel-line-row.drop-target{ outline:1px dashed var(--accent); outline-offset:2px; border-radius:6px; }
@@ -1976,17 +1996,17 @@
   <nav class="tabs" id="tabsNav">
     <div class="tabs-visible" id="tabsVisible">
       <button class="tab-btn" data-tab="post">投稿</button>
-      <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
-      <button class="tab-btn video-only" data-tab="videoBrowse">動画投稿一覧</button>
-      <button class="tab-btn novel-only" data-tab="novelBrowse">ゲーム投稿一覧</button>
-      <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
-      <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
-      <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
-      <button class="tab-btn" data-tab="databank">プロンプトデータバンク</button>
+      <button class="tab-btn active" data-tab="browse">画像</button>
+      <button class="tab-btn video-only" data-tab="videoBrowse">動画</button>
+      <button class="tab-btn novel-only" data-tab="novelBrowse">ノベル</button>
+      <button class="tab-btn" data-tab="promptBrowse">プロンプト</button>
+      <button class="tab-btn" data-tab="requestBrowse">リクエスト</button>
+      <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼</button>
+      <button class="tab-btn" data-tab="databank">プロンプト集計</button>
       <button class="tab-btn" data-tab="board">掲示板</button>
       <button class="tab-btn link-only" data-tab="links">リンク</button>
-      <button class="tab-btn" data-tab="usage">本ツールの使い方</button>
-      <button class="tab-btn" data-tab="guide">はじめてガイド</button>
+      <button class="tab-btn" data-tab="usage">使い方</button>
+      <button class="tab-btn" data-tab="guide">環境構築</button>
     </div>
     <div class="tab-more-wrap" id="tabMoreWrap">
       <button type="button" class="tab-more-btn" id="tabMoreBtn" aria-haspopup="true" aria-expanded="false"><span aria-hidden="true">☰</span> その他</button>
@@ -2009,6 +2029,11 @@
     <section class="panel" id="imagePostForm">
       <div class="panel-head-row">
         <h2 id="imageFormHeading">画像を投稿</h2>
+        <div class="novel-ref-pick" id="novelRefPick">
+          <span class="novel-ref-label">参考にした投稿作品</span>
+          <button class="btn-ghost" id="novelPickReferenceBtn" type="button">作品を選択</button>
+          <span id="novelReferenceDisplay" class="base-prompt-display"></span>
+        </div>
         <div class="head-toggle-group">
           <button type="button" id="variantModeBtn" class="head-toggle" aria-pressed="false" title="複数枚の画像(Seed違いなどの差分)を1つの投稿にまとめて同時アップロードします。閲覧時は詳細画面で切り替えられます">
             <span class="head-toggle-dot" aria-hidden="true"></span>差分を同時に投稿
@@ -2079,10 +2104,7 @@
       </div>
 
       <div id="novelEditorField" style="display:none;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px; flex-wrap:wrap;">
-          <label class="field-label" style="margin:0;">シナリオ(シーンを順に並べます)</label>
-          <span class="novel-preview-badge">1シーン = 背景画像1枚 + 会話を何行でも</span>
-        </div>
+        <label class="field-label" style="margin:18px 0 6px;">シナリオ(シーンを順に並べます)</label>
         <div class="novel-scene-list" id="novelSceneList"></div>
         <div class="novel-empty-hint" id="novelEmptyHint">まだシーンがありません。「＋ シーンを追加」から作成してください。</div>
         <div class="novel-editor-actions">
@@ -2185,6 +2207,7 @@
         <div class="submit-row-left">
           <button class="btn-submit" id="submitBtn" type="button">投稿する</button>
           <button class="btn-ghost" id="cancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
+          <button class="btn-ghost" id="clearFormBtn" type="button">投稿をキャンセル</button>
           <span class="status" id="statusText"></span>
         </div>
         <div class="owneredit-only edit-pw-box" id="editPwField">
@@ -2242,6 +2265,7 @@
         <div class="submit-row-left">
           <button class="btn-submit" id="pSubmitBtn" type="button">投稿する</button>
           <button class="btn-ghost" id="pCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
+          <button class="btn-ghost" id="pClearFormBtn" type="button">投稿をキャンセル</button>
           <span class="status" id="pStatusText"></span>
         </div>
         <div class="owneredit-only edit-pw-box" id="pEditPwField">
@@ -2280,6 +2304,7 @@
         <div class="submit-row-left">
           <button class="btn-submit" id="rSubmitBtn" type="button">投稿する</button>
           <button class="btn-ghost" id="rCancelEditBtn" type="button" style="display:none;">編集をキャンセル</button>
+          <button class="btn-ghost" id="rClearFormBtn" type="button">投稿をキャンセル</button>
           <span class="status" id="rStatusText"></span>
         </div>
         <div class="owneredit-only edit-pw-box" id="rEditPwField">
@@ -2741,7 +2766,7 @@
         <div class="num">3</div>
         <div class="body">
           <strong>探す</strong><br>
-          一覧上部の「並び順」チップと「絞り込み」欄、タグクリックで目当ての作品を検索できます。パネル表示にすると右上のスライダーで表示サイズを調整できます。<span class="opt-only-tab-databank">プロンプトそのものを探したいときは「プロンプトデータバンク」タブが便利です。</span>
+          一覧上部の「並び順」チップと「絞り込み」欄、タグクリックで目当ての作品を検索できます。パネル表示にすると右上のスライダーで表示サイズを調整できます。<span class="opt-only-tab-databank">プロンプトそのものを探したいときは「プロンプト集計」タブが便利です。</span>
         </div>
       </div>
       <div class="guide-step">
@@ -2773,7 +2798,7 @@
       </div>
       <div class="feature-item novel-only">
         <div class="feature-name">ノベルゲーム投稿</div>
-        <div class="feature-desc">背景画像とセリフを並べて、簡単なノベルゲーム(紙芝居)を作って共有します。1シーンにつき背景画像を1枚選び、その上に話者名とセリフを何行でも足せます。話者名を空欄にすると地の文になります。「ゲーム投稿一覧」タブに並びます。</div>
+        <div class="feature-desc">背景画像とセリフを並べて、簡単なノベルゲーム(紙芝居)を作って共有します。1シーンにつき背景画像を1枚選び、その上に話者名とセリフを何行でも足せます。話者名を空欄にすると地の文になります。投稿済みの画像作品を「参考にした投稿作品」に選べば、その画像を再アップロードせずにそのまま背景として使えます。「ノベル」タブに並びます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプト例の投稿</div>
@@ -2807,7 +2832,7 @@
         <div class="feature-desc">投稿された動画作品が並びます。サムネイルの▶印が目印で、開くとその場で再生できます。</div>
       </div>
       <div class="feature-item novel-only">
-        <div class="feature-name">ゲーム投稿一覧</div>
+        <div class="feature-name">ノベル</div>
         <div class="feature-desc">投稿されたノベルゲームが並びます。開くと「▶ クリックして開始」が出るので、押すと再生が始まります。画面をクリックすると次のセリフへ進み、表示の途中で押すと残りをすぐ表示します。「AUTO」で自動送り、「ログ」でそれまでのセリフを読み返せます。</div>
       </div>
       <div class="feature-item opt-only-tab-prompt">
@@ -2823,7 +2848,7 @@
         <div class="feature-desc">「この画像のここを直してほしい」という依頼が並びます。対応した作品は依頼の詳細にまとまって表示されます。</div>
       </div>
       <div class="feature-item opt-only-tab-databank">
-        <div class="feature-name">プロンプトデータバンク</div>
+        <div class="feature-name">プロンプト集計</div>
         <div class="feature-desc">みんなの投稿に実際に使われているプロンプト語を集計し、日本語訳つきの辞書にしたタブです。使いたい語をカートに集めてまとめてコピーできます。</div>
       </div>
       <div class="feature-item opt-only-board">
@@ -3010,10 +3035,10 @@
     </section>
 
     <section class="panel opt-only-tab-databank">
-      <h2>プロンプトデータバンクの使い方</h2>
+      <h2>プロンプト集計の使い方</h2>
       <div class="guide-step">
         <div class="body">
-          「プロンプトデータバンク」タブは、みんなの投稿で実際に使われているプロンプトを「,」ごとに分解して集計し、日本語訳つきの一覧にした辞書です。「こういう表現、英語で何て書くんだろう？」を探すのに便利です。
+          「プロンプト集計」タブは、みんなの投稿で実際に使われているプロンプトを「,」ごとに分解して集計し、日本語訳つきの一覧にした辞書です。「こういう表現、英語で何て書くんだろう？」を探すのに便利です。
         </div>
       </div>
       <div class="feature-item">
@@ -3090,7 +3115,7 @@
 
       <div class="qa-item novel-only">
         <div class="qa-q">ノベルゲームはどうやって作りますか？</div>
-        <div class="qa-a">「投稿」タブで「ノベルゲームを投稿」を選ぶと、シナリオの編集欄が出ます。「＋ シーンを追加」でシーンを増やし、各シーンの左側に背景画像を1枚ドラッグ&amp;ドロップ(またはクリックして選択)します。右側の行に話者名とセリフを入力すると、その下に空行が自動で足されるので、続けて何行でも書けます。話者名を空欄にすると、名前を出さない地の文になります。TABキーで「話者→セリフ→次の行の話者」と移動でき、Enterキーでも次の行へ進めます。行の並び替えは左端の点マークをドラッグするか、↑↓ボタンで行えます。投稿前に「プレビューで動作確認」を押すと、保存せずにその場で実際の動きを確認できます。</div>
+        <div class="qa-a">「投稿」タブで「ノベルゲームを投稿」を選ぶと、シナリオの編集欄が出ます。右上の「参考にした投稿作品」で投稿済みの画像作品を選ぶと、<b>その作品の画像がそのままシーンの背景に流し込まれます</b>。この方法なら画像を新しくアップロードしないのでドライブの容量を使いません。シーンの画像を変えたいときは、そのシーンの画像枠に別の画像をドラッグ&amp;ドロップするか、枠をクリックして選び直してください。同じ画像で会話を続けたいときは「複製」でシーンごとコピーできます(画像は共有されるので容量は増えません)。なお、参考作品から流し込んだ画像は<b>元の作品のもの</b>なので、このノベルゲームを削除しても元の画像は消えません。自分でアップロードした画像だけが、ゲームの削除と一緒に消えます。もちろん「＋ シーンを追加」でシーンを増やし、各シーンの左側に背景画像を1枚ドラッグ&amp;ドロップ(またはクリックして選択)することもできます。右側の行に話者名とセリフを入力すると、その下に空行が自動で足されるので、続けて何行でも書けます。話者名を空欄にすると、名前を出さない地の文になります。TABキーで「話者→セリフ→次の行の話者」と移動でき、Enterキーでも次の行へ進めます。行の並び替えは左端の点マークをドラッグするか、↑↓ボタンで行えます。シーンそのものの並び替えも、シーン見出し左の点マークをドラッグするか「↑上へ」「↓下へ」で行えます。投稿前に「プレビューで動作確認」を押すと、保存せずにその場で実際の動きを確認できます。</div>
       </div>
 
       <div class="qa-item">
@@ -3154,7 +3179,7 @@
       </div>
 
       <div class="qa-item opt-only-tab-databank">
-        <div class="qa-q">プロンプトデータバンクの日本語訳が「—」だったり、意味が変だったりします。</div>
+        <div class="qa-q">プロンプト集計の日本語訳が「—」だったり、意味が変だったりします。</div>
         <div class="qa-a">日本語訳は自動翻訳をもとに用意しており、新しく使われた語は少し時間をおくと自動で埋まります(「—」は未登録の状態です)。訳が不自然な語や、もっと良い訳・関連キーワードを足したい場合は、管理者が辞書を直接直せます。気になる訳があれば使い方タブ下部の連絡フォームから管理者へ知らせてください。</div>
       </div>
 
@@ -4436,6 +4461,22 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function unlockPageScrollbar() {
     document.documentElement.classList.remove('modal-sb-hidden');
     document.documentElement.style.removeProperty('--modal-sbw');
+  }
+
+  // オーバーレイの外側クリックで閉じる共通処理。
+  // mousedown と click の両方がオーバーレイ上で起きたときだけ閉じる。
+  // (テキスト選択などでモーダル内から外へドラッグして離しただけで閉じてしまうのを防ぐ)
+  function wireOverlayDismiss(el, onClose) {
+    if (!el) return;
+    let downOnOverlay = false;
+    el.addEventListener('mousedown', function (e) { downOnOverlay = (e.target === el); });
+    el.addEventListener('click', function (e) {
+      const ok = (e.target === el) && downOnOverlay;
+      downOnOverlay = false;
+      if (!ok) return;
+      if (typeof onClose === 'function') onClose();
+      else el.classList.remove('open');
+    });
   }
 
   function openOverlay(el) {
@@ -6237,7 +6278,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   showAllTagsBtn.addEventListener('click', openTagModal);
   document.getElementById('tagModalCloseBtn').addEventListener('click', closeTagModal);
-  tagModalOverlay.addEventListener('click', function (e) { if (e.target === tagModalOverlay) closeTagModal(); });
+  wireOverlayDismiss(tagModalOverlay, function () { closeTagModal(); });
 
   /* ---------- タグ選択モーダル(閲覧タブ用) ---------- */
   const showAllBrowseTagsBtn = document.getElementById('showAllBrowseTagsBtn');
@@ -6266,7 +6307,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   showAllBrowseTagsBtn.addEventListener('click', openBrowseTagModal);
   document.getElementById('browseTagModalCloseBtn').addEventListener('click', closeBrowseTagModal);
-  browseTagModalOverlay.addEventListener('click', function (e) { if (e.target === browseTagModalOverlay) closeBrowseTagModal(); });
+  wireOverlayDismiss(browseTagModalOverlay, function () { closeBrowseTagModal(); });
   document.getElementById('clearBrowseTagsModalBtn').addEventListener('click', function () {
     tagStates = {};
     rebuildTagUI();
@@ -6835,7 +6876,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const tags = sortJa((p.tags || []).slice());
     const childCount = childCountOf(p);
     const commentCount = options.comment ? commentsFor(p.id).length : 0;
-    const linkBadges = (opts.counts === false) ? '' : linkBadgesHtml(p);
+    // 紐づけバッジ(差分N枚など)はピッカーでも出す。counts:false が消すのは
+    // グッド/ダウンロード数だけで、作品の性質を示すバッジは残す。
+    const linkBadges = (opts.badges === false) ? '' : linkBadgesHtml(p);
     return '' +
       '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
         (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
@@ -7383,12 +7426,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   })();
 
-  let modalDownOnOverlay = false;
-  modalOverlay.addEventListener('mousedown', function (e) { modalDownOnOverlay = (e.target === modalOverlay); });
-  modalOverlay.addEventListener('click', function (e) {
-    if (e.target === modalOverlay && modalDownOnOverlay) closeModal();
-    modalDownOnOverlay = false;
-  });
+  wireOverlayDismiss(modalOverlay, closeModal);
 
   /* ---------- フルスクリーン画像モーダル(パネル表示用) ---------- */
   const fullImageOverlay = document.getElementById('fullImageOverlay');
@@ -7743,7 +7781,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   vShowAllTagsBtn.addEventListener('click', function () { renderVideoTagModalCloud(); openOverlay(vBrowseTagModalOverlay); });
   document.getElementById('vBrowseTagModalCloseBtn').addEventListener('click', function () { vBrowseTagModalOverlay.classList.remove('open'); });
-  vBrowseTagModalOverlay.addEventListener('click', function (e) { if (e.target === vBrowseTagModalOverlay) vBrowseTagModalOverlay.classList.remove('open'); });
+  wireOverlayDismiss(vBrowseTagModalOverlay, function () { vBrowseTagModalOverlay.classList.remove('open'); });
   document.getElementById('vClearBrowseTagsModalBtn').addEventListener('click', function () {
     vTagStates = {};
     rebuildVideoTagUI();
@@ -7797,13 +7835,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (Array.isArray(s.lines)) {
       return {
         bg: s.bg || '',
+        own: s.own === true,
         lines: s.lines.map(function (l) {
           return { name: (l && l.name) || '', text: (l && l.text) || '' };
         })
       };
     }
     // 旧形式: 1シーンにつき話者+セリフが1組だけ
-    return { bg: s.bg || '', lines: [{ name: s.name || '', text: s.text || '' }] };
+    return { bg: s.bg || '', own: s.own === true, lines: [{ name: s.name || '', text: s.text || '' }] };
   }
   function novelScenarioOf(p) {
     const s = p && p.settings;
@@ -8346,7 +8385,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   nShowAllTagsBtn.addEventListener('click', function () { renderNovelTagModalCloud(); openOverlay(nBrowseTagModalOverlay); });
   document.getElementById('nBrowseTagModalCloseBtn').addEventListener('click', function () { nBrowseTagModalOverlay.classList.remove('open'); });
-  nBrowseTagModalOverlay.addEventListener('click', function (e) { if (e.target === nBrowseTagModalOverlay) nBrowseTagModalOverlay.classList.remove('open'); });
+  wireOverlayDismiss(nBrowseTagModalOverlay, function () { nBrowseTagModalOverlay.classList.remove('open'); });
   document.getElementById('nClearBrowseTagsModalBtn').addEventListener('click', function () {
     nTagStates = {};
     rebuildNovelTagUI();
@@ -8565,8 +8604,46 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ==================================================================== */
   let novelScenes = [];
 
+  /* 参考にした投稿作品の画像一覧。ここから選んだ画像は Drive へ再アップロードせず
+     既存URLをそのまま背景に使うため、容量を消費しない。 */
+  let novelRefImages = [];
+
+  function imagesOfPost(p) {
+    if (!p) return [];
+    const out = [];
+    if (p.imageUrl) out.push(p.imageUrl);
+    (p.variants || []).forEach(function (v) {
+      const u = (v && (v.imageUrl || v.url)) || (typeof v === 'string' ? v : '');
+      if (u && out.indexOf(u) === -1) out.push(u);
+    });
+    return out;
+  }
+
+  function syncNovelRefImages(opts) {
+    opts = opts || {};
+    const p = selectedReferenceId ? imagePosts.find(function (x) { return String(x.id) === String(selectedReferenceId); }) : null;
+    novelRefImages = imagesOfPost(p);
+    // 選択直後だけ、空のシーンへ自動で流し込む
+    if (opts.autofill && novelRefImages.length) {
+      const isBlank = function (s) {
+        return !s.bg && !s.dataUrl && !(s.lines || []).some(function (l) { return (l.name || '').trim() || (l.text || '').trim(); });
+      };
+      if (novelScenes.every(isBlank)) {
+        novelScenes = novelRefImages.map(function (url) {
+          // 借り物の画像なので own は立てない(この投稿を削除しても元画像は消さない)
+          return { bg: url, dataUrl: '', mime: '', own: false, lines: [novelBlankLine()] };
+        });
+      } else {
+        novelScenes.forEach(function (s, i) {
+          if (!s.bg && !s.dataUrl && novelRefImages[i]) { s.bg = novelRefImages[i]; s.own = false; }
+        });
+      }
+    }
+    renderNovelSceneList();
+  }
+
   function novelBlankLine() { return { name: '', text: '' }; }
-  function novelBlankScene() { return { bg: '', dataUrl: '', mime: '', lines: [novelBlankLine()] }; }
+  function novelBlankScene() { return { bg: '', dataUrl: '', mime: '', own: false, lines: [novelBlankLine()] }; }
 
   function novelSceneThumbSrc(s) { return s.dataUrl || s.bg || ''; }
 
@@ -8627,11 +8704,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       return '' +
         '<div class="novel-scene" data-scene-idx="' + i + '">' +
           '<div class="novel-scene-head">' +
+            '<span class="novel-scene-handle" data-scene-handle title="ドラッグで並び替え">⠿</span>' +
             '<span class="novel-scene-num">シーン ' + (i + 1) + '</span>' +
             '<span class="novel-scene-count">' + filled + '行</span>' +
             '<div class="novel-scene-actions">' +
               '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-up' + (i === 0 ? ' disabled' : '') + '>↑ 上へ</button>' +
               '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-down' + (i === novelScenes.length - 1 ? ' disabled' : '') + '>↓ 下へ</button>' +
+              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-dup title="このシーンを画像ごと複製">複製</button>' +
               '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-scene-remove>削除</button>' +
             '</div>' +
           '</div>' +
@@ -8694,6 +8773,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       card.querySelector('[data-scene-up]').addEventListener('click', function () { novelMoveScene(idx, -1); });
       card.querySelector('[data-scene-down]').addEventListener('click', function () { novelMoveScene(idx, 1); });
+      card.querySelector('[data-scene-dup]').addEventListener('click', function () {
+        const s = novelScenes[idx];
+        // 画像は同じURL/データを共有するので、複製してもアップロードは増えない
+        novelScenes.splice(idx + 1, 0, {
+          bg: s.bg, dataUrl: s.dataUrl, mime: s.mime, own: s.own === true,
+          lines: (s.lines || []).map(function (l) { return { name: l.name || '', text: l.text || '' }; })
+        });
+        renderNovelSceneList();
+      });
+      wireNovelSceneDrag(card, idx);
       card.querySelector('[data-scene-remove]').addEventListener('click', function () {
         novelScenes.splice(idx, 1);
         renderNovelSceneList();
@@ -8705,6 +8794,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           novelScenes[idx].bg = '';
           novelScenes[idx].dataUrl = '';
           novelScenes[idx].mime = '';
+          novelScenes[idx].own = false;
           renderNovelSceneList();
         });
       }
@@ -8770,6 +8860,59 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (el) el.focus();
   }
 
+  /* シーンのドラッグ並び替え。会話行と同じく、ハンドルを押している間だけ draggable にする。
+     dragover/drop はカード個別ではなく一覧コンテナへ委譲する(カード内の input などの上に
+     落とされてもドロップを取りこぼさないようにするため)。 */
+  let novelSceneDragFrom = null;
+  function wireNovelSceneDrag(card, sceneIdx) {
+    const handle = card.querySelector('[data-scene-handle]');
+    if (!handle) return;
+    handle.addEventListener('mousedown', function () { card.setAttribute('draggable', 'true'); });
+    handle.addEventListener('touchstart', function () { card.setAttribute('draggable', 'true'); }, { passive: true });
+    card.addEventListener('dragstart', function (e) {
+      novelSceneDragFrom = sceneIdx;
+      card.classList.add('dragging');
+      e.stopPropagation();
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'scene' + sceneIdx); } catch (err) {}
+    });
+    card.addEventListener('dragend', function () {
+      card.removeAttribute('draggable');
+      card.classList.remove('dragging');
+      document.querySelectorAll('.novel-scene.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+      novelSceneDragFrom = null;
+    });
+  }
+
+  (function wireNovelSceneListDrop() {
+    const listEl = document.getElementById('novelSceneList');
+    if (!listEl) return;
+    function targetIdx(e) {
+      const card = e.target && e.target.closest ? e.target.closest('.novel-scene') : null;
+      return card ? Number(card.dataset.sceneIdx) : null;
+    }
+    listEl.addEventListener('dragover', function (e) {
+      if (novelSceneDragFrom === null) return;
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+      const to = targetIdx(e);
+      listEl.querySelectorAll('.novel-scene').forEach(function (el) {
+        el.classList.toggle('drop-target', to !== null && Number(el.dataset.sceneIdx) === to && to !== novelSceneDragFrom);
+      });
+    });
+    listEl.addEventListener('drop', function (e) {
+      if (novelSceneDragFrom === null) return;
+      e.preventDefault();
+      const from = novelSceneDragFrom;
+      const to = targetIdx(e);
+      novelSceneDragFrom = null;
+      listEl.querySelectorAll('.novel-scene').forEach(function (el) { el.classList.remove('drop-target'); });
+      if (to === null || from === to) return;
+      const moved = novelScenes.splice(from, 1)[0];
+      novelScenes.splice(to, 0, moved);
+      renderNovelSceneList();
+    });
+  })();
+
   function novelMoveScene(idx, delta) {
     const to = idx + delta;
     if (to < 0 || to >= novelScenes.length) return;
@@ -8806,6 +8949,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       novelScenes[idx].dataUrl = dataUrl;
       novelScenes[idx].mime = file.type || 'image/png';
       novelScenes[idx].bg = '';
+      novelScenes[idx].own = true;   // 自分でアップロードした画像
       renderNovelSceneList();
     } catch (err) {
       console.error(err);
@@ -8814,7 +8958,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function resetNovelEditor() {
-    novelScenes = [];
+    novelScenes = [novelBlankScene()];   // 空のシーンを1つ残して、すぐ書き始められるようにする
+    novelRefImages = [];
     document.getElementById('novelEditorStatus').textContent = '';
     renderNovelSceneList();
   }
@@ -8826,6 +8971,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         bg: s.bg || '',
         dataUrl: '',
         mime: '',
+        own: s.own === true,
         lines: s.lines.length ? s.lines.map(function (l) { return { name: l.name || '', text: l.text || '' }; }) : [novelBlankLine()]
       };
     });
@@ -8840,12 +8986,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // 送信用: シナリオ本体と、未アップロード画像(インデックス付き)に分ける
   function buildNovelPayloadParts() {
-    const scenario = novelScenes.map(function (s) {
-      return { bg: s.dataUrl ? '' : (s.bg || ''), lines: novelCleanLines(s.lines) };
-    });
     const novelImages = [];
-    novelScenes.forEach(function (s, i) {
-      if (s.dataUrl) novelImages.push({ index: i, imageBase64: s.dataUrl, imageMime: s.mime || 'image/png', imageName: 'novel_scene_' + (i + 1) });
+    const firstIdxOf = {};   // 同じ画像を複製したときに二重アップロードしないための対応表
+    const scenario = novelScenes.map(function (s, i) {
+      // own: この投稿が自分でアップロードした画像かどうか(削除時に消してよいかの判断に使う)
+      const entry = { bg: s.dataUrl ? '' : (s.bg || ''), own: s.dataUrl ? true : (s.own === true), lines: novelCleanLines(s.lines) };
+      if (s.dataUrl) {
+        if (firstIdxOf[s.dataUrl] === undefined) {
+          firstIdxOf[s.dataUrl] = i;
+          novelImages.push({ index: i, imageBase64: s.dataUrl, imageMime: s.mime || 'image/png', imageName: 'novel_scene_' + (i + 1) });
+        } else {
+          entry.copyOf = firstIdxOf[s.dataUrl];   // 先に上げた同じ画像を使い回す
+        }
+      }
+      return entry;
     });
     return { scenario: scenario, novelImages: novelImages };
   }
@@ -8876,7 +9030,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     novelPreviewPlayer = createNovelPlayer(document.getElementById('novelPreviewMount'), scenario);
   });
   document.getElementById('novelPreviewCloseBtn').addEventListener('click', closeNovelPreview);
-  novelPreviewOverlay.addEventListener('click', function (e) { if (e.target === novelPreviewOverlay) closeNovelPreview(); });
+  wireOverlayDismiss(novelPreviewOverlay, function () { closeNovelPreview(); });
 
   function currentPostMode() {
     const b = document.querySelector('#postModeToggle button.active');
@@ -8894,9 +9048,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.body.classList.toggle('post-mode-video', mode === 'video');
     document.body.classList.toggle('post-mode-novel', mode === 'novel');
     document.getElementById('novelEditorField').style.display = mode === 'novel' ? '' : 'none';
-    if (mode === 'novel' && !novelScenes.length && !isEditingImagePost()) {
-      novelScenes = [novelBlankScene()];
-      renderNovelSceneList();
+    if (mode === 'novel') {
+      if (!novelScenes.length && !isEditingImagePost()) novelScenes = [novelBlankScene()];
+      syncNovelRefImages();
     }
     // 画像フォーム流用: fix=修正依頼内容欄、image=修正依頼ピッカー、video=動画用の見出し/受入形式
     document.getElementById('imageFormHeading').textContent = mode === 'fix' ? '修正依頼を投稿' : (mode === 'video' ? '動画を投稿' : (mode === 'novel' ? 'ノベルゲームを投稿' : '画像を投稿'));
@@ -8999,7 +9153,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   pShowAllTagsBtn.addEventListener('click', openPTagModal);
   document.getElementById('pTagModalCloseBtn').addEventListener('click', closePTagModal);
-  pTagModalOverlay.addEventListener('click', function (e) { if (e.target === pTagModalOverlay) closePTagModal(); });
+  wireOverlayDismiss(pTagModalOverlay, function () { closePTagModal(); });
 
   // PROMPT FORM: 投稿
   function resetPromptForm() {
@@ -9167,7 +9321,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   document.getElementById('pickBasePromptBtn').addEventListener('click', openBasePromptModal);
   document.getElementById('basePromptModalCloseBtn').addEventListener('click', closeBasePromptModal);
-  basePromptModalOverlay.addEventListener('click', function (e) { if (e.target === basePromptModalOverlay) closeBasePromptModal(); });
+  wireOverlayDismiss(basePromptModalOverlay, function () { closeBasePromptModal(); });
   document.getElementById('basePromptSearch').addEventListener('input', function () { renderBasePromptList(this.value); });
   document.getElementById('clearBasePromptBtn').addEventListener('click', function () { selectedBasePromptIds = []; renderBasePromptDisplay(); renderBasePromptList(document.getElementById('basePromptSearch').value); });
 
@@ -9225,7 +9379,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   document.getElementById('pickFixRequestBtn').addEventListener('click', openFixRequestModal);
   document.getElementById('fixRequestModalCloseBtn').addEventListener('click', closeFixRequestModal);
-  fixRequestModalOverlay.addEventListener('click', function (e) { if (e.target === fixRequestModalOverlay) closeFixRequestModal(); });
+  wireOverlayDismiss(fixRequestModalOverlay, function () { closeFixRequestModal(); });
   document.getElementById('fixRequestSearch').addEventListener('input', function () { renderFixRequestList(this.value); });
   document.getElementById('clearFixRequestBtn').addEventListener('click', function () { selectedFixRequestIds = []; renderFixRequestDisplay(); renderFixRequestList(document.getElementById('fixRequestSearch').value); });
 
@@ -9282,7 +9436,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   document.getElementById('pickParentBtn').addEventListener('click', openParentModal);
   document.getElementById('parentModalCloseBtn').addEventListener('click', closeParentModal);
-  parentModalOverlay.addEventListener('click', function (e) { if (e.target === parentModalOverlay) closeParentModal(); });
+  wireOverlayDismiss(parentModalOverlay, function () { closeParentModal(); });
   document.getElementById('parentSearch').addEventListener('input', function () { renderParentList(this.value); });
   document.getElementById('clearParentBtn').addEventListener('click', function () { selectedParentId = ''; renderParentDisplay(); closeParentModal(); });
 
@@ -9292,12 +9446,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const referenceEmptyEl = document.getElementById('referenceEmpty');
 
   function renderReferenceDisplay() {
-    const el = document.getElementById('referenceDisplay');
-    if (!el) return;
     const p = selectedReferenceId ? imagePosts.find(function (x) { return String(x.id) === String(selectedReferenceId); }) : null;
-    if (!p) { el.innerHTML = ''; return; }
-    el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="clearReferenceInline">×</button></span>';
-    document.getElementById('clearReferenceInline').addEventListener('click', function () { selectedReferenceId = ''; renderReferenceDisplay(); });
+    [['referenceDisplay', 'clearReferenceInline'], ['novelReferenceDisplay', 'clearNovelReferenceInline']].forEach(function (pair) {
+      const el = document.getElementById(pair[0]);
+      if (!el) return;
+      if (!p) { el.innerHTML = ''; return; }
+      el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="' + pair[1] + '">×</button></span>';
+      const btn = document.getElementById(pair[1]);
+      if (btn) btn.addEventListener('click', function () {
+        selectedReferenceId = '';
+        renderReferenceDisplay();
+        syncNovelRefImages();
+      });
+    });
   }
   function renderReferenceList(q) {
     q = (q || '').trim().toLowerCase();
@@ -9316,6 +9477,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     wirePickerRows(referenceListEl, function (id) {
       selectedReferenceId = id;
       renderReferenceDisplay();
+      // ノベル投稿では、選んだ作品の画像をそのままシーン背景に流し込む
+      // (Driveへ再アップロードせず既存URLを使い回すので容量を消費しない)
+      syncNovelRefImages({ autofill: true });
       closeReferenceModal();
     });
   }
@@ -9330,10 +9494,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function closeReferenceModal() { referenceModalOverlay.classList.remove('open'); }
 
   document.getElementById('pickReferenceBtn').addEventListener('click', openReferenceModal);
+  document.getElementById('novelPickReferenceBtn').addEventListener('click', openReferenceModal);
   document.getElementById('referenceModalCloseBtn').addEventListener('click', closeReferenceModal);
-  referenceModalOverlay.addEventListener('click', function (e) { if (e.target === referenceModalOverlay) closeReferenceModal(); });
+  wireOverlayDismiss(referenceModalOverlay, function () { closeReferenceModal(); });
   document.getElementById('referenceSearch').addEventListener('input', function () { renderReferenceList(this.value); });
-  document.getElementById('clearReferenceBtn').addEventListener('click', function () { selectedReferenceId = ''; renderReferenceDisplay(); closeReferenceModal(); });
+  document.getElementById('clearReferenceBtn').addEventListener('click', function () { selectedReferenceId = ''; renderReferenceDisplay(); syncNovelRefImages(); closeReferenceModal(); });
 
   /* ===== VIDEO SOURCE PICKER(動画の元になった画像作品) ===== */
   const videoSourceModalOverlay = document.getElementById('videoSourceModalOverlay');
@@ -9386,7 +9551,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   document.getElementById('pickVideoSourceBtn').addEventListener('click', openVideoSourceModal);
   document.getElementById('videoSourceModalCloseBtn').addEventListener('click', closeVideoSourceModal);
-  videoSourceModalOverlay.addEventListener('click', function (e) { if (e.target === videoSourceModalOverlay) closeVideoSourceModal(); });
+  wireOverlayDismiss(videoSourceModalOverlay, function () { closeVideoSourceModal(); });
   document.getElementById('videoSourceSearch').addEventListener('input', function () { renderVideoSourceList(this.value); });
   document.getElementById('clearVideoSourceBtn').addEventListener('click', function () { selectedVideoSourceId = ''; renderVideoSourceDisplay(); closeVideoSourceModal(); });
 
@@ -9587,7 +9752,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   document.getElementById('pickRequestBtn').addEventListener('click', openRequestModal2);
   document.getElementById('requestModalCloseBtn').addEventListener('click', closeRequestModal);
-  requestModalOverlay.addEventListener('click', function (e) { if (e.target === requestModalOverlay) closeRequestModal(); });
+  wireOverlayDismiss(requestModalOverlay, function () { closeRequestModal(); });
   document.getElementById('requestSearch').addEventListener('input', function () { renderRequestPickerList(this.value); });
   document.getElementById('clearRequestBtn').addEventListener('click', function () { selectedRequestId = ''; renderRequestDisplay(); closeRequestModal(); });
 
@@ -10511,7 +10676,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   pShowAllBrowseTagsBtn.addEventListener('click', openPBrowseTagModal);
   document.getElementById('pBrowseTagModalCloseBtn').addEventListener('click', closePBrowseTagModal);
-  pBrowseTagModalOverlay.addEventListener('click', function (e) { if (e.target === pBrowseTagModalOverlay) closePBrowseTagModal(); });
+  wireOverlayDismiss(pBrowseTagModalOverlay, function () { closePBrowseTagModal(); });
   document.getElementById('clearPBrowseTagsModalBtn').addEventListener('click', function () {
     pTagStates = {};
     rebuildPromptBrowseTagUI();
@@ -10684,7 +10849,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (adminMode) { localStorage.removeItem('pr_admin_pw'); setAdminMode(false); } else openAdminAuthModal();
   });
   document.getElementById('adminAuthCloseBtn').addEventListener('click', closeAdminAuthModal);
-  adminAuthOverlay.addEventListener('click', function (e) { if (e.target === adminAuthOverlay) closeAdminAuthModal(); });
+  wireOverlayDismiss(adminAuthOverlay, function () { closeAdminAuthModal(); });
   adminPasswordInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitAdminAuth(); });
   document.getElementById('adminAuthSubmitBtn').addEventListener('click', submitAdminAuth);
 
@@ -10736,7 +10901,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function closeOwnerAuthModal() { ownerAuthOverlay.classList.remove('open'); }
 
   document.getElementById('ownerAuthCloseBtn').addEventListener('click', closeOwnerAuthModal);
-  ownerAuthOverlay.addEventListener('click', function (e) { if (e.target === ownerAuthOverlay) closeOwnerAuthModal(); });
+  wireOverlayDismiss(ownerAuthOverlay, function () { closeOwnerAuthModal(); });
   ownerPasswordInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitOwnerAuth(); });
   document.getElementById('ownerAuthSubmitBtn').addEventListener('click', submitOwnerAuth);
 
@@ -10843,7 +11008,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     openOverlay(commentOverlay);
   }
   function closeCommentModal() { commentOverlay.classList.remove('open'); }
-  commentOverlay.addEventListener('click', function (e) { if (e.target === commentOverlay) closeCommentModal(); });
+  wireOverlayDismiss(commentOverlay, function () { closeCommentModal(); });
 
   async function submitComment(p) {
     const status = document.getElementById('commentStatus');
@@ -10902,10 +11067,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'tabBrowse', group: 'tabs', label: '画像投稿一覧タブ', desc: 'オフにすると画像投稿一覧タブを非表示にします' },
     { key: 'tabPrompt', group: 'tabs', label: 'プロンプト投稿一覧タブ', desc: 'オフにするとプロンプト投稿一覧タブを非表示にします' },
     { key: 'tabRequest', group: 'tabs', label: 'リクエスト一覧タブ', desc: 'オフにするとリクエスト一覧タブを非表示にします' },
-    { key: 'tabDatabank', group: 'tabs', label: 'プロンプトデータバンクタブ', desc: 'オフにするとプロンプトデータバンクタブを非表示にします' },
+    { key: 'tabDatabank', group: 'tabs', label: 'プロンプト集計タブ', desc: 'オフにすると「プロンプト集計」タブを非表示にします' },
     { key: 'board', group: 'tabs', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
     { key: 'video', group: 'tabs', label: '動画投稿機能', desc: 'オフにすると「動画を投稿」モードと「動画投稿一覧」タブを非表示にします' },
-    { key: 'tabNovel', group: 'tabs', label: 'ノベルゲーム機能', desc: 'オフにすると「ノベルゲームを投稿」モードと「ゲーム投稿一覧」タブを非表示にします' },
+    { key: 'tabNovel', group: 'tabs', label: 'ノベルゲーム機能', desc: 'オフにすると「ノベルゲームを投稿」モードと「ノベル」タブを非表示にします' },
     { key: 'tabLink', group: 'tabs', label: 'リンクタブ', desc: 'オフにするとリンクタブを非表示にします' },
     { key: 'tabUsage', group: 'tabs', label: '本ツールの使い方タブ', desc: 'オフにすると使い方タブを非表示にします' },
     { key: 'tabGuide', group: 'tabs', label: 'はじめてガイドタブ', desc: 'オフにするとはじめてガイドタブを非表示にします' },
@@ -11129,7 +11294,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
   function closeAdminOptionsModal() { adminOptionsOverlay.classList.remove('open'); }
-  adminOptionsOverlay.addEventListener('click', function (e) { if (e.target === adminOptionsOverlay) closeAdminOptionsModal(); });
+  wireOverlayDismiss(adminOptionsOverlay, function () { closeAdminOptionsModal(); });
   document.getElementById('adminOptionsBtn').addEventListener('click', openAdminOptionsModal);
 
   async function saveAdminOptions() {
@@ -11243,6 +11408,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('cancelEditBtn').style.display = editingImage ? '' : 'none';
     document.getElementById('pCancelEditBtn').style.display = editingPrompt ? '' : 'none';
     document.getElementById('rCancelEditBtn').style.display = editingRequest ? '' : 'none';
+    // 編集中は「編集をキャンセル」があるので、新規投稿のときだけ「投稿をキャンセル」を出す
+    document.getElementById('clearFormBtn').style.display = editingImage ? 'none' : '';
+    document.getElementById('pClearFormBtn').style.display = editingPrompt ? 'none' : '';
+    document.getElementById('rClearFormBtn').style.display = editingRequest ? 'none' : '';
     document.getElementById('editPwField').style.display = editingImage ? 'none' : '';
     document.getElementById('pEditPwField').style.display = editingPrompt ? 'none' : '';
     document.getElementById('rEditPwField').style.display = editingRequest ? 'none' : '';
@@ -11292,6 +11461,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       selectedParentId = String(p.parentId || '');
       renderParentDisplay();
       selectedReferenceId = String(p.refId || '');
+      if (type === 'novel') setTimeout(function () { syncNovelRefImages(); }, 0);
       renderReferenceDisplay();
       selectedVideoSourceId = String(p.videoSourceId || '');
       renderVideoSourceDisplay();
@@ -11371,6 +11541,42 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   document.getElementById('cancelEditBtn').addEventListener('click', function () { cancelAdminEdit(); });
   document.getElementById('pCancelEditBtn').addEventListener('click', function () { cancelAdminEdit(); });
   document.getElementById('rCancelEditBtn').addEventListener('click', function () { cancelAdminEdit(); });
+
+  // 「投稿をキャンセル」= 入力中の内容を破棄してフォームを空に戻す。
+  // 打ち込んだ内容が消えるので、何か入力されているときだけ確認を挟む。
+  function wireClearFormBtn(btnId, hasInput, reset, statusId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (hasInput() && !window.confirm('入力中の内容を破棄して、フォームを空に戻します。よろしいですか？')) return;
+      reset();
+      const st = document.getElementById(statusId);
+      if (st) {
+        st.textContent = '入力内容をクリアしました';
+        setTimeout(function () { if (st.textContent === '入力内容をクリアしました') st.textContent = ''; }, 2000);
+      }
+    });
+  }
+  function anyValue(ids) {
+    return ids.some(function (id) {
+      const el = document.getElementById(id);
+      return el && String(el.value || '').trim() !== '';
+    });
+  }
+  wireClearFormBtn('clearFormBtn', function () {
+    return anyValue(['titleInput', 'promptInput', 'negativeInput', 'memoInput', 'fixContentInput']) ||
+      selectedTags.length > 0 || novelScenes.some(function (s) {
+        return s.bg || s.dataUrl || (s.lines || []).some(function (l) { return (l.name || '').trim() || (l.text || '').trim(); });
+      }) || (imageInput.files && imageInput.files.length > 0) || !!selectedReferenceId || !!selectedParentId;
+  }, resetImageForm, 'statusText');
+
+  wireClearFormBtn('pClearFormBtn', function () {
+    return anyValue(['pTitleInput', 'pPromptInput', 'pNegativeInput', 'pMemoInput']) || pSelectedTags.length > 0;
+  }, resetPromptForm, 'pStatusText');
+
+  wireClearFormBtn('rClearFormBtn', function () {
+    return anyValue(['rTitleInput', 'rBodyInput']) || requestRefs.length > 0;
+  }, resetRequestForm, 'rStatusText');
 
 
   async function adminDeletePost(p) {
@@ -11891,7 +12097,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   document.getElementById('adminContactsBtn').addEventListener('click', openContactsModal);
-  document.getElementById('contactsOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+  wireOverlayDismiss(document.getElementById('contactsOverlay'));
 
   // ===== ANNOUNCE (お知らせ) =====
   function sortedAnnounce() {
@@ -12040,18 +12246,26 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
+  // 掲示板の添付と同じ「attach-strip + 追加タイル」方式に揃えている
   function renderAnnounceComposeThumbs() {
-    const wrap = document.getElementById('announceComposeThumbs');
-    if (!wrap) return;
-    wrap.innerHTML = announceRefs.map(function (r, i) {
-      return '<div class="ref-thumb"><img src="' + escapeHtml(r.dataUrl) + '" alt="添付画像" data-ac-view="' + i + '"><button class="ref-remove" type="button" data-ac-idx="' + i + '" title="削除">✕</button></div>';
-    }).join('');
-    wrap.querySelectorAll('[data-ac-view]').forEach(function (img) {
-      img.addEventListener('click', function () { const r = announceRefs[Number(img.dataset.acView)]; if (r) openRefLightbox(r.dataUrl); });
+    const strip = document.getElementById('announceStrip');
+    if (!strip) return;
+    strip.innerHTML = stripInnerHtml(announceRefs, function (r) { return r.dataUrl; });
+    strip.querySelectorAll('[data-view]').forEach(function (img) {
+      img.addEventListener('click', function () {
+        const r = announceRefs[Number(img.dataset.view)];
+        if (r) openRefLightbox(r.dataUrl);
+      });
     });
-    wrap.querySelectorAll('[data-ac-idx]').forEach(function (btn) {
-      btn.addEventListener('click', function () { announceRefs.splice(Number(btn.dataset.acIdx), 1); renderAnnounceComposeThumbs(); });
+    strip.querySelectorAll('.attach-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        announceRefs.splice(Number(btn.dataset.idx), 1);
+        renderAnnounceComposeThumbs();
+      });
     });
+    const tile = strip.querySelector('[data-addtile]');
+    const fi = document.getElementById('announceRefInput');
+    if (tile && fi) tile.addEventListener('click', function () { fi.click(); });
   }
 
   async function addAnnounceFiles(fileList) {
@@ -12066,6 +12280,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       renderAnnounceComposeThumbs();
     } catch (err) {
       console.error(err);
+      const st = document.getElementById('announceComposeStatus');
+      if (st) st.textContent = '画像の処理に失敗しました';
     } finally {
       hideLoading();
     }
@@ -12084,37 +12300,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<input type="text" id="announceTitleInput" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="例: メンテナンスのお知らせ">' +
       '<label class="field-label">お知らせ本文(クリックで開くモーダルに全文表示されます)</label>' +
       '<textarea id="announceBodyInput" placeholder="詳しい内容をご記入ください"></textarea>' +
-      '<div class="board-attach-row">' +
-        '<button class="btn-ghost" type="button" id="announceAttachToggle">画像を添付</button>' +
-        '<span class="board-attach-hint">(任意・複数可 / jpegに変換・縮小して保存されます)</span>' +
-      '</div>' +
-      '<div id="announceDropzoneWrap" style="display:none;">' +
-        '<div class="dropzone dropzone-compact" id="announceDropzone">' +
-          '<div class="dz-title">ここに画像をドラッグ&ドロップ</div>' +
-          '<div class="dz-sub">または<span class="dz-browse">クリックしてファイルを選択</span></div>' +
-          '<input type="file" id="announceRefInput" accept="image/*" multiple>' +
-        '</div>' +
-      '</div>' +
-      '<div class="ref-thumbs" id="announceComposeThumbs"></div>' +
+      '<label class="field-label">画像を添付(任意・複数可 / jpegに変換・縮小して保存されます)</label>' +
+      '<div class="attach-strip" id="announceStrip"></div>' +
+      '<input type="file" id="announceRefInput" accept="image/*" multiple style="display:none;">' +
       '<div class="admin-modal-status" id="announceComposeStatus"></div>' +
       '<div class="submit-row"><button class="btn-submit" type="button" id="announceSubmitBtn">投稿する</button></div>';
 
     renderAnnounceComposeThumbs();
 
     document.getElementById('announceComposeCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
-    document.getElementById('announceAttachToggle').addEventListener('click', function () {
-      const wrap = document.getElementById('announceDropzoneWrap');
-      const show = wrap.style.display === 'none';
-      wrap.style.display = show ? '' : 'none';
-      this.classList.toggle('on', show);
-      this.textContent = show ? '添付を閉じる' : '画像を添付';
-    });
-    const dz = document.getElementById('announceDropzone');
+    const strip = document.getElementById('announceStrip');
     const fi = document.getElementById('announceRefInput');
-    dz.addEventListener('click', function () { fi.click(); });
-    dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('drag-over'); });
-    dz.addEventListener('dragleave', function () { dz.classList.remove('drag-over'); });
-    dz.addEventListener('drop', function (e) { e.preventDefault(); dz.classList.remove('drag-over'); if (e.dataTransfer && e.dataTransfer.files) addAnnounceFiles(e.dataTransfer.files); });
+    strip.addEventListener('dragover', function (e) { e.preventDefault(); strip.classList.add('drag-over'); });
+    strip.addEventListener('dragleave', function () { strip.classList.remove('drag-over'); });
+    strip.addEventListener('drop', function (e) {
+      e.preventDefault();
+      strip.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files) addAnnounceFiles(e.dataTransfer.files);
+    });
     fi.addEventListener('change', function () { addAnnounceFiles(fi.files); fi.value = ''; });
     document.getElementById('announceSubmitBtn').addEventListener('click', submitAnnounce);
     openOverlay(overlay);
@@ -12172,8 +12375,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       btn.disabled = false;
     }
   });
-  document.getElementById('announceOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
-  document.getElementById('announceComposeOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+  wireOverlayDismiss(document.getElementById('announceOverlay'));
+  wireOverlayDismiss(document.getElementById('announceComposeOverlay'));
   document.getElementById('adminAnnounceBtn').addEventListener('click', openAnnounceComposeModal);
 
   /* ===== LINKS(リンク集) ===== */
@@ -12315,7 +12518,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   document.getElementById('addLinkBtn').addEventListener('click', function () { openLinkCompose(null); });
   document.getElementById('linkSubmitBtn').addEventListener('click', submitLink);
   document.getElementById('linkComposeCloseBtn').addEventListener('click', function () { document.getElementById('linkComposeOverlay').classList.remove('open'); });
-  document.getElementById('linkComposeOverlay').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+  wireOverlayDismiss(document.getElementById('linkComposeOverlay'));
 
   // ===== EDIT PASSWORD TOOLTIP =====
   function initEditPwTooltip() {
