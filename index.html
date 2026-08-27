@@ -375,6 +375,21 @@
   .show-all-tags:hover{ border-color: var(--accent); }
   .tag-modal-hint{ font-size: 12px; color: var(--ink-dim); font-family:'Noto Sans JP',sans-serif; margin: 0 0 14px; }
 
+  /* ---- 検索エリア: コンパクト表示 ---- */
+  .search-panel{ padding: 14px 18px; margin-bottom: 16px; }
+  .search-row{ gap: 10px; margin-bottom: 10px; }
+  .search-panel .label{ width: 92px; min-width: 92px; font-size: 11.5px; flex: 0 0 auto; white-space: nowrap; }
+  .search-panel input[type="text"]{ padding: 6px 10px; font-size: 12.5px; border-radius: 8px; }
+  .search-panel .mode-toggle{ border-radius: 6px; }
+  .search-panel .mode-toggle button{ padding: 5px 10px; font-size: 11.5px; }
+  .search-panel .sort-chip{ padding: 5px 10px; font-size: 11.5px; }
+  .search-panel .clear-tags{ font-size: 11px; }
+  .search-panel .tag-pill{ padding: 5px 10px; font-size: 11.5px; }
+  .search-panel .search-toggle-btn{ padding: 5px 10px; font-size: 11.5px; }
+  .search-panel .show-all-tags{ padding: 5px 10px; font-size: 11.5px; }
+  .search-row .tag-cloud-wrap{ flex: 1 1 260px; margin: 0; }
+  .mode-toggle-row{ display:flex; align-items:center; gap:10px; margin-left:auto; }
+
   .toolbar{
     display:flex; justify-content: space-between; align-items:center;
     margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
@@ -824,7 +839,7 @@
   .panel-size-control input[type="range"]{ width: 140px; accent-color: var(--accent); }
 
   /* ---- プロンプトデータバンク ---- */
-  .search-row .label.label-tight{ min-width: auto; }
+  .search-row .label.label-tight{ min-width: auto; width: auto; }
   .databank-table{
     display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
   }
@@ -1598,6 +1613,26 @@
   body.top-compact .search-panel .search-row .mode-toggle{ width: 100%; }
   body.top-compact .search-panel .search-row .mode-toggle button{ flex: 1 1 auto; }
   body.top-compact .search-panel .search-row .clear-tags{ margin-left: 0; align-self: flex-end; }
+  body.top-compact .search-panel .search-row .tag-cloud-wrap{ flex: 0 1 auto; width: 100%; }
+  body.top-compact .search-panel .search-row .mode-toggle-row{ width: 100%; margin-left: 0; justify-content: space-between; }
+  body.top-compact .search-panel .search-row .mode-toggle-row .mode-toggle{ width: auto; }
+  body.top-compact .search-panel .search-row .mode-toggle-row .mode-toggle button{ flex: 0 0 auto; }
+  body.top-compact .search-panel .search-row .mode-toggle-row .clear-tags{ margin-left: 0; align-self: auto; }
+  body.top-compact .search-panel .search-row.filter-row .mode-toggle-row,
+  body.top-compact .search-panel .search-row.tag-filter-row .mode-toggle-row{
+    width: auto; margin-left: auto; justify-content: flex-start;
+  }
+  body.top-compact .search-panel .search-row.filter-row,
+  body.top-compact .search-panel .search-row.tag-filter-row{
+    flex-direction: row; flex-wrap: wrap; align-items: center;
+  }
+  body.top-compact .search-panel .search-row.filter-row > .label,
+  body.top-compact .search-panel .search-row.tag-filter-row > .label{ order: 0; width: auto; }
+  body.top-compact .search-panel .search-row.filter-row > .mode-toggle-row,
+  body.top-compact .search-panel .search-row.tag-filter-row > .mode-toggle-row{ order: 1; }
+  body.top-compact .search-panel .search-row.filter-row > .filter-input,
+  body.top-compact .search-panel .search-row.filter-row > .dl-wrap{ order: 2; flex: 0 0 auto; width: 100%; }
+  body.top-compact .search-panel .search-row.tag-filter-row > .tag-cloud-wrap{ order: 2; flex: 0 1 auto; width: 100%; }
   body.top-compact .sort-row .row-right-toggles{ order: -1; }
   body.top-compact #browseSearchPanel.search-collapsed .sort-chip[data-field="downloadCount"],
   body.top-compact #browseSearchPanel.search-collapsed .sort-chip[data-field="author"],
@@ -1646,6 +1681,26 @@
     .search-panel .search-row .mode-toggle{ width: 100%; }
     .search-panel .search-row .mode-toggle button{ flex: 1 1 auto; }
     .search-panel .search-row .clear-tags{ margin-left: 0; align-self: flex-end; }
+    .search-panel .search-row .tag-cloud-wrap{ flex: 0 1 auto; width: 100%; }
+    .search-panel .search-row .mode-toggle-row{ width: 100%; margin-left: 0; justify-content: space-between; }
+    .search-panel .search-row .mode-toggle-row .mode-toggle{ width: auto; }
+    .search-panel .search-row .mode-toggle-row .mode-toggle button{ flex: 0 0 auto; }
+    .search-panel .search-row .mode-toggle-row .clear-tags{ margin-left: 0; align-self: auto; }
+    .search-panel .search-row.filter-row .mode-toggle-row,
+    .search-panel .search-row.tag-filter-row .mode-toggle-row{
+      width: auto; margin-left: auto; justify-content: flex-start;
+    }
+    .search-panel .search-row.filter-row,
+    .search-panel .search-row.tag-filter-row{
+      flex-direction: row; flex-wrap: wrap; align-items: center;
+    }
+    .search-panel .search-row.filter-row > .label,
+    .search-panel .search-row.tag-filter-row > .label{ order: 0; width: auto; }
+    .search-panel .search-row.filter-row > .mode-toggle-row,
+    .search-panel .search-row.tag-filter-row > .mode-toggle-row{ order: 1; }
+    .search-panel .search-row.filter-row > .filter-input,
+    .search-panel .search-row.filter-row > .dl-wrap{ order: 2; flex: 0 0 auto; width: 100%; }
+    .search-panel .search-row.tag-filter-row > .tag-cloud-wrap{ order: 2; flex: 0 1 auto; width: 100%; }
     /* 「子も全て表示」「検索エリアを非表示」を並び順の上に出す */
     .sort-row .row-right-toggles{ order: -1; }
     .toolbar{ gap: 8px; }
@@ -2046,33 +2101,37 @@
           <button type="button" class="sort-chip fixrequest-only" id="includeFixToggle" title="修正依頼の投稿も一覧にすべて表示します(パネル表示を含む)">修正依頼作品も表示</button>
         </div>
       </div>
-      <div class="search-row">
+      <div class="search-row filter-row">
         <span class="label">絞り込み</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="filterAuthor" list="dl_author" placeholder="投稿者">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterUiPreset" list="dl_set_uiPreset" placeholder="UI Preset">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
-        <button class="clear-tags" id="clearFiltersBtn" type="button">絞り込みをクリア</button>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="keywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="clearFiltersBtn" type="button">絞り込みをクリア</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label" style="margin-left:0;">キーワード検索</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterKeyword" placeholder="タイトル・プロンプト等を検索（スペース区切り）">
-        <div class="mode-toggle" id="keywordModeToggle">
-          <button type="button" data-kwmode="AND" class="active">AND</button>
-          <button type="button" data-kwmode="OR">OR</button>
-          <button type="button" data-kwmode="NOT">NOT</button>
-        </div>
       </div>
-      <div class="search-row">
+      <div class="search-row tag-filter-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
-        <div class="mode-toggle" id="tagMatchModeToggle">
-          <button type="button" data-tagmode="AND" class="active">AND</button>
-          <button type="button" data-tagmode="OR">OR</button>
-          <button type="button" data-tagmode="NOT">NOT</button>
+        <div class="tag-cloud-wrap"><div class="tag-cloud" id="tagCloud"></div>
+        <button class="show-all-tags" type="button" id="showAllBrowseTagsBtn" style="display:none;">全て表示</button></div>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="tagMatchModeToggle">
+            <button type="button" data-tagmode="AND" class="active">AND</button>
+            <button type="button" data-tagmode="OR">OR</button>
+            <button type="button" data-tagmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="clearTagsBtn" type="button">タグ選択をクリア</button>
         </div>
-        <button class="clear-tags" id="clearTagsBtn" type="button">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud-wrap"><div class="tag-cloud" id="tagCloud"></div>
-      <button class="show-all-tags" type="button" id="showAllBrowseTagsBtn" style="display:none;">全て表示</button></div>
     </div>
 
     <div class="toolbar">
@@ -2109,33 +2168,37 @@
           <button type="button" class="search-toggle-btn" id="vToggleSearchAreaBtn">検索エリアを非表示</button>
         </div>
       </div>
-      <div class="search-row">
+      <div class="search-row filter-row">
         <span class="label">絞り込み</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="vFilterAuthor" list="dl_author" placeholder="投稿者">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="vFilterModel" list="dl_vset_wanModel" placeholder="Model">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="vFilterSampler" list="dl_vset_sampler" placeholder="Sampler">
-        <button class="clear-tags" id="vClearFiltersBtn" type="button">絞り込みをクリア</button>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="vKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="vClearFiltersBtn" type="button">絞り込みをクリア</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label" style="margin-left:0;">キーワード検索</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="vFilterKeyword" placeholder="タイトル・プロンプト等を検索（スペース区切り）">
-        <div class="mode-toggle" id="vKeywordModeToggle">
-          <button type="button" data-kwmode="AND" class="active">AND</button>
-          <button type="button" data-kwmode="OR">OR</button>
-          <button type="button" data-kwmode="NOT">NOT</button>
-        </div>
       </div>
-      <div class="search-row">
+      <div class="search-row tag-filter-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
-        <div class="mode-toggle" id="vTagMatchModeToggle">
-          <button type="button" data-tagmode="AND" class="active">AND</button>
-          <button type="button" data-tagmode="OR">OR</button>
-          <button type="button" data-tagmode="NOT">NOT</button>
+        <div class="tag-cloud-wrap"><div class="tag-cloud" id="vTagCloud"></div>
+        <button class="show-all-tags" type="button" id="vShowAllTagsBtn" style="display:none;">全て表示</button></div>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="vTagMatchModeToggle">
+            <button type="button" data-tagmode="AND" class="active">AND</button>
+            <button type="button" data-tagmode="OR">OR</button>
+            <button type="button" data-tagmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="vClearTagsBtn" type="button">タグ選択をクリア</button>
         </div>
-        <button class="clear-tags" id="vClearTagsBtn" type="button">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud-wrap"><div class="tag-cloud" id="vTagCloud"></div>
-      <button class="show-all-tags" type="button" id="vShowAllTagsBtn" style="display:none;">全て表示</button></div>
       <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
         投稿された動画の一覧です。タグはクリックでON/OFF切替。ON中のタグ同士の絞り込み方はAND/OR/NOTで指定します。
       </div>
@@ -2175,32 +2238,36 @@
           <button type="button" class="search-toggle-btn" id="pToggleSearchAreaBtn">検索エリアを非表示</button>
         </div>
       </div>
-      <div class="search-row">
+      <div class="search-row filter-row">
         <span class="label">絞り込み</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="pFilterAuthor" list="dl_author" placeholder="投稿者">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="pFilterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
-        <button class="clear-tags" id="pClearFiltersBtn" type="button">絞り込みをクリア</button>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="pKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="pClearFiltersBtn" type="button">絞り込みをクリア</button>
+        </div>
       </div>
       <div class="search-row">
         <span class="label" style="margin-left:0;">キーワード検索</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="pFilterKeyword" placeholder="タイトル・プロンプト等を検索（スペース区切り）">
-        <div class="mode-toggle" id="pKeywordModeToggle">
-          <button type="button" data-kwmode="AND" class="active">AND</button>
-          <button type="button" data-kwmode="OR">OR</button>
-          <button type="button" data-kwmode="NOT">NOT</button>
-        </div>
       </div>
-      <div class="search-row">
+      <div class="search-row tag-filter-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
-        <div class="mode-toggle" id="pTagMatchModeToggle">
-          <button type="button" data-tagmode="AND" class="active">AND</button>
-          <button type="button" data-tagmode="OR">OR</button>
-          <button type="button" data-tagmode="NOT">NOT</button>
+        <div class="tag-cloud-wrap"><div class="tag-cloud" id="pBrowseTagCloud"></div>
+        <button class="show-all-tags" type="button" id="pShowAllBrowseTagsBtn" style="display:none;">全て表示</button></div>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="pTagMatchModeToggle">
+            <button type="button" data-tagmode="AND" class="active">AND</button>
+            <button type="button" data-tagmode="OR">OR</button>
+            <button type="button" data-tagmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="pClearBrowseTagsBtn" type="button">タグ選択をクリア</button>
         </div>
-        <button class="clear-tags" id="pClearBrowseTagsBtn" type="button">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud-wrap"><div class="tag-cloud" id="pBrowseTagCloud"></div>
-      <button class="show-all-tags" type="button" id="pShowAllBrowseTagsBtn" style="display:none;">全て表示</button></div>
       <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
         投稿されたプロンプト例の一覧です。例を開くと、その例をベースにして投稿された画像作品がその下にまとめて表示されます。
       </div>
@@ -2228,12 +2295,14 @@
       <div class="search-row">
         <span class="label">キーワード検索</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="rFilterKeyword" placeholder="例: 川辺 女の子（スペース区切り）">
-        <div class="mode-toggle" id="rKeywordModeToggle">
-          <button type="button" data-kwmode="AND" class="active">AND</button>
-          <button type="button" data-kwmode="OR">OR</button>
-          <button type="button" data-kwmode="NOT">NOT</button>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="rKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="rClearFiltersBtn" type="button">絞り込みをクリア</button>
         </div>
-        <button class="clear-tags" id="rClearFiltersBtn" type="button">絞り込みをクリア</button>
       </div>
     </div>
 
@@ -2259,12 +2328,14 @@
       <div class="search-row">
         <span class="label">キーワード検索</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="fFilterKeyword" placeholder="例: 手 指（スペース区切り）">
-        <div class="mode-toggle" id="fKeywordModeToggle">
-          <button type="button" data-kwmode="AND" class="active">AND</button>
-          <button type="button" data-kwmode="OR">OR</button>
-          <button type="button" data-kwmode="NOT">NOT</button>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="fKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="fClearFiltersBtn" type="button">絞り込みをクリア</button>
         </div>
-        <button class="clear-tags" id="fClearFiltersBtn" type="button">絞り込みをクリア</button>
       </div>
       <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
         生成した画像の「修正依頼」の一覧です。依頼を開くと、その依頼に対応して投稿された画像作品がその下にまとめて表示されます。
