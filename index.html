@@ -462,6 +462,7 @@
   .row-link-badge.lb-fix{ color:#e0824f; border-color: rgba(224,130,79,.5); background: rgba(224,130,79,.12); }
   .row-link-badge.lb-parent{ color:#b98cff; border-color: rgba(185,140,255,.5); background: rgba(185,140,255,.12); }
   .row-link-badge.lb-video{ color:#57c785; border-color: rgba(87,199,133,.5); background: rgba(87,199,133,.12); }
+  .row-link-badge.lb-novel{ color:#e05fd0; border-color: rgba(224,95,208,.5); background: rgba(224,95,208,.14); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
   .detail-image{ flex: 0 0 260px; }
   .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
@@ -1170,6 +1171,186 @@
   .modal-image .video-frame{ position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; }
   .modal-image .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
   .modal-image .video-frame video{ position:absolute; inset:0; width:100%; height:100%; border:0; background:#000; object-fit:contain; }
+  /* ---- ノベルゲーム: 種別表示 ---- */
+  body.opt-no-novel .novel-only{ display:none !important; }
+
+  /* ノベル投稿モードでは、画像投稿用の入力欄をまとめて隠す(フォーム本体は流用) */
+  body.post-mode-novel #imageField,
+  body.post-mode-novel #variantField,
+  body.post-mode-novel #inpaintOriginalField,
+  body.post-mode-novel #promptField,
+  body.post-mode-novel #negativeField,
+  body.post-mode-novel #settingsField,
+  body.post-mode-novel #fixContentField,
+  body.post-mode-novel #fixRequestField,
+  body.post-mode-novel .link-field[data-link="basePrompt"],
+  body.post-mode-novel .link-field[data-link="parent"],
+  body.post-mode-novel .link-field[data-link="request"],
+  body.post-mode-novel .link-field[data-link="videoSource"],
+  body.post-mode-novel #variantModeBtn,
+  body.post-mode-novel #inpaintModeBtn{ display:none !important; }
+
+  /* ---- ノベルゲーム: シーン編集エディタ ---- */
+  .novel-scene-list{ display:flex; flex-direction:column; gap:12px; }
+  .novel-scene{ background:var(--surface-2); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .novel-scene-head{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--surface); border-bottom:1px solid var(--line); padding:8px 12px;
+  }
+  .novel-scene-num{
+    font-family:'Noto Sans JP',sans-serif; font-size:11px; font-weight:600;
+    color:var(--accent); background:var(--accent-dim); border:1px solid var(--accent);
+    border-radius:999px; padding:3px 10px;
+  }
+  .novel-scene-actions{ display:flex; align-items:center; gap:6px; margin-left:auto; flex-wrap:wrap; }
+  .novel-mini-btn{
+    font-family:'Noto Sans JP',sans-serif; font-size:11px;
+    background:var(--surface-2); color:var(--ink-dim);
+    border:1px solid var(--line); border-radius:6px; padding:4px 10px; cursor:pointer;
+  }
+  .novel-mini-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .novel-mini-btn.danger:hover{ border-color:var(--danger); color:var(--danger); }
+  .novel-scene-body{ display:flex; gap:12px; padding:12px; flex-wrap:wrap; }
+  .novel-dz{
+    flex:0 0 180px; width:180px; min-height:110px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    background:var(--bg); border:1px dashed var(--line); border-radius:8px;
+    color:var(--ink-dim); font-size:11px; font-family:'Noto Sans JP',sans-serif;
+    cursor:pointer; overflow:hidden; padding:8px; position:relative;
+  }
+  .novel-dz:hover, .novel-dz.dragover{ border-color:var(--accent); color:var(--accent); }
+  .novel-dz img{ width:100%; height:100%; max-height:150px; object-fit:contain; border-radius:6px; display:block; }
+  .novel-dz-clear{
+    position:absolute; top:4px; right:4px; z-index:2;
+    background:rgba(0,0,0,.65); color:#fff; border:1px solid var(--line);
+    border-radius:6px; font-size:10px; padding:2px 6px; cursor:pointer;
+  }
+  .novel-dz-clear:hover{ border-color:var(--danger); color:var(--danger); }
+  .novel-scene-fields{ flex:1 1 260px; min-width:0; display:flex; flex-direction:column; gap:8px; }
+  .novel-scene-count{
+    font-family:'Noto Sans JP',sans-serif; font-size:10.5px; color:var(--ink-dim);
+    border:1px solid var(--line); border-radius:999px; padding:2px 8px;
+  }
+  /* 会話行: 話者+セリフを1行にまとめ、下へ1行ずつ足していく */
+  .novel-line-list{ display:flex; flex-direction:column; gap:6px; }
+  .novel-line-row{ display:flex; align-items:center; gap:6px; }
+  .novel-line-row input[type="text"]{ padding:5px 9px; font-size:12.5px; border-radius:6px; }
+  .novel-line-name{ flex:0 0 110px; width:110px; min-width:0; }
+  .novel-line-text{ flex:1 1 auto; min-width:0; }
+  .novel-line-row .novel-mini-btn{ flex:0 0 auto; padding:4px 7px; line-height:1; }
+  .novel-line-row .novel-mini-btn:disabled{ opacity:.35; cursor:default; }
+  .novel-line-row .novel-mini-btn:disabled:hover{ border-color:var(--line); color:var(--ink-dim); }
+  .novel-line-handle{
+    flex:0 0 auto; cursor:grab; color:var(--ink-dim); font-size:13px;
+    padding:2px 3px; user-select:none; line-height:1;
+  }
+  .novel-line-handle:hover{ color:var(--accent); }
+  .novel-line-row.dragging{ opacity:.45; }
+  .novel-line-row.drop-target{ outline:1px dashed var(--accent); outline-offset:2px; border-radius:6px; }
+  .novel-editor-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+  .novel-empty-hint{
+    color:var(--ink-dim); font-size:12px; font-family:'Noto Sans JP',sans-serif;
+    border:1px dashed var(--line); border-radius:10px; padding:20px; text-align:center;
+  }
+
+  /* ---- ノベルゲーム: 再生プレイヤー ---- */
+  /* 詳細モーダルの .modal-image(text-align:center / img max-height)を継承しないよう明示的に打ち消す */
+  .novel-player{ display:flex; flex-direction:column; gap:10px; text-align:left; }
+  .novel-stage{
+    position:relative; width:100%; aspect-ratio:16/9; background:#000;
+    border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    cursor:pointer; user-select:none;
+    margin:0 auto;
+    transition:aspect-ratio .26s ease, width .26s ease;
+  }
+  .novel-player .novel-stage-img{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:contain; display:block; background:#000;
+    max-width:none; max-height:none; border:0; border-radius:0;
+    opacity:0; transition:opacity .45s ease;
+  }
+  .novel-player .novel-stage-img.is-visible{ opacity:1; }
+  .novel-player .novel-stage-img-next{ z-index:1; }
+  .novel-msgwin{
+    position:absolute; left:0; right:0; bottom:0; z-index:2;
+    background:linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.72) 62%, rgba(0,0,0,0) 100%);
+    padding:34px 20px 18px; pointer-events:none;
+  }
+  .novel-speaker{
+    font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:600;
+    color:#fff; margin-bottom:6px; text-shadow:0 1px 3px rgba(0,0,0,.9);
+    display:inline-block; padding-bottom:3px;
+    line-height:1.5; height:1.5em; box-sizing:content-box; overflow:hidden;
+    border-bottom:1px solid rgba(255,255,255,.55);
+  }
+  /* 話者名が無い行でも同じ高さを保つため、要素は残して線と文字だけ消す */
+  .novel-speaker.is-empty{ border-bottom-color:transparent; color:transparent; }
+  .novel-line{
+    font-family:'Noto Sans JP',sans-serif; font-size:14px; line-height:1.75;
+    color:#fff; white-space:pre-wrap; text-shadow:0 1px 3px rgba(0,0,0,.9);
+    min-height:1.75em;
+  }
+  .novel-progress{
+    position:absolute; top:10px; right:12px; z-index:3;
+    background:rgba(0,0,0,.6); color:#fff; border-radius:999px;
+    font-size:10px; padding:3px 10px; font-variant-numeric:tabular-nums;
+    font-family:'Noto Sans JP',sans-serif; pointer-events:none;
+  }
+  .novel-start{
+    position:absolute; inset:0; z-index:4; display:flex;
+    align-items:center; justify-content:center; background:rgba(0,0,0,.5);
+  }
+  .novel-start-btn{
+    font-family:'Noto Sans JP',sans-serif; font-size:13px; color:#fff;
+    background:rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.6);
+    border-radius:999px; padding:9px 20px; text-shadow:0 1px 3px rgba(0,0,0,.9);
+  }
+  .novel-controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .novel-ctrl-btn{
+    font-family:'Noto Sans JP',sans-serif; font-size:12px;
+    background:var(--surface-2); color:var(--ink);
+    border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer;
+  }
+  .novel-ctrl-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .novel-ctrl-btn:disabled{ opacity:.4; cursor:default; }
+  .novel-ctrl-btn:disabled:hover{ border-color:var(--line); color:var(--ink); }
+  .novel-ctrl-btn.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
+  /* AUTO中の目印。点滅させると気が散るので常時点灯にしている */
+  .novel-auto-lamp{
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--danger); margin-right:6px; vertical-align:middle;
+  }
+  .novel-log{
+    max-height:240px; overflow-y:auto; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:10px; padding:12px;
+    scrollbar-width:thin; scrollbar-color:var(--line) transparent;
+  }
+  .novel-log-item{ padding:8px 0; border-bottom:1px solid var(--line); }
+  .novel-log-item:last-child{ border-bottom:none; }
+  .novel-log-name{ font-size:11px; color:var(--accent); font-family:'Noto Sans JP',sans-serif; margin-bottom:3px; }
+  .novel-log-text{ font-size:12.5px; color:var(--ink); font-family:'Noto Sans JP',sans-serif; white-space:pre-wrap; }
+
+  /* プレビュー用オーバーレイ(投稿フォームから起動) */
+  .novel-preview-overlay{
+    position:fixed; inset:0; z-index:320; display:none;
+    background:rgba(0,0,0,.86); overflow-y:auto; padding:24px 16px;
+  }
+  .novel-preview-overlay.open{ display:block; }
+  .novel-preview-inner{
+    max-width:900px; margin:0 auto;
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px;
+  }
+  .novel-preview-head{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .novel-preview-title{
+    font-size:14px; font-weight:600; color:var(--ink); font-family:'Noto Sans JP',sans-serif; margin:0;
+  }
+  .novel-preview-badge{
+    font-family:'Noto Sans JP',sans-serif; font-size:10px;
+    color:#e05fd0; background:rgba(224,95,208,.14); border:1px solid rgba(224,95,208,.5);
+    border-radius:999px; padding:3px 10px;
+  }
   body.opt-no-link-baseprompt .link-field[data-link="basePrompt"],
   body.opt-no-link-parent .link-field[data-link="parent"],
   body.opt-no-link-reference .link-field[data-link="reference"],
@@ -1618,6 +1799,7 @@
   body.top-compact .search-panel .search-row .mode-toggle-row .mode-toggle{ width: auto; }
   body.top-compact .search-panel .search-row .mode-toggle-row .mode-toggle button{ flex: 0 0 auto; }
   body.top-compact .search-panel .search-row .mode-toggle-row .clear-tags{ margin-left: 0; align-self: auto; }
+  body.top-compact .novel-line-name{ flex:0 0 80px; width:80px; }
   body.top-compact .search-panel .search-row.filter-row .mode-toggle-row,
   body.top-compact .search-panel .search-row.tag-filter-row .mode-toggle-row{
     width: auto; margin-left: auto; justify-content: flex-start;
@@ -1686,6 +1868,7 @@
     .search-panel .search-row .mode-toggle-row .mode-toggle{ width: auto; }
     .search-panel .search-row .mode-toggle-row .mode-toggle button{ flex: 0 0 auto; }
     .search-panel .search-row .mode-toggle-row .clear-tags{ margin-left: 0; align-self: auto; }
+    .novel-line-name{ flex:0 0 80px; width:80px; }
     .search-panel .search-row.filter-row .mode-toggle-row,
     .search-panel .search-row.tag-filter-row .mode-toggle-row{
       width: auto; margin-left: auto; justify-content: flex-start;
@@ -1795,6 +1978,7 @@
       <button class="tab-btn" data-tab="post">投稿</button>
       <button class="tab-btn active" data-tab="browse">画像投稿一覧</button>
       <button class="tab-btn video-only" data-tab="videoBrowse">動画投稿一覧</button>
+      <button class="tab-btn novel-only" data-tab="novelBrowse">ゲーム投稿一覧</button>
       <button class="tab-btn" data-tab="promptBrowse">プロンプト投稿一覧</button>
       <button class="tab-btn" data-tab="requestBrowse">リクエスト一覧</button>
       <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼一覧</button>
@@ -1817,6 +2001,7 @@
       <button type="button" data-postmode="image" class="post-mode-btn active">画像を投稿</button>
       <button type="button" data-postmode="prompt" class="post-mode-btn">プロンプト例を投稿</button>
       <button type="button" data-postmode="video" class="post-mode-btn video-only">動画を投稿</button>
+      <button type="button" data-postmode="novel" class="post-mode-btn novel-only">ノベルゲームを投稿</button>
       <button type="button" data-postmode="request" class="post-mode-btn">リクエストを投稿</button>
       <button type="button" data-postmode="fix" class="post-mode-btn fixrequest-only">修正依頼を投稿</button>
     </div>
@@ -1893,11 +2078,29 @@
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="authorInput" list="dl_author" placeholder="匿名">
       </div>
 
+      <div id="novelEditorField" style="display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px; flex-wrap:wrap;">
+          <label class="field-label" style="margin:0;">シナリオ(シーンを順に並べます)</label>
+          <span class="novel-preview-badge">1シーン = 背景画像1枚 + 会話を何行でも</span>
+        </div>
+        <div class="novel-scene-list" id="novelSceneList"></div>
+        <div class="novel-empty-hint" id="novelEmptyHint">まだシーンがありません。「＋ シーンを追加」から作成してください。</div>
+        <div class="novel-editor-actions">
+          <button class="btn-ghost" type="button" id="novelAddSceneBtn">＋ シーンを追加</button>
+          <button class="btn-ghost" type="button" id="novelPreviewBtn">プレビューで動作確認</button>
+          <span class="status" id="novelEditorStatus"></span>
+        </div>
+      </div>
+
+      <div id="promptField">
       <label class="field-label">プロンプト</label>
       <textarea id="promptInput" class="autogrow" placeholder="Positive prompt"></textarea>
+      </div>
 
+      <div id="negativeField">
       <label class="field-label">ネガティブプロンプト</label>
       <textarea id="negativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
+      </div>
 
       <label class="field-label">メモ(備考)</label>
       <textarea id="memoInput" class="autogrow" placeholder="補足・備考があれば"></textarea>
@@ -1950,8 +2153,10 @@
         </div>
       </div>
 
+      <div id="settingsField">
       <label class="field-label">生成設定(画像ドロップで自動入力)</label>
       <div class="settings-grid open" id="settingsGrid"></div>
+      </div>
 
       <div class="req-field" id="tagsField">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
@@ -2199,9 +2404,6 @@
           <button class="clear-tags" id="vClearTagsBtn" type="button">タグ選択をクリア</button>
         </div>
       </div>
-      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
-        投稿された動画の一覧です。タグはクリックでON/OFF切替。ON中のタグ同士の絞り込み方はAND/OR/NOTで指定します。
-      </div>
     </div>
 
     <div class="toolbar">
@@ -2225,6 +2427,67 @@
 
     <div class="list" id="videoList"></div>
     <div class="empty" id="videoEmptyState" style="display:none;">まだ動画の投稿がありません。</div>
+  </div>
+
+  <!-- ============ ゲーム投稿一覧タブ ============ -->
+  <div class="tab-panel" id="tab-novelBrowse">
+
+    <div class="search-panel">
+      <div class="search-row sort-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="nSortChips"></div>
+        <div class="row-right-toggles">
+          <button type="button" class="search-toggle-btn" id="nToggleSearchAreaBtn">検索エリアを非表示</button>
+        </div>
+      </div>
+      <div class="search-row filter-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="nFilterKeyword" placeholder="タイトル・セリフ等を検索（スペース区切り）">
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="nKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="nClearFiltersBtn" type="button">絞り込みをクリア</button>
+        </div>
+      </div>
+      <div class="search-row tag-filter-row">
+        <span class="label" style="margin-left:0;">タグで絞込</span>
+        <div class="tag-cloud-wrap"><div class="tag-cloud" id="nTagCloud"></div>
+        <button class="show-all-tags" type="button" id="nShowAllTagsBtn" style="display:none;">全て表示</button></div>
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="nTagMatchModeToggle">
+            <button type="button" data-tagmode="AND" class="active">AND</button>
+            <button type="button" data-tagmode="OR">OR</button>
+            <button type="button" data-tagmode="NOT">NOT</button>
+          </div>
+          <button class="clear-tags" id="nClearTagsBtn" type="button">タグ選択をクリア</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="mode-toggle seg-filter" id="nCategoryFilterToggle">
+        <button type="button" data-catfilter="all">すべて<span class="seg-count" data-count="all">0</span></button>
+        <button type="button" data-catfilter="copyright">版権<span class="seg-count" data-count="copyright">0</span></button>
+        <button type="button" data-catfilter="original">オリジナル<span class="seg-count" data-count="original">0</span></button>
+        <button type="button" data-catfilter="other">その他<span class="seg-count" data-count="other">0</span></button>
+      </div>
+      <div class="toolbar-right">
+        <label class="panel-size-control" id="nPanelSizeControl">
+          <span>表示サイズ</span>
+          <input type="range" id="nPanelSizeRange" min="140" max="520" step="20" value="260">
+        </label>
+        <div class="mode-toggle" id="nViewModeToggle">
+          <button type="button" data-view="list" class="active">リスト表示</button>
+          <button type="button" data-view="panel">パネル表示</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="list" id="novelList"></div>
+    <div class="empty" id="novelEmptyState" style="display:none;">まだノベルゲームの投稿がありません。</div>
   </div>
 
   <!-- ============ プロンプト投稿一覧タブ ============ -->
@@ -2508,6 +2771,10 @@
         <div class="feature-name">動画投稿</div>
         <div class="feature-desc">生成した動画を、画像投稿と同じようにプロンプト・タグ・ジャンル等を付けて共有します。「動画投稿一覧」タブに並びます。長い動画は投稿に失敗することがあります。</div>
       </div>
+      <div class="feature-item novel-only">
+        <div class="feature-name">ノベルゲーム投稿</div>
+        <div class="feature-desc">背景画像とセリフを並べて、簡単なノベルゲーム(紙芝居)を作って共有します。1シーンにつき背景画像を1枚選び、その上に話者名とセリフを何行でも足せます。話者名を空欄にすると地の文になります。「ゲーム投稿一覧」タブに並びます。</div>
+      </div>
       <div class="feature-item">
         <div class="feature-name">プロンプト例の投稿</div>
         <div class="feature-desc">自分で考えたオリジナルキャラやシチュエーションのプロンプトを、画像なしで1つの「作品」として共有します。「プロンプト投稿一覧」タブに並びます。</div>
@@ -2521,7 +2788,7 @@
         <div class="feature-desc">すでにある画像に対して「ここをこう直してほしい」という依頼を出せます。「修正依頼一覧」タブに並びます。</div>
       </div>
       <div class="guide-note">
-        投稿どうしは「紐づけ」でつながります。たとえば画像を投稿するときに「ベースにしたプロンプト例」を選んでおくと、そのプロンプト例の詳細を開いたときに、それをベースに作られた画像作品が一覧で表示されます。プロンプト例をタグのように使って作品を探せる、ということです。
+        投稿どうしは「紐づけ」でつながります。たとえば画像を投稿するときに「ベースにしたプロンプト例」を選んでおくと、そのプロンプト例の詳細を開いたときに、それをベースに作られた画像作品が一覧で表示されます。プロンプト例をタグのように使って作品を探せる、ということです。<span class="novel-only">ノベルゲームも同じで、投稿時に「参考にした投稿作品」で画像作品を選んでおくと、その画像の詳細に「この作品を使ったノベルゲーム」としてぶら下がります。</span>
       </div>
     </section>
 
@@ -2529,7 +2796,7 @@
       <h2>タブごとにできること</h2>
       <div class="feature-item opt-only-tab-post">
         <div class="feature-name">投稿</div>
-        <div class="feature-desc">作品や依頼を投稿するタブです。上部のボタンで「画像を投稿」「プロンプト例を投稿」「リクエストを投稿」<span class="fixrequest-only">「修正依頼を投稿」</span>を切り替えます。</div>
+        <div class="feature-desc">作品や依頼を投稿するタブです。上部のボタンで「画像を投稿」<span class="video-only">「動画を投稿」</span><span class="novel-only">「ノベルゲームを投稿」</span>「プロンプト例を投稿」「リクエストを投稿」<span class="fixrequest-only">「修正依頼を投稿」</span>を切り替えます。</div>
       </div>
       <div class="feature-item opt-only-tab-browse">
         <div class="feature-name">画像投稿一覧</div>
@@ -2538,6 +2805,10 @@
       <div class="feature-item video-only">
         <div class="feature-name">動画投稿一覧</div>
         <div class="feature-desc">投稿された動画作品が並びます。サムネイルの▶印が目印で、開くとその場で再生できます。</div>
+      </div>
+      <div class="feature-item novel-only">
+        <div class="feature-name">ゲーム投稿一覧</div>
+        <div class="feature-desc">投稿されたノベルゲームが並びます。開くと「▶ クリックして開始」が出るので、押すと再生が始まります。画面をクリックすると次のセリフへ進み、表示の途中で押すと残りをすぐ表示します。「AUTO」で自動送り、「ログ」でそれまでのセリフを読み返せます。</div>
       </div>
       <div class="feature-item opt-only-tab-prompt">
         <div class="feature-name">プロンプト投稿一覧</div>
@@ -2815,6 +3086,11 @@
       <div class="qa-item opt-only-login">
         <div class="qa-q">サイトを開くとパスワードの入力を求められます。</div>
         <div class="qa-a">管理者がログイン画面をオンにしている場合、サイトを開いた最初に合言葉(パスワード)の入力を求められます。仲間内だけで使うための簡単な入場制限です。パスワードが分からない・入場できない場合は、管理者に確認してください。一度正しく入力すると、その端末では次回以降は自動で入場します(管理者がパスワードを変更すると再入力が必要になります)。認証を通すまでは投稿などの中身はサーバーから一切返されないため、URLを直接開いても中身は見えません。なお、サーバー(GAS)に接続できないときは「接続できません。再接続しています...」と表示され、接続が回復するまで自動で待ち続けます(この間は中身は表示されません)。</div>
+      </div>
+
+      <div class="qa-item novel-only">
+        <div class="qa-q">ノベルゲームはどうやって作りますか？</div>
+        <div class="qa-a">「投稿」タブで「ノベルゲームを投稿」を選ぶと、シナリオの編集欄が出ます。「＋ シーンを追加」でシーンを増やし、各シーンの左側に背景画像を1枚ドラッグ&amp;ドロップ(またはクリックして選択)します。右側の行に話者名とセリフを入力すると、その下に空行が自動で足されるので、続けて何行でも書けます。話者名を空欄にすると、名前を出さない地の文になります。TABキーで「話者→セリフ→次の行の話者」と移動でき、Enterキーでも次の行へ進めます。行の並び替えは左端の点マークをドラッグするか、↑↓ボタンで行えます。投稿前に「プレビューで動作確認」を押すと、保存せずにその場で実際の動きを確認できます。</div>
       </div>
 
       <div class="qa-item">
@@ -3790,6 +4066,35 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   </div>
 </div>
 
+<div class="modal-overlay" id="nBrowseTagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="nBrowseTagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <div class="mode-toggle" id="nBrowseTagModalMatchModeToggle">
+        <button type="button" data-tagmode="AND">AND</button>
+        <button type="button" data-tagmode="OR">OR</button>
+        <button type="button" data-tagmode="NOT">NOT</button>
+      </div>
+      <button class="clear-tags" type="button" id="nClearBrowseTagsModalBtn">タグ選択をクリア</button>
+    </div>
+    <p class="tag-modal-hint">クリックでON/OFF切替</p>
+    <div class="tag-cloud" id="nBrowseTagModalCloud"></div>
+  </div>
+</div>
+
+<!-- ノベルゲーム: 投稿フォームからのプレビュー(サーバー未保存の仮データで再生) -->
+<div class="novel-preview-overlay" id="novelPreviewOverlay">
+  <div class="novel-preview-inner">
+    <div class="novel-preview-head">
+      <h3 class="novel-preview-title">プレビュー</h3>
+      <span class="novel-preview-badge">未保存データで再生中</span>
+      <button class="btn-ghost" type="button" id="novelPreviewCloseBtn" style="margin-left:auto;">プレビューを閉じる</button>
+    </div>
+    <div id="novelPreviewMount"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="pTagModalCloseBtn">✕ 閉じる</button>
@@ -4146,6 +4451,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let requestPosts = [];
   let fixPosts = [];
   let videoPosts = [];
+  let novelPosts = [];
   let allComments = [];
   let allBoard = [];
   let allAnnounce = [];
@@ -4157,7 +4463,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let selectedCategory = ''; // 投稿フォーム用: 作品の属性(版権/オリジナル/その他)
@@ -4277,6 +4583,21 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let vCategoryFilter = 'all';
   try { vCategoryFilter = localStorage.getItem('pr_video_category_filter') || 'all'; } catch (e) { vCategoryFilter = 'all'; }
 
+  // ---- ゲーム投稿一覧(ノベルゲーム。画像・動画一覧と同等の並び替え・絞り込み) ----
+  const NOVEL_SORT_OPTIONS = [
+    { label: '新しい順',      field: 'date',      dir: 'desc' },
+    { label: '古い順',        field: 'date',      dir: 'asc' },
+    { label: 'グッドが多い順', field: 'likeCount', dir: 'desc' },
+    { label: '投稿者名順',     field: 'author',    dir: 'asc' }
+  ];
+  let nSortKeys = [{ field: 'date', dir: 'desc' }];
+  let nTagStates = {};
+  let nTagMatchMode = 'AND';
+  let nKeywordMode = 'AND';
+  let nViewMode = 'list';
+  let nCategoryFilter = 'all';
+  try { nCategoryFilter = localStorage.getItem('pr_novel_category_filter') || 'all'; } catch (e) { nCategoryFilter = 'all'; }
+
   let likedPosts = {};
   try { likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}'); } catch (e) { likedPosts = {}; }
   function saveLiked() {
@@ -4356,6 +4677,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
     if (name === 'promptBrowse') { renderPromptList(); applyPromptBrowseTagClamp(); }
     if (name === 'videoBrowse') { renderVideoList(); applyVideoTagClamp(); }
+    if (name === 'novelBrowse') { renderNovelList(); applyNovelTagClamp(); }
     if (name === 'requestBrowse') { renderRequestList(); }
     if (name === 'fixBrowse') { renderFixList(); }
     if (name === 'databank') { renderDatabank(); }
@@ -5154,11 +5476,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function rebuildDerivedArraysFromPosts() {
-    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix' && p.type !== 'video'; });
+    imagePosts = posts.filter(function (p) { return (p.type || 'image') !== 'prompt' && p.type !== 'request' && p.type !== 'fix' && p.type !== 'video' && p.type !== 'novel'; });
     promptPosts = posts.filter(function (p) { return p.type === 'prompt'; });
     requestPosts = posts.filter(function (p) { return p.type === 'request'; });
     fixPosts = posts.filter(function (p) { return p.type === 'fix'; });
     videoPosts = posts.filter(function (p) { return p.type === 'video'; });
+    novelPosts = posts.filter(function (p) { return p.type === 'novel'; });
   }
 
   function findLocalPost(idOrShareId) {
@@ -5285,6 +5608,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     rebuildSettingsGrid();
     rebuildTagUI();
     rebuildVideoTagUI();
+    rebuildNovelTagUI();
     rebuildPostTagCloud();
     rebuildDatalists();
     rebuildPromptFormTagCloud();
@@ -5310,6 +5634,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     rebuildSettingsGrid();
     rebuildTagUI();
     rebuildVideoTagUI();
+    rebuildNovelTagUI();
     rebuildPostTagCloud();
     rebuildDatalists();
     rebuildPromptFormTagCloud();
@@ -5614,12 +5939,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return sortJa(Array.from(set));
   }
 
+  // 各一覧タブの絞り込みには、そのタブに出ている投稿が持つタグだけを出す
+  function tagsOfPosts(arr) {
+    const set = new Set();
+    (arr || []).forEach(function (p) { (p.tags || []).forEach(function (t) { set.add(t); }); });
+    return sortJa(Array.from(set));
+  }
+  function browseTagPool() { return tagsOfPosts(visiblePosts(imagePosts.slice())); }
+  function videoTagPool() { return tagsOfPosts(visiblePosts(videoPosts.slice())); }
+  function novelTagPool() { return tagsOfPosts(visiblePosts(novelPosts.slice())); }
+  function promptTagPool() { return tagsOfPosts(promptPosts); }
+
   function allUniquePromptTags() {
-    return allUniqueTags();
+    return promptTagPool();
   }
 
   function rebuildTagUI() {
-    const tags = allUniqueTags();
+    const tags = browseTagPool();
 
     // 閲覧タブのタグクラウド(既存の状態は保持しつつ、消えたタグは除外)
     Object.keys(tagStates).forEach(function (t) { if (!tags.includes(t)) delete tagStates[t]; });
@@ -5909,7 +6245,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const browseTagModalCloud = document.getElementById('browseTagModalCloud');
 
   function renderBrowseTagModalCloud() {
-    const tags = allUniqueTags();
+    const tags = browseTagPool();
     browseTagModalCloud.innerHTML = tags.map(function (t) {
       const cls = tagStates[t] ? ' state-include' : '';
       return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
@@ -6028,6 +6364,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     selectedFixRequestIds = [];
     renderFixRequestDisplay();
     document.getElementById('editPwInput').value = '';
+    resetNovelEditor();
     setInpaintMode(false);
     setVariantMode(false);
   }
@@ -6058,8 +6395,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const editing = isEditingImagePost();
 
     const mode = currentPostMode();
+    const editingNovelPost = isEditingImagePost() && adminEditingPost && adminEditingPost.type === 'novel';
+    const novelMode = editingNovelPost || (!isEditingImagePost() && mode === 'novel');
     const missing = [];
-    if (!file && !editing) missing.push([document.getElementById('imageField'), mode === 'video' ? '動画' : '画像']);
+    if (novelMode) {
+      const filledScenes = novelScenes.filter(function (s) {
+        const hasText = (s.lines || []).some(function (l) { return (l.text || '').trim() || (l.name || '').trim(); });
+        return hasText || s.dataUrl || s.bg;
+      });
+      if (!filledScenes.length) missing.push([document.getElementById('novelEditorField'), 'シーン']);
+    } else if (!file && !editing) {
+      missing.push([document.getElementById('imageField'), mode === 'video' ? '動画' : '画像']);
+    }
     if (!selectedTags.length) missing.push([document.getElementById('tagsField'), 'タグ']);
     if (!selectedCategory) missing.push([document.getElementById('categoryField'), 'ジャンル']);
     if (missing.length) { reportMissing(statusText, missing); return; }
@@ -6074,24 +6421,27 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const editingVideo = editing && adminEditingPost && adminEditingPost.type === 'video';
       const isFix = editingFix || (!editing && mode === 'fix');
       const isVideo = editingVideo || (!editing && mode === 'video');
+      const isNovel = novelMode;
+      const novelParts = isNovel ? buildNovelPayloadParts() : null;
       const payload = {
         title: document.getElementById('titleInput').value,
         author: document.getElementById('authorInput').value,
-        prompt: document.getElementById('promptInput').value,
-        negativePrompt: document.getElementById('negativeInput').value,
+        prompt: isNovel ? '' : document.getElementById('promptInput').value,
+        negativePrompt: isNovel ? '' : document.getElementById('negativeInput').value,
         memo: document.getElementById('memoInput').value,
-        settings: collectSettings(),
+        settings: isNovel ? { scenario: novelParts.scenario } : collectSettings(),
         tags: selectedTags,
         category: selectedCategory,
-        type: isFix ? 'fix' : (isVideo ? 'video' : 'image'),
-        basePromptId: selectedBasePromptIds.join(','),
-        parentId: selectedParentId,
+        type: isNovel ? 'novel' : (isFix ? 'fix' : (isVideo ? 'video' : 'image')),
+        basePromptId: isNovel ? '' : selectedBasePromptIds.join(','),
+        parentId: isNovel ? '' : selectedParentId,
         refId: isFix ? '' : selectedReferenceId,
         videoSourceId: isVideo ? selectedVideoSourceId : '',
-        requestId: isFix ? '' : selectedRequestId,
+        requestId: (isFix || isNovel) ? '' : selectedRequestId,
         fixContent: isFix ? document.getElementById('fixContentInput').value : '',
-        fixRequestId: isFix ? '' : selectedFixRequestIds.join(',')
+        fixRequestId: (isFix || isNovel) ? '' : selectedFixRequestIds.join(',')
       };
+      if (isNovel) payload.novelImages = novelParts.novelImages;
       if (editing) {
         payload.action = ownerEditMode ? 'ownerUpdate' : 'adminUpdate';
         payload.password = ownerEditMode ? ownerEditPassword : adminPassword;
@@ -6106,7 +6456,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       }
       // 差分: 新規投稿は variantMode 時、画像編集は常に送る(空配列=差分なしに更新)。
       // 既存差分(imageUrl保持)は再アップロードせず、新規追加(dataUrl)だけ base64 送信する。
-      if (!isFix && !isVideo && (variantMode || editing)) {
+      if (!isFix && !isVideo && !isNovel && (variantMode || editing)) {
         payload.variants = variantImages.map(function (v) {
           if (v.dataUrl) {
             return { imageBase64: v.dataUrl, imageMime: v.mime, imageName: v.name, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings };
@@ -6131,12 +6481,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
-      const destTab = posted && posted.type === 'fix' ? 'fixBrowse' : (posted && posted.type === 'video' ? 'videoBrowse' : 'browse');
+      const destTab = posted && posted.type === 'fix' ? 'fixBrowse'
+        : (posted && posted.type === 'video' ? 'videoBrowse'
+        : (posted && posted.type === 'novel' ? 'novelBrowse' : 'browse'));
       switchTab(destTab);
       if (posted) openModal(posted);
       if (editing) {
         if (destTab === 'browse') restoreBrowseScrollTo(editReturnScrollY);
         else if (destTab === 'videoBrowse') restoreScrollPaginated(editReturnScrollY, function () { return vBrowseShown < vBrowseFiltered.length; }, appendVideoPage);
+        else if (destTab === 'novelBrowse') restoreScrollPaginated(editReturnScrollY, function () { return nBrowseShown < nBrowseFiltered.length; }, appendNovelPage);
         else if (destTab === 'fixBrowse') window.scrollTo(0, editReturnScrollY);
       }
     } catch (err) {
@@ -6239,6 +6592,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!options.video) {
       if (document.getElementById('tab-videoBrowse') && document.getElementById('tab-videoBrowse').classList.contains('active')) switchTab('browse');
       if (currentPostMode() === 'video') setPostMode('image');
+    }
+    document.body.classList.toggle('opt-no-novel', !options.tabNovel);
+    if (!options.tabNovel) {
+      if (document.getElementById('tab-novelBrowse') && document.getElementById('tab-novelBrowse').classList.contains('active')) switchTab('browse');
+      if (currentPostMode() === 'novel') setPostMode('image');
     }
     if (!options.inpaint && typeof setInpaintMode === 'function') setInpaintMode(false);
     document.querySelectorAll('.author-field').forEach(function (el) {
@@ -6482,12 +6840,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
         (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
         '<div class="row-main">' +
-          '<div class="row-thumb' + (p.type === 'video' ? ' is-video' : '') + '">' + imageTag(p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+          '<div class="row-thumb' + (p.type === 'video' ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(p) || p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
             '<div class="row-title">' + title + '</div>' +
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
               (uiPreset ? '<span>UI Preset: ' + escapeHtml(uiPreset) + '</span>' : '') +
               (checkpoint ? '<span>Checkpoint: ' + escapeHtml(checkpoint) + '</span>' : '') +
+              (p.type === 'novel' ? '<span class="row-link-badge lb-novel">ノベルゲーム ' + novelScenarioOf(p).length + 'シーン/' + novelStepsOf(p.settings && p.settings.scenario).length + '行</span>' : '') +
+              (p.type !== 'novel' && novelsReferencing(p.id).length ? '<span class="row-link-badge lb-novel">ノベルゲーム ' + novelsReferencing(p.id).length + '件</span>' : '') +
               (childCount ? '<span class="row-link-badge lb-child">子作品 ' + childCount + '件</span>' : '') +
               (commentCount ? '<span class="row-link-badge lb-comment">コメント ' + commentCount + '件</span>' : '') +
               linkBadges +
@@ -6647,7 +7007,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         };
       }));
     const hasVariants = imageSet.length > 1;
-    const anySettings = imageSet.some(function (v) { return v.settings && Object.keys(v.settings).length; });
+    // ノベルは settings にシナリオを入れているので、生成設定テーブルとしては表示しない
+    const anySettings = p.type !== 'novel' && imageSet.some(function (v) { return v.settings && Object.keys(v.settings).length; });
     let curVar = 0;
     const settingsEntries = settingsEntriesHtml(imageSet[0]);
 
@@ -6711,6 +7072,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="list" id="sourceVideoWorks">' + sourceVideos.map(function (v) { return imageRowHtml(v, 'w320'); }).join('') + '</div>'
       : '';
 
+    // この作品を参考にして作られたノベルゲーム
+    const linkedNovels = p.type === 'novel' ? [] : novelsReferencing(p.id);
+    linkedNovels.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const linkedNovelsBlock = (options.tabNovel && linkedNovels.length)
+      ? '<div class="linked-works-head">この作品を使ったノベルゲーム(' + linkedNovels.length + '件)</div>' +
+        '<div class="list" id="linkedNovelWorks">' + linkedNovels.map(function (nv) { return imageRowHtml(nv, 'w320'); }).join('') + '</div>'
+      : '';
+
     const referencedBy = imagePosts.filter(function (ip) { return String(ip.refId) === String(p.id); });
     referencedBy.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const referencedByBlock = referencedBy.length
@@ -6755,20 +7124,21 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-image" id="detailImageWrap">' + (p.type === 'video' ? videoPlayerHtml(imageSet[0].imageUrl) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' })) + '</div>' +
+      '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? videoPlayerHtml(imageSet[0].imageUrl) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }))) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
         (hasVariants
           ? '<div class="variant-switcher" id="variantSwitcher">' + imageSet.map(function (_, i) {
               return '<button class="variant-switch-btn' + (i === 0 ? ' active' : '') + '" type="button" data-var-idx="' + i + '" title="' + (i === 0 ? '最初に投稿した画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
             }).join('') + '</div>'
           : '') +
-        '<div class="image-actions-btns"><button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button><button class="btn-ghost" type="button" id="shareBtn">共有</button></div>' +
+        '<div class="image-actions-btns">' + (p.type === 'novel' ? '' : '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>') + '<button class="btn-ghost" type="button" id="shareBtn">共有</button></div>' +
       '</div>' +
       fixContentBlock +
       baseBlock +
       parentBlock +
       requestBlock +
       fixLinksBlock +
+      (p.type === 'novel' ? '' :
       '<div class="detail-block">' +
         '<div class="block-head"><div class="label">PROMPT</div></div>' +
         '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? escapeHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
@@ -6778,7 +7148,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="block-head"><div class="label">NEGATIVE PROMPT</div></div>' +
         '<div class="value" id="detailNegativeValue">' + escapeHtml(imageSet[0].negativePrompt || '') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
-      '</div>' +
+      '</div>') +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
@@ -6786,8 +7156,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       childrenBlock +
       videoSourceBlock +
       sourceVideosBlock +
+      linkedNovelsBlock +
       referenceSourceBlock +
       referencedByBlock;
+
+    destroyActiveNovelPlayer();
+    if (p.type === 'novel') {
+      activeNovelPlayer = createNovelPlayer(document.getElementById('novelDetailMount'), novelScenarioOf(p), { requireStart: true });
+    }
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -6830,7 +7206,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     wireModalLikeButton();
     wireCommentToggle(p);
     wireAdminActionButtons(p);
-    document.getElementById('downloadBtn').addEventListener('click', function () { downloadImage({ imageUrl: imageSet[curVar].imageUrl, title: p.title, id: p.id, type: p.type }); });
+    const dlBtn = document.getElementById('downloadBtn');
+    if (dlBtn) dlBtn.addEventListener('click', function () { downloadImage({ imageUrl: imageSet[curVar].imageUrl, title: p.title, id: p.id, type: p.type }); });
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
@@ -6896,6 +7273,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const sourceVideoWorks = document.getElementById('sourceVideoWorks');
     if (sourceVideoWorks) wireImageRows(sourceVideoWorks, { detailOnly: true });
 
+    const linkedNovelWorks = document.getElementById('linkedNovelWorks');
+    if (linkedNovelWorks) wireImageRows(linkedNovelWorks, { detailOnly: true });
+
     const referencedByWorks = document.getElementById('referencedByWorks');
     if (referencedByWorks) wireImageRows(referencedByWorks, { detailOnly: true });
 
@@ -6918,6 +7298,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function closeModal() {
     openDetailPostId = null;
+    destroyActiveNovelPlayer();
     modalOverlay.classList.remove('open');
     modalOverlay.classList.remove('has-post-nav');
     hideModalNav();
@@ -7316,7 +7697,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const vTagCloud = document.getElementById('vTagCloud');
   const vShowAllTagsBtn = document.getElementById('vShowAllTagsBtn');
   function rebuildVideoTagUI() {
-    const tags = allUniqueTags();
+    const tags = videoTagPool();
     Object.keys(vTagStates).forEach(function (t) { if (!tags.includes(t)) delete vTagStates[t]; });
     vTagCloud.innerHTML = tagDisplayOrder('videoBrowse', tags, vTagStates).map(function (t) {
       const cls = vTagStates[t] ? 'state-include' : '';
@@ -7345,7 +7726,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const vBrowseTagModalOverlay = document.getElementById('vBrowseTagModalOverlay');
   const vBrowseTagModalCloud = document.getElementById('vBrowseTagModalCloud');
   function renderVideoTagModalCloud() {
-    const tags = allUniqueTags();
+    const tags = videoTagPool();
     vBrowseTagModalCloud.innerHTML = tags.map(function (t) {
       const cls = vTagStates[t] ? ' state-include' : '';
       return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
@@ -7405,8 +7786,612 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   syncVideoPanelSizeControl();
   renderVSortChips();
 
+  /* ====================================================================
+     ノベルゲーム: シナリオ取得ヘルパー
+     1シーン = 背景画像1枚 + 複数の会話行。
+     settings.scenario = [{ bg, lines: [{ name, text }, ...] }, ...]
+     旧形式 { bg, name, text }(1シーン1行)も読めるよう正規化する。
+     ==================================================================== */
+  function normalizeNovelScene(s) {
+    if (!s || typeof s !== 'object') return { bg: '', lines: [] };
+    if (Array.isArray(s.lines)) {
+      return {
+        bg: s.bg || '',
+        lines: s.lines.map(function (l) {
+          return { name: (l && l.name) || '', text: (l && l.text) || '' };
+        })
+      };
+    }
+    // 旧形式: 1シーンにつき話者+セリフが1組だけ
+    return { bg: s.bg || '', lines: [{ name: s.name || '', text: s.text || '' }] };
+  }
+  function novelScenarioOf(p) {
+    const s = p && p.settings;
+    return (s && Array.isArray(s.scenario)) ? s.scenario.map(normalizeNovelScene) : [];
+  }
+  function novelThumbUrl(p) {
+    if (!p || p.type !== 'novel') return '';
+    const sc = novelScenarioOf(p);
+    for (let i = 0; i < sc.length; i++) {
+      if (sc[i] && sc[i].bg) return sc[i].bg;
+    }
+    return '';
+  }
+  function novelHaystack(p) {
+    return novelScenarioOf(p).map(function (s) {
+      return s.lines.map(function (l) { return l.name + ' ' + l.text; }).join(' ');
+    }).join(' ');
+  }
+  // この作品を「参考にした投稿作品」として紐づけているノベルゲーム
+  function novelsReferencing(id) {
+    return novelPosts.filter(function (np) { return String(np.refId) === String(id); });
+  }
+  // 再生用: 全シーンの会話行を1本の配列へ展開する(背景は直近のシーンのものを引き継ぐ)
+  function novelStepsOf(scenario) {
+    const steps = [];
+    (scenario || []).map(normalizeNovelScene).forEach(function (sc) {
+      const lines = sc.lines.length ? sc.lines : [{ name: '', text: '' }];
+      lines.forEach(function (l) {
+        steps.push({ bg: sc.bg || '', name: l.name || '', text: l.text || '' });
+      });
+    });
+    return steps.filter(function (st, i) {
+      return st.bg || st.text || st.name || i === 0;
+    });
+  }
+
+  /* ====================================================================
+     ノベルゲーム: 簡易シネマティックプレイヤー
+     詳細モーダル(保存済み)とプレビュー(未保存)の両方から同じ実装で起動する。
+     ==================================================================== */
+  const NOVEL_AUTO_INTERVAL = 2500;
+  const NOVEL_TYPE_SPEED = 75;   // 1文字あたりのミリ秒
+  const NOVEL_LINE_GAP = 220;    // 次のテキストを打ち始めるまでの間(ms)
+  const NOVEL_FADE_MS = 450;     // 背景フェードの片道の長さ(ms)
+  const NOVEL_RESIZE_PAUSE = 260; // 暗転中に枠の比率を変えてから絵を出すまでの間(ms)
+
+  function createNovelPlayer(mountEl, scenario, opts) {
+    opts = opts || {};
+    const scenes = novelStepsOf(scenario);
+    if (!mountEl) return null;
+    if (!scenes.length) {
+      mountEl.innerHTML = '<div class="novel-empty-hint">シーンがありません。</div>';
+      return null;
+    }
+
+    let index = 0;
+    let autoOn = false;
+    let autoTimer = null;
+    let typeTimer = null;
+    let gapTimer = null;
+    let typing = false;
+    let fullText = '';
+    let logOpen = false;
+    // 詳細モーダルでは開いた瞬間に始まらないよう、最初の1クリックまで待つ
+    let started = !opts.requireStart;
+
+    mountEl.innerHTML = '' +
+      '<div class="novel-player">' +
+        '<div class="novel-stage" data-novel-stage>' +
+          '<img class="novel-stage-img" data-novel-img alt="背景">' +
+          '<img class="novel-stage-img novel-stage-img-next" data-novel-img-next alt="" aria-hidden="true">' +
+          '<div class="novel-progress" data-novel-progress></div>' +
+          '<div class="novel-start" data-novel-start><span class="novel-start-btn">▶ クリックして開始</span></div>' +
+          '<div class="novel-msgwin">' +
+            '<div class="novel-speaker" data-novel-speaker></div>' +
+            '<div class="novel-line" data-novel-line></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="novel-controls">' +
+          '<button class="novel-ctrl-btn" type="button" data-novel-prev>◀ 戻る</button>' +
+          '<button class="novel-ctrl-btn" type="button" data-novel-next>進む ▶</button>' +
+          '<button class="novel-ctrl-btn" type="button" data-novel-restart>最初から</button>' +
+          '<button class="novel-ctrl-btn" type="button" data-novel-auto>AUTO</button>' +
+          '<button class="novel-ctrl-btn" type="button" data-novel-log>ログ</button>' +
+        '</div>' +
+        '<div class="novel-log" data-novel-loglist style="display:none;"></div>' +
+      '</div>';
+
+    const stageEl = mountEl.querySelector('[data-novel-stage]');
+    let frontEl = mountEl.querySelector('[data-novel-img]');
+    let backEl = mountEl.querySelector('[data-novel-img-next]');
+    const speakerEl = mountEl.querySelector('[data-novel-speaker]');
+    const lineEl = mountEl.querySelector('[data-novel-line]');
+    const progressEl = mountEl.querySelector('[data-novel-progress]');
+    const prevBtn = mountEl.querySelector('[data-novel-prev]');
+    const nextBtn = mountEl.querySelector('[data-novel-next]');
+    const restartBtn = mountEl.querySelector('[data-novel-restart]');
+    const autoBtn = mountEl.querySelector('[data-novel-auto]');
+    const logBtn = mountEl.querySelector('[data-novel-log]');
+    const logListEl = mountEl.querySelector('[data-novel-loglist]');
+    const startEl = mountEl.querySelector('[data-novel-start]');
+
+    let shownBg = null;        // 表示中(または切替先)の背景URL
+    let fadeTimer = null;
+    let fadeToken = 0;         // 切替が追い越されたことを検出するための世代番号
+    let transitioning = false;
+    let transitionDone = null; // 切替完了後に実行する処理(本文の再生開始など)
+    let hasShown = false;
+
+    // 背景画像の実寸からアスペクト比を求め、ステージへ反映する(レターボックスを出さない)。
+    // 縦長画像で画面をはみ出さないよう高さに上限を設け、その場合は比率を保ったまま幅を詰める。
+    function applyStageAspect(fromEl) {
+      const src = fromEl || frontEl;
+      const w = src.naturalWidth;
+      const h = src.naturalHeight;
+      if (!(w > 0 && h > 0)) return;
+      stageEl.style.aspectRatio = w + ' / ' + h;
+      const maxH = Math.max(200, Math.round(window.innerHeight * 0.7));
+      const availW = stageEl.parentNode ? stageEl.parentNode.clientWidth : 0;
+      if (availW > 0 && (availW * h) / w > maxH) {
+        stageEl.style.width = Math.round((maxH * w) / h) + 'px';
+      } else {
+        stageEl.style.width = '';
+      }
+    }
+    function onResize() { applyStageAspect(); }
+    window.addEventListener('resize', onResize);
+
+    function finishTransition(token) {
+      if (token !== fadeToken) return;
+      transitioning = false;
+      fadeTimer = null;
+      const cb = transitionDone;
+      transitionDone = null;
+      if (cb) cb();
+    }
+
+    /* 背景は直接クロスフェードせず、いったん黒へフェードアウトしてから次の画像へフェードインする。
+       枠の比率は真っ黒の間に切り替える。切替中に別の切替が来たら fadeToken で古い処理を捨てる。 */
+    function setBackground(bg, done) {
+      // 同じ背景への切替が進行中なら、完了後の処理だけ差し替える
+      if (bg === shownBg && transitioning) { transitionDone = done || null; return; }
+      if (bg === shownBg && !transitioning) { if (done) done(); return; }
+
+      const token = ++fadeToken;
+      if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+      shownBg = bg;
+      transitionDone = done || null;
+
+      if (!bg) {
+        frontEl.classList.remove('is-visible');
+        backEl.classList.remove('is-visible');
+        hasShown = false;
+        finishTransition(token);
+        return;
+      }
+
+      transitioning = true;
+      let revealed = false;
+
+      function reveal() {
+        if (token !== fadeToken || revealed) return;
+        revealed = true;                   // onload と同期呼び出しの二重実行を防ぐ
+        backEl.onload = null;
+        backEl.onerror = null;
+        // 真っ黒のうちに次の画像の比率へ枠を作り替え、少し置いてから絵を出す
+        applyStageAspect(backEl);
+        fadeTimer = setTimeout(function () {
+          if (token !== fadeToken) return;
+          backEl.classList.add('is-visible');
+          // 表と裏を入れ替える(このとき旧・表はすでに非表示なので src を外してよい)
+          const tmp = frontEl; frontEl = backEl; backEl = tmp;
+          backEl.classList.remove('is-visible');
+          backEl.removeAttribute('src');
+          hasShown = true;
+          fadeTimer = setTimeout(function () { finishTransition(token); }, NOVEL_FADE_MS);
+        }, hasShown ? NOVEL_RESIZE_PAUSE : 0);
+      }
+
+      function loadThenReveal() {
+        if (token !== fadeToken) return;
+        backEl.onload = function () { reveal(); };
+        backEl.onerror = function () { reveal(); };
+        backEl.setAttribute('src', bg);
+        if (backEl.complete && backEl.naturalWidth > 0) reveal();
+      }
+
+      // 初回は暗転を挟まずそのまま出す
+      if (!hasShown) { loadThenReveal(); return; }
+      frontEl.classList.remove('is-visible');   // まず黒へ
+      fadeTimer = setTimeout(function () {
+        if (token !== fadeToken) return;
+        fadeTimer = null;
+        loadThenReveal();
+      }, NOVEL_FADE_MS);
+    }
+
+    function currentBg(i) {
+      for (let k = i; k >= 0; k--) {
+        if (scenes[k] && scenes[k].bg) return scenes[k].bg;
+      }
+      return '';
+    }
+
+    function render() {
+      const s = scenes[index] || {};
+      // 前の行の残りが暗転中に流れ込まないよう、まず必ず止めて消す
+      stopTyping();
+      clearAutoTimer();
+      lineEl.textContent = '';
+      if (!started) {
+        setBackground(currentBg(index));
+        speakerEl.textContent = '\u00A0';
+        speakerEl.classList.add('is-empty');
+        progressEl.textContent = '';
+        return;
+      }
+      // 話者名も暗転が明けてから出す(先行表示されるのを防ぐ)
+      speakerEl.textContent = '\u00A0';
+      speakerEl.classList.add('is-empty');
+      progressEl.textContent = (index + 1) + ' / ' + scenes.length;
+      prevBtn.disabled = index === 0;
+      nextBtn.disabled = index >= scenes.length - 1;
+      if (logOpen) renderLog();
+      // 背景の暗転を挟む場合は、切り替わりきってから話者名と本文を出し始める
+      setBackground(currentBg(index), function () {
+        speakerEl.textContent = s.name || '\u00A0';
+        speakerEl.classList.toggle('is-empty', !s.name);
+        startTyping(s.text || '');
+      });
+    }
+
+    function beginPlayback() {
+      if (started) return true;
+      started = true;
+      if (startEl) startEl.remove();
+      render();
+      return false;
+    }
+
+    /* テキストは1文字ずつ表示する。表示途中のクリックで全文を即座に出す。 */
+    function stopTyping() {
+      if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+      if (gapTimer) { clearTimeout(gapTimer); gapTimer = null; }
+      typing = false;
+    }
+    function startTyping(text) {
+      stopTyping();
+      clearAutoTimer();
+      fullText = text || '';
+      lineEl.textContent = '';
+      if (!fullText) { scheduleAuto(); return; }
+      // 前の行と重なって見えないよう、一度空にしてから少し間を置いて打ち始める
+      typing = true;
+      gapTimer = setTimeout(function () {
+        gapTimer = null;
+        let i = 0;
+        typeTimer = setInterval(function () {
+          i++;
+          lineEl.textContent = fullText.slice(0, i);
+          if (i >= fullText.length) { stopTyping(); scheduleAuto(); }
+        }, NOVEL_TYPE_SPEED);
+      }, NOVEL_LINE_GAP);
+    }
+    function finishTyping() {
+      if (!typing) return false;
+      stopTyping();
+      lineEl.textContent = fullText;
+      scheduleAuto();
+      return true;
+    }
+    function clearAutoTimer() {
+      if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+    }
+    // AUTOは「表示しきってから一定秒」で次へ進む
+    function scheduleAuto() {
+      clearAutoTimer();
+      if (autoOn && index < scenes.length - 1) autoTimer = setTimeout(next, NOVEL_AUTO_INTERVAL);
+    }
+
+    function renderLog() {
+      logListEl.innerHTML = scenes.slice(0, index + 1).map(function (s) {
+        return '<div class="novel-log-item">' +
+          (s.name ? '<div class="novel-log-name">' + escapeHtml(s.name) + '</div>' : '') +
+          '<div class="novel-log-text">' + escapeHtml(s.text || '') + '</div>' +
+        '</div>';
+      }).join('');
+      logListEl.scrollTop = logListEl.scrollHeight;
+    }
+
+    function go(i) {
+      index = Math.max(0, Math.min(scenes.length - 1, i));
+      render();
+    }
+    function next() {
+      if (index >= scenes.length - 1) { setAuto(false); return; }
+      go(index + 1);
+    }
+    function setAuto(on) {
+      autoOn = !!on;
+      autoBtn.classList.toggle('active', autoOn);
+      autoBtn.innerHTML = autoOn ? '<span class="novel-auto-lamp"></span>AUTO' : 'AUTO';
+      clearAutoTimer();
+      if (autoOn && !typing) scheduleAuto();
+    }
+
+    // 表示途中なら全文表示、表示済みなら次へ
+    stageEl.addEventListener('click', function () {
+      if (!beginPlayback()) return;
+      if (finishTyping()) return;
+      setAuto(false);
+      next();
+    });
+    prevBtn.addEventListener('click', function () { if (!beginPlayback()) return; setAuto(false); go(index - 1); });
+    nextBtn.addEventListener('click', function () { if (!beginPlayback()) return; if (finishTyping()) return; setAuto(false); next(); });
+    restartBtn.addEventListener('click', function () { beginPlayback(); setAuto(false); go(0); });
+    autoBtn.addEventListener('click', function () { if (!beginPlayback()) { setAuto(true); return; } setAuto(!autoOn); });
+    logBtn.addEventListener('click', function () {
+      logOpen = !logOpen;
+      logBtn.classList.toggle('active', logOpen);
+      logListEl.style.display = logOpen ? '' : 'none';
+      if (logOpen) renderLog();
+    });
+
+    render();
+    return { destroy: function () {
+      fadeToken++;
+      transitionDone = null;
+      transitioning = false;
+      clearAutoTimer();
+      stopTyping();
+      if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+      window.removeEventListener('resize', onResize);
+    } };
+  }
+
+  let activeNovelPlayer = null;
+  function destroyActiveNovelPlayer() {
+    if (activeNovelPlayer && activeNovelPlayer.destroy) activeNovelPlayer.destroy();
+    activeNovelPlayer = null;
+  }
+
+  /* ---------- ゲーム投稿一覧: 描画 ---------- */
+  const novelListEl = document.getElementById('novelList');
+  const novelEmptyEl = document.getElementById('novelEmptyState');
+  novelListEl.addEventListener('error', handleImageError, true);
+
+  function nPassesTagFilter(post) {
+    const tags = post.tags || [];
+    const selected = Object.keys(nTagStates).filter(function (t) { return nTagStates[t]; });
+    if (!selected.length) return true;
+    if (nTagMatchMode === 'NOT') return !selected.some(function (t) { return tags.includes(t); });
+    return nTagMatchMode === 'AND'
+      ? selected.every(function (t) { return tags.includes(t); })
+      : selected.some(function (t) { return tags.includes(t); });
+  }
+
+  function updateNovelCategoryCounts(arr) {
+    const counts = { all: arr.length, copyright: 0, original: 0, other: 0 };
+    arr.forEach(function (p) { if (p.category && counts[p.category] !== undefined) counts[p.category]++; });
+    document.querySelectorAll('#nCategoryFilterToggle .seg-count').forEach(function (el) {
+      const k = el.dataset.count;
+      el.textContent = counts[k] != null ? counts[k] : 0;
+    });
+  }
+
+  let nBrowseFiltered = [];
+  let nBrowseThumbSize = 'w320';
+  let nBrowseShown = 0;
+  let nBrowseObserver = null;
+
+  function renderNovelList() {
+    if (!restStageLoaded) {
+      novelListEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
+      novelEmptyEl.style.display = 'none';
+      return;
+    }
+    let filtered = visiblePosts(novelPosts.slice()).filter(nPassesTagFilter);
+
+    const keywords = parseKeywords(document.getElementById('nFilterKeyword').value);
+    filtered = filtered.filter(function (p) {
+      return matchKeywords(postKeywordHaystack(p) + ' ' + novelHaystack(p), keywords, nKeywordMode);
+    });
+
+    filtered.sort(function (a, b) { return compareWithKeys(a, b, nSortKeys); });
+
+    updateNovelCategoryCounts(filtered);
+    if (nCategoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === nCategoryFilter; });
+
+    novelListEl.classList.toggle('panel-mode', nViewMode === 'panel');
+    novelEmptyEl.style.display = filtered.length ? 'none' : 'block';
+
+    nBrowseThumbSize = nViewMode === 'panel' ? 'w640' : 'w320';
+    nBrowseFiltered = filtered;
+    nBrowseShown = 0;
+    novelListEl.innerHTML = '';
+    appendNovelPage();
+    ensureNovelFilled();
+
+    if (nViewMode === 'panel') layoutPanelGridFor(novelListEl);
+  }
+
+  function ensureNovelFilled() {
+    let guard = 0;
+    while (nBrowseShown < nBrowseFiltered.length &&
+           document.documentElement.scrollHeight < window.scrollY + window.innerHeight + 1000 &&
+           guard++ < 1000) {
+      appendNovelPage();
+    }
+  }
+
+  function appendNovelPage() {
+    const slice = nBrowseFiltered.slice(nBrowseShown, nBrowseShown + BROWSE_PAGE);
+    if (slice.length) {
+      const temp = document.createElement('div');
+      temp.innerHTML = slice.map(function (p) { return imageRowHtml(p, nBrowseThumbSize); }).join('');
+      wireImageRows(temp, { detailOnly: true, onTagClick: toggleNovelTagFromCard, activeTags: nTagStates });
+      while (temp.firstChild) novelListEl.appendChild(temp.firstChild);
+      nBrowseShown += slice.length;
+    }
+    updateNovelSentinel();
+    if (nViewMode === 'panel') layoutPanelGridFor(novelListEl);
+  }
+
+  function updateNovelSentinel() {
+    let sentinel = document.getElementById('nBrowseSentinel');
+    if (nBrowseShown >= nBrowseFiltered.length) {
+      if (sentinel) { if (nBrowseObserver) nBrowseObserver.unobserve(sentinel); sentinel.remove(); }
+      return;
+    }
+    if (!sentinel) {
+      sentinel = document.createElement('div');
+      sentinel.id = 'nBrowseSentinel';
+      sentinel.setAttribute('aria-hidden', 'true');
+      sentinel.style.height = '1px';
+    }
+    if (novelListEl.parentNode) novelListEl.parentNode.insertBefore(sentinel, novelListEl.nextSibling);
+    if (!nBrowseObserver) {
+      nBrowseObserver = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) appendNovelPage();
+      }, { rootMargin: '800px 0px' });
+    }
+    nBrowseObserver.observe(sentinel);
+  }
+
+  /* ---------- ゲーム一覧: 並び替え・絞り込み・タグの配線 ---------- */
+  const nSortChips = document.getElementById('nSortChips');
+  function renderNSortChips() {
+    const cur = nSortKeys[0] || {};
+    nSortChips.innerHTML = NOVEL_SORT_OPTIONS.map(function (o) {
+      const active = cur.field === o.field && cur.dir === o.dir;
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + o.field +
+        '" data-dir="' + o.dir + '">' + o.label + '</span>';
+    }).join('');
+    nSortChips.querySelectorAll('.sort-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        nSortKeys = [{ field: chip.dataset.field, dir: chip.dataset.dir }];
+        renderNSortChips();
+        renderNovelList();
+      });
+    });
+  }
+
+  document.getElementById('nFilterKeyword').addEventListener('input', renderNovelList);
+  document.querySelectorAll('#nKeywordModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      nKeywordMode = btn.dataset.kwmode;
+      document.querySelectorAll('#nKeywordModeToggle button').forEach(function (b) { b.classList.toggle('active', b.dataset.kwmode === nKeywordMode); });
+      renderNovelList();
+    });
+  });
+  document.getElementById('nClearFiltersBtn').addEventListener('click', function () {
+    document.getElementById('nFilterKeyword').value = '';
+    renderNovelList();
+  });
+
+  function syncNTagMatchModeButtons() {
+    document.querySelectorAll('#nTagMatchModeToggle button, #nBrowseTagModalMatchModeToggle button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tagmode === nTagMatchMode);
+    });
+  }
+  document.querySelectorAll('#nTagMatchModeToggle button, #nBrowseTagModalMatchModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      nTagMatchMode = btn.dataset.tagmode;
+      syncNTagMatchModeButtons();
+      renderNovelList();
+    });
+  });
+  document.getElementById('nClearTagsBtn').addEventListener('click', function () {
+    nTagStates = {};
+    rebuildNovelTagUI();
+    renderNovelList();
+  });
+
+  const nTagCloud = document.getElementById('nTagCloud');
+  const nShowAllTagsBtn = document.getElementById('nShowAllTagsBtn');
+  function rebuildNovelTagUI() {
+    const tags = novelTagPool();
+    Object.keys(nTagStates).forEach(function (t) { if (!tags.includes(t)) delete nTagStates[t]; });
+    nTagCloud.innerHTML = tagDisplayOrder('novelBrowse', tags, nTagStates).map(function (t) {
+      const cls = nTagStates[t] ? 'state-include' : '';
+      return '<span class="tag-pill ' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+    nTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (nTagStates[t]) delete nTagStates[t]; else nTagStates[t] = true;
+        rebuildNovelTagUI();
+        renderNovelList();
+      });
+    });
+    applyNovelTagClamp();
+  }
+  function applyNovelTagClamp() { applyTagCloudClamp(nTagCloud, nShowAllTagsBtn, 2); }
+
+  function toggleNovelTagFromCard(tag) {
+    if (nTagStates[tag]) delete nTagStates[tag]; else nTagStates[tag] = true;
+    rebuildNovelTagUI();
+    renderNovelList();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const nBrowseTagModalOverlay = document.getElementById('nBrowseTagModalOverlay');
+  const nBrowseTagModalCloud = document.getElementById('nBrowseTagModalCloud');
+  function renderNovelTagModalCloud() {
+    const tags = novelTagPool();
+    nBrowseTagModalCloud.innerHTML = tags.map(function (t) {
+      const cls = nTagStates[t] ? ' state-include' : '';
+      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+    nBrowseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const t = pill.dataset.tag;
+        if (nTagStates[t]) delete nTagStates[t]; else nTagStates[t] = true;
+        rebuildNovelTagUI();
+        renderNovelTagModalCloud();
+        renderNovelList();
+      });
+    });
+  }
+  nShowAllTagsBtn.addEventListener('click', function () { renderNovelTagModalCloud(); openOverlay(nBrowseTagModalOverlay); });
+  document.getElementById('nBrowseTagModalCloseBtn').addEventListener('click', function () { nBrowseTagModalOverlay.classList.remove('open'); });
+  nBrowseTagModalOverlay.addEventListener('click', function (e) { if (e.target === nBrowseTagModalOverlay) nBrowseTagModalOverlay.classList.remove('open'); });
+  document.getElementById('nClearBrowseTagsModalBtn').addEventListener('click', function () {
+    nTagStates = {};
+    rebuildNovelTagUI();
+    renderNovelTagModalCloud();
+    renderNovelList();
+  });
+
+  function syncNovelCategoryButtons() {
+    document.querySelectorAll('#nCategoryFilterToggle button').forEach(function (b) { b.classList.toggle('active', b.dataset.catfilter === nCategoryFilter); });
+  }
+  document.querySelectorAll('#nCategoryFilterToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      nCategoryFilter = btn.dataset.catfilter;
+      try { localStorage.setItem('pr_novel_category_filter', nCategoryFilter); } catch (e) {}
+      syncNovelCategoryButtons();
+      renderNovelList();
+    });
+  });
+
+  const nPanelSizeControl = document.getElementById('nPanelSizeControl');
+  const nPanelSizeRange = document.getElementById('nPanelSizeRange');
+  function syncNovelPanelSizeControl() { nPanelSizeControl.classList.toggle('active', nViewMode === 'panel'); }
+  novelListEl.style.setProperty('--panel-col', nPanelSizeRange.value + 'px');
+  nPanelSizeRange.addEventListener('input', function () {
+    novelListEl.style.setProperty('--panel-col', this.value + 'px');
+    if (nViewMode === 'panel') layoutPanelGridFor(novelListEl);
+  });
+  document.querySelectorAll('#nViewModeToggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#nViewModeToggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      nViewMode = btn.dataset.view;
+      syncNovelPanelSizeControl();
+      renderNovelList();
+    });
+  });
+
+  syncNTagMatchModeButtons();
+  syncNovelCategoryButtons();
+  syncNovelPanelSizeControl();
+  renderNSortChips();
+
   function rerenderActiveList() {
     if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+    if (document.getElementById('tab-novelBrowse') && document.getElementById('tab-novelBrowse').classList.contains('active')) renderNovelList();
     if (document.getElementById('tab-videoBrowse') && document.getElementById('tab-videoBrowse').classList.contains('active')) renderVideoList();
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
     if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
@@ -7573,6 +8558,326 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   pList.addEventListener('error', handleImageError, true);
 
+  /* ====================================================================
+     ノベルゲーム: シーン編集エディタ
+     novelScenes は編集中の作業データ。bg は既存投稿のURL、dataUrl は
+     この場で選んだ未アップロード画像(Base64)を保持する。
+     ==================================================================== */
+  let novelScenes = [];
+
+  function novelBlankLine() { return { name: '', text: '' }; }
+  function novelBlankScene() { return { bg: '', dataUrl: '', mime: '', lines: [novelBlankLine()] }; }
+
+  function novelSceneThumbSrc(s) { return s.dataUrl || s.bg || ''; }
+
+  function novelLineRowHtml(l, li, total) {
+    return '' +
+      '<div class="novel-line-row" data-line-idx="' + li + '">' +
+        '<span class="novel-line-handle" data-line-handle title="ドラッグで並び替え">⠿</span>' +
+        '<input type="text" class="novel-line-name" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-name placeholder="話者(空欄可)" value="' + escapeHtml(l.name || '') + '">' +
+        '<input type="text" class="novel-line-text" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-text placeholder="セリフ・地の文" value="' + escapeHtml(l.text || '') + '">' +
+        '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-up' + (li === 0 ? ' disabled' : '') + ' title="上へ">↑</button>' +
+        '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-down' + (li === total - 1 ? ' disabled' : '') + ' title="下へ">↓</button>' +
+        '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-line-remove' + (total <= 1 ? ' disabled' : '') + ' title="この行を削除">✕</button>' +
+      '</div>';
+  }
+
+  // 末尾には常に空行を1行だけ確保する(入力すると自動でさらに1行増える)
+  function ensureTrailingBlankLine(scene) {
+    if (!scene.lines || !scene.lines.length) { scene.lines = [novelBlankLine()]; return; }
+    const last = scene.lines[scene.lines.length - 1];
+    if ((last.name || '').trim() || (last.text || '').trim()) scene.lines.push(novelBlankLine());
+  }
+
+  // 再描画でフォーカスとキャレット位置が飛ばないよう記録・復元する
+  function captureNovelFocus() {
+    const el = document.activeElement;
+    if (!el || !el.closest) return null;
+    const row = el.closest('.novel-line-row');
+    const card = el.closest('.novel-scene');
+    if (!row || !card) return null;
+    const field = el.hasAttribute('data-line-name') ? 'name' : (el.hasAttribute('data-line-text') ? 'text' : null);
+    if (!field) return null;
+    return {
+      scene: Number(card.dataset.sceneIdx),
+      line: Number(row.dataset.lineIdx),
+      field: field,
+      pos: el.selectionStart
+    };
+  }
+  function restoreNovelFocus(snap) {
+    if (!snap) return;
+    const el = document.querySelector('.novel-scene[data-scene-idx="' + snap.scene + '"] .novel-line-row[data-line-idx="' + snap.line + '"] [data-line-' + snap.field + ']');
+    if (!el) return;
+    el.focus();
+    try { el.setSelectionRange(snap.pos, snap.pos); } catch (e) {}
+  }
+
+  function renderNovelSceneList() {
+    const listEl = document.getElementById('novelSceneList');
+    const hintEl = document.getElementById('novelEmptyHint');
+    if (!listEl) return;
+    const snap = captureNovelFocus();
+    novelScenes.forEach(ensureTrailingBlankLine);
+    hintEl.style.display = novelScenes.length ? 'none' : '';
+    listEl.innerHTML = novelScenes.map(function (s, i) {
+      const src = novelSceneThumbSrc(s);
+      const lines = s.lines;
+      const filled = lines.filter(function (l) { return (l.name || '').trim() || (l.text || '').trim(); }).length;
+      return '' +
+        '<div class="novel-scene" data-scene-idx="' + i + '">' +
+          '<div class="novel-scene-head">' +
+            '<span class="novel-scene-num">シーン ' + (i + 1) + '</span>' +
+            '<span class="novel-scene-count">' + filled + '行</span>' +
+            '<div class="novel-scene-actions">' +
+              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-up' + (i === 0 ? ' disabled' : '') + '>↑ 上へ</button>' +
+              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-down' + (i === novelScenes.length - 1 ? ' disabled' : '') + '>↓ 下へ</button>' +
+              '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-scene-remove>削除</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="novel-scene-body">' +
+            '<div class="novel-dz" data-scene-dz>' +
+              (src
+                ? '<button class="novel-dz-clear" type="button" tabindex="-1" data-scene-clearimg title="画像を外す">✕</button><img src="' + escapeHtml(src) + '" alt="背景">'
+                : '背景画像<br>ドラッグ&ドロップ<br>またはクリック') +
+            '</div>' +
+            '<div class="novel-scene-fields">' +
+              '<div class="novel-line-list" data-line-list>' +
+                lines.map(function (l, li) { return novelLineRowHtml(l, li, lines.length); }).join('') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('.novel-scene').forEach(function (card) {
+      const idx = Number(card.dataset.sceneIdx);
+      if (!novelScenes[idx].lines || !novelScenes[idx].lines.length) novelScenes[idx].lines = [novelBlankLine()];
+
+      // 最終行に入力されたら、その場で末尾に空行を1行足す(ボタン不要)
+      function onLineInput(li) {
+        if (li !== novelScenes[idx].lines.length - 1) return;
+        const l = novelScenes[idx].lines[li];
+        if (!((l.name || '').trim() || (l.text || '').trim())) return;
+        renderNovelSceneList();
+      }
+
+      card.querySelectorAll('.novel-line-row').forEach(function (row) {
+        const li = Number(row.dataset.lineIdx);
+        row.querySelector('[data-line-name]').addEventListener('input', function () {
+          novelScenes[idx].lines[li].name = this.value;
+          onLineInput(li);
+        });
+        row.querySelector('[data-line-text]').addEventListener('input', function () {
+          novelScenes[idx].lines[li].text = this.value;
+          onLineInput(li);
+        });
+        // Enterで次の行へ(無ければ末尾の空行へ)
+        row.querySelector('[data-line-text]').addEventListener('keydown', function (e) {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          if (li === novelScenes[idx].lines.length - 1) {
+            ensureTrailingBlankLine(novelScenes[idx]);
+            renderNovelSceneList();
+          }
+          focusNovelLine(idx, Math.min(li + 1, novelScenes[idx].lines.length - 1));
+        });
+        row.querySelector('[data-line-up]').addEventListener('click', function () { novelMoveLine(idx, li, -1); });
+        row.querySelector('[data-line-down]').addEventListener('click', function () { novelMoveLine(idx, li, 1); });
+        row.querySelector('[data-line-remove]').addEventListener('click', function () {
+          if (novelScenes[idx].lines.length <= 1) return;
+          novelScenes[idx].lines.splice(li, 1);
+          renderNovelSceneList();
+        });
+        wireNovelLineDrag(row, idx, li);
+      });
+
+      card.querySelector('[data-scene-up]').addEventListener('click', function () { novelMoveScene(idx, -1); });
+      card.querySelector('[data-scene-down]').addEventListener('click', function () { novelMoveScene(idx, 1); });
+      card.querySelector('[data-scene-remove]').addEventListener('click', function () {
+        novelScenes.splice(idx, 1);
+        renderNovelSceneList();
+      });
+      const clearBtn = card.querySelector('[data-scene-clearimg]');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          novelScenes[idx].bg = '';
+          novelScenes[idx].dataUrl = '';
+          novelScenes[idx].mime = '';
+          renderNovelSceneList();
+        });
+      }
+      wireNovelSceneDropzone(card.querySelector('[data-scene-dz]'), idx);
+    });
+    restoreNovelFocus(snap);
+  }
+
+  /* 会話行のドラッグ並び替え。入力欄のテキスト選択を壊さないよう、
+     ハンドルを押している間だけ行を draggable にする。 */
+  let novelDragFrom = null;
+  function wireNovelLineDrag(row, sceneIdx, lineIdx) {
+    const handle = row.querySelector('[data-line-handle]');
+    if (!handle) return;
+    handle.addEventListener('mousedown', function () { row.setAttribute('draggable', 'true'); });
+    handle.addEventListener('touchstart', function () { row.setAttribute('draggable', 'true'); }, { passive: true });
+    row.addEventListener('dragstart', function (e) {
+      novelDragFrom = { scene: sceneIdx, line: lineIdx };
+      row.classList.add('dragging');
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(lineIdx)); } catch (err) {}
+    });
+    row.addEventListener('dragend', function () {
+      row.removeAttribute('draggable');
+      row.classList.remove('dragging');
+      document.querySelectorAll('.novel-line-row.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+      novelDragFrom = null;
+    });
+    row.addEventListener('dragover', function (e) {
+      if (!novelDragFrom || novelDragFrom.scene !== sceneIdx) return;   // 同じシーン内のみ
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+      row.classList.add('drop-target');
+    });
+    row.addEventListener('dragleave', function () { row.classList.remove('drop-target'); });
+    row.addEventListener('drop', function (e) {
+      if (!novelDragFrom || novelDragFrom.scene !== sceneIdx) return;
+      e.preventDefault();
+      const from = novelDragFrom.line;
+      const to = lineIdx;
+      novelDragFrom = null;
+      row.classList.remove('drop-target');
+      if (from === to) return;
+      const lines = novelScenes[sceneIdx].lines;
+      const moved = lines.splice(from, 1)[0];
+      lines.splice(to, 0, moved);
+      renderNovelSceneList();
+    });
+  }
+
+  function novelMoveLine(sceneIdx, lineIdx, delta) {
+    const lines = novelScenes[sceneIdx].lines;
+    const to = lineIdx + delta;
+    if (to < 0 || to >= lines.length) return;
+    const tmp = lines[lineIdx];
+    lines[lineIdx] = lines[to];
+    lines[to] = tmp;
+    renderNovelSceneList();
+    focusNovelLine(sceneIdx, to);
+  }
+
+  function focusNovelLine(sceneIdx, lineIdx) {
+    const el = document.querySelector('.novel-scene[data-scene-idx="' + sceneIdx + '"] .novel-line-row[data-line-idx="' + lineIdx + '"] [data-line-text]');
+    if (el) el.focus();
+  }
+
+  function novelMoveScene(idx, delta) {
+    const to = idx + delta;
+    if (to < 0 || to >= novelScenes.length) return;
+    const tmp = novelScenes[idx];
+    novelScenes[idx] = novelScenes[to];
+    novelScenes[to] = tmp;
+    renderNovelSceneList();
+  }
+
+  function wireNovelSceneDropzone(dz, idx) {
+    if (!dz) return;
+    dz.addEventListener('click', function () {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.addEventListener('change', function () {
+        if (input.files && input.files[0]) novelSetSceneImage(idx, input.files[0]);
+      });
+      input.click();
+    });
+    dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', function () { dz.classList.remove('dragover'); });
+    dz.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dz.classList.remove('dragover');
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f && f.type.indexOf('image/') === 0) novelSetSceneImage(idx, f);
+    });
+  }
+
+  async function novelSetSceneImage(idx, file) {
+    try {
+      const dataUrl = await fileToBase64(file);
+      novelScenes[idx].dataUrl = dataUrl;
+      novelScenes[idx].mime = file.type || 'image/png';
+      novelScenes[idx].bg = '';
+      renderNovelSceneList();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('novelEditorStatus').textContent = '画像の読み込みに失敗しました';
+    }
+  }
+
+  function resetNovelEditor() {
+    novelScenes = [];
+    document.getElementById('novelEditorStatus').textContent = '';
+    renderNovelSceneList();
+  }
+
+  // 編集時: 保存済みシナリオをエディタへ復元する
+  function loadNovelScenesFrom(p) {
+    novelScenes = novelScenarioOf(p).map(function (s) {
+      return {
+        bg: s.bg || '',
+        dataUrl: '',
+        mime: '',
+        lines: s.lines.length ? s.lines.map(function (l) { return { name: l.name || '', text: l.text || '' }; }) : [novelBlankLine()]
+      };
+    });
+    renderNovelSceneList();
+  }
+
+  function novelCleanLines(lines) {
+    return (lines || [])
+      .map(function (l) { return { name: (l.name || '').trim(), text: l.text || '' }; })
+      .filter(function (l) { return l.name || (l.text || '').trim(); });
+  }
+
+  // 送信用: シナリオ本体と、未アップロード画像(インデックス付き)に分ける
+  function buildNovelPayloadParts() {
+    const scenario = novelScenes.map(function (s) {
+      return { bg: s.dataUrl ? '' : (s.bg || ''), lines: novelCleanLines(s.lines) };
+    });
+    const novelImages = [];
+    novelScenes.forEach(function (s, i) {
+      if (s.dataUrl) novelImages.push({ index: i, imageBase64: s.dataUrl, imageMime: s.mime || 'image/png', imageName: 'novel_scene_' + (i + 1) });
+    });
+    return { scenario: scenario, novelImages: novelImages };
+  }
+
+  document.getElementById('novelAddSceneBtn').addEventListener('click', function () {
+    novelScenes.push(novelBlankScene());
+    renderNovelSceneList();
+  });
+
+  /* ---------- ノベルゲーム: プレビュー(サーバー未保存のまま再生) ---------- */
+  const novelPreviewOverlay = document.getElementById('novelPreviewOverlay');
+  let novelPreviewPlayer = null;
+  function closeNovelPreview() {
+    if (novelPreviewPlayer && novelPreviewPlayer.destroy) novelPreviewPlayer.destroy();
+    novelPreviewPlayer = null;
+    document.getElementById('novelPreviewMount').innerHTML = '';
+    novelPreviewOverlay.classList.remove('open');
+  }
+  document.getElementById('novelPreviewBtn').addEventListener('click', function () {
+    const statusEl = document.getElementById('novelEditorStatus');
+    if (!novelScenes.length) { statusEl.textContent = 'シーンを1つ以上追加してください'; return; }
+    statusEl.textContent = '';
+    // 未アップロードのBase64をそのまま bg に流し込むので、サーバーアクセスなしで再生できる
+    const scenario = novelScenes.map(function (s) {
+      return { bg: s.dataUrl || s.bg || '', lines: novelCleanLines(s.lines) };
+    });
+    novelPreviewOverlay.classList.add('open');
+    novelPreviewPlayer = createNovelPlayer(document.getElementById('novelPreviewMount'), scenario);
+  });
+  document.getElementById('novelPreviewCloseBtn').addEventListener('click', closeNovelPreview);
+  novelPreviewOverlay.addEventListener('click', function (e) { if (e.target === novelPreviewOverlay) closeNovelPreview(); });
+
   function currentPostMode() {
     const b = document.querySelector('#postModeToggle button.active');
     return b ? b.dataset.postmode : 'image';
@@ -7582,13 +8887,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.querySelectorAll('#postModeToggle button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.postmode === mode);
     });
-    const showImageForm = mode === 'image' || mode === 'fix' || mode === 'video';
+    const showImageForm = mode === 'image' || mode === 'fix' || mode === 'video' || mode === 'novel';
     document.getElementById('imagePostForm').style.display = showImageForm ? '' : 'none';
     document.getElementById('promptPostForm').style.display = mode === 'prompt' ? '' : 'none';
     document.getElementById('requestPostForm').style.display = mode === 'request' ? '' : 'none';
     document.body.classList.toggle('post-mode-video', mode === 'video');
+    document.body.classList.toggle('post-mode-novel', mode === 'novel');
+    document.getElementById('novelEditorField').style.display = mode === 'novel' ? '' : 'none';
+    if (mode === 'novel' && !novelScenes.length && !isEditingImagePost()) {
+      novelScenes = [novelBlankScene()];
+      renderNovelSceneList();
+    }
     // 画像フォーム流用: fix=修正依頼内容欄、image=修正依頼ピッカー、video=動画用の見出し/受入形式
-    document.getElementById('imageFormHeading').textContent = mode === 'fix' ? '修正依頼を投稿' : (mode === 'video' ? '動画を投稿' : '画像を投稿');
+    document.getElementById('imageFormHeading').textContent = mode === 'fix' ? '修正依頼を投稿' : (mode === 'video' ? '動画を投稿' : (mode === 'novel' ? 'ノベルゲームを投稿' : '画像を投稿'));
     document.getElementById('fixContentField').style.display = mode === 'fix' ? '' : 'none';
     document.getElementById('fixRequestField').style.display = mode === 'image' ? '' : 'none';
     document.getElementById('dropzoneLabel').textContent = mode === 'video' ? 'ここに動画をドラッグ&ドロップ' : DROPZONE_LABEL_DEFAULT;
@@ -7951,6 +9262,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (parentPost) {
         (parentPost.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
         renderChips();
+        // タイトルも親作品に合わせる(自分で入力済みのときは尊重して上書きしない)
+        const titleEl = document.getElementById('titleInput');
+        if (titleEl && !titleEl.value.trim()) titleEl.value = parentPost.title || '';
       }
       renderParentDisplay();
       closeParentModal();
@@ -9591,6 +10905,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'tabDatabank', group: 'tabs', label: 'プロンプトデータバンクタブ', desc: 'オフにするとプロンプトデータバンクタブを非表示にします' },
     { key: 'board', group: 'tabs', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
     { key: 'video', group: 'tabs', label: '動画投稿機能', desc: 'オフにすると「動画を投稿」モードと「動画投稿一覧」タブを非表示にします' },
+    { key: 'tabNovel', group: 'tabs', label: 'ノベルゲーム機能', desc: 'オフにすると「ノベルゲームを投稿」モードと「ゲーム投稿一覧」タブを非表示にします' },
     { key: 'tabLink', group: 'tabs', label: 'リンクタブ', desc: 'オフにするとリンクタブを非表示にします' },
     { key: 'tabUsage', group: 'tabs', label: '本ツールの使い方タブ', desc: 'オフにすると使い方タブを非表示にします' },
     { key: 'tabGuide', group: 'tabs', label: 'はじめてガイドタブ', desc: 'オフにするとはじめてガイドタブを非表示にします' },
@@ -9884,6 +11199,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     collectDynamicKeysFromPosts();
     rebuildTagUI();
     rebuildVideoTagUI();
+    rebuildNovelTagUI();
     rebuildPostTagCloud();
     rebuildDatalists();
     rebuildPromptFormTagCloud();
@@ -9956,7 +11272,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     adminEditingPost = p;
     closeModal();
     switchTab('post');
-    setPostMode(type === 'prompt' || type === 'request' ? type : (type === 'fix' ? 'fix' : (type === 'video' ? 'video' : 'image')));
+    setPostMode(type === 'prompt' || type === 'request' ? type : (type === 'fix' ? 'fix' : (type === 'video' ? 'video' : (type === 'novel' ? 'novel' : 'image'))));
 
     if (isImage) {
       document.getElementById('titleInput').value = p.title || '';
@@ -9986,6 +11302,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       renderFixRequestDisplay();
       clearSelectedImage();
       setInpaintMode(false);
+      if (type === 'novel') loadNovelScenesFrom(p); else resetNovelEditor();
       // 差分の読み込み: 画像投稿の編集では既存の差分ページ([2]以降)も編集できるようにする。
       // フォームは既に投稿値をセット済みなので、loadSlot は呼ばずにスロット状態だけ初期化する。
       variantMode = false;
@@ -10375,9 +11692,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const SEL = 'input[type="text"], input[type="number"], input[type="search"], input:not([type]), textarea';
     function protect(el) {
       if (!el || el.nodeType !== 1 || el.id === 'adminPasswordInput' || el.dataset.pmGuarded) return;
+      if (el.hasAttribute('data-pm-skip')) return;
       if (!el.matches || !el.matches(SEL)) return;
       el.dataset.pmGuarded = '1';
-      el.setAttribute('readonly', 'readonly');
+      // 再描画直後にフォーカス済みの要素へ readonly を付けると入力できなくなるため除外する
+      if (el !== document.activeElement) el.setAttribute('readonly', 'readonly');
     }
     function protectWithin(root) {
       if (root.nodeType !== 1) return;
