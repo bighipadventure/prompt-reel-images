@@ -2019,7 +2019,7 @@
       <button class="tab-btn active" data-tab="browse">画像</button>
       <button class="tab-btn video-only" data-tab="videoBrowse">動画</button>
       <button class="tab-btn novel-only" data-tab="novelBrowse">ノベル</button>
-      <button class="tab-btn" data-tab="promptBrowse">プロンプト</button>
+      <button class="tab-btn" data-tab="promptBrowse">プロンプト例</button>
       <button class="tab-btn" data-tab="requestBrowse">リクエスト</button>
       <button class="tab-btn fixrequest-only" data-tab="fixBrowse">修正依頼</button>
       <button class="tab-btn" data-tab="databank">プロンプト集計</button>
@@ -2822,7 +2822,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプト例の投稿</div>
-        <div class="feature-desc">自分で考えたオリジナルキャラやシチュエーションのプロンプトを、画像なしで1つの「作品」として共有します。「プロンプト投稿一覧」タブに並びます。</div>
+        <div class="feature-desc">自分で考えたオリジナルキャラやシチュエーションのプロンプトを、画像なしで1つの「作品」として共有します。「プロンプト例」タブに並びます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">リクエストの投稿</div>
@@ -2856,7 +2856,7 @@
         <div class="feature-desc">投稿されたノベルゲームが並びます。開くと「▶ クリックして開始」が出るので、押すと再生が始まります。画面をクリックすると次のセリフへ進み、表示の途中で押すと残りをすぐ表示します。「AUTO」で自動送り、「ログ」でそれまでのセリフを読み返せます(新しいものが上に並びます)。セリフが絵と重なって見えにくいときは「セリフを下に出す」を押すと、セリフが画像の下に移動して絵が全部見えるようになります。</div>
       </div>
       <div class="feature-item opt-only-tab-prompt">
-        <div class="feature-name">プロンプト投稿一覧</div>
+        <div class="feature-name">プロンプト例</div>
         <div class="feature-desc">画像なしのプロンプト例が並びます。画像一覧とほぼ同じ探し方ができます(リスト表示のみ)。</div>
       </div>
       <div class="feature-item opt-only-tab-request">
@@ -3155,7 +3155,7 @@
 
       <div class="qa-item opt-only-link-baseprompt">
         <div class="qa-q">プロンプト例をベースにした画像は、どうやって探しますか？</div>
-        <div class="qa-a">「プロンプト投稿一覧」でプロンプト例を開くと、その例をベースにして投稿された画像作品が、詳細の下に一覧で表示されます。逆に画像の詳細を開いたときは「ベースにしたプロンプト例」からその例へジャンプできます。</div>
+        <div class="qa-a">「プロンプト例」タブでプロンプト例を開くと、その例をベースにして投稿された画像作品が、詳細の下に一覧で表示されます。逆に画像の詳細を開いたときは「ベースにしたプロンプト例」からその例へジャンプできます。</div>
       </div>
 
       <div class="qa-item opt-only-link-parent">
@@ -11245,7 +11245,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const OPTION_DEFS = [
     { key: 'tabPost', group: 'tabs', label: '投稿タブ', desc: 'オフにすると投稿タブを非表示にします' },
     { key: 'tabBrowse', group: 'tabs', label: '画像投稿一覧タブ', desc: 'オフにすると画像投稿一覧タブを非表示にします' },
-    { key: 'tabPrompt', group: 'tabs', label: 'プロンプト投稿一覧タブ', desc: 'オフにするとプロンプト投稿一覧タブを非表示にします' },
+    { key: 'tabPrompt', group: 'tabs', label: 'プロンプト例タブ', desc: 'オフにすると「プロンプト例」タブを非表示にします' },
     { key: 'tabRequest', group: 'tabs', label: 'リクエスト一覧タブ', desc: 'オフにするとリクエスト一覧タブを非表示にします' },
     { key: 'tabDatabank', group: 'tabs', label: 'プロンプト集計タブ', desc: 'オフにすると「プロンプト集計」タブを非表示にします' },
     { key: 'board', group: 'tabs', label: '掲示板タブ', desc: 'オフにすると掲示板タブを非表示にします' },
