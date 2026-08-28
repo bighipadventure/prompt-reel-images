@@ -1300,6 +1300,27 @@
     background:linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.72) 62%, rgba(0,0,0,0) 100%);
     padding:34px 20px 18px; pointer-events:none;
   }
+  /* セリフを画像の下に出すモード。画像に重ならないので絵が全部見える */
+  .novel-msgout:empty{ display:none; }
+  .novel-msgwin.is-outside{
+    position:static; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; pointer-events:auto;
+    /* 話者名なし: 行数が増えても下へ伸びるだけにならないよう天地中央に揃える */
+    display:flex; flex-direction:column; justify-content:center;
+    min-height:76px; box-sizing:border-box;
+  }
+  /* 話者名あり: 上詰めで固定し、本文だけが下へ伸びるようにする
+     (中央揃えのままだと打ち込むたびに話者名の位置が動いてカクつくため) */
+  .novel-msgwin.is-outside.has-speaker{ justify-content:flex-start; }
+  /* 重ねる表示では高さを一定に保つため空の話者欄を残すが、
+     こちらは天地中央揃えなので詰めてよい */
+  .novel-msgwin.is-outside .novel-speaker.is-empty{ display:none; }
+  /* flex の子は既定で横いっぱいに伸びるため、下線が幅いっぱいにならないよう縮める */
+  .novel-msgwin.is-outside .novel-speaker{ margin-bottom:5px; align-self:flex-start; }
+  .novel-msgwin.is-outside .novel-line{ min-height:0; }
+  .novel-msgwin.is-outside .novel-speaker,
+  .novel-msgwin.is-outside .novel-line{ text-shadow:none; }
   .novel-speaker{
     font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:600;
     color:#fff; margin-bottom:6px; text-shadow:0 1px 3px rgba(0,0,0,.9);
@@ -1339,11 +1360,6 @@
   .novel-ctrl-btn:disabled{ opacity:.4; cursor:default; }
   .novel-ctrl-btn:disabled:hover{ border-color:var(--line); color:var(--ink); }
   .novel-ctrl-btn.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
-  /* AUTO中の目印。点滅させると気が散るので常時点灯にしている */
-  .novel-auto-lamp{
-    display:inline-block; width:8px; height:8px; border-radius:50%;
-    background:var(--danger); margin-right:6px; vertical-align:middle;
-  }
   .novel-log{
     max-height:240px; overflow-y:auto; background:var(--surface-2);
     border:1px solid var(--line); border-radius:10px; padding:12px;
@@ -2837,7 +2853,7 @@
       </div>
       <div class="feature-item novel-only">
         <div class="feature-name">ノベル</div>
-        <div class="feature-desc">投稿されたノベルゲームが並びます。開くと「▶ クリックして開始」が出るので、押すと再生が始まります。画面をクリックすると次のセリフへ進み、表示の途中で押すと残りをすぐ表示します。「AUTO」で自動送り、「ログ」でそれまでのセリフを読み返せます。</div>
+        <div class="feature-desc">投稿されたノベルゲームが並びます。開くと「▶ クリックして開始」が出るので、押すと再生が始まります。画面をクリックすると次のセリフへ進み、表示の途中で押すと残りをすぐ表示します。「AUTO」で自動送り、「ログ」でそれまでのセリフを読み返せます(新しいものが上に並びます)。セリフが絵と重なって見えにくいときは「セリフを下に出す」を押すと、セリフが画像の下に移動して絵が全部見えるようになります。</div>
       </div>
       <div class="feature-item opt-only-tab-prompt">
         <div class="feature-name">プロンプト投稿一覧</div>
@@ -8002,17 +8018,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<img class="novel-stage-img novel-stage-img-next" data-novel-img-next alt="" aria-hidden="true">' +
           '<div class="novel-progress" data-novel-progress></div>' +
           '<div class="novel-start" data-novel-start><span class="novel-start-btn">▶ クリックして開始</span></div>' +
-          '<div class="novel-msgwin">' +
+          '<div class="novel-msgwin" data-novel-msgwin>' +
             '<div class="novel-speaker" data-novel-speaker></div>' +
             '<div class="novel-line" data-novel-line></div>' +
           '</div>' +
         '</div>' +
+        '<div class="novel-msgout" data-novel-msgout></div>' +
         '<div class="novel-controls">' +
           '<button class="novel-ctrl-btn" type="button" data-novel-prev>◀ 戻る</button>' +
           '<button class="novel-ctrl-btn" type="button" data-novel-next>進む ▶</button>' +
           '<button class="novel-ctrl-btn" type="button" data-novel-restart>最初から</button>' +
           '<button class="novel-ctrl-btn" type="button" data-novel-auto>AUTO</button>' +
           '<button class="novel-ctrl-btn" type="button" data-novel-log>ログ</button>' +
+          '<button class="novel-ctrl-btn" type="button" data-novel-textpos title="セリフを画像の上に重ねるか、画像の下に出すか切り替えます">セリフを下に出す</button>' +
         '</div>' +
         '<div class="novel-log" data-novel-loglist style="display:none;"></div>' +
       '</div>';
@@ -8030,6 +8048,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const logBtn = mountEl.querySelector('[data-novel-log]');
     const logListEl = mountEl.querySelector('[data-novel-loglist]');
     const startEl = mountEl.querySelector('[data-novel-start]');
+    const msgwinEl = mountEl.querySelector('[data-novel-msgwin]');
+    const msgOutEl = mountEl.querySelector('[data-novel-msgout]');
+    const textPosBtn = mountEl.querySelector('[data-novel-textpos]');
 
     let shownBg = null;        // 表示中(または切替先)の背景URL
     let fadeTimer = null;
@@ -8143,12 +8164,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         setBackground(currentBg(index));
         speakerEl.textContent = '\u00A0';
         speakerEl.classList.add('is-empty');
+        msgwinEl.classList.remove('has-speaker');
         progressEl.textContent = '';
         return;
       }
       // 話者名も暗転が明けてから出す(先行表示されるのを防ぐ)
       speakerEl.textContent = '\u00A0';
       speakerEl.classList.add('is-empty');
+      // 話者名の有無で配置が変わる(あり=上詰め固定 / なし=天地中央)ので先に反映しておく
+      msgwinEl.classList.toggle('has-speaker', !!s.name);
       progressEl.textContent = (index + 1) + ' / ' + scenes.length;
       prevBtn.disabled = index === 0;
       nextBtn.disabled = index >= scenes.length - 1;
@@ -8157,6 +8181,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       setBackground(currentBg(index), function () {
         speakerEl.textContent = s.name || '\u00A0';
         speakerEl.classList.toggle('is-empty', !s.name);
+        msgwinEl.classList.toggle('has-speaker', !!s.name);
         startTyping(s.text || '');
       });
     }
@@ -8210,13 +8235,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     function renderLog() {
-      logListEl.innerHTML = scenes.slice(0, index + 1).map(function (s) {
+      // 一番上が最新になるよう逆順に並べる
+      logListEl.innerHTML = scenes.slice(0, index + 1).reverse().map(function (s) {
         return '<div class="novel-log-item">' +
           (s.name ? '<div class="novel-log-name">' + escapeHtml(s.name) + '</div>' : '') +
           '<div class="novel-log-text">' + escapeHtml(s.text || '') + '</div>' +
         '</div>';
       }).join('');
-      logListEl.scrollTop = logListEl.scrollHeight;
+      logListEl.scrollTop = 0;
     }
 
     function go(i) {
@@ -8230,7 +8256,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     function setAuto(on) {
       autoOn = !!on;
       autoBtn.classList.toggle('active', autoOn);
-      autoBtn.innerHTML = autoOn ? '<span class="novel-auto-lamp"></span>AUTO' : 'AUTO';
+      autoBtn.textContent = 'AUTO';
       clearAutoTimer();
       if (autoOn && !typing) scheduleAuto();
     }
@@ -8246,6 +8272,21 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     nextBtn.addEventListener('click', function () { if (!beginPlayback()) return; if (finishTyping()) return; setAuto(false); next(); });
     restartBtn.addEventListener('click', function () { beginPlayback(); setAuto(false); go(0); });
     autoBtn.addEventListener('click', function () { if (!beginPlayback()) { setAuto(true); return; } setAuto(!autoOn); });
+    // セリフを画像に重ねるか、画像の下に出すかを切り替える
+    let textOutside = false;
+    function applyTextPosition() {
+      if (textOutside) msgOutEl.appendChild(msgwinEl);
+      else stageEl.appendChild(msgwinEl);
+      msgwinEl.classList.toggle('is-outside', textOutside);
+      textPosBtn.classList.toggle('active', textOutside);
+      textPosBtn.textContent = textOutside ? 'セリフを重ねる' : 'セリフを下に出す';
+    }
+    textPosBtn.addEventListener('click', function () {
+      textOutside = !textOutside;
+      applyTextPosition();
+    });
+    applyTextPosition();
+
     logBtn.addEventListener('click', function () {
       logOpen = !logOpen;
       logBtn.classList.toggle('active', logOpen);
