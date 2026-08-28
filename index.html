@@ -373,6 +373,10 @@
     padding: 7px 14px; cursor: pointer;
   }
   .show-all-tags:hover{ border-color: var(--accent); }
+  /* 選択モーダル内の検索エリア。投稿一覧と同じ .search-panel を流用しつつ、
+     モーダル内なので上下の余白だけ詰める。 */
+  .picker-search-panel{ margin-bottom: 14px; }
+  .picker-search-panel .search-row:last-child{ margin-bottom: 0; }
   .tag-modal-hint{ font-size: 12px; color: var(--ink-dim); font-family:'Noto Sans JP',sans-serif; margin: 0 0 14px; }
 
   /* ---- 検索エリア: コンパクト表示 ---- */
@@ -4235,11 +4239,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     <button class="modal-close" type="button" id="basePromptModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">ベースにするプロンプト例を選択</h3>
     <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除(複数選択可)</p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="basePromptSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" style="flex:1 1 200px; width:auto;">
-      <button class="btn-ghost" id="clearBasePromptBtn" type="button">すべて解除</button>
+    <div class="search-panel picker-search-panel">
+      <div class="search-row sort-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="basePromptSortChips"></div>
+      </div>
+      <div class="search-row filter-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="basePromptSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" class="filter-input">
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="basePromptKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="btn-ghost" id="clearBasePromptBtn" type="button">すべて解除</button>
+        </div>
+      </div>
     </div>
-    <div class="sort-chips" id="basePromptSortChips" style="margin-bottom:14px;"></div>
     <div class="list" id="basePromptList"></div>
     <div class="empty" id="basePromptEmpty" style="display:none;">プロンプト投稿がまだありません。先に「プロンプト例を投稿」してください。</div>
   </div>
@@ -4249,11 +4266,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   <div class="modal">
     <button class="modal-close" type="button" id="parentModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">親にする投稿作品を選択</h3>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="parentSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" style="flex:1 1 200px; width:auto;">
-      <button class="btn-ghost" id="clearParentBtn" type="button">紐づけなしにする</button>
+    <div class="search-panel picker-search-panel">
+      <div class="search-row sort-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="parentSortChips"></div>
+      </div>
+      <div class="search-row filter-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="parentSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" class="filter-input">
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="parentKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="btn-ghost" id="clearParentBtn" type="button">紐づけなしにする</button>
+        </div>
+      </div>
     </div>
-    <div class="sort-chips" id="parentSortChips" style="margin-bottom:14px;"></div>
     <div class="list" id="parentList"></div>
     <div class="empty" id="parentEmpty" style="display:none;">画像投稿がまだありません。</div>
   </div>
@@ -4263,11 +4293,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   <div class="modal">
     <button class="modal-close" type="button" id="referenceModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">参考にした投稿作品を選択</h3>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="referenceSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" style="flex:1 1 200px; width:auto;">
-      <button class="btn-ghost" id="clearReferenceBtn" type="button">紐づけなしにする</button>
+    <div class="search-panel picker-search-panel">
+      <div class="search-row sort-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="referenceSortChips"></div>
+      </div>
+      <div class="search-row filter-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="referenceSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" class="filter-input">
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="referenceKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="btn-ghost" id="clearReferenceBtn" type="button">紐づけなしにする</button>
+        </div>
+      </div>
     </div>
-    <div class="sort-chips" id="referenceSortChips" style="margin-bottom:14px;"></div>
     <div class="list" id="referenceList"></div>
     <div class="empty" id="referenceEmpty" style="display:none;">画像投稿がまだありません。</div>
   </div>
@@ -4277,11 +4320,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   <div class="modal">
     <button class="modal-close" type="button" id="videoSourceModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">動画の元になった画像作品を選択</h3>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="videoSourceSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" style="flex:1 1 200px; width:auto;">
-      <button class="btn-ghost" id="clearVideoSourceBtn" type="button">紐づけなしにする</button>
+    <div class="search-panel picker-search-panel">
+      <div class="search-row sort-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="videoSourceSortChips"></div>
+      </div>
+      <div class="search-row filter-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="videoSourceSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" class="filter-input">
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="videoSourceKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="btn-ghost" id="clearVideoSourceBtn" type="button">紐づけなしにする</button>
+        </div>
+      </div>
     </div>
-    <div class="sort-chips" id="videoSourceSortChips" style="margin-bottom:14px;"></div>
     <div class="list" id="videoSourceList"></div>
     <div class="empty" id="videoSourceEmpty" style="display:none;">画像投稿がまだありません。</div>
   </div>
@@ -4291,11 +4347,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   <div class="modal">
     <button class="modal-close" type="button" id="requestModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">応えるリクエストを選択</h3>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="requestSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" style="flex:1 1 200px; width:auto;">
-      <button class="btn-ghost" id="clearRequestBtn" type="button">紐づけなしにする</button>
+    <div class="search-panel picker-search-panel">
+      <div class="search-row sort-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="requestSortChips"></div>
+      </div>
+      <div class="search-row filter-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="requestSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" class="filter-input">
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="requestKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="btn-ghost" id="clearRequestBtn" type="button">紐づけなしにする</button>
+        </div>
+      </div>
     </div>
-    <div class="sort-chips" id="requestSortChips" style="margin-bottom:14px;"></div>
     <div class="list" id="requestPickerList"></div>
     <div class="empty" id="requestPickerEmpty" style="display:none;">リクエスト投稿がまだありません。</div>
   </div>
@@ -4306,11 +4375,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     <button class="modal-close" type="button" id="fixRequestModalCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" style="margin-right:90px;">対応する修正依頼を選択</h3>
     <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除(複数選択可)</p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="fixRequestSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" style="flex:1 1 200px; width:auto;">
-      <button class="btn-ghost" id="clearFixRequestBtn" type="button">すべて解除</button>
+    <div class="search-panel picker-search-panel">
+      <div class="search-row sort-row">
+        <span class="label">並び順</span>
+        <div class="sort-chips" id="fixRequestSortChips"></div>
+      </div>
+      <div class="search-row filter-row">
+        <span class="label" style="margin-left:0;">キーワード検索</span>
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="fixRequestSearch" placeholder="キーワードで検索(スペース区切りで絞り込み)" class="filter-input">
+        <div class="mode-toggle-row">
+          <div class="mode-toggle" id="fixRequestKeywordModeToggle">
+            <button type="button" data-kwmode="AND" class="active">AND</button>
+            <button type="button" data-kwmode="OR">OR</button>
+            <button type="button" data-kwmode="NOT">NOT</button>
+          </div>
+          <button class="btn-ghost" id="clearFixRequestBtn" type="button">すべて解除</button>
+        </div>
+      </div>
     </div>
-    <div class="sort-chips" id="fixRequestSortChips" style="margin-bottom:14px;"></div>
     <div class="list" id="fixRequestList"></div>
     <div class="empty" id="fixRequestEmpty" style="display:none;">修正依頼投稿がまだありません。</div>
   </div>
@@ -6243,6 +6325,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('vToggleSearchAreaBtn'),
     'pr_video_search_collapsed', function () { applyVideoTagClamp(); });
   setupSearchCollapse(
+    document.querySelector('#tab-novelBrowse .search-panel'),
+    document.getElementById('nToggleSearchAreaBtn'),
+    'pr_novel_search_collapsed', function () { applyNovelTagClamp(); });
+  setupSearchCollapse(
     document.querySelector('#tab-promptBrowse .search-panel'),
     document.getElementById('pToggleSearchAreaBtn'),
     'pr_prompt_search_collapsed', function () { applyPromptBrowseTagClamp(); });
@@ -6574,11 +6660,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   // 選択モーダル(プロンプト例/親作品/参考作品/リクエスト等)の絞り込み。投稿一覧と同じ方式:
   // 空白区切りの複数キーワードすべてを、タイトル/プロンプト/ネガ/メモ/タグ/投稿者にわたって AND 一致。
-  function pickerMatch(p, q) {
+  function pickerMatch(p, q, mode) {
     const keywords = parseKeywords(q);
     if (!keywords.length) return true;
     const hay = postKeywordHaystack(p) + ' ' + String(p.author || '').toLowerCase() + ' ' + String(p.fixContent || '').toLowerCase();
-    return matchKeywords(hay, keywords, 'AND');
+    return matchKeywords(hay, keywords, mode || 'AND');
   }
 
   function formatDateTime(ts) {
@@ -9238,27 +9324,38 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let parentSortKeys = [{ field: 'date', dir: 'desc' }];
   let referenceSortKeys = [{ field: 'date', dir: 'desc' }];
 
-  function renderPickerSortChips(container, fields, keys, onChange) {
-    container.innerHTML = fields.map(function (f) {
-      const idx = keys.findIndex(function (k) { return k.field === f.key; });
-      const active = idx !== -1;
-      const dir = active ? keys[idx].dir : '';
-      const arrow = dir === 'desc' ? '▼' : (dir === 'asc' ? '▲' : '');
-      const badge = active ? '<span class="order-badge">' + (idx + 1) + '</span>' : '';
-      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + f.key + '">' + badge + f.label + (arrow ? ' ' + arrow : '') + '</span>';
+  // 選択モーダルの並び順チップ。投稿一覧と同じ「1つだけ選ぶ」方式に統一している
+  // (旧実装は複数キーに番号バッジ+▲▼を付ける独自方式だった)。
+  const PICKER_KEYWORD_MODES = {};
+  function pickerKeywordMode(name) { return PICKER_KEYWORD_MODES[name] || 'AND'; }
+
+  function wirePickerKeywordMode(name, onChange) {
+    const wrap = document.getElementById(name + 'KeywordModeToggle');
+    if (!wrap || wrap.dataset.wired) return;
+    wrap.dataset.wired = '1';
+    wrap.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        PICKER_KEYWORD_MODES[name] = btn.dataset.kwmode;
+        wrap.querySelectorAll('button').forEach(function (b) {
+          b.classList.toggle('active', b.dataset.kwmode === PICKER_KEYWORD_MODES[name]);
+        });
+        onChange();
+      });
+    });
+  }
+
+  function renderPickerSortChips(container, options, keys, onChange) {
+    const cur = keys[0] || {};
+    container.innerHTML = options.map(function (o) {
+      const active = cur.field === o.field && cur.dir === o.dir;
+      return '<span class="sort-chip' + (active ? ' active' : '') + '" data-field="' + o.field +
+        '" data-dir="' + o.dir + '">' + o.label + '</span>';
     }).join('');
     container.querySelectorAll('.sort-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
-        const field = chip.dataset.field;
-        const idx = keys.findIndex(function (k) { return k.field === field; });
-        if (idx === -1) {
-          keys.push({ field: field, dir: 'desc' });
-        } else if (keys[idx].dir === 'desc') {
-          keys[idx].dir = 'asc';
-        } else {
-          keys.splice(idx, 1);
-        }
-        renderPickerSortChips(container, fields, keys, onChange);
+        keys.length = 0;
+        keys.push({ field: chip.dataset.field, dir: chip.dataset.dir });
+        renderPickerSortChips(container, options, keys, onChange);
         onChange();
       });
     });
@@ -9286,7 +9383,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     q = (q || '').trim().toLowerCase();
     basePromptEmptyEl.style.display = promptPosts.length ? 'none' : 'block';
     const items = promptPosts.filter(function (p) {
-      return pickerMatch(p, q);
+      return pickerMatch(p, q, pickerKeywordMode('basePrompt'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, basePromptSortKeys); });
     basePromptListEl.innerHTML = items.map(function (p) {
@@ -9311,9 +9408,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function openBasePromptModal() {
     document.getElementById('basePromptSearch').value = '';
-    renderPickerSortChips(document.getElementById('basePromptSortChips'), PROMPT_SORT_FIELDS, basePromptSortKeys, function () {
+    renderPickerSortChips(document.getElementById('basePromptSortChips'), PROMPT_SORT_OPTIONS, basePromptSortKeys, function () {
       renderBasePromptList(document.getElementById('basePromptSearch').value);
     });
+    wirePickerKeywordMode('basePrompt', function () { renderBasePromptList(document.getElementById('basePromptSearch').value); });
     renderBasePromptList('');
     openOverlay(basePromptModalOverlay);
   }
@@ -9353,7 +9451,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     q = (q || '').trim().toLowerCase();
     fixRequestEmptyEl.style.display = fixPosts.length ? 'none' : 'block';
     const items = fixPosts.filter(function (p) {
-      return pickerMatch(p, q);
+      return pickerMatch(p, q, pickerKeywordMode('fixRequest'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, fixPickerSortKeys); });
     fixRequestListEl.innerHTML = items.map(function (p) {
@@ -9369,9 +9467,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function openFixRequestModal() {
     document.getElementById('fixRequestSearch').value = '';
-    renderPickerSortChips(document.getElementById('fixRequestSortChips'), REQUEST_SORT_FIELDS, fixPickerSortKeys, function () {
+    renderPickerSortChips(document.getElementById('fixRequestSortChips'), REQUEST_SORT_OPTIONS, fixPickerSortKeys, function () {
       renderFixRequestList(document.getElementById('fixRequestSearch').value);
     });
+    wirePickerKeywordMode('fixRequest', function () { renderFixRequestList(document.getElementById('fixRequestSearch').value); });
     renderFixRequestList('');
     openOverlay(fixRequestModalOverlay);
   }
@@ -9403,7 +9502,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
     parentEmptyEl.style.display = candidates.length ? 'none' : 'block';
     const items = candidates.filter(function (p) {
-      return pickerMatch(p, q);
+      return pickerMatch(p, q, pickerKeywordMode('parent'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, parentSortKeys); });
     parentListEl.innerHTML = items.map(function (p) {
@@ -9426,9 +9525,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function openParentModal() {
     document.getElementById('parentSearch').value = '';
-    renderPickerSortChips(document.getElementById('parentSortChips'), SORT_FIELDS, parentSortKeys, function () {
+    renderPickerSortChips(document.getElementById('parentSortChips'), BROWSE_SORT_OPTIONS, parentSortKeys, function () {
       renderParentList(document.getElementById('parentSearch').value);
     });
+    wirePickerKeywordMode('parent', function () { renderParentList(document.getElementById('parentSearch').value); });
     renderParentList('');
     openOverlay(parentModalOverlay);
   }
@@ -9467,7 +9567,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
     referenceEmptyEl.style.display = candidates.length ? 'none' : 'block';
     const items = candidates.filter(function (p) {
-      return pickerMatch(p, q);
+      return pickerMatch(p, q, pickerKeywordMode('reference'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, referenceSortKeys); });
     referenceListEl.innerHTML = items.map(function (p) {
@@ -9485,9 +9585,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function openReferenceModal() {
     document.getElementById('referenceSearch').value = '';
-    renderPickerSortChips(document.getElementById('referenceSortChips'), SORT_FIELDS, referenceSortKeys, function () {
+    renderPickerSortChips(document.getElementById('referenceSortChips'), BROWSE_SORT_OPTIONS, referenceSortKeys, function () {
       renderReferenceList(document.getElementById('referenceSearch').value);
     });
+    wirePickerKeywordMode('reference', function () { renderReferenceList(document.getElementById('referenceSearch').value); });
     renderReferenceList('');
     openOverlay(referenceModalOverlay);
   }
@@ -9521,7 +9622,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
     videoSourceEmptyEl.style.display = candidates.length ? 'none' : 'block';
     const items = candidates.filter(function (p) {
-      return pickerMatch(p, q);
+      return pickerMatch(p, q, pickerKeywordMode('videoSource'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, videoSourceSortKeys); });
     videoSourceListEl.innerHTML = items.map(function (p) {
@@ -9541,9 +9642,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function openVideoSourceModal() {
     document.getElementById('videoSourceSearch').value = '';
-    renderPickerSortChips(document.getElementById('videoSourceSortChips'), SORT_FIELDS, videoSourceSortKeys, function () {
+    renderPickerSortChips(document.getElementById('videoSourceSortChips'), BROWSE_SORT_OPTIONS, videoSourceSortKeys, function () {
       renderVideoSourceList(document.getElementById('videoSourceSearch').value);
     });
+    wirePickerKeywordMode('videoSource', function () { renderVideoSourceList(document.getElementById('videoSourceSearch').value); });
     renderVideoSourceList('');
     openOverlay(videoSourceModalOverlay);
   }
@@ -9727,7 +9829,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     q = (q || '').trim().toLowerCase();
     requestPickerEmptyEl.style.display = requestPosts.length ? 'none' : 'block';
     const items = requestPosts.filter(function (p) {
-      return pickerMatch(p, q);
+      return pickerMatch(p, q, pickerKeywordMode('request'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, requestSortKeys); });
     requestPickerListEl.innerHTML = items.map(function (p) {
@@ -9742,9 +9844,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function openRequestModal2() {
     document.getElementById('requestSearch').value = '';
-    renderPickerSortChips(document.getElementById('requestSortChips'), REQUEST_SORT_FIELDS, requestSortKeys, function () {
+    renderPickerSortChips(document.getElementById('requestSortChips'), REQUEST_SORT_OPTIONS, requestSortKeys, function () {
       renderRequestPickerList(document.getElementById('requestSearch').value);
     });
+    wirePickerKeywordMode('request', function () { renderRequestPickerList(document.getElementById('requestSearch').value); });
     renderRequestPickerList('');
     openOverlay(requestModalOverlay);
   }
