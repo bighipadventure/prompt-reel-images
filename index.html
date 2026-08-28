@@ -8087,12 +8087,26 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       };
       probe.src = url;
     }
+    // ステージの高さ上限。画面からはみ出さないよう、下のコントロール行の分も差し引く。
+    function stageMaxHeight() {
+      const controls = mountEl.querySelector('.novel-controls');
+      const reserve = (controls ? controls.getBoundingClientRect().height : 40) + 32;
+      return Math.max(200, Math.round(window.innerHeight * 0.72) - reserve);
+    }
+    let aspectRetry = 0;
     function applyAspectFromSize(w, h) {
       if (!(w > 0 && h > 0)) return;
       stageEl.style.aspectRatio = w + ' / ' + h;
-      const maxH = Math.max(200, Math.round(window.innerHeight * 0.7));
       const availW = stageEl.parentNode ? stageEl.parentNode.clientWidth : 0;
-      if (availW > 0 && (availW * h) / w > maxH) {
+      if (!(availW > 0)) {
+        // まだレイアウトされておらず幅が測れない(モーダルを開いた直後など)。
+        // ここで諦めると幅が無制限のまま巨大な枠になるので、次のフレームで測り直す。
+        if (aspectRetry++ < 60) requestAnimationFrame(function () { applyAspectFromSize(w, h); });
+        return;
+      }
+      aspectRetry = 0;
+      const maxH = stageMaxHeight();
+      if ((availW * h) / w > maxH) {
         stageEl.style.width = Math.round((maxH * w) / h) + 'px';
       } else {
         stageEl.style.width = '';
