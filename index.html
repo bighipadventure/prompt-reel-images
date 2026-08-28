@@ -3135,7 +3135,7 @@
 
       <div class="qa-item novel-only">
         <div class="qa-q">ノベルゲームはどうやって作りますか？</div>
-        <div class="qa-a">「投稿」タブで「ノベルゲームを投稿」を選ぶと、シナリオの編集欄が出ます。右上の「参考にした投稿作品」で投稿済みの画像作品を選ぶと、<b>その作品の画像がそのままシーンの背景に流し込まれます</b>。この方法なら画像を新しくアップロードしないのでドライブの容量を使いません。シーンの画像を変えたいときは、そのシーンの画像枠に別の画像をドラッグ&amp;ドロップするか、枠をクリックして選び直してください。同じ画像で会話を続けたいときは「複製」でシーンごとコピーできます(画像は共有されるので容量は増えません)。なお、参考作品から流し込んだ画像は<b>元の作品のもの</b>なので、このノベルゲームを削除しても元の画像は消えません。自分でアップロードした画像だけが、ゲームの削除と一緒に消えます。もちろん「＋ シーンを追加」でシーンを増やし、各シーンの左側に背景画像を1枚ドラッグ&amp;ドロップ(またはクリックして選択)することもできます。右側の行に話者名とセリフを入力すると、その下に空行が自動で足されるので、続けて何行でも書けます。話者名を空欄にすると、名前を出さない地の文になります。TABキーで「話者→セリフ→次の行の話者」と移動でき、Enterキーでも次の行へ進めます。行の並び替えは左端の点マークをドラッグするか、↑↓ボタンで行えます。シーンそのものの並び替えも、シーン見出し左の点マークをドラッグするか「↑上へ」「↓下へ」で行えます。投稿前に「プレビューで動作確認」を押すと、保存せずにその場で実際の動きを確認できます。</div>
+        <div class="qa-a">「投稿」タブで「ノベルゲームを投稿」を選ぶと、シナリオの編集欄が出ます。右上の「参考にした投稿作品」で投稿済みの画像作品を選ぶと、<b>その作品の画像がそのままシーンの背景に流し込まれます</b>。この方法なら画像を新しくアップロードしないのでドライブの容量を使いません。シーンの画像を変えたいときは、そのシーンの画像枠に別の画像をドラッグ&amp;ドロップするか、枠をクリックして選び直してください。同じ画像で会話を続けたいときは「複製」でシーンごとコピーできます(画像は共有されるので容量は増えません)。なお、参考作品から流し込んだ画像は<b>元の作品のもの</b>なので、このノベルゲームを削除しても元の画像は消えません。自分でアップロードした画像だけが、ゲームの削除と一緒に消えます。もちろん「＋ シーンを追加」でシーンを増やし、各シーンの左側に背景画像を1枚ドラッグ&amp;ドロップ(またはクリックして選択)することもできます。背景画像を設定しないシーンは<b>黒い画面にセリフだけ</b>が表示されるので、場面転換や独白などに使えます(画面の大きさは直前の画像、無ければ直後の画像に合わせます)。右側の行に話者名とセリフを入力すると、その下に空行が自動で足されるので、続けて何行でも書けます。話者名を空欄にすると、名前を出さない地の文になります。TABキーで「話者→セリフ→次の行の話者」と移動でき、Enterキーでも次の行へ進めます。行の並び替えは左端の点マークをドラッグするか、↑↓ボタンで行えます。シーンそのものの並び替えも、シーン見出し左の点マークをドラッグするか「↑上へ」「↓下へ」で行えます。投稿前に「プレビューで動作確認」を押すと、保存せずにその場で実際の動きを確認できます。</div>
       </div>
 
       <div class="qa-item">
@@ -7985,6 +7985,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ノベルゲーム: 簡易シネマティックプレイヤー
      詳細モーダル(保存済み)とプレビュー(未保存)の両方から同じ実装で起動する。
      ==================================================================== */
+  const NOVEL_IMG_DIMS = {};     // 画像URL -> {w,h} の実寸キャッシュ
   const NOVEL_AUTO_INTERVAL = 2500;
   const NOVEL_TYPE_SPEED = 75;   // 1文字あたりのミリ秒
   const NOVEL_LINE_GAP = 220;    // 次のテキストを打ち始めるまでの間(ms)
@@ -8063,8 +8064,30 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // 縦長画像で画面をはみ出さないよう高さに上限を設け、その場合は比率を保ったまま幅を詰める。
     function applyStageAspect(fromEl) {
       const src = fromEl || frontEl;
-      const w = src.naturalWidth;
-      const h = src.naturalHeight;
+      applyAspectFromSize(src.naturalWidth, src.naturalHeight);
+    }
+    let lastAspectUrl = '';
+    function onResize() {
+      if (shownBg) applyStageAspect();
+      else if (lastAspectUrl) applyAspectFromUrl(lastAspectUrl, fadeToken);
+    }
+    window.addEventListener('resize', onResize);
+
+    // 表示していない画像から比率だけ求めて枠に反映する(画像なしシーンの画面サイズ用)
+    function applyAspectFromUrl(url, token) {
+      if (!url) return;
+      lastAspectUrl = url;
+      const dim = NOVEL_IMG_DIMS[url];
+      if (dim) { applyAspectFromSize(dim.w, dim.h); return; }
+      const probe = new Image();
+      probe.onload = function () {
+        NOVEL_IMG_DIMS[url] = { w: probe.naturalWidth, h: probe.naturalHeight };
+        if (token !== undefined && token !== fadeToken) return;
+        applyAspectFromSize(probe.naturalWidth, probe.naturalHeight);
+      };
+      probe.src = url;
+    }
+    function applyAspectFromSize(w, h) {
       if (!(w > 0 && h > 0)) return;
       stageEl.style.aspectRatio = w + ' / ' + h;
       const maxH = Math.max(200, Math.round(window.innerHeight * 0.7));
@@ -8075,8 +8098,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         stageEl.style.width = '';
       }
     }
-    function onResize() { applyStageAspect(); }
-    window.addEventListener('resize', onResize);
 
     function finishTransition(token) {
       if (token !== fadeToken) return;
@@ -8089,21 +8110,26 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     /* 背景は直接クロスフェードせず、いったん黒へフェードアウトしてから次の画像へフェードインする。
        枠の比率は真っ黒の間に切り替える。切替中に別の切替が来たら fadeToken で古い処理を捨てる。 */
-    function setBackground(bg, done) {
+    function setBackground(bg, sizeBg, done) {
       // 同じ背景への切替が進行中なら、完了後の処理だけ差し替える
       if (bg === shownBg && transitioning) { transitionDone = done || null; return; }
-      if (bg === shownBg && !transitioning) { if (done) done(); return; }
+      if (bg === shownBg && !transitioning) { applyAspectFromUrl(sizeBg, ++fadeToken); if (done) done(); return; }
 
       const token = ++fadeToken;
       if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+      const hadImage = hasShown;
       shownBg = bg;
       transitionDone = done || null;
 
+      // 画像なしのシーン: 黒のまま会話文だけ出す。枠の大きさは近くの画像に合わせる。
       if (!bg) {
-        frontEl.classList.remove('is-visible');
+        transitioning = true;
+        frontEl.classList.remove('is-visible');   // 表示中の絵があれば黒へフェードアウト
         backEl.classList.remove('is-visible');
+        backEl.removeAttribute('src');
         hasShown = false;
-        finishTransition(token);
+        applyAspectFromUrl(sizeBg, token);
+        fadeTimer = setTimeout(function () { finishTransition(token); }, hadImage ? NOVEL_FADE_MS : 0);
         return;
       }
 
@@ -8117,6 +8143,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         backEl.onerror = null;
         // 真っ黒のうちに次の画像の比率へ枠を作り替え、少し置いてから絵を出す
         applyStageAspect(backEl);
+        lastAspectUrl = bg;
+        if (backEl.naturalWidth > 0) NOVEL_IMG_DIMS[bg] = { w: backEl.naturalWidth, h: backEl.naturalHeight };
         fadeTimer = setTimeout(function () {
           if (token !== fadeToken) return;
           backEl.classList.add('is-visible');
@@ -8147,8 +8175,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       }, NOVEL_FADE_MS);
     }
 
+    // 背景画像はシーンごとに独立。画像を指定していないシーンは黒背景のまま会話文だけ出す。
     function currentBg(i) {
+      return (scenes[i] && scenes[i].bg) || '';
+    }
+    // 画面サイズの基準にする画像。まず手前(直前)を探し、無ければ後ろ(直後)を探す。
+    function sizeBgFor(i) {
       for (let k = i; k >= 0; k--) {
+        if (scenes[k] && scenes[k].bg) return scenes[k].bg;
+      }
+      for (let k = i + 1; k < scenes.length; k++) {
         if (scenes[k] && scenes[k].bg) return scenes[k].bg;
       }
       return '';
@@ -8161,7 +8197,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       clearAutoTimer();
       lineEl.textContent = '';
       if (!started) {
-        setBackground(currentBg(index));
+        setBackground(currentBg(index), sizeBgFor(index));
         speakerEl.textContent = '\u00A0';
         speakerEl.classList.add('is-empty');
         msgwinEl.classList.remove('has-speaker');
@@ -8178,7 +8214,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       nextBtn.disabled = index >= scenes.length - 1;
       if (logOpen) renderLog();
       // 背景の暗転を挟む場合は、切り替わりきってから話者名と本文を出し始める
-      setBackground(currentBg(index), function () {
+      setBackground(currentBg(index), sizeBgFor(index), function () {
         speakerEl.textContent = s.name || '\u00A0';
         speakerEl.classList.toggle('is-empty', !s.name);
         msgwinEl.classList.toggle('has-speaker', !!s.name);
