@@ -8896,31 +8896,46 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const idx = Number(card.dataset.sceneIdx);
       if (!novelScenes[idx].lines || !novelScenes[idx].lines.length) novelScenes[idx].lines = [novelBlankLine()];
 
-      // 最終行に入力されたら、その場で末尾に空行を1行足す(ボタン不要)
-      function onLineInput(li) {
+      // 最終行に入力されたら、その場で末尾に空行を1行足す(ボタン不要)。
+      // ここで一覧全体を作り直すと入力中の要素が差し替わり、日本語入力(IME)の
+      // 変換が途中で確定してしまうため、新しい行だけを追加する。
+      function onLineInput(li, inputEl) {
+        if (inputEl && inputEl.dataset.composing === '1') return;   // 変換中は何もしない
         if (li !== novelScenes[idx].lines.length - 1) return;
         const l = novelScenes[idx].lines[li];
         if (!((l.name || '').trim() || (l.text || '').trim())) return;
-        renderNovelSceneList();
+        appendNovelLineRow(card, idx);
+      }
+
+      function bindLineInput(el, li, key) {
+        // IMEの変換中かどうかを覚えておき、確定してから行追加を判定する
+        el.addEventListener('compositionstart', function () { el.dataset.composing = '1'; });
+        el.addEventListener('compositionend', function () {
+          el.dataset.composing = '';
+          novelScenes[idx].lines[li][key] = el.value;
+          onLineInput(li, el);
+        });
+        el.addEventListener('input', function () {
+          novelScenes[idx].lines[li][key] = el.value;
+          onLineInput(li, el);
+        });
       }
 
       card.querySelectorAll('.novel-line-row').forEach(function (row) {
+        wireNovelLineRow(card, row, idx);
+      });
+
+      function wireNovelLineRow(cardEl, row, sceneIdx) {
         const li = Number(row.dataset.lineIdx);
-        row.querySelector('[data-line-name]').addEventListener('input', function () {
-          novelScenes[idx].lines[li].name = this.value;
-          onLineInput(li);
-        });
-        row.querySelector('[data-line-text]').addEventListener('input', function () {
-          novelScenes[idx].lines[li].text = this.value;
-          onLineInput(li);
-        });
+        bindLineInput(row.querySelector('[data-line-name]'), li, 'name');
+        bindLineInput(row.querySelector('[data-line-text]'), li, 'text');
         // Enterで次の行へ(無ければ末尾の空行へ)
         row.querySelector('[data-line-text]').addEventListener('keydown', function (e) {
-          if (e.key !== 'Enter') return;
+          if (e.key !== 'Enter' || e.isComposing) return;   // 変換確定のEnterは拾わない
           e.preventDefault();
           if (li === novelScenes[idx].lines.length - 1) {
             ensureTrailingBlankLine(novelScenes[idx]);
-            renderNovelSceneList();
+            appendNovelLineRow(cardEl, idx, true);
           }
           focusNovelLine(idx, Math.min(li + 1, novelScenes[idx].lines.length - 1));
         });
@@ -8932,7 +8947,38 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           renderNovelSceneList();
         });
         wireNovelLineDrag(row, idx, li);
-      });
+      }
+
+      // 末尾に空行を1行だけ足し、その行のDOMだけを追加する(既存の入力欄には触らない)
+      function appendNovelLineRow(cardEl, sceneIdx, alreadyPushed) {
+        const lines = novelScenes[sceneIdx].lines;
+        if (!alreadyPushed) lines.push(novelBlankLine());
+        const listEl2 = cardEl.querySelector('[data-line-list]');
+        const li = lines.length - 1;
+        const temp = document.createElement('div');
+        temp.innerHTML = novelLineRowHtml(lines[li], li, lines.length);
+        const row = temp.firstChild;
+        listEl2.appendChild(row);
+        wireNovelLineRow(cardEl, row, sceneIdx);
+        refreshNovelLineStates(cardEl, sceneIdx);
+      }
+
+      // 行数バッジと ↑↓✕ の活性状態だけを更新する
+      function refreshNovelLineStates(cardEl, sceneIdx) {
+        const lines = novelScenes[sceneIdx].lines;
+        const rows = cardEl.querySelectorAll('.novel-line-row');
+        rows.forEach(function (row, i) {
+          row.querySelector('[data-line-up]').disabled = i === 0;
+          row.querySelector('[data-line-down]').disabled = i === rows.length - 1;
+          row.querySelector('[data-line-remove]').disabled = rows.length <= 1;
+        });
+        const badge = cardEl.querySelector('.novel-scene-count');
+        if (badge) {
+          badge.textContent = lines.filter(function (l) {
+            return (l.name || '').trim() || (l.text || '').trim();
+          }).length + '行';
+        }
+      }
 
       card.querySelector('[data-scene-up]').addEventListener('click', function () { novelMoveScene(idx, -1); });
       card.querySelector('[data-scene-down]').addEventListener('click', function () { novelMoveScene(idx, 1); });
@@ -9654,6 +9700,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     wirePickerRows(referenceListEl, function (id) {
       selectedReferenceId = id;
       renderReferenceDisplay();
+      // 親作品を選んだときと同じく、タグとタイトルを引き継ぐ
+      // (タイトルは自分で入力済みなら尊重して上書きしない)
+      const refPost = imagePosts.find(function (x) { return String(x.id) === String(id); });
+      if (refPost) {
+        (refPost.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+        renderChips();
+        const titleEl = document.getElementById('titleInput');
+        if (titleEl && !titleEl.value.trim()) titleEl.value = refPost.title || '';
+      }
       // ノベル投稿では、選んだ作品の画像をそのままシーン背景に流し込む
       // (Driveへ再アップロードせず既存URLを使い回すので容量を消費しない)
       syncNovelRefImages({ autofill: true });
