@@ -1298,14 +1298,15 @@
   .novel-msgwin{
     position:absolute; left:0; right:0; bottom:0; z-index:2;
     background:linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.72) 62%, rgba(0,0,0,0) 100%);
-    padding:34px 20px 18px; pointer-events:none;
+    /* 左右は同じ値にして、書き出し位置と折り返し位置を揃える */
+    padding:34px var(--novel-text-pad, 38px) 18px; pointer-events:none;
   }
   /* セリフを画像の下に出すモード。画像に重ならないので絵が全部見える */
   .novel-msgout:empty{ display:none; }
   .novel-msgwin.is-outside{
     position:static; background:var(--surface-2);
     border:1px solid var(--line); border-radius:10px;
-    padding:10px 14px; pointer-events:auto;
+    padding:10px var(--novel-text-pad, 38px); pointer-events:auto;
     /* 話者名なし: 行数が増えても下へ伸びるだけにならないよう天地中央に揃える */
     display:flex; flex-direction:column; justify-content:center;
     min-height:76px; box-sizing:border-box;
