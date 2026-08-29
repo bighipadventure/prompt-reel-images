@@ -11945,10 +11945,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       document.getElementById('promptInput').value = p.prompt || '';
       document.getElementById('negativeInput').value = p.negativePrompt || '';
       document.getElementById('memoInput').value = p.memo || '';
-      allSettingsFields().forEach(function (f) {
-        const el = document.getElementById(f.id);
-        if (el) el.value = (p.settings && p.settings[f.key]) || '';
-      });
+      // 生成設定は共通の読み込み処理を使う。これでサービス(Stable/NovelAI)の切替、
+      // キャラクタープロンプト欄の復元、未知キーの動的欄追加もまとめて行われる。
+      loadSettingsIntoForm(p.settings || {});
       selectedTags = (p.tags || []).slice();
       renderChips();
       setSelectedCategory(p.category || '');
