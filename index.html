@@ -1262,7 +1262,10 @@
     display:none; align-items:center; justify-content:flex-end;
     gap:8px; flex-wrap:wrap; margin-left:auto; max-width:100%; min-width:0;
   }
-  body.post-mode-novel .novel-ref-pick{ display:flex; }
+  body.post-mode-novel #novelRefPick{ display:flex; }
+  body.post-mode-video #videoSrcPick{ display:flex; }
+  /* 見出し行へ移したので、フォーム内の元画像選択欄は出さない */
+  body.post-mode-video .link-field[data-link="videoSource"]{ display:none !important; }
   .novel-ref-pick .base-prompt-display{ flex:0 1 auto; justify-content:flex-end; min-width:0; }
   .novel-ref-pick .base-prompt-display .chip{ max-width:260px; }
   .novel-ref-label{ font-family:'Noto Sans JP',sans-serif; font-size:11px; color:var(--ink-dim); }
@@ -2084,6 +2087,11 @@
           <span class="novel-ref-label">参考にした投稿作品</span>
           <button class="btn-ghost" id="novelPickReferenceBtn" type="button">作品を選択</button>
           <span id="novelReferenceDisplay" class="base-prompt-display"></span>
+        </div>
+        <div class="novel-ref-pick" id="videoSrcPick">
+          <span class="novel-ref-label">元になった画像作品</span>
+          <button class="btn-ghost" id="videoHeadPickSourceBtn" type="button">作品を選択</button>
+          <span id="videoSourceDisplayHead" class="base-prompt-display"></span>
         </div>
         <div class="service-toggle" id="imageServiceToggle" title="使用した画像生成サービス。画像をドロップすると自動で切り替わります"></div>
         <div class="head-toggle-group">
@@ -10323,12 +10331,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let videoSourceSortKeys = [{ field: 'date', dir: 'desc' }];
 
   function renderVideoSourceDisplay() {
-    const el = document.getElementById('videoSourceDisplay');
-    if (!el) return;
     const p = selectedVideoSourceId ? imagePosts.find(function (x) { return String(x.id) === String(selectedVideoSourceId); }) : null;
-    if (!p) { el.innerHTML = ''; return; }
-    el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="clearVideoSourceInline">×</button></span>';
-    document.getElementById('clearVideoSourceInline').addEventListener('click', function () { selectedVideoSourceId = ''; renderVideoSourceDisplay(); });
+    // フォーム内と見出し行の2箇所を同時に更新する
+    [['videoSourceDisplay', 'clearVideoSourceInline'], ['videoSourceDisplayHead', 'clearVideoSourceHead']].forEach(function (pair) {
+      const el = document.getElementById(pair[0]);
+      if (!el) return;
+      if (!p) { el.innerHTML = ''; return; }
+      el.innerHTML = '<span class="chip"><span class="chip-label">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</span><button type="button" id="' + pair[1] + '">×</button></span>';
+      const btn = document.getElementById(pair[1]);
+      if (btn) btn.addEventListener('click', function () { selectedVideoSourceId = ''; renderVideoSourceDisplay(); });
+    });
   }
   function renderVideoSourceList(q) {
     q = (q || '').trim().toLowerCase();
@@ -10350,6 +10362,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (srcPost) {
         (srcPost.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
         renderChips();
+        // タイトルも引き継ぐ(自分で入力済みなら尊重して上書きしない)
+        const titleEl = document.getElementById('titleInput');
+        if (titleEl && !titleEl.value.trim()) titleEl.value = srcPost.title || '';
       }
       renderVideoSourceDisplay();
       closeVideoSourceModal();
@@ -10367,6 +10382,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function closeVideoSourceModal() { videoSourceModalOverlay.classList.remove('open'); }
 
   document.getElementById('pickVideoSourceBtn').addEventListener('click', openVideoSourceModal);
+  document.getElementById('videoHeadPickSourceBtn').addEventListener('click', openVideoSourceModal);
   document.getElementById('videoSourceModalCloseBtn').addEventListener('click', closeVideoSourceModal);
   wireOverlayDismiss(videoSourceModalOverlay, function () { closeVideoSourceModal(); });
   document.getElementById('videoSourceSearch').addEventListener('input', function () { renderVideoSourceList(this.value); });
