@@ -7548,6 +7548,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const vc = videoPosts.filter(function (v) { return String(v.videoSourceId) === String(p.id); }).length;
       if (vc) s += '<span class="row-link-badge lb-video">動画 ' + vc + '件</span>';
     }
+    // 動画側にも「元になった画像がある」ことを示すバッジを出す(従来は画像側だけだった)
+    if (p.type === 'video' && p.videoSourceId) s += '<span class="row-link-badge lb-video">元画像あり</span>';
     return s;
   }
 
@@ -11280,10 +11282,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
-  // 投稿者名オプションがOFFの時は名前を入力させない。ただし管理モードなら「管理者」名義で投稿する。
+  // 投稿者名オプションがOFFの時は名前を入力させない。
+  // 管理モードでも特別扱いはせず、一般利用者と同じ挙動にする。
   function boardSubmitName(inputEl) {
     if (options.author) return inputEl ? inputEl.value : '';
-    return adminMode ? '管理者' : '';
+    return '';
   }
 
   async function submitBoardReply(threadId, btn) {
