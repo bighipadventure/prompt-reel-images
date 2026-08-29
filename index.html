@@ -76,7 +76,13 @@
     visibility: hidden; /* オプション確定までタブを隠す(ちらつき防止) */
   }
   body.tabs-ready .tabs{ visibility: visible; }
-  .tabs-visible{ display:flex; flex-wrap:nowrap; gap:8px; min-width:0; overflow:hidden; }
+  /* overflow:hidden はパディングボックスの端で切るので、上と右に余白を足しつつ
+     同じだけ負のマージンで引き戻す。見た目の位置は変えずにバッジのはみ出しぶんだけ
+     クリップ範囲を広げられる。 */
+  .tabs-visible{
+    display:flex; flex-wrap:nowrap; gap:8px; min-width:0; overflow:hidden;
+    padding-top:15px; padding-right:9px; margin-top:-15px; margin-right:-9px;
+  }
   .tab-btn{
     font-size: 15px;
     background: var(--surface);
@@ -552,7 +558,11 @@
   .modal-title{ font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size: 20px; margin: 0 0 6px 0; word-break: break-word; }
   .modal-header{ display:flex; align-items:flex-start; justify-content:space-between; gap: 14px; }
   .modal-header .modal-title{ flex:1; min-width:0; }
-  .modal-top-actions{ display:flex; align-items:center; gap: 8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+  /* 右側は「編集・閉じる」の下に「グッド/バッド」を重ねて右寄せにする。
+     左側はタイトル→投稿日時→タグの順に詰める。 */
+  .modal-top-actions{ display:flex; flex-direction:column; align-items:flex-end; gap: 10px; flex-shrink:0; }
+  .modal-top-row{ display:flex; align-items:center; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
+  .modal-top-actions .modal-counts{ margin-bottom: 0; justify-content:flex-end; }
   .modal-top-actions .modal-close{ position:static; }
   .modal-top-actions button.btn-ghost{ padding: 6px 12px; font-size: 12px; white-space: nowrap; }
   .modal-meta{
@@ -714,7 +724,7 @@
   .row-counts + .row-main .row-title{ padding-right: 150px; }
   .prompt-row .row-counts + .row-main .row-title{ padding-right: 90px; }
   .list.panel-mode .row-counts{ display: none; }
-  .modal-counts{ margin-bottom: 14px; }
+  .modal-counts{ margin-bottom: 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
   .modal-counts .dislike-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
   .modal-counts .btn-icon{ width: 19px; height: 19px; }
@@ -1182,6 +1192,18 @@
   /* ---- ノベルゲーム: 種別表示 ---- */
   body.opt-no-novel .novel-only{ display:none !important; }
 
+  /* 新着通知バッジ(タブ右上の赤い「＋N」) */
+  .tab-btn{ position: relative; }
+  /* ボタンの右上へはみ出させる。position:absolute なのでボタンの大きさは変わらない。
+     赤い塗りだけ少し透過させ、文字は白のまま読めるようにする。 */
+  .tab-badge{
+    position:absolute; top:-13px; right:-5px; z-index:3;
+    background:rgba(255, 64, 96, .8); color:#fff;
+    font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; line-height:1;
+    border-radius:999px; padding:4px 8px; min-width:22px; text-align:center;
+    pointer-events:none;
+  }
+
   /* 使用した画像生成サービスの切替(投稿フォーム見出しの右) */
   .service-toggle{ display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-left:auto; }
   .service-toggle button{
@@ -1198,6 +1220,8 @@
   /* キャラクタープロンプトは NovelAI を選んだときだけ出す */
   #charPromptField{ display:none; }
   body.image-service-novelai #charPromptField{ display:block; }
+  #pCharPromptField{ display:none; }
+  body.prompt-service-novelai #pCharPromptField{ display:block; }
 
   /* ノベル投稿モードでは、画像投稿用の入力欄をまとめて隠す(フォーム本体は流用) */
   body.post-mode-novel #imageField,
@@ -1635,8 +1659,9 @@
     color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px;
     padding: 4px 10px; font-size: 12px; cursor: pointer; font-family:'Noto Sans JP',sans-serif;
   }
-  .dislike-btn:hover{ color: var(--danger); border-color: var(--danger); }
-  .dislike-btn.disliked{ color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
+  /* バッドは赤ではなく青(役割は違うが警告色にはしない) */
+  .dislike-btn:hover{ color: var(--accent); border-color: var(--accent); }
+  .dislike-btn.disliked{ color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
   .row-hidden-badge{
     display:inline-block; font-size: 10.5px; color: var(--danger); background: var(--danger-dim);
     border: 1px solid var(--danger); border-radius: 999px; padding: 1px 8px; margin-left: 8px; vertical-align: middle;
@@ -2288,6 +2313,7 @@
     <section class="panel" id="promptPostForm" style="display:none;">
       <div class="panel-head-row">
         <h2>プロンプト例を投稿</h2>
+        <div class="service-toggle" id="promptServiceToggle" title="どのサービス向けのプロンプト例か"></div>
       </div>
 
       <label class="field-label">タイトル</label>
@@ -2305,6 +2331,11 @@
 
       <label class="field-label">ネガティブプロンプト</label>
       <textarea id="pNegativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
+
+      <div id="pCharPromptField">
+      <label class="field-label">キャラクタープロンプト(NovelAI のマルチキャラ設定。1行に1キャラ)</label>
+      <textarea id="pCharPromptInput" class="autogrow" placeholder="例: girl, blue hair, smile"></textarea>
+      </div>
 
       <label class="field-label">メモ(備考)</label>
       <textarea id="pMemoInput" class="autogrow" placeholder="使い方・意図・相性のよいモデルなど"></textarea>
@@ -2859,7 +2890,7 @@
       </div>
       <div class="feature-item video-only">
         <div class="feature-name">動画投稿</div>
-        <div class="feature-desc">生成した動画を、画像投稿と同じようにプロンプト・タグ・ジャンル等を付けて共有します。「動画投稿一覧」タブに並びます。長い動画は投稿に失敗することがあります。</div>
+        <div class="feature-desc">生成した動画を、画像投稿と同じようにプロンプト・タグ・ジャンル等を付けて共有します。動画をドロップすると、ファイルから読み取れる<strong>解像度・FPS・フレーム数</strong>が自動で入ります(動画にはプロンプトを埋め込む仕組みが無いため、モデル名などは手入力です)。「動画投稿一覧」タブに並びます。長い動画は投稿に失敗することがあります。</div>
       </div>
       <div class="feature-item novel-only">
         <div class="feature-name">ノベルゲーム投稿</div>
@@ -4985,7 +5016,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { notifyBrowse: true, notifyVideo: true, notifyNovel: true, notifyPrompt: true, notifyRequest: true, notifyFix: true, notifyBoard: true, like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let selectedCategory = ''; // 投稿フォーム用: 作品の属性(版権/オリジナル/その他)
@@ -5178,8 +5209,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   /* ---------- タブ切替 ---------- */
   function switchTab(name) {
+    clearNotifyFor(name);   // 開いたタブの新着表示は消す
     const prevActive = document.querySelector('.tab-btn.active');
     const prevTab = prevActive ? prevActive.dataset.tab : null;
+    // 離れるタブの分も消す。画像一覧は初期表示なので「開く」操作が起きず、
+    // これが無いと別タブへ移ってもバッジが残り続ける。
+    if (prevTab && prevTab !== name) clearNotifyFor(prevTab);
     // 画像一覧から離れるときはスクロール位置を覚えておく
     if (prevTab === 'browse' && name !== 'browse') browseScrollY = window.scrollY;
 
@@ -5513,8 +5548,117 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     };
     reader.readAsDataURL(file);
     if (!inpaintMode && !isVideoFile(file)) readImageMetadata(file);
+    if (isVideoFile(file)) readVideoMetadata(file);
     if (variantMode) renderVariantStrip();
   });
+
+  /* 動画は生成情報(プロンプト等)を埋め込む共通の慣習が無いため、
+     ファイル自体から取れる 解像度 / FPS / フレーム数 だけを自動で入れる。
+     まず MP4 のボックス構造から直接読み(コーデックの再生可否に左右されない)、
+     読めなければ <video> 要素の読み込み結果で補う。 */
+  async function readVideoMetadata(file) {
+    const setIfEmpty = function (key, val) {
+      const el = document.getElementById('vset_' + key);
+      if (el && !el.value && val) el.value = String(val);
+    };
+    let info = null;
+    try { info = await mp4Info(file); } catch (e) { info = null; }
+    if (info) {
+      setIfEmpty('width', info.width);
+      setIfEmpty('height', info.height);
+      if (info.fps) setIfEmpty('fps', Math.round(info.fps * 1000) / 1000);
+      if (info.frames) setIfEmpty('length', info.frames);
+    }
+    if (!info || !info.width) await videoElementSize(file, setIfEmpty);
+    const st = document.getElementById('statusText');
+    if (st && !st.textContent) st.textContent = '動画から解像度などを読み込みました';
+  }
+
+  // MP4以外(webm等)や解析に失敗したとき用のフォールバック
+  function videoElementSize(file, setIfEmpty) {
+    return new Promise(function (resolve) {
+      const url = URL.createObjectURL(file);
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.muted = true;
+      v.onloadedmetadata = function () {
+        setIfEmpty('width', v.videoWidth);
+        setIfEmpty('height', v.videoHeight);
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      v.onerror = function () { URL.revokeObjectURL(url); resolve(); };
+      v.src = url;
+    });
+  }
+
+  /* MP4のボックス構造をたどって映像トラックの情報を取り出す。外部ライブラリは使わない。
+     mdhd から timescale/duration、stsz からサンプル(フレーム)数、
+     stsd の映像サンプルエントリから解像度を読む。読めなければ null。 */
+  async function mp4Info(file) {
+    const buf = await file.arrayBuffer();
+    const dv = new DataView(buf);
+    const u8 = new Uint8Array(buf);
+    function typeAt(off) { return String.fromCharCode(u8[off + 4], u8[off + 5], u8[off + 6], u8[off + 7]); }
+    function boxSize(off) {
+      const s = dv.getUint32(off);
+      return s === 1 ? Number(dv.getBigUint64(off + 8)) : s;
+    }
+    // 親ボックスの範囲から、指定した経路の子ボックスを探す
+    function find(start, end, path) {
+      let off = start;
+      while (off + 8 <= end) {
+        const size = boxSize(off);
+        const type = typeAt(off);
+        if (size < 8 || off + size > end) break;
+        if (type === path[0]) {
+          if (path.length === 1) return { start: off + 8, end: off + size };
+          const skip = (type === 'stsd') ? 8 : 0;   // stsd はバージョン+エントリ数を持つ
+          return find(off + 8 + skip, off + size, path.slice(1));
+        }
+        off += size;
+      }
+      return null;
+    }
+    const moov = find(0, u8.length, ['moov']);
+    if (!moov) return null;
+    let off = moov.start;
+    while (off + 8 <= moov.end) {
+      const size = boxSize(off);
+      const type = typeAt(off);
+      if (size < 8 || off + size > moov.end) break;
+      if (type === 'trak') {
+        const trak = { start: off + 8, end: off + size };
+        const hdlr = find(trak.start, trak.end, ['mdia', 'hdlr']);
+        const kind = hdlr ? String.fromCharCode(u8[hdlr.start + 8], u8[hdlr.start + 9], u8[hdlr.start + 10], u8[hdlr.start + 11]) : '';
+        if (kind === 'vide') {
+          const out = { width: 0, height: 0, fps: 0, frames: 0, duration: 0 };
+          const mdhd = find(trak.start, trak.end, ['mdia', 'mdhd']);
+          const stsz = find(trak.start, trak.end, ['mdia', 'minf', 'stbl', 'stsz']);
+          const stsd = find(trak.start, trak.end, ['mdia', 'minf', 'stbl', 'stsd']);
+          if (stsd) {
+            // stsd の中身は version+flags(4) と entry_count(4) の計8バイト。
+            // その先の映像サンプルエントリは SampleEntry(16) + pre_defined/reserved(16)
+            // の後に width(2) height(2) が並ぶので、entry 先頭から32バイト目が幅になる。
+            const entry = stsd.start + 8;
+            out.width = dv.getUint16(entry + 32);
+            out.height = dv.getUint16(entry + 34);
+          }
+          if (mdhd) {
+            const ver = u8[mdhd.start];
+            const timescale = ver === 1 ? dv.getUint32(mdhd.start + 20) : dv.getUint32(mdhd.start + 12);
+            const duration = ver === 1 ? Number(dv.getBigUint64(mdhd.start + 24)) : dv.getUint32(mdhd.start + 16);
+            if (timescale && duration) out.duration = duration / timescale;
+          }
+          if (stsz) out.frames = dv.getUint32(stsz.start + 8);
+          if (out.frames && out.duration) out.fps = out.frames / out.duration;
+          return out;
+        }
+      }
+      off += size;
+    }
+    return null;
+  }
 
   // ===== 修正後画像モード(inpaint) =====
   const inpaintOriginalInput = document.getElementById('inpaintOriginalInput');
@@ -6294,6 +6438,77 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   // stage=rest のレスポンスをローカル状態へマージする共通処理
+  /* ===== 新着通知(タブ右上の赤い「＋N」) =====
+     localStorage には「前回の訪問時刻」と「その時点でオンだった通知設定」だけを持つ。
+     件数は読み込み時に1回だけ数えてメモリに置くので、保存領域はほとんど使わない。 */
+  const NOTIFY_KEY = 'pr_notify';
+  const NOTIFY_TABS = [
+    { tab: 'browse',        opt: 'notifyBrowse',  list: function () { return imagePosts; } },
+    { tab: 'videoBrowse',   opt: 'notifyVideo',   list: function () { return videoPosts; } },
+    { tab: 'novelBrowse',   opt: 'notifyNovel',   list: function () { return novelPosts; } },
+    { tab: 'promptBrowse',  opt: 'notifyPrompt',  list: function () { return promptPosts; } },
+    { tab: 'requestBrowse', opt: 'notifyRequest', list: function () { return requestPosts; } },
+    { tab: 'fixBrowse',     opt: 'notifyFix',     list: function () { return fixPosts; } },
+    { tab: 'board',         opt: 'notifyBoard',   list: function () { return allBoard; } }
+  ];
+  let notifyCounts = {};
+
+  function readNotifyState() {
+    try {
+      const raw = localStorage.getItem(NOTIFY_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      return (s && s.t) ? s : null;
+    } catch (e) { return null; }
+  }
+  function writeNotifyState() {
+    // 次回のために「今の時刻」と「今オンになっている項目」を保存する
+    const on = {};
+    NOTIFY_TABS.forEach(function (n) { if (options[n.opt]) on[n.tab] = 1; });
+    try { localStorage.setItem(NOTIFY_KEY, JSON.stringify({ t: Date.now(), o: on })); } catch (e) {}
+  }
+  function computeNotifyCounts() {
+    const prev = readNotifyState();
+    notifyCounts = {};
+    // 初回訪問(記録なし)のときは何も出さない
+    if (prev) {
+      const since = Number(prev.t) || 0;
+      const prevOn = prev.o || {};
+      NOTIFY_TABS.forEach(function (n) {
+        // 前回訪問した時点でオンだった項目だけを数える
+        // (途中でオンにしても、それ以前の投稿がまとめて通知されない)
+        if (!prevOn[n.tab] || !options[n.opt]) return;
+        const arr = n.list() || [];
+        let cnt = 0;
+        for (let i = 0; i < arr.length; i++) {
+          const t = Date.parse(arr[i] && arr[i].timestamp);
+          if (t && t > since) cnt++;
+        }
+        if (cnt > 0) notifyCounts[n.tab] = cnt;
+      });
+    }
+    writeNotifyState();
+    renderNotifyBadges();
+  }
+  function renderNotifyBadges() {
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      const n = notifyCounts[btn.dataset.tab] || 0;
+      let badge = btn.querySelector('.tab-badge');
+      if (!n) { if (badge) badge.remove(); return; }
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'tab-badge';
+        btn.appendChild(badge);
+      }
+      badge.textContent = '＋' + n;
+    });
+  }
+  function clearNotifyFor(tabName) {
+    if (!notifyCounts[tabName]) return;
+    delete notifyCounts[tabName];
+    renderNotifyBadges();
+  }
+
   function applyRestData(data) {
     (data.posts || []).forEach(mergePostIntoLocalState);
     browseDirty = true;
@@ -6305,6 +6520,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     buildInternalDict(data.dictionary);
     applyOptionsToUi();
     rebuildDerivedArraysFromPosts();
+    computeNotifyCounts();
     collectDynamicKeysFromPosts();
     rebuildSettingsGrid();
     rebuildTagUI();
@@ -7701,7 +7917,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   modalBody.addEventListener('error', handleImageError, true);
 
+  // カードを開いたら、いま見ているタブの新着表示は消す(画像一覧のように
+  // タブを押す操作が発生しない場合の受け皿)
+  function clearNotifyForActiveTab() {
+    const act = document.querySelector('.tab-btn.active');
+    if (act) clearNotifyFor(act.dataset.tab);
+  }
+
   function openModal(p) {
+    clearNotifyForActiveTab();
     openDetailPostId = p.id;
 
     const imageSet = [{ imageUrl: p.imageUrl, prompt: p.prompt, negativePrompt: p.negativePrompt, settings: p.settings, type: p.type }]
@@ -7825,12 +8049,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-header">' +
         '<h3 class="modal-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + (p.type === 'fix' ? ' <span class="row-hidden-badge" style="color:var(--accent);background:var(--accent-dim);border-color:var(--accent);">修正依頼</span>' : '') + '</h3>' +
         '<div class="modal-top-actions">' +
-          adminActionButtonsHtml(p) +
-          '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
+          '<div class="modal-top-row">' +
+            adminActionButtonsHtml(p) +
+            '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
+          '</div>' +
+          '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
-      '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? videoPlayerHtml(imageSet[0].imageUrl) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }))) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
@@ -7852,18 +8078,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? escapeHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
       '</div>' +
-      '<div class="detail-block" id="detailNegativeBlock"' + (imageSet[0].negativePrompt ? '' : ' style="display:none;"') + '>' +
+      '<div class="detail-block" id="detailNegativeBlock"' + (hasText(imageSet[0].negativePrompt) ? '' : ' style="display:none;"') + '>' +
         '<div class="block-head"><div class="label">ネガティブプロンプト</div></div>' +
         '<div class="value" id="detailNegativeValue">' + escapeHtml(imageSet[0].negativePrompt || '') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
       '</div>' +
       // キャラクタープロンプト(NovelAIのマルチキャラ設定)はネガティブの下に置く
-      '<div class="detail-block" id="detailCharPromptBlock"' + (charPromptOf(imageSet[0]) ? '' : ' style="display:none;"') + '>' +
+      '<div class="detail-block" id="detailCharPromptBlock"' + (hasText(charPromptOf(imageSet[0])) ? '' : ' style="display:none;"') + '>' +
         '<div class="block-head"><div class="label">キャラクタープロンプト</div></div>' +
         '<div class="value" id="detailCharPromptValue">' + escapeHtml(charPromptOf(imageSet[0])) + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="characterPrompt">コピー</button></div>' +
       '</div>') +
-      (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
+      (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
       fixAnswersBlock +
@@ -7904,11 +8130,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           wrap.innerHTML = imageTag(cur.imageUrl, { size: 'w1000', alt: '生成画像' });
           promptValEl.textContent = cur.prompt ? cur.prompt : '(入力なし)';
           negValEl.textContent = cur.negativePrompt || '';
-          if (negBlockEl) negBlockEl.style.display = cur.negativePrompt ? '' : 'none';
+          if (negBlockEl) negBlockEl.style.display = hasText(cur.negativePrompt) ? '' : 'none';
           const cpVal = document.getElementById('detailCharPromptValue');
           const cpBlock = document.getElementById('detailCharPromptBlock');
           if (cpVal) cpVal.textContent = charPromptOf(cur);
-          if (cpBlock) cpBlock.style.display = charPromptOf(cur) ? '' : 'none';
+          if (cpBlock) cpBlock.style.display = hasText(charPromptOf(cur)) ? '' : 'none';
           if (settingsBlock && settingsTableEl) {
             const entries = settingsEntriesHtml(cur);
             settingsTableEl.innerHTML = entries;
@@ -9331,6 +9557,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
+  // 空白だけの入力は「未入力」として扱う(詳細モーダルで中身のない枠が出ないように)
+  function hasText(v) { return String(v == null ? '' : v).trim() !== ''; }
+
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -9873,10 +10102,48 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     btn.addEventListener('click', function () { setPostMode(btn.dataset.postmode); });
   });
 
-  // PROMPT FORM: 生成環境グリッド
+  // PROMPT FORM: 生成環境グリッド(画像投稿と同じく Stable / NovelAI で項目を出し分ける)
+  let currentPromptService = 'stable';
+
+  function promptServiceFields() {
+    const allow = imageServiceDef(currentPromptService).fields;
+    return SETTINGS_FIELDS.filter(function (f) {
+      return allow.indexOf(f.key) !== -1 && f.key !== 'characterPrompt';
+    });
+  }
+  function renderPromptServiceToggle() {
+    const wrap = document.getElementById('promptServiceToggle');
+    if (!wrap) return;
+    wrap.innerHTML = IMAGE_SERVICES.map(function (s) {
+      return '<button type="button" data-pservice="' + escapeHtml(s.key) + '"' +
+        (s.key === currentPromptService ? ' class="active"' : '') + '>' + escapeHtml(s.label) + '</button>';
+    }).join('');
+    wrap.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () { setPromptService(btn.dataset.pservice, true); });
+    });
+  }
+  function setPromptService(key, keepValues) {
+    const def = imageServiceDef(key);
+    const prev = keepValues ? collectPromptSettings() : null;
+    currentPromptService = def.key;
+    document.body.classList.toggle('prompt-service-novelai', def.key === 'novelai');
+    renderPromptServiceToggle();
+    buildPromptSettingsGrid();
+    if (prev) {
+      Object.keys(prev).forEach(function (k) {
+        const el = document.getElementById('pset_' + k);
+        if (el && !el.value) el.value = prev[k];
+      });
+    }
+    const up = document.getElementById('pset_uiPreset');
+    if (up) {
+      if (def.key === 'novelai' && serviceForPreset(up.value) !== 'novelai') up.value = 'NovelAI';
+      if (def.key === 'stable' && serviceForPreset(up.value) === 'novelai') up.value = '';
+    }
+  }
   function buildPromptSettingsGrid() {
     const grid = document.getElementById('pSettingsGrid');
-    grid.innerHTML = SETTINGS_FIELDS.map(function (f) {
+    grid.innerHTML = promptServiceFields().map(function (f) {
       return '<div class="field"><label>' + escapeHtml(f.label) + '</label>' +
         '<input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pset_' + f.key + '" list="dl_set_' + f.key + '"></div>';
     }).join('');
@@ -9884,11 +10151,30 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function collectPromptSettings() {
     const r = {};
-    SETTINGS_FIELDS.forEach(function (f) { const el = document.getElementById('pset_' + f.key); if (el && el.value !== '') r[f.key] = el.value; });
+    // 画面に出ていない項目は拾わない(サービス切替で消えた欄の値を残さない)
+    promptServiceFields().forEach(function (f) {
+      const el = document.getElementById('pset_' + f.key);
+      if (el && el.value !== '') r[f.key] = el.value;
+    });
+    const cp = document.getElementById('pCharPromptInput');
+    if (cp && cp.value.trim()) r.characterPrompt = cp.value;
     return r;
   }
   function clearPromptSettings() {
     SETTINGS_FIELDS.forEach(function (f) { const el = document.getElementById('pset_' + f.key); if (el) el.value = ''; });
+    const cp = document.getElementById('pCharPromptInput');
+    if (cp) cp.value = '';
+    setPromptService('stable', false);
+  }
+  function loadPromptSettingsIntoForm(settingsObj) {
+    settingsObj = settingsObj || {};
+    setPromptService(serviceForPreset(settingsObj.uiPreset || guessUiPreset(settingsObj.checkpoint) || ''), false);
+    promptServiceFields().forEach(function (f) {
+      const el = document.getElementById('pset_' + f.key);
+      if (el) el.value = settingsObj[f.key] || '';
+    });
+    const cp = document.getElementById('pCharPromptInput');
+    if (cp) { cp.value = settingsObj.characterPrompt || ''; autoGrow(cp); }
   }
 
   // PROMPT FORM: タグ
@@ -10762,7 +11048,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function fixRowHtml(p) {
     const title = p.title ? escapeHtml(p.title) : '(無題)';
-    const snippet = p.fixContent ? '<div class="request-snippet">' + escapeHtml(p.fixContent) + '</div>' : '';
+    const snippet = hasText(p.fixContent) ? '<div class="request-snippet">' + escapeHtml(p.fixContent) + '</div>' : '';
     const tags = sortJa((p.tags || []).slice());
     return '<div class="row" data-id="' + p.id + '">' +
       '<div class="row-counts">' + countBadgesHtml(p) + '</div>' +
@@ -10814,6 +11100,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function openRequestModal(p) {
+    clearNotifyForActiveTab();
     const answers = imagePosts.filter(function (ip) { return String(ip.requestId) === String(p.id) && !ip.parentId; });
     answers.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const answersHtml = answers.length
@@ -11600,6 +11887,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function openPromptModal(p) {
+    clearNotifyForActiveTab();
     const settingsEntries = settingsEntriesHtml(p);
     const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1; });
     linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
@@ -11621,7 +11909,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div></div>' +
       (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div></div><div class="value">' + escapeHtml(p.negativePrompt) + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div></div>' : '') +
-      (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
+      (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
       '<div class="linked-works-head">このプロンプト例をベースにした投稿作品 (' + linked.length + '件)</div>' +
@@ -11901,9 +12189,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { id: 'site', label: 'サイト全体', note: '' },
     { id: 'tabs', label: 'タブ表示', note: 'オフにしたタブは利用者のタブバーから消えます。表示中のタブをオフにすると、自動的に表示中の別タブへ切り替わります。修正依頼タブは「投稿フォーム」の修正依頼機能で制御します。' },
     { id: 'reaction', label: 'リアクション・数値', note: '' },
-    { id: 'post', label: '投稿フォーム', note: '' }
+    { id: 'post', label: '投稿フォーム', note: '' },
+    { id: 'notify', label: '通知表示', note: '前回の訪問より後に投稿されたものがあると、タブの右上に赤い「＋N」を表示します。そのタブを開くと消えます。初回訪問時は表示されません。件数は「前回訪問した時点でオンだった項目」だけを数えるので、途中でオンに切り替えても、それ以前の投稿がまとめて通知されることはありません。' }
   ];
   const OPTION_DEFS = [
+    { key: 'notifyBrowse', group: 'notify', label: '画像タブ', desc: '新しい画像投稿があるとタブに件数を表示します' },
+    { key: 'notifyVideo', group: 'notify', label: '動画タブ', desc: '新しい動画投稿があるとタブに件数を表示します' },
+    { key: 'notifyNovel', group: 'notify', label: 'ノベルゲームタブ', desc: '新しいノベルゲーム投稿があるとタブに件数を表示します' },
+    { key: 'notifyPrompt', group: 'notify', label: 'プロンプト例タブ', desc: '新しいプロンプト例があるとタブに件数を表示します' },
+    { key: 'notifyRequest', group: 'notify', label: 'リクエストタブ', desc: '新しいリクエストがあるとタブに件数を表示します' },
+    { key: 'notifyFix', group: 'notify', label: '修正依頼タブ', desc: '新しい修正依頼があるとタブに件数を表示します' },
+    { key: 'notifyBoard', group: 'notify', label: '掲示板タブ', desc: '新しい書き込みがあるとタブに件数を表示します' },
     { key: 'tabPost', group: 'tabs', label: '投稿タブ', desc: 'オフにすると投稿タブを非表示にします' },
     { key: 'tabBrowse', group: 'tabs', label: '画像投稿一覧タブ', desc: 'オフにすると画像投稿一覧タブを非表示にします' },
     { key: 'tabPrompt', group: 'tabs', label: 'プロンプト例タブ', desc: 'オフにすると「プロンプト例」タブを非表示にします' },
@@ -12000,6 +12296,26 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="opt-switch' + (draftOptions[o.key] ? ' on' : '') + '" data-opt="' + o.key + '"></div>' +
       '</div>';
     };
+    // バックアップ欄は「サイト全体」ページにだけ出す(以前は全ページ共通の末尾に出ていた)
+    const backupHtml = '' +
+      '<div class="opt-backup">' +
+        '<div class="opt-backup-title">バックアップ / 復旧(Googleアカウント凍結対策)</div>' +
+        '<div class="opt-backup-desc">画像・動画は<strong>アップロード時に自動で復旧用の名前</strong>になります。下のボタンは<strong>復旧用データ(<code>pr_backup.json</code>)を最新化</strong>し、そのまま<strong>保存フォルダを開く</strong>ので、<strong>右クリック→ダウンロード(zip)</strong>で保存できます。そのzip1つで別アカウントに丸ごと復旧できます。<strong>定期的に(週1など)</strong>実行してください。<br><span style="color:var(--ink-dim);">※ Googleの仕様上、フォルダのzip一括ダウンロード自体は自動化できない(手動の右クリック→ダウンロードが必要)ため、そこだけ手動です。</span></div>' +
+        '<div class="submit-row" style="margin-top:10px;"><button class="btn-submit" type="button" id="backupNowBtn">今すぐバックアップを作成</button></div>' +
+        '<div class="admin-modal-status" id="backupStatus"></div>' +
+        '<details class="opt-backup-help">' +
+          '<summary>復旧のしかた(凍結されてしまったとき)</summary>' +
+          '<ol>' +
+            '<li>新しいGoogleアカウントで空のスプレッドシートを作り、<code>Code.gs</code> を貼り付ける。</li>' +
+            '<li>新ドライブに保存フォルダを用意し、<code>FOLDER_ID</code>・<code>REF_FOLDER_ID</code> を新フォルダのIDへ書き換える。</li>' +
+            '<li>エディタで <code>setup()</code> を実行 → ウェブアプリとして再デプロイ → <code>index.html</code> の <code>GAS_URL</code> を新URLに更新。</li>' +
+            '<li>バックアップzipを展開し、中の <code>pr_backup.json</code> と <code>pr_</code> で始まる全メディアを、新しいメインフォルダにアップロード。</li>' +
+            '<li>エディタで <code>backupRestore("RESTORE")</code> を実行。ファイル名の復旧用IDを手がかりに全URLが自動で貼り替わり、全データ(投稿・コメント・掲示板・設定など)が復元されます。</li>' +
+          '</ol>' +
+          '<div class="opt-backup-note">※ 復旧は新アカウント側で1回だけ。詳しい手順は引き継ぎ書(HANDOVER)にも記載。定期実行したい場合はエディタで <code>installBackupTrigger()</code> を1回実行すると週1で自動作成されます(それでもzipダウンロードは手動)。<br>※ 投稿を削除すると、その本体画像・差分・動画ファイルも自動でゴミ箱へ移動します(参照されない孤児ファイルが残らない)。過去の削除で残ったファイルは、エディタで <code>cleanupOrphanFiles()</code>(まず件数確認)→ <code>cleanupOrphanFiles("CLEANUP")</code> で一括ゴミ箱送りできます(約30日は復元可)。</div>' +
+        '</details>' +
+      '</div>';
+
     adminOptionsBody.innerHTML = '' +
       '<div class="modal-header">' +
         '<h3 class="modal-title">オプション機能</h3>' +
@@ -12019,27 +12335,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           if (o.key === 'loginEnabled') html += loginPwRow;
           return html;
         }).join('');
-        return '<div class="opt-group' + (gi === 0 ? ' active' : '') + '" data-group="' + g.id + '">' + note + rows + '</div>';
+        const extra = g.id === 'site' ? backupHtml : '';
+        return '<div class="opt-group' + (gi === 0 ? ' active' : '') + '" data-group="' + g.id + '">' + note + rows + extra + '</div>';
       }).join('') +
       '<div class="admin-modal-status" id="adminOptionsStatus"></div>' +
       '<div class="submit-row"><button class="btn-submit" type="button" id="adminOptionsSaveBtn">保存する</button></div>' +
-      '<div class="opt-backup">' +
-        '<div class="opt-backup-title">バックアップ / 復旧(Googleアカウント凍結対策)</div>' +
-        '<div class="opt-backup-desc">画像・動画は<strong>アップロード時に自動で復旧用の名前</strong>になります。下のボタンは<strong>復旧用データ(<code>pr_backup.json</code>)を最新化</strong>し、そのまま<strong>保存フォルダを開く</strong>ので、<strong>右クリック→ダウンロード(zip)</strong>で保存できます。そのzip1つで別アカウントに丸ごと復旧できます。<strong>定期的に(週1など)</strong>実行してください。<br><span style="color:var(--ink-dim);">※ Googleの仕様上、フォルダのzip一括ダウンロード自体は自動化できない(手動の右クリック→ダウンロードが必要)ため、そこだけ手動です。</span></div>' +
-        '<div class="submit-row" style="margin-top:10px;"><button class="btn-submit" type="button" id="backupNowBtn">今すぐバックアップを作成</button></div>' +
-        '<div class="admin-modal-status" id="backupStatus"></div>' +
-        '<details class="opt-backup-help">' +
-          '<summary>復旧のしかた(凍結されてしまったとき)</summary>' +
-          '<ol>' +
-            '<li>新しいGoogleアカウントで空のスプレッドシートを作り、<code>Code.gs</code> を貼り付ける。</li>' +
-            '<li>新ドライブに保存フォルダを用意し、<code>FOLDER_ID</code>・<code>REF_FOLDER_ID</code> を新フォルダのIDへ書き換える。</li>' +
-            '<li>エディタで <code>setup()</code> を実行 → ウェブアプリとして再デプロイ → <code>index.html</code> の <code>GAS_URL</code> を新URLに更新。</li>' +
-            '<li>バックアップzipを展開し、中の <code>pr_backup.json</code> と <code>pr_</code> で始まる全メディアを、新しいメインフォルダにアップロード。</li>' +
-            '<li>エディタで <code>backupRestore("RESTORE")</code> を実行。ファイル名の復旧用IDを手がかりに全URLが自動で貼り替わり、全データ(投稿・コメント・掲示板・設定など)が復元されます。</li>' +
-          '</ol>' +
-          '<div class="opt-backup-note">※ 復旧は新アカウント側で1回だけ。詳しい手順は引き継ぎ書(HANDOVER)にも記載。定期実行したい場合はエディタで <code>installBackupTrigger()</code> を1回実行すると週1で自動作成されます(それでもzipダウンロードは手動)。<br>※ 投稿を削除すると、その本体画像・差分・動画ファイルも自動でゴミ箱へ移動します(参照されない孤児ファイルが残らない)。過去の削除で残ったファイルは、エディタで <code>cleanupOrphanFiles()</code>(まず件数確認)→ <code>cleanupOrphanFiles("CLEANUP")</code> で一括ゴミ箱送りできます(約30日は復元可)。</div>' +
-        '</details>' +
-      '</div>';
+      '';
 
     adminOptionsBody.querySelectorAll('.opt-switch').forEach(function (sw) {
       sw.addEventListener('click', function () {
@@ -12214,6 +12515,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     renderFixRequestDisplay();
     if (document.getElementById('tab-browse').classList.contains('active')) renderList();
     if (document.getElementById('tab-videoBrowse') && document.getElementById('tab-videoBrowse').classList.contains('active')) renderVideoList();
+    if (document.getElementById('tab-novelBrowse') && document.getElementById('tab-novelBrowse').classList.contains('active')) renderNovelList();
     if (document.getElementById('tab-promptBrowse').classList.contains('active')) renderPromptList();
     if (document.getElementById('tab-requestBrowse').classList.contains('active')) renderRequestList();
     if (document.getElementById('tab-fixBrowse').classList.contains('active')) renderFixList();
@@ -12333,10 +12635,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       document.getElementById('pPromptInput').value = p.prompt || '';
       document.getElementById('pNegativeInput').value = p.negativePrompt || '';
       document.getElementById('pMemoInput').value = p.memo || '';
-      SETTINGS_FIELDS.forEach(function (f) {
-        const el = document.getElementById('pset_' + f.key);
-        if (el) el.value = (p.settings && p.settings[f.key]) || '';
-      });
+      // 保存されている UI Preset に合わせてサービスを切り替えつつ値を戻す
+      loadPromptSettingsIntoForm(p.settings || {});
       pSelectedTags = (p.tags || []).slice();
       renderPromptChips();
     } else {
@@ -13387,7 +13687,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   /* ===== INIT ===== */
   guardPasswordManager();
   initEditPwTooltip();
-  buildPromptSettingsGrid();
+  renderPromptServiceToggle();
+  setPromptService('stable', false);
   attachDatalistDropdowns(document);
   renderPromptSortChips();
   syncPromptTagMatchModeButtons();
