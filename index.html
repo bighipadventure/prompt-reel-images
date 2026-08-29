@@ -3051,7 +3051,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプトのコピー</div>
-        <div class="feature-desc">PROMPT / NEGATIVE PROMPT それぞれの「コピー」ボタンで、そのまま自分の生成ツールに貼り付けられます。</div>
+        <div class="feature-desc">「プロンプト」「ネガティブプロンプト」、NovelAIの投稿では「キャラクタープロンプト」それぞれの「コピー」ボタンで、そのまま自分の生成ツールに貼り付けられます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">ダウンロード</div>
@@ -3059,7 +3059,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">画像の切り替え(差分投稿)</div>
-        <div class="feature-desc">複数枚をまとめた投稿では、画像のすぐ下の左側に番号ボタン(1・2…)が四角で並びます。押すと表示する画像が切り替わり、PROMPT / NEGATIVE / 設定関係も画像ごとに切り替わります(1 が最初に投稿された画像です)。ダウンロードは、そのとき表示している画像が対象になります。</div>
+        <div class="feature-desc">複数枚をまとめた投稿では、画像のすぐ下の左側に番号ボタン(1・2…)が四角で並びます。押すと表示する画像が切り替わり、プロンプト / ネガティブプロンプト / キャラクタープロンプト / 設定関係も画像ごとに切り替わります(1 が最初に投稿された画像です)。ダウンロードは、そのとき表示している画像が対象になります。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">共有</div>
@@ -7509,14 +7509,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       fixLinksBlock +
       (p.type === 'novel' ? '' :
       '<div class="detail-block">' +
-        '<div class="block-head"><div class="label">PROMPT</div></div>' +
+        '<div class="block-head"><div class="label">プロンプト</div></div>' +
         '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? escapeHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
       '</div>' +
       '<div class="detail-block" id="detailNegativeBlock"' + (imageSet[0].negativePrompt ? '' : ' style="display:none;"') + '>' +
-        '<div class="block-head"><div class="label">NEGATIVE PROMPT</div></div>' +
+        '<div class="block-head"><div class="label">ネガティブプロンプト</div></div>' +
         '<div class="value" id="detailNegativeValue">' + escapeHtml(imageSet[0].negativePrompt || '') + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
+      '</div>' +
+      // キャラクタープロンプト(NovelAIのマルチキャラ設定)はネガティブの下に置く
+      '<div class="detail-block" id="detailCharPromptBlock"' + (charPromptOf(imageSet[0]) ? '' : ' style="display:none;"') + '>' +
+        '<div class="block-head"><div class="label">キャラクタープロンプト</div></div>' +
+        '<div class="value" id="detailCharPromptValue">' + escapeHtml(charPromptOf(imageSet[0])) + '</div>' +
+        '<div class="block-foot"><button class="btn-copy" type="button" data-copy="characterPrompt">コピー</button></div>' +
       '</div>') +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
@@ -7536,7 +7542,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        navigator.clipboard.writeText(imageSet[curVar][btn.dataset.copy] || '').then(function () {
+        // キャラクタープロンプトは settings 配下にあるので取得先を分ける
+        const key = btn.dataset.copy;
+        const src = key === 'characterPrompt' ? charPromptOf(imageSet[curVar]) : (imageSet[curVar][key] || '');
+        navigator.clipboard.writeText(src).then(function () {
           btn.textContent = 'コピーしました';
           setTimeout(function () { btn.textContent = 'コピー'; }, 1500);
         });
@@ -7557,6 +7566,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           promptValEl.textContent = cur.prompt ? cur.prompt : '(入力なし)';
           negValEl.textContent = cur.negativePrompt || '';
           if (negBlockEl) negBlockEl.style.display = cur.negativePrompt ? '' : 'none';
+          const cpVal = document.getElementById('detailCharPromptValue');
+          const cpBlock = document.getElementById('detailCharPromptBlock');
+          if (cpVal) cpVal.textContent = charPromptOf(cur);
+          if (cpBlock) cpBlock.style.display = charPromptOf(cur) ? '' : 'none';
           if (settingsBlock && settingsTableEl) {
             const entries = settingsEntriesHtml(cur);
             settingsTableEl.innerHTML = entries;
@@ -11221,11 +11234,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   // PROMPT DETAIL MODAL
+  // キャラクタープロンプトは設定表ではなく専用ブロックで見せるので、ここでは除外する
+  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt'];
+  function charPromptOf(holder) {
+    return (holder && holder.settings && holder.settings.characterPrompt) || '';
+  }
+
   function settingsEntriesHtml(p) {
     const fields = settingsFieldsFor(p);
-    const knownKeys = fields.map(function (f) { return f.key; });
+    const knownKeys = fields.map(function (f) { return f.key; }).concat(SETTINGS_TABLE_EXCLUDE);
     return fields
-      .filter(function (f) { return p.settings && p.settings[f.key]; })
+      .filter(function (f) { return p.settings && p.settings[f.key] && SETTINGS_TABLE_EXCLUDE.indexOf(f.key) === -1; })
       .map(function (f) { return '<div><span>' + escapeHtml(f.label) + '</span>' + escapeHtml(p.settings[f.key]) + '</div>'; }).join('') +
       (p.settings ? Object.keys(p.settings) : [])
         .filter(function (k) { return knownKeys.indexOf(k) === -1 && String(p.settings[k]) !== ''; })
@@ -11252,8 +11271,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="detail-block"><div class="block-head"><div class="label">PROMPT</div></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div></div>' +
-      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">NEGATIVE PROMPT</div></div><div class="value">' + escapeHtml(p.negativePrompt) + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div></div>' : '') +
+      '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div></div>' +
+      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div></div><div class="value">' + escapeHtml(p.negativePrompt) + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div></div>' : '') +
       (p.memo ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
