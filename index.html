@@ -1178,12 +1178,30 @@
   /* ---- ノベルゲーム: 種別表示 ---- */
   body.opt-no-novel .novel-only{ display:none !important; }
 
+  /* 使用した画像生成サービスの切替(投稿フォーム見出しの右) */
+  .service-toggle{ display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-left:auto; }
+  .service-toggle button{
+    font-family:'Noto Sans JP',sans-serif; font-size:11.5px;
+    background:var(--surface-2); color:var(--ink-dim);
+    border:1px solid var(--line); border-radius:999px; padding:5px 12px; cursor:pointer;
+  }
+  .service-toggle button:hover{ border-color:var(--accent); color:var(--accent); }
+  .service-toggle button.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
+  /* 動画・ノベル・修正依頼モードでは使わない */
+  body.post-mode-video .service-toggle,
+  body.post-mode-novel .service-toggle,
+  body.post-mode-fix .service-toggle{ display:none; }
+  /* キャラクタープロンプトは NovelAI を選んだときだけ出す */
+  #charPromptField{ display:none; }
+  body.image-service-novelai #charPromptField{ display:block; }
+
   /* ノベル投稿モードでは、画像投稿用の入力欄をまとめて隠す(フォーム本体は流用) */
   body.post-mode-novel #imageField,
   body.post-mode-novel #variantField,
   body.post-mode-novel #inpaintOriginalField,
   body.post-mode-novel #promptField,
   body.post-mode-novel #negativeField,
+  body.post-mode-novel #charPromptField,
   body.post-mode-novel #settingsField,
   body.post-mode-novel #fixContentField,
   body.post-mode-novel #fixRequestField,
@@ -1446,6 +1464,14 @@
   #fixRequestField{ margin-top: 18px; }
   #fixRequestField > .field-label{ margin-top: 0; }
   .link-field{ margin-top: 18px; }
+  /* 直前がリンク選択欄などのとき、見出しが詰まって見えないよう余白を確保する
+     (:first-of-type 判定で margin-top が 0 になるケースの受け皿) */
+  #settingsField{ margin-top: 18px; }
+  #settingsField > .field-label{ margin-top: 0; }
+  #promptField, #negativeField, #charPromptField{ margin-top: 18px; }
+  #promptField > .field-label,
+  #negativeField > .field-label,
+  #charPromptField > .field-label{ margin-top: 0; }
   /* 作品の属性(版権/オリジナル/その他): タグと投稿ボタンの間に1行で配置する必須選択 */
   .category-select-row{ display:flex; align-items:center; gap:12px; margin:18px 0 6px; flex-wrap:wrap; }
   /* 編集用パスワード: 投稿ボタンと同じ行の右側に、1行横並びで配置する */
@@ -2055,6 +2081,7 @@
           <button class="btn-ghost" id="novelPickReferenceBtn" type="button">作品を選択</button>
           <span id="novelReferenceDisplay" class="base-prompt-display"></span>
         </div>
+        <div class="service-toggle" id="imageServiceToggle" title="使用した画像生成サービス。画像をドロップすると自動で切り替わります"></div>
         <div class="head-toggle-group">
           <button type="button" id="variantModeBtn" class="head-toggle" aria-pressed="false" title="複数枚の画像(Seed違いなどの差分)を1つの投稿にまとめて同時アップロードします。閲覧時は詳細画面で切り替えられます">
             <span class="head-toggle-dot" aria-hidden="true"></span>差分を同時に投稿
@@ -2143,6 +2170,11 @@
       <div id="negativeField">
       <label class="field-label">ネガティブプロンプト</label>
       <textarea id="negativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
+      </div>
+
+      <div id="charPromptField">
+      <label class="field-label">キャラクタープロンプト(NovelAI のマルチキャラ設定。1行に1キャラ)</label>
+      <textarea id="charPromptInput" class="autogrow" placeholder="例: girl, blue hair, smile"></textarea>
       </div>
 
       <label class="field-label">メモ(備考)</label>
@@ -2898,7 +2930,7 @@
       <h2>投稿するときに使える機能</h2>
       <div class="feature-item">
         <div class="feature-name">画像の生成情報を自動で読み取る</div>
-        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。生成情報に「UI Preset」が含まれていないときは、Checkpoint名から自動で判定して補完します(例: 名前に <code>xl</code> を含めば <code>xl</code>、<code>flux</code> なら <code>flux</code> のように、投稿ツールのUI Presetと同じ表記が入ります)。読み取れた内容は投稿前に手で直せます。</div>
+        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)や、NovelAIが埋め込む生成情報(PNGの<code>Comment</code>/<code>Software</code>/<code>Source</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。生成情報に「UI Preset」が含まれていないときは、Checkpoint名から自動で判定して補完します(例: 名前に <code>xl</code> を含めば <code>xl</code>、<code>flux</code> なら <code>flux</code> のように、投稿ツールのUI Presetと同じ表記が入ります)。読み取れた内容は投稿前に手で直せます。見出しの右にある「Stable / NovelAI」のボタンで、どのサービスで作った画像かを切り替えられ、それぞれに合った設定項目だけが表示されます。SD・SDXL・Illustrious・Pony・FLUX などは生成情報の形式が同じなのでまとめて「Stable」に含まれ、細かい種別は UI Preset 欄に入ります。画像をドロップしたときは中身の生成情報から自動で切り替わるので、通常は触る必要はありません。NovelAI を選んだときは、ネガティブプロンプトの下に「キャラクタープロンプト」欄が出ます(v4/v4.5/v5 のマルチキャラ設定。1行に1キャラ)。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プレビューの拡大と取り消し</div>
@@ -3166,7 +3198,7 @@
 
       <div class="qa-item">
         <div class="qa-q">画像をドロップしたらプロンプトや設定が勝手に入りました。なぜですか？</div>
-        <div class="qa-a">Stable Diffusion系のツールが画像に埋め込む生成情報(PNGのparametersやJPEG/WebPのUserComment)を自動で読み取り、フォームに反映しています。内容は手動で修正してから投稿できます。</div>
+        <div class="qa-a">Stable Diffusion系のツールが画像に埋め込む生成情報(PNGのparametersやJPEG/WebPのUserComment)に加え、NovelAIの生成情報(PNGのComment等)も自動で読み取り、フォームに反映しています。内容は手動で修正してから投稿できます。</div>
       </div>
 
       <div class="qa-item">
@@ -4464,8 +4496,35 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'rng',               label: 'RNG',                 type: 'text' },
     { key: 'betaScheduleAlpha', label: 'Beta schedule alpha', type: 'text' },
     { key: 'betaScheduleBeta',  label: 'Beta schedule beta',  type: 'text' },
-    { key: 'version',           label: 'Version',             type: 'text' }
+    { key: 'version',           label: 'Version',             type: 'text' },
+    // NovelAI 用の項目(SD系では表示しない)
+    { key: 'cfgRescale',        label: 'CFG Rescale',         type: 'number' },
+    { key: 'uncondScale',       label: 'Uncond Scale',        type: 'number' },
+    { key: 'smea',              label: 'SMEA',                type: 'text' },
+    { key: 'smeaDyn',           label: 'SMEA DYN',            type: 'text' },
+    { key: 'characterPrompt',   label: 'キャラクタープロンプト', type: 'text' }
   ];
+
+  /* 画像生成サービス(UI Preset)ごとに表示する設定項目。
+     uiPreset は必ず含める(切替ボタンの値をここに保存するため)。 */
+  const SD_FIELD_KEYS = ['uiPreset', 'checkpoint', 'modelHash', 'vae', 'textEncoder', 'samplingMethod',
+    'scheduleType', 'samplingSteps', 'width', 'height', 'batchCount', 'batchSize', 'shift', 'cfgScale',
+    'seed', 'rng', 'betaScheduleAlpha', 'betaScheduleBeta', 'version'];
+  /* SD/SDXL/Illustrious/Pony/FLUX や anima・wan などは、いずれも Stable Diffusion 系の
+     WebUI が同じ形式で生成情報を書き出すため、設定項目は共通。細かい種別は UI Preset 欄に
+     残るので、ここでは「Stable」と「NovelAI」の2つに束ねる。 */
+  const IMAGE_SERVICES = [
+    { key: 'stable',  label: 'Stable',  fields: SD_FIELD_KEYS },
+    { key: 'novelai', label: 'NovelAI', fields: ['uiPreset', 'checkpoint', 'samplingMethod', 'scheduleType',
+      'samplingSteps', 'width', 'height', 'cfgScale', 'cfgRescale', 'uncondScale', 'smea', 'smeaDyn', 'seed', 'version'] }
+  ];
+  function imageServiceDef(key) {
+    return IMAGE_SERVICES.find(function (s) { return s.key === key; }) || IMAGE_SERVICES[0];
+  }
+  // UI Preset の値からどちらのサービスかを決める。NovelAI 以外はすべて Stable 扱い。
+  function serviceForPreset(preset) {
+    return /novelai/i.test(String(preset || '')) ? 'novelai' : 'stable';
+  }
 
   // 動画投稿(type=video)専用の生成設定。ComfyUI などの動画生成ワークフローで一般的な項目。
   // 特定モデルを前提にしたラベルは付けない(モデルは今後変わり得るため)。キーは既存データ互換のため変更しない。
@@ -4513,7 +4572,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     'RNG': 'rng',
     'Beta schedule alpha': 'betaScheduleAlpha',
     'Beta schedule beta': 'betaScheduleBeta',
-    'Version': 'version'
+    'Version': 'version',
+    'CFG rescale': 'cfgRescale',
+    'Uncond scale': 'uncondScale',
+    'SMEA': 'smea',
+    'SMEA DYN': 'smeaDyn',
+    'Character prompt': 'characterPrompt',
+    'UI Preset': 'uiPreset'
   };
 
   // Checkpoint名からUI Presetを推定するルール。上から順に、Checkpoint名(小文字)に
@@ -4523,6 +4588,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // (anima / wan / pid)をフォールバックとして置いている(例: animagineXL や rapidXL は先に xl が
   // 当たり xl になる)。判定結果を変えたいときは、この配列の値や並び順を編集するだけでよい。
   const UI_PRESET_RULES = [
+    { match: 'novelai',      preset: 'NovelAI' },
+    { match: 'illustrious',  preset: 'illustrious' },
+    { match: 'illust',       preset: 'illustrious' },
+    { match: 'pony',         preset: 'pony' },
     { match: 'klein',  preset: 'klein' },
     { match: 'flux',   preset: 'flux' },
     { match: 'qwen',   preset: 'qwen' },
@@ -4891,13 +4960,55 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   /* ---------- 設定グリッド生成 ---------- */
   const settingsGrid = document.getElementById('settingsGrid');
   let dynamicSettingKeys = [];
+  let currentImageService = 'stable';   // 使用した画像生成サービス(表示する設定項目の切替に使う)
+
+  function renderImageServiceToggle() {
+    const wrap = document.getElementById('imageServiceToggle');
+    if (!wrap) return;
+    wrap.innerHTML = IMAGE_SERVICES.map(function (s) {
+      return '<button type="button" data-service="' + escapeHtml(s.key) + '"' +
+        (s.key === currentImageService ? ' class="active"' : '') + '>' + escapeHtml(s.label) + '</button>';
+    }).join('');
+    wrap.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () { setImageService(btn.dataset.service, true); });
+    });
+  }
+
+  // サービスを切り替える。keepValues=true のときは入力済みの値を保持したまま項目だけ差し替える。
+  function setImageService(key, keepValues) {
+    const def = imageServiceDef(key);
+    const prev = keepValues ? collectSettings() : null;
+    currentImageService = def.key;
+    IMAGE_SERVICES.forEach(function (s) { document.body.classList.toggle('image-service-' + s.key, s.key === def.key); });
+    renderImageServiceToggle();
+    rebuildSettingsGrid();
+    if (prev) {
+      Object.keys(prev).forEach(function (k) {
+        const el = document.getElementById('set_' + k);
+        if (el && !el.value) el.value = prev[k];
+      });
+    }
+    // UI Preset には細かい種別(xl / flux / anima …)が入るので、サービス切替では上書きしない。
+    // ただし選択中のサービスと矛盾する値になっているときだけ辻褄を合わせる。
+    const up = document.getElementById('set_uiPreset');
+    if (up) {
+      if (def.key === 'novelai' && serviceForPreset(up.value) !== 'novelai') up.value = 'NovelAI';
+      if (def.key === 'stable' && serviceForPreset(up.value) === 'novelai') up.value = '';
+    }
+  }
 
   function activeBaseSettingsFields() {
     return currentPostMode() === 'video' ? VIDEO_SETTINGS_FIELDS : SETTINGS_FIELDS;
   }
   function allSettingsFields() {
     const videoMode = activeBaseSettingsFields() === VIDEO_SETTINGS_FIELDS;
-    const base = activeBaseSettingsFields().map(function (f) { return { key: f.key, label: f.label, id: (videoMode ? 'vset_' : 'set_') + f.key }; });
+    let baseDefs = activeBaseSettingsFields();
+    if (!videoMode) {
+      // 選択中のサービスで使う項目だけに絞る(順番は定義順を保つ)
+      const allow = imageServiceDef(currentImageService).fields;
+      baseDefs = baseDefs.filter(function (f) { return allow.indexOf(f.key) !== -1; });
+    }
+    const base = baseDefs.map(function (f) { return { key: f.key, label: f.label, id: (videoMode ? 'vset_' : 'set_') + f.key }; });
     const dyn = dynamicSettingKeys.map(function (k, i) { return { key: k, label: k, id: 'setx_' + i }; });
     return base.concat(dyn);
   }
@@ -4970,6 +5081,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
     return result;
   }
+  // キャラクタープロンプトは専用の入力欄にあるので、保存時だけ設定へ合流させる
+  function collectSettingsWithCharPrompt() {
+    const s = collectSettings();
+    const el = document.getElementById('charPromptInput');
+    if (el && el.value.trim()) s.characterPrompt = el.value;
+    return s;
+  }
+
   function clearSettingsForm() {
     allSettingsFields().forEach(function (f) { const el = document.getElementById(f.id); if (el) el.value = ''; });
   }
@@ -4977,6 +5096,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 設定オブジェクト(prompt等の生成設定)をフォームへ反映する。未知キーは動的欄として追加。
   function loadSettingsIntoForm(settingsObj) {
     settingsObj = settingsObj || {};
+    // 編集で開いたときも、保存されている UI Preset に合わせて項目を出し分ける
+    if (currentPostMode() !== 'video') {
+      const svc = guessImageService(settingsObj);
+      if (svc) setImageService(svc, false);
+    }
+    const charEl = document.getElementById('charPromptInput');
+    if (charEl) { charEl.value = settingsObj.characterPrompt || ''; autoGrow(charEl); }
     const baseKeys = allKnownSettingKeys();
     Object.keys(settingsObj).forEach(function (k) {
       if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
@@ -4989,6 +5115,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
+  renderImageServiceToggle();
+  setImageService('stable', false);
   rebuildSettingsGrid();
 
   /* ---------- ドラッグ&ドロップ ---------- */
@@ -5306,12 +5434,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
 
   /* ---------- 画像メタデータ(生成情報)読み取り ---------- */
-  function extractPngParameters(buffer) {
+  // PNGのテキストチャンク(tEXt/iTXt)をすべて読み出して key->value の連想配列にする
+  function extractPngTextChunks(buffer) {
     const bytes = new Uint8Array(buffer);
     const sig = [137, 80, 78, 71, 13, 10, 26, 10];
     for (let i = 0; i < 8; i++) { if (bytes[i] !== sig[i]) return null; }
     const utf8 = new TextDecoder('utf-8');
     const latin = new TextDecoder('latin1');
+    const out = {};
     let off = 8;
     while (off + 8 <= bytes.length) {
       const len = (bytes[off] * 16777216) + (bytes[off + 1] * 65536) + (bytes[off + 2] * 256) + bytes[off + 3];
@@ -5322,25 +5452,95 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const chunk = bytes.subarray(dataStart, dataEnd);
       if (type === 'tEXt') {
         const nul = chunk.indexOf(0);
-        if (nul !== -1 && latin.decode(chunk.subarray(0, nul)) === 'parameters') {
-          return utf8.decode(chunk.subarray(nul + 1));
-        }
+        if (nul !== -1) out[latin.decode(chunk.subarray(0, nul))] = utf8.decode(chunk.subarray(nul + 1));
       } else if (type === 'iTXt') {
         const nul = chunk.indexOf(0);
-        if (nul !== -1 && latin.decode(chunk.subarray(0, nul)) === 'parameters') {
+        if (nul !== -1) {
           const compFlag = chunk[nul + 1];
           const z1 = chunk.indexOf(0, nul + 3);
-          if (z1 === -1) return null;
-          const z2 = chunk.indexOf(0, z1 + 1);
-          if (z2 === -1) return null;
-          if (compFlag === 0) return utf8.decode(chunk.subarray(z2 + 1));
-          return null;
+          const z2 = z1 === -1 ? -1 : chunk.indexOf(0, z1 + 1);
+          // 圧縮されている場合(compFlag=1)は展開できないので読み飛ばす
+          if (z2 !== -1 && compFlag === 0) out[latin.decode(chunk.subarray(0, nul))] = utf8.decode(chunk.subarray(z2 + 1));
         }
       }
       if (type === 'IEND') break;
       off = dataEnd + 4;
     }
-    return null;
+    return out;
+  }
+
+  /* NovelAI は A1111 系の `parameters` ではなく、Software / Description / Source と
+     JSON の Comment に生成情報を入れる。これを A1111 形式のテキストへ組み立て直して、
+     既存の解析経路(parseGenerationInfo → generationInfoToSettings)へそのまま流す。 */
+  /* v4 / v4.5 / v5 のマルチキャラ設定を1つのテキストにまとめる。
+     形式が版によって違うため、見つかったものを順に拾う。 */
+  function novelAiCharacterPrompts(c) {
+    const out = [];
+    function pushCap(cap, uc) {
+      const t = String(cap || '').trim();
+      if (!t) return;
+      out.push(uc ? (t + '  [negative] ' + uc) : t);
+    }
+    const v4 = c.v4_prompt && c.v4_prompt.caption;
+    const v4n = c.v4_negative_prompt && c.v4_negative_prompt.caption;
+    if (v4 && Array.isArray(v4.char_captions)) {
+      v4.char_captions.forEach(function (cc, i) {
+        const neg = v4n && Array.isArray(v4n.char_captions) && v4n.char_captions[i]
+          ? String(v4n.char_captions[i].char_caption || '').trim() : '';
+        pushCap(cc && cc.char_caption, neg);
+      });
+    }
+    if (!out.length && Array.isArray(c.characterPrompts)) {
+      c.characterPrompts.forEach(function (cp) { pushCap(cp && (cp.prompt || cp.caption), cp && cp.uc); });
+    }
+    return out.join('\n');
+  }
+
+  function buildParametersFromNovelAi(chunks) {
+    let comment = null;
+    if (chunks['Comment']) { try { comment = JSON.parse(chunks['Comment']); } catch (e) { comment = null; } }
+    const isNai = /novelai/i.test(chunks['Software'] || '') ||
+      (comment && (comment.uc !== undefined || (comment.steps !== undefined && comment.sampler !== undefined)));
+    if (!isNai) return null;
+
+    const c = comment || {};
+    const prompt = String(c.prompt || chunks['Description'] || '').trim();
+    const negative = String(c.uc || '').trim();
+
+    const parts = [];
+    function add(key, value) {
+      if (value === undefined || value === null || value === '' || value === false) return;
+      let s = String(value);
+      if (/[,\n"]/.test(s)) s = JSON.stringify(s);   // カンマを含む値は引用符で囲む
+      parts.push(key + ': ' + s);
+    }
+    add('Steps', c.steps);
+    add('Sampler', c.sampler);
+    add('CFG scale', c.scale);
+    add('Seed', c.seed);
+    if (c.width && c.height) add('Size', c.width + 'x' + c.height);
+    add('Model', chunks['Source']);
+    add('Schedule type', c.noise_schedule);
+    if (Number(c.cfg_rescale) > 0) add('CFG rescale', c.cfg_rescale);   // 0 のときは項目を増やさない
+    if (c.uncond_scale !== undefined && Number(c.uncond_scale) !== 1) add('Uncond scale', c.uncond_scale);
+    add('SMEA', c.sm === true ? 'true' : '');
+    add('SMEA DYN', c.sm_dyn === true ? 'true' : '');
+    add('UI Preset', 'NovelAI');
+    add('Character prompt', novelAiCharacterPrompts(c));
+    add('Version', chunks['Software']);
+    if (parts.length < 3) return null;   // 最終行がパラメータ行だと判定されるのに3件必要
+
+    let text = prompt;
+    if (negative) text += '\nNegative prompt: ' + negative;
+    text += '\n' + parts.join(', ');
+    return text;
+  }
+
+  function extractPngParameters(buffer) {
+    const chunks = extractPngTextChunks(buffer);
+    if (!chunks) return null;
+    if (chunks['parameters']) return chunks['parameters'];
+    return buildParametersFromNovelAi(chunks);
   }
 
   function decodeUnicodeUserComment(body) {
@@ -5487,6 +5687,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return values;
   }
 
+  // 生成情報からどのサービスの設定項目を出すか決める。
+  // NovelAI の印が無ければ Stable と判断するので、必ずどちらかに切り替わる
+  // (以前は判定できないと切り替えずに前の選択が残っていた)。
+  function guessImageService(values) {
+    return serviceForPreset(values.uiPreset || guessUiPreset(values.checkpoint) || '');
+  }
+
   function applyGenerationInfo(info) {
     let filledAny = false;
     const promptEl = document.getElementById('promptInput');
@@ -5495,6 +5702,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (info.negative) { negEl.value = info.negative; autoGrow(negEl); filledAny = true; }
 
     const values = generationInfoToSettings(info);
+
+    // 読み込んだメタデータからサービスを判定し、表示する設定項目を自動で切り替える
+    setImageService(guessImageService(values), false);
+
+    // キャラクタープロンプトは設定表ではなく専用の入力欄へ入れる
+    const charEl = document.getElementById('charPromptInput');
+    if (charEl && values.characterPrompt) {
+      charEl.value = values.characterPrompt;
+      autoGrow(charEl);
+      filledAny = true;
+    }
+    delete values.characterPrompt;
+
     const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
     Object.keys(values).forEach(function (k) {
       if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
@@ -6508,6 +6728,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     selectedFixRequestIds = [];
     renderFixRequestDisplay();
     document.getElementById('editPwInput').value = '';
+    const charEl = document.getElementById('charPromptInput');
+    if (charEl) charEl.value = '';
+    setImageService('stable', false);
     resetNovelEditor();
     setInpaintMode(false);
     setVariantMode(false);
@@ -6573,7 +6796,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         prompt: isNovel ? '' : document.getElementById('promptInput').value,
         negativePrompt: isNovel ? '' : document.getElementById('negativeInput').value,
         memo: document.getElementById('memoInput').value,
-        settings: isNovel ? { scenario: novelParts.scenario } : collectSettings(),
+        settings: isNovel ? { scenario: novelParts.scenario } : collectSettingsWithCharPrompt(),
         tags: selectedTags,
         category: selectedCategory,
         type: isNovel ? 'novel' : (isFix ? 'fix' : (isVideo ? 'video' : 'image')),
@@ -9271,6 +9494,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('requestPostForm').style.display = mode === 'request' ? '' : 'none';
     document.body.classList.toggle('post-mode-video', mode === 'video');
     document.body.classList.toggle('post-mode-novel', mode === 'novel');
+    document.body.classList.toggle('post-mode-fix', mode === 'fix');
     document.getElementById('novelEditorField').style.display = mode === 'novel' ? '' : 'none';
     if (mode === 'novel') {
       if (!novelScenes.length && !isEditingImagePost()) novelScenes = [novelBlankScene()];
