@@ -5284,7 +5284,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return {
       prompt: document.getElementById('promptInput').value,
       negativePrompt: document.getElementById('negativeInput').value,
-      settings: collectSettings()
+      // キャラクタープロンプトは settings 配下に入るので、スロット退避時も一緒に拾う
+      // (collectSettings だけだと差分を切り替えたときに消えてしまう)
+      settings: collectSettingsWithCharPrompt()
     };
   }
 
@@ -6757,7 +6759,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   document.getElementById('submitBtn').addEventListener('click', async function () {
     const submitBtn = this;
     // 差分編集中なら□1(メイン)へ戻し、編集内容を各スロットへ確定させる
-    if (variantMode && activeSlot !== 0) setActiveSlot(0);
+    // (編集で開いた投稿は variantMode が立たないことがあるので条件に含めない)
+    if (activeSlot !== 0) setActiveSlot(0);
     const file = imageInput.files[0];
     const editing = isEditingImagePost();
 
