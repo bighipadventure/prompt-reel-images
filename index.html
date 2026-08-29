@@ -607,7 +607,9 @@
   @keyframes spin{ to{ transform: rotate(360deg); } }
   .list-loading{ display:flex; flex-direction:column; align-items:center; gap:12px; padding:36px 0; color: var(--ink-dim); font-size:13px; }
 
-  textarea.autogrow{ resize: none; overflow: hidden; }
+  textarea.autogrow{ resize: none; }
+  /* 自動で伸びるのでスクロールバーは不要。出力欄(data-no-autogrow)はそのまま */
+  textarea:not([data-no-autogrow]){ overflow: hidden; }
   .filter-input{ flex: 1 1 150px; width: auto; }
 
   /* ---- 候補プルダウン付き入力欄 ---- */
@@ -3616,7 +3618,7 @@
           タグ並べに慣れないうちは、<strong>ChatGPTやClaudeなどのAIに任せる</strong>のが早い。下の指示文をコピーしてAIに貼り付け、最後に<strong>「描きたい絵の内容」を日本語で書き足す</strong>だけでタグ形式のプロンプトを出力してくれる。
         </div>
       </div>
-      <textarea class="h3-output" id="imgMetaPrompt" readonly spellcheck="false" style="min-height:230px;">あなたは画像生成AI(Stable Diffusion / Forge Neo など)用のプロンプト作成アシスタントです。私がこの後に書く「描きたい絵の内容」を、タグ形式のプロンプトに変換して出力してください。
+      <textarea class="h3-output" data-no-autogrow id="imgMetaPrompt" readonly spellcheck="false" style="min-height:230px;">あなたは画像生成AI(Stable Diffusion / Forge Neo など)用のプロンプト作成アシスタントです。私がこの後に書く「描きたい絵の内容」を、タグ形式のプロンプトに変換して出力してください。
 
 # ルール
 - プロンプトは英語のタグ(語句)を「カンマ + 半角スペース」で並べる。文章にはしない。
@@ -3653,13 +3655,13 @@ Negative: (ここにカンマ区切りのタグ)
       <div class="h3-builder" id="imgBuilder"></div>
       <div class="h3-output-wrap">
         <label class="field-label" style="margin-top:18px;">Positive(貼り付け用)</label>
-        <textarea class="h3-output" id="imgOutput" readonly spellcheck="false" style="min-height:80px;"></textarea>
+        <textarea class="h3-output" data-no-autogrow id="imgOutput" readonly spellcheck="false" style="min-height:80px;"></textarea>
         <div class="h3-output-actions">
           <button class="btn-submit" type="button" id="imgCopyBtn">Positiveをコピー</button>
           <span class="status" id="imgCopyStatus"></span>
         </div>
         <label class="field-label" style="margin-top:14px;">Negative(貼り付け用)</label>
-        <textarea class="h3-output" id="imgNegOutput" readonly spellcheck="false" style="min-height:56px;"></textarea>
+        <textarea class="h3-output" data-no-autogrow id="imgNegOutput" readonly spellcheck="false" style="min-height:56px;"></textarea>
         <div class="h3-output-actions">
           <button class="btn-submit" type="button" id="imgNegCopyBtn">Negativeをコピー</button>
           <button class="btn-ghost" type="button" id="imgResetBtn">初期状態に戻す</button>
@@ -4329,7 +4331,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           英語や型に慣れないうちは、<strong>ChatGPTやClaudeなどのAIに“翻訳・整形”を任せる</strong>のが簡単。下の指示文をコピーしてAIに貼り付け、最後に<strong>「作りたい動画の内容」を日本語で書き足す</strong>だけで、H3用のプロンプトを出力してくれる。
         </div>
       </div>
-      <textarea class="h3-output" id="h3MetaPrompt" readonly spellcheck="false" style="min-height:260px;">あなたは動画生成モデル「MiniMax H3」用のプロンプト作成アシスタントです。私がこの後に書く「作りたい動画の内容」を、H3が理解できる形式のプロンプトに変換して出力してください。
+      <textarea class="h3-output" data-no-autogrow id="h3MetaPrompt" readonly spellcheck="false" style="min-height:260px;">あなたは動画生成モデル「MiniMax H3」用のプロンプト作成アシスタントです。私がこの後に書く「作りたい動画の内容」を、H3が理解できる形式のプロンプトに変換して出力してください。
 
 # 守るルール
 - 本文(映像・音の描写)は英語で書く。ただしセリフ・歌詞・画面に映す文字は、私が指定した言語のまま(翻訳しない)。
@@ -4385,7 +4387,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       <div class="h3-builder" id="h3Builder"></div>
       <div class="h3-output-wrap">
         <label class="field-label" style="margin-top:18px;">統合プロンプト(貼り付け用)</label>
-        <textarea class="h3-output" id="h3Output" readonly spellcheck="false"></textarea>
+        <textarea class="h3-output" data-no-autogrow id="h3Output" readonly spellcheck="false"></textarea>
         <div class="h3-output-actions">
           <button class="btn-submit" type="button" id="h3CopyBtn">プロンプトをコピー</button>
           <button class="btn-ghost" type="button" id="h3ResetBtn">初期状態に戻す</button>
@@ -6984,15 +6986,36 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   /* ---------- テキストエリア自動拡張 ---------- */
   function autoGrow(ta) {
+    if (!ta || ta.tagName !== 'TEXTAREA') return;
     ta.style.height = 'auto';
-    ta.style.height = Math.max(ta.scrollHeight, 90) + 'px';
+    const cs = getComputedStyle(ta);
+    // border-box では height に枠線ぶんが含まれるが scrollHeight には含まれないので足す
+    // (足さないと数pxだけスクロールが残る)
+    const border = cs.boxSizing === 'border-box'
+      ? (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0) : 0;
+    const min = parseFloat(cs.minHeight) || 0;
+    ta.style.height = Math.max(ta.scrollHeight + border, min) + 'px';
   }
   function resetAutogrow() {
-    document.querySelectorAll('textarea.autogrow').forEach(function (ta) { ta.style.height = ''; });
+    document.querySelectorAll('textarea').forEach(function (ta) { ta.style.height = ''; });
   }
-  document.querySelectorAll('textarea.autogrow').forEach(function (ta) {
-    ta.addEventListener('input', function () { autoGrow(ta); });
-  });
+  // 入力欄の自動拡張はアプリ全体の共通挙動にする。
+  // 個別に配線すると、あとから増えた欄や動的に生成される欄(掲示板の返信フォーム等)で
+  // 漏れるため、document への委譲で一括して面倒を見る。
+  // 読み取り専用の出力欄(プロンプト作成ツールの結果など)は対象外。
+  // readOnly では判定しない。パスワードマネージャ対策で全 textarea に一時的に
+  // readonly が付くため、それを除外条件にすると本来伸ばしたい欄まで対象外になる。
+  // 伸ばしたくない出力欄には data-no-autogrow を付けてある。
+  function isAutoGrowTarget(el) {
+    return el && el.tagName === 'TEXTAREA' && !el.hasAttribute('data-no-autogrow');
+  }
+  document.addEventListener('input', function (e) {
+    if (isAutoGrowTarget(e.target)) autoGrow(e.target);
+  }, true);
+  // 値をプログラムから入れた欄(編集フォームなど)にも効くよう、フォーカス時にも測り直す
+  document.addEventListener('focusin', function (e) {
+    if (isAutoGrowTarget(e.target)) autoGrow(e.target);
+  }, true);
 
   /* ---------- 投稿処理 ---------- */
   function fileToBase64(file) {
