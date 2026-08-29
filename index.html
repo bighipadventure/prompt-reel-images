@@ -785,6 +785,8 @@
   }
   .guide-switch button.active{ background: var(--accent); color:#fff; }
   .guide-switch button + button{ border-left:1px solid var(--line); }
+  /* 「画像の作り方」内のさらに下の切替。上位の切替と区別できるよう一回り小さくする */
+  .guide-subswitch button{ padding: 8px 16px; font-size: 13px; }
   .guide-table{
     width:100%; border-collapse:collapse; margin:10px 0 4px; font-size:12.5px; line-height:1.7;
     font-family:'Noto Sans JP',sans-serif;
@@ -3268,7 +3270,7 @@
 
       <div class="qa-item">
         <div class="qa-q">投稿してはいけない内容はありますか？</div>
-        <div class="qa-a">画像はすべてGoogleドライブに保存されるため、Googleの規約に触れる画像が投稿されるとアカウントごと停止され、このサイト自体が終了します。他人の個人情報や、明らかに問題のある画像は投稿しないでください。気になる投稿を見つけたら、連絡フォームから管理者へお知らせください。</div>
+        <div class="qa-a">特にありませんが、気になる投稿を見つけたら、連絡フォームから管理者へお知らせください。</div>
       </div>
     </section>
 
@@ -3287,13 +3289,64 @@
   </div>
   <div class="tab-panel" id="tab-guide">
     <div class="guide-switch" id="guideSwitch">
-      <button type="button" class="active" data-guide="setup">初期設定</button>
-      <button type="button" data-guide="image">画像の作り方</button>
+      <button type="button" class="active" data-guide="image">画像の作り方</button>
       <button type="button" class="video-only" data-guide="video">動画の作り方</button>
     </div>
 
-    <div id="guideSetup" class="guide-variant">
+    <div id="guideImage" class="guide-variant">
+    <div class="guide-switch guide-subswitch" id="guideImageSwitch">
+      <button type="button" class="active" data-imgguide="forge">Forge Neo</button>
+      <button type="button" data-imgguide="nai">NovelAI</button>
+    </div>
+
+    <div id="guideImageForge" class="guide-subvariant">
+    <nav class="guide-toc" aria-label="画像ガイド目次">
+      <div class="guide-toc-head"><span class="guide-toc-title">目次(画像)</span></div>
+      <div class="guide-toc-groups">
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">初期設定（共通）</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="setup-need"><span class="toc-badge">◆</span>準備するもの</a>
+            <a class="guide-toc-link" data-scroll="setup-matrix"><span class="toc-badge">0</span>Stability Matrix</a>
+            <a class="guide-toc-link" data-scroll="setup-packages"><span class="toc-badge">◎</span>入れられるパッケージ</a>
+            <a class="guide-toc-link" data-scroll="setup-features"><span class="toc-badge">＋</span>便利機能</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">セットアップ（Forge Neo）</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="img-step-forge"><span class="toc-badge">1</span>Forge Neo導入</a>
+            <a class="guide-toc-link" data-scroll="img-step-models"><span class="toc-badge">2</span>モデルの入手</a>
+            <a class="guide-toc-link" data-scroll="img-step-launch"><span class="toc-badge">3</span>起動</a>
+            <a class="guide-toc-link" data-scroll="img-step-gen"><span class="toc-badge">4</span>はじめての生成</a>
+            <a class="guide-toc-link" data-scroll="img-tips"><span class="toc-badge">!</span>つまずきやすい点</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">プロンプト</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="img-prompt-intro"><span class="toc-badge">◆</span>考え方</a>
+            <a class="guide-toc-link" data-scroll="img-p1"><span class="toc-badge">P1</span>型で並べる</a>
+            <a class="guide-toc-link" data-scroll="img-p2"><span class="toc-badge">P2</span>強調・語順</a>
+            <a class="guide-toc-link" data-scroll="img-p3"><span class="toc-badge">P3</span>ネガティブ</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">ツール</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="img-meta"><span class="toc-badge">AI</span>AIに作ってもらう</a>
+            <a class="guide-toc-link" data-scroll="img-builder"><span class="toc-badge">★</span>プロンプト作成ツール</a>
+          </div>
+        </div>
+      </div>
+    </nav>
     <section class="panel">
+      <div class="guide-note">
+        こちらは<strong>自分のパソコンで画像を作る方法</strong>。まず画像・動画に共通の土台「Stability Matrix」を用意し、続けて画像生成ソフト「Forge Neo」を入れて画像を作れるようにする。すでにStability Matrixの用意が済んでいる人は「STEP 1. Forge Neo をインストールする」から読み始めてよい。
+      </div>
+    </section>
+
+    <section class="panel" id="setup-need">
       <h2>準備するもの</h2>
       <div class="guide-step">
         <div class="body">
@@ -3301,11 +3354,11 @@
         </div>
       </div>
       <div class="guide-note">
-        この「初期設定」タブでは、画像でも動画でも共通して必要になる土台「Stability Matrix」の用意までを説明する。ここまで終えたら、<strong>画像を作りたい人は「画像の作り方」タブ、動画を作りたい人は「動画の作り方」タブ</strong>に進む(どちらもStability Matrixが用意済みである前提)。
+        ここでは、画像でも動画でも共通して必要になる土台「Stability Matrix」の用意までを説明する。ここまで終えたら、<strong>画像を作りたい人はこのまま下の「STEP 1. Forge Neo をインストールする」へ、動画を作りたい人は「動画の作り方」タブ</strong>へ進む。
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="setup-matrix">
       <h2>STEP 1. Stability Matrix を用意する</h2>
       <div class="guide-step">
         <div class="num">1</div>
@@ -3326,7 +3379,7 @@
         </div>
       </div>
       <div class="guide-note">
-        ここまでが画像・動画共通の初期設定。次は目的に応じてタブを切り替える:<strong>画像 → 「画像の作り方」(Forge Neo)</strong> / <strong>動画 → 「動画の作り方」(ComfyUI)</strong>。
+        ここまでが画像・動画共通の初期設定。<strong>画像を作るならこのまま下の「STEP 1. Forge Neo をインストールする」へ進む。動画を作るなら「動画の作り方」タブ(ComfyUI)へ切り替える。</strong>
       </div>
     </section>
 
@@ -3379,45 +3432,6 @@
             </tbody>
           </table>
         </div>
-      </div>
-    </section>
-    </div>
-
-    <div id="guideImage" class="guide-variant" style="display:none;">
-    <nav class="guide-toc" aria-label="画像ガイド目次">
-      <div class="guide-toc-head"><span class="guide-toc-title">目次(画像)</span></div>
-      <div class="guide-toc-groups">
-        <div class="guide-toc-group">
-          <div class="guide-toc-group-label">セットアップ（Forge Neo）</div>
-          <div class="guide-toc-grid">
-            <a class="guide-toc-link" data-scroll="img-step-forge"><span class="toc-badge">1</span>Forge Neo導入</a>
-            <a class="guide-toc-link" data-scroll="img-step-models"><span class="toc-badge">2</span>モデルの入手</a>
-            <a class="guide-toc-link" data-scroll="img-step-launch"><span class="toc-badge">3</span>起動</a>
-            <a class="guide-toc-link" data-scroll="img-step-gen"><span class="toc-badge">4</span>はじめての生成</a>
-            <a class="guide-toc-link" data-scroll="img-tips"><span class="toc-badge">!</span>つまずきやすい点</a>
-          </div>
-        </div>
-        <div class="guide-toc-group">
-          <div class="guide-toc-group-label">プロンプト</div>
-          <div class="guide-toc-grid">
-            <a class="guide-toc-link" data-scroll="img-prompt-intro"><span class="toc-badge">◆</span>考え方</a>
-            <a class="guide-toc-link" data-scroll="img-p1"><span class="toc-badge">P1</span>型で並べる</a>
-            <a class="guide-toc-link" data-scroll="img-p2"><span class="toc-badge">P2</span>強調・語順</a>
-            <a class="guide-toc-link" data-scroll="img-p3"><span class="toc-badge">P3</span>ネガティブ</a>
-          </div>
-        </div>
-        <div class="guide-toc-group">
-          <div class="guide-toc-group-label">ツール</div>
-          <div class="guide-toc-grid">
-            <a class="guide-toc-link" data-scroll="img-meta"><span class="toc-badge">AI</span>AIに作ってもらう</a>
-            <a class="guide-toc-link" data-scroll="img-builder"><span class="toc-badge">★</span>プロンプト作成ツール</a>
-          </div>
-        </div>
-      </div>
-    </nav>
-    <section class="panel">
-      <div class="guide-note">
-        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませてから戻ってくる。ここからは画像生成ソフト「Forge Neo」を入れて画像を作れるようにする。
       </div>
     </section>
 
@@ -3655,6 +3669,295 @@ Negative: (ここにカンマ区切りのタグ)
     </section>
     </div>
 
+    <div id="guideImageNai" class="guide-subvariant" style="display:none;">
+    <nav class="guide-toc" aria-label="NovelAIガイド目次">
+      <div class="guide-toc-head"><span class="guide-toc-title">目次(NovelAI)</span></div>
+      <div class="guide-toc-groups">
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">セットアップ（NovelAI）</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="nai-step-account"><span class="toc-badge">1</span>登録と支払い</a>
+            <a class="guide-toc-link" data-scroll="nai-step-anlas"><span class="toc-badge">2</span>Anlasの仕組み</a>
+            <a class="guide-toc-link" data-scroll="nai-step-model"><span class="toc-badge">3</span>モデルを選ぶ</a>
+            <a class="guide-toc-link" data-scroll="nai-step-gen"><span class="toc-badge">4</span>はじめての生成</a>
+            <a class="guide-toc-link" data-scroll="nai-tips"><span class="toc-badge">!</span>つまずきやすい点</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">プロンプト</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="nai-prompt-intro"><span class="toc-badge">◆</span>考え方</a>
+            <a class="guide-toc-link" data-scroll="nai-p1"><span class="toc-badge">P1</span>型で並べる</a>
+            <a class="guide-toc-link" data-scroll="nai-p2"><span class="toc-badge">P2</span>強調・語順</a>
+            <a class="guide-toc-link" data-scroll="nai-p3"><span class="toc-badge">P3</span>Undesired Content</a>
+            <a class="guide-toc-link" data-scroll="nai-p4"><span class="toc-badge">P4</span>複数キャラ</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">ツール</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="nai-post"><span class="toc-badge">▲</span>このサイトに投稿</a>
+            <a class="guide-toc-link" data-scroll="nai-links"><span class="toc-badge">◎</span>公式ドキュメント</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section class="panel">
+      <div class="guide-note">
+        こちらは<strong>ブラウザだけで画像を作る方法</strong>。Anlatan社の有料クラウドサービス「NovelAI」(<a href="https://novelai.net/" target="_blank" rel="noopener">https://novelai.net/</a>)を使う。生成は向こうのサーバーで行われるので、<strong>グラフィックボードもインストール作業も不要</strong>。Stability Matrixの用意も必要ない。スマホからでも使え、UIに日本語がある。
+      </div>
+    </section>
+
+    <section class="panel" id="nai-step-account">
+      <h2>STEP 1. 登録して支払う</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          <strong>アカウントを作る。</strong> <a href="https://novelai.net/" target="_blank" rel="noopener">https://novelai.net/</a> でメールアドレスとパスワードを登録する。登録したアドレス宛に確認メールが届くので、リンクを開くか確認コードを入力するとログインできるようになる。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>プランに加入する。</strong> アカウント画面から Upgrade を選び、プランを選択して支払う(クレジットカードまたはPayPal)。
+          <div class="guide-warn"><strong>注意:</strong> 小説の作成機能は無料でも使えるが、<strong>画像生成には無料プランも無料お試しも存在しない</strong>。画像を作るには必ず支払いが必要。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          プランは複数の段階があり、上位プランには<strong>標準的なサイズ・ステップ数の画像ならAnlasを消費せずに生成できる</strong>という特典がある。たくさん作りたい人はこの特典が目当てで上位プランを選ぶことが多い。
+          <div class="guide-note">プラン名・金額・付与Anlas数は改定されることがある。金額に関わる部分は必ず公式の料金ページで最新を確認すること。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-step-anlas">
+      <h2>STEP 2. Anlas(消費ポイント)の仕組み</h2>
+      <div class="guide-step">
+        <div class="body">
+          <strong>Anlas(アンラス)</strong> は画像生成で消費する専用ポイント。入手方法は「プランに加入して毎月受け取る」か「必要なぶんだけ都度購入する」の2通り。無料で手に入れる方法はない。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          消費量は<strong>画像サイズ・ステップ数・一度に作る枚数</strong>で変わる。生成ボタンを押す前に消費量が画面に表示されるので、押す前に確認する癖をつけるとよい。
+          <div class="guide-note">上位プランの「消費なし」特典には条件がある。標準的な解像度の範囲内で、ステップ数が一定以下、かつ1枚ずつの生成であることが条件で、<strong>まとめて複数枚を生成すると枚数分のAnlasがかかる</strong>。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          都度購入したAnlasは、プラン更新時に配られるAnlasとは別に管理される。一方で<strong>プラン付与のAnlasは更新時に上書きされる</strong>(残っていた分は繰り越されない)ので、余らせているなら更新前に使い切っておくとよい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-step-model">
+      <h2>STEP 3. モデルを選ぶ</h2>
+      <div class="guide-step">
+        <div class="body">
+          NovelAI Diffusion には複数のモデルがあり、<strong>プロンプト入力欄のすぐ上に現在のモデル名が表示されている</strong>。そこをクリックすると切り替えられる。作りたい絵に合わせて選ぶ。
+          <table class="guide-table">
+            <tr><th>種類</th><th>性格</th></tr>
+            <tr><td><strong>最新のフルモデル</strong>(V5 Full など)</td><td>いちばん新しい主力モデル。自然文の理解が強く、日本語を含む多言語のプロンプトにも対応。キャラクターの位置指定なども強化されている。迷ったらこれ。</td></tr>
+            <tr><td><strong>Curatedモデル</strong></td><td>きれいで無難な画像に絞って学習させたモデル。意図しない過激な絵が出にくいので、配信中など人に見られる場面で安心。</td></tr>
+            <tr><td><strong>旧バージョン</strong>(V4.5 / V3 など)</td><td>過去の絵柄を再現したいときや、そのバージョン向けのプロンプトを流用したいときに使う。</td></tr>
+          </table>
+          <div class="guide-note">ケモノ・獣人系を描きたいときは <strong>Furry モード</strong>、人物のいない風景や静物を写真調で出したいときはプロンプトの先頭に <code>background dataset,</code> を置く、といった専用の切り替えも用意されている。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-step-gen">
+      <h2>STEP 4. はじめての生成</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          <strong>画像生成の画面を開く。</strong> ログイン後のダッシュボードから <strong>Image Generator</strong> を選ぶ。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>プロンプトを入れて生成する。</strong> プロンプト欄に描きたい内容をタグで入れて <strong>Generate</strong> を押す。まずは <code>1girl, brown hair, school uniform, smile</code> のような短いものでよい。数秒で1枚できあがる。
+          <div class="guide-note">入力中はAIが知っているタグが候補として表示され、どれくらい学習しているかの目安も出る。候補から選ぶようにすると狙いどおりになりやすい。何も思いつかないときは <strong>Random Prompt</strong> ボタンで自動生成させることもできる。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>Steps と Prompt Guidance を調整する。</strong> Steps は書き込みを繰り返す回数、Prompt Guidance はプロンプトにどれだけ忠実にするかの強さ。<strong>Guidance は 5〜6 前後が推奨</strong>で、低いと柔らかく絵画的に、高いと細部がはっきりする。ただし上げすぎると色が濃くなりすぎるなど逆効果になる。
+          <div class="guide-note">Guidanceを高めにしたいときは、隣にある色崩れを抑えるオプションを併用するとよい。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">4</div>
+        <div class="body">
+          <strong>画像を保存する。</strong> 生成した画像は画面右側の History に並ぶ。個別に保存するほか、一番下の <strong>Download</strong> からまとめてzipで落とせる。
+          <div class="guide-warn"><strong>注意:</strong> ページを再読み込みしたりブラウザを閉じたりすると History は消える。残したい画像はその都度保存しておくこと。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-tips">
+      <h2>初心者が特につまずきやすい点</h2>
+      <div class="guide-step">
+        <div class="body">
+          <strong>Historyは一時的なもの。</strong>
+          <div class="guide-note">「あとでまとめて落とそう」と思っているうちにリロードして消える、というのがいちばん多い失敗。気に入った画像はその場で保存する。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>設定を呼び出したいときはCtrl+クリック。</strong>
+          <div class="guide-note">Historyのサムネイルを Ctrl+クリックすると、そのときのプロンプトと設定が入力欄に戻ってくる。「さっきの方がよかった」を取り戻せるので覚えておくと便利。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>まとめて生成するとAnlasがかかる。</strong>
+          <div class="guide-note">上位プランでも、一度に複数枚を生成する設定にしていると枚数分のAnlasを消費する。消費を抑えたいなら1枚ずつ生成する。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>プロンプトはモデルのバージョンによって効き方が違う。</strong>
+          <div class="guide-note">ネット上の解説記事は古いバージョン向けのものも多い。強調の書き方や推奨されるタグはバージョンで変わるため、うまくいかないときは自分が選んでいるモデルの世代を確認する。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-prompt-intro">
+      <h2>プロンプトの考え方</h2>
+      <div class="guide-step">
+        <div class="body">
+          NovelAIは<strong>タグで学習している</strong>ため、文章で書くよりも<strong>短い英単語のタグをカンマで並べる</strong>のが基本。Forge Neoと考え方は同じなので、「Forge Neo」タブのプロンプト解説やプロンプト作成ツールもそのまま流用できる。ここではNovelAI特有の部分を中心に説明する。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-p1">
+      <h2>P1. 型で並べる</h2>
+      <div class="guide-step">
+        <div class="body">
+          迷ったら次の順で並べるとまとまりやすい。<br>
+          <strong>①品質・雰囲気 → ②人数 → ③キャラの外見 → ④服装 → ⑤表情・ポーズ → ⑥構図 → ⑦背景</strong>
+          <div class="guide-note">例: <code>masterpiece, very aesthetic, 1girl, brown hair, twin braids, green eyes, sailor uniform, smile, looking at viewer, upper body, classroom</code></div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          NovelAIには<strong>品質タグ</strong>と<strong>美的タグ</strong>という専用のタグ群がある。冒頭に置いて全体の底上げに使う。
+          <table class="guide-table">
+            <tr><th>種類</th><th>タグ</th></tr>
+            <tr><td>品質タグ</td><td><code>best quality</code> / <code>amazing quality</code> / <code>great quality</code> / <code>normal quality</code> / <code>bad quality</code> / <code>worst quality</code></td></tr>
+            <tr><td>美的タグ</td><td><code>masterpiece</code> / <code>top aesthetic</code> / <code>very aesthetic</code> / <code>aesthetic</code> / <code>displeasing</code> / <code>very displeasing</code></td></tr>
+          </table>
+          <div class="guide-note">美的タグは使えるバージョンに制限があるものがある(<code>masterpiece</code> はV4.5以降、<code>top aesthetic</code> はV4以降)。ほかに年代を指定するタグやデータセットを指定するタグもある。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-p2">
+      <h2>P2. 強調と語順</h2>
+      <div class="guide-step">
+        <div class="body">
+          <strong>前に書いたタグほど強く効く。</strong> 効かせたい要素は前のほうへ移動させるだけでも結果が変わる。まずは語順で調整し、それでも足りないときに強調記法を使う。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          強調の書き方はバージョンで異なる。
+          <table class="guide-table">
+            <tr><th>書き方</th><th>意味</th><th>対象</th></tr>
+            <tr><td><code>1.5::smile::</code></td><td>数値で強さを指定する。1より大きいと強調、小さいと弱める。マイナスにすると打ち消す方向に働く</td><td>V4以降</td></tr>
+            <tr><td><code>{smile}</code> / <code>[smile]</code></td><td>波括弧で強調、角括弧で弱める。重ねるほど強くなる</td><td>V3以前の書き方</td></tr>
+          </table>
+          <div class="guide-warn"><strong>注意:</strong> 数値指定は必ず <code>::</code> で閉じる。閉じ忘れると以降のプロンプト全体が巻き込まれておかしくなる。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-p3">
+      <h2>P3. Undesired Content(ネガティブ)</h2>
+      <div class="guide-step">
+        <div class="body">
+          Forge Neoでいうネガティブプロンプトにあたるのが <strong>Undesired Content</strong>。出したくない要素を書いておく欄で、プロンプト欄の設定(歯車アイコン)から<strong>プリセット</strong>を選べる。推奨のものは最初から有効になっているので、まずはプリセットのままでよい。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          プリセットには <code>lowres</code>, <code>worst quality</code>, <code>bad quality</code>, <code>jpeg artifacts</code>, <code>multiple views</code>, <code>very displeasing</code>, <code>logo</code>, <code>blank page</code> といった「だいたい誰も欲しくないもの」がまとめて入っている。自分で追加したいタグは、プリセットと併用する形で書き足せる。
+          <div class="guide-note">出てほしくないものが出たら、その名前をUndesired Contentに足すのが基本。ただし直接の名前で消えないこともあるので、関連する別のタグを入れてみると解決する場合がある(例: <code>freckles</code>の副作用を <code>tattoo</code> を入れて抑える、など)。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-p4">
+      <h2>P4. 複数キャラを描き分ける</h2>
+      <div class="guide-step">
+        <div class="body">
+          複数人を1枚に描くと、髪色や服装が混ざってしまうことがある(キャラクターの混線)。V4以降では <strong>「+ Add Character」でキャラごとに別々のプロンプト欄</strong>を用意でき、これを使うと混ざりにくくなる。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          使い分けの目安は次のとおり。
+          <table class="guide-table">
+            <tr><th>書く場所</th><th>入れるもの</th></tr>
+            <tr><td>ベースのプロンプト</td><td>品質タグ・美的タグ・全体の画風・構図・背景・人数</td></tr>
+            <tr><td>キャラクターごとの欄</td><td>そのキャラの髪色・目の色・服装・表情・ポーズ</td></tr>
+          </table>
+          <div class="guide-note">品質タグや全体の画風をキャラ欄に入れると、かえって描き分けが弱くなる。全体に効かせたいものはベース側にまとめる。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          並び順と位置も指定できる。<code>side-by-side</code> のようなタグを併用すると、1人目が左、2人目が右に出やすくなる。各キャラ欄の上下矢印で順番を入れ替えられるほか、位置指定を Custom に切り替えると、キャンバス上で配置を直接指定できる。
+          <div class="guide-note">位置を細かく指定するときは、キャラ欄の並び順と矛盾しないようにし、あわせて文章でも位置関係を書いておくと安定する。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-post">
+      <h2>このサイトに投稿する</h2>
+      <div class="guide-step">
+        <div class="body">
+          NovelAIで保存した画像には生成情報が埋め込まれている。「投稿」タブのドロップゾーンにそのまま入れれば、<strong>プロンプト・Undesired Content・キャラクタープロンプト・モデル名・Steps・CFG・シード値・画像サイズ</strong>が自動で読み込まれ、見出し右の切替ボタンも自動で「NovelAI」になる。
+          <div class="guide-note">キャラクターごとのプロンプトは、ネガティブプロンプトの下に出る「キャラクタープロンプト」欄に1行1キャラで入る。<code>1.5::smile::</code> のような強調表記もそのまま保持されるので、見た人がそのまま真似できる。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          zipでまとめて落とした画像でも中身は同じなので、解凍した画像をそのままドロップすればよい。読み取った内容は投稿前に手で直せる。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="nai-links">
+      <h2>公式ドキュメントとリンク</h2>
+      <div class="guide-step">
+        <div class="body">
+          設定の意味や各機能の詳細は公式ドキュメントがいちばん確実。日本語のまとめも入門には役立つ。
+          <table class="guide-table">
+            <tr><th>リンク</th><th>内容</th></tr>
+            <tr><td><a href="https://docs.novelai.net/" target="_blank" rel="noopener">公式ドキュメント</a></td><td>全機能の解説。以下は特によく見るページ</td></tr>
+            <tr><td><a href="https://docs.novelai.net/en/image/tutorial-imgintro/" target="_blank" rel="noopener">Intro to Image Generation</a></td><td>はじめての生成をひととおり追えるチュートリアル</td></tr>
+            <tr><td><a href="https://docs.novelai.net/en/image/tags/" target="_blank" rel="noopener">Tags</a></td><td>品質タグ・美的タグなど、タグの使い方</td></tr>
+            <tr><td><a href="https://docs.novelai.net/en/image/stepsguidance/" target="_blank" rel="noopener">Steps &amp; Guidance</a></td><td>StepsとPrompt Guidanceの考え方</td></tr>
+            <tr><td><a href="https://docs.novelai.net/en/image/undesiredcontent/" target="_blank" rel="noopener">Undesired Content</a></td><td>ネガティブ側の指定とプリセットの中身</td></tr>
+            <tr><td><a href="https://docs.novelai.net/en/image/multiplecharacters/" target="_blank" rel="noopener">Multi-Character Prompting</a></td><td>複数キャラの描き分けと位置指定</td></tr>
+            <tr><td><a href="https://docs.novelai.net/en/image/models/" target="_blank" rel="noopener">Models</a></td><td>各モデルの違いと選び方</td></tr>
+            <tr><td><a href="https://wikiwiki.jp/sd_toshiaki/Novel%20AI" target="_blank" rel="noopener">wikiwiki: NovelAI</a></td><td>日本語のまとめ。登録手順や料金の考え方</td></tr>
+          </table>
+          <div class="guide-note">仕様・料金・モデルの世代は更新が速い。ここの記述と食い違っていたら公式ドキュメントを優先すること。</div>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    </div>
+
     <div id="guideVideo" class="guide-variant" style="display:none;">
     <nav class="guide-toc" aria-label="動画ガイド目次">
       <div class="guide-toc-head"><span class="guide-toc-title">目次(動画)</span></div>
@@ -3695,7 +3998,7 @@ Negative: (ここにカンマ区切りのタグ)
         <strong>用語の整理:</strong> <strong>ComfyUI</strong> は色々な動画生成モデルを動かせる<strong>ツール(土台)</strong>で、<strong>MiniMax H3</strong> はその上で動かす<strong>モデルの一つ</strong>。両者はイコールではない(ComfyUIでは Wan など他のモデルも動かせる)。このガイドは<strong>「ComfyUI に MiniMax H3 を載せて使う」前提</strong>で、(1)ツールの用意=ComfyUI の環境構築 と、(2)モデルの使い方=MiniMax H3 のモード切り替えとプロンプト、を順に説明する。
       </div>
       <div class="guide-note">
-        このタブは「初期設定」タブで <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「初期設定」タブを済ませる。まず<strong>環境構築(STEP 1〜5)</strong>で動かせるようにし、動いたら<strong>MiniMax H3 のプロンプトの書き方</strong>を詰めるとよい。
+        このタブは <strong>Stability Matrix の用意まで終わっている</strong>ことが前提。まだの人は先に「画像の作り方」タブ →「Forge Neo」の冒頭にある初期設定を済ませる。まず<strong>環境構築(STEP 1〜5)</strong>で動かせるようにし、動いたら<strong>MiniMax H3 のプロンプトの書き方</strong>を詰めるとよい。
       </div>
     </section>
 
@@ -13113,7 +13416,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // ----- 初期設定/画像/動画 切替 -----
     var guideSwitch = document.getElementById('guideSwitch');
     var guideVariants = {
-      setup: document.getElementById('guideSetup'),
       image: document.getElementById('guideImage'),
       video: document.getElementById('guideVideo')
     };
@@ -13124,6 +13426,25 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           guideSwitch.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
           Object.keys(guideVariants).forEach(function (key) {
             var el = guideVariants[key];
+            if (el) el.style.display = (key === target) ? '' : 'none';
+          });
+        });
+      });
+    }
+
+    // 「画像の作り方」内の切替(Forge Neo / NovelAI)
+    var imgGuideSwitch = document.getElementById('guideImageSwitch');
+    var imgGuideVariants = {
+      forge: document.getElementById('guideImageForge'),
+      nai: document.getElementById('guideImageNai')
+    };
+    if (imgGuideSwitch) {
+      imgGuideSwitch.querySelectorAll('button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var target = btn.dataset.imgguide;
+          imgGuideSwitch.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          Object.keys(imgGuideVariants).forEach(function (key) {
+            var el = imgGuideVariants[key];
             if (el) el.style.display = (key === target) ? '' : 'none';
           });
         });
