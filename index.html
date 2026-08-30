@@ -31,7 +31,7 @@
     --ink-dim: #9a9a9a;
     --accent: #0096fa;
     --accent-dim: #16344a;
-    --line: #2e2e31;
+    --line: #3f3f45;   /* 区切り線。薄すぎて境目が見えなかったので少し明るくしている */
     --danger: #ff4060;
     --danger-dim: #3a1c25;
     --like: #ff4060;
@@ -154,7 +154,8 @@
     width:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     min-height: 260px;
-    background: var(--surface-2);
+    /* 入力欄と同じ黒っぽい面に揃える */
+    background: var(--bg);
     border: 2px dashed var(--line);
     border-radius: 14px;
     padding: 32px 24px;
@@ -207,9 +208,10 @@
     max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); cursor: zoom-in;
   }
 
+  /* 入力欄の面は詳細モーダルの本文(.value)と同じ黒に揃える */
   input[type="text"], input[type="number"], input[type="password"]{
     width:100%;
-    background: var(--surface-2);
+    background: var(--bg);
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 10px 12px;
@@ -221,7 +223,7 @@
     width:100%;
     min-height: 90px;
     resize: vertical;
-    background: var(--surface-2);
+    background: var(--bg);
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 12px 14px;
@@ -479,15 +481,38 @@
   .detail-image{ flex: 0 0 260px; }
   .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
   .detail-text{ flex: 1 1 320px; min-width: 260px; }
-  .detail-block{ margin-bottom: 12px; }
+  /* 詳細モーダルの各項目は枠で囲み、見出しも枠の中に収める。
+     色は使わず、罫線と背景の濃淡だけでまとまりを表す。 */
+  .detail-block{
+    margin-bottom: 12px; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  }
+  .detail-block > .label,
+  .detail-block > .block-head{
+    padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
   .detail-block .label{
-    font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim);
-    margin-bottom: 5px; letter-spacing: 0.05em;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: var(--ink);
+    font-weight: 600; letter-spacing: 0.02em; margin-bottom: 0;
   }
+  .detail-block > .block-head{ display:flex; align-items:center; gap:10px; }
+  .detail-block > .block-head .label{ padding: 0; background: none; border: 0; }
+  /* 本文は枠の内側に一段暗い面で置く */
+  .detail-block > .value{ margin: 10px 12px; }
   .detail-block .value{
-    font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
-    background: var(--surface-2); border-radius: 8px; padding: 10px 12px; border: 1px solid var(--line);
+    font-size: 13.5px; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+    background: var(--bg); border-radius: 8px; padding: 10px 12px; border: 1px solid var(--line);
   }
+  /* 枠で囲む前は「次の見出しを引き上げて詰める」ための負マージンが入っていたが、
+     枠の中では下にはみ出して切れてしまうので打ち消す。 */
+  /* 見出しとコピーボタンを同じ行に置く */
+  .detail-block > .block-head{ justify-content: space-between; }
+  .detail-block > .block-head .btn-copy{ flex: none; }
+  .char-sub-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
+  .char-sub-head label{ margin-bottom:0; }
+  .detail-block > .settings-table{ padding: 10px 12px; }
+  .detail-block > .block-gallery{ padding: 10px 12px; }
+  .detail-block > .char-list{ padding: 10px 12px; }
   .settings-table{
     display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
     gap: 8px 16px; font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
@@ -508,7 +533,9 @@
   }
   .modal-overlay.open{ display:flex; }
   .modal{
-    background: var(--surface);
+    /* 一番外側の背景と同じ黒にして、中の各エリア(見出し帯・本文面)が
+       はっきり分かれて見えるようにする */
+    background: var(--bg);
     border: 1px solid var(--line);
     border-radius: 14px;
     max-width: 1100px; width: 100%;
@@ -560,16 +587,17 @@
   .modal-title{ font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size: 20px; margin: 0 0 6px 0; word-break: break-word; }
   .modal-header{ display:flex; align-items:flex-start; justify-content:space-between; gap: 14px; }
   .modal-header .modal-title{ flex:1; min-width:0; }
-  /* 右側は「編集・閉じる」の下に「グッド/バッド」を重ねて右寄せにする。
-     左側はタイトル→投稿日時→タグの順に詰める。 */
-  .modal-top-actions{ display:flex; flex-direction:column; align-items:flex-end; gap: 10px; flex-shrink:0; }
-  .modal-top-row{ display:flex; align-items:center; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
+  /* 右側は「編集・閉じる」のみ。グッド/バッドは画像下のボタン列へ移したので、
+     見出し周りの余白が空かないようにしている。 */
+  /* ボタンは折り返さず1行に並べる(タイトル側が縮む) */
+  .modal-top-actions{ display:flex; align-items:center; justify-content:flex-end; gap: 8px; flex-wrap:nowrap; flex-shrink:0; }
+  .modal-top-row{ display:flex; align-items:center; gap: 8px; flex-wrap:nowrap; justify-content:flex-end; }
   .modal-top-actions .modal-counts{ margin-bottom: 0; justify-content:flex-end; }
   .modal-top-actions .modal-close{ position:static; }
   .modal-top-actions button.btn-ghost{ padding: 6px 12px; font-size: 12px; white-space: nowrap; }
   .modal-meta{
     font-family:'Noto Sans JP',sans-serif; font-size: 12px; color: var(--ink-dim);
-    display:flex; gap: 14px; flex-wrap:wrap; margin-bottom: 12px;
+    display:flex; gap: 14px; flex-wrap:wrap; margin-bottom: 6px;
   }
   .modal .row-tags{ max-width: none; margin-bottom: 12px; }
   .modal .row .row-tags{ margin-bottom: 0; }
@@ -580,7 +608,9 @@
      PROMPTエリアとの間を離すため下マージンを大きめに取る。 */
   .image-actions-row{ display:flex; justify-content:flex-end; gap: 10px; margin: 10px 0 12px; align-items:center; }
   .image-actions-row.has-variants{ justify-content:space-between; }
-  .image-actions-btns{ display:flex; gap:10px; }
+  .image-actions-btns{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  /* グッド/バッドはダウンロード・共有の左に、少し間を空けて置く */
+  .image-actions-btns .modal-counts{ margin-bottom:0; margin-right:10px; }
   .variant-switcher{ display:flex; flex-wrap:wrap; gap:6px; }
   .variant-switch-btn{
     font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:700;
@@ -1243,9 +1273,8 @@
     background:var(--surface); border-bottom:1px solid var(--line);
   }
   .char-item-num{
-    font-family:'Noto Sans JP',sans-serif; font-size:11px; font-weight:600;
-    color:var(--accent); background:var(--accent-dim); border:1px solid var(--accent);
-    border-radius:999px; padding:3px 10px;
+    font-family:'Noto Sans JP',sans-serif; font-size:11.5px; font-weight:600;
+    color:var(--ink);
   }
   .char-item-actions{ margin-left:auto; display:flex; gap:6px; }
   .char-item-body{ padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
@@ -1255,12 +1284,19 @@
   }
   .char-item-body textarea{ min-height:56px; }
   .char-add{ margin-top:10px; }
-  /* 詳細モーダル側は編集画面と同じカード見た目で、入力欄のかわりに本文を出す */
-  .char-detail-block .char-list{ margin-top:10px; }
-  .char-item-view .char-item-body .value{
-    background:var(--bg); border:1px solid var(--line); border-radius:8px;
-    padding:9px 12px; font-size:13px; line-height:1.75; white-space:pre-wrap;
-    overflow-wrap:anywhere; color:var(--ink);
+  /* 詳細モーダル側は入れ子のカードにせず、区切り線でキャラを分ける */
+  .char-rows{ padding: 0 12px; }
+  .char-row{ padding: 12px 0; border-top: 1px solid var(--line); }
+  .char-row:first-child{ border-top: 0; }
+  .char-row-num{
+    font-family:'Noto Sans JP',sans-serif; font-size:11.5px; font-weight:600;
+    color: var(--ink); margin-bottom: 8px;
+  }
+  .char-row .char-sub + .char-sub{ margin-top: 10px; }
+  /* .char-item-body の外に出したので、ラベルの体裁をここでも指定する */
+  .char-sub-head label{
+    font-family:'Noto Sans JP',sans-serif; font-size:11px; color:var(--ink-dim);
+    display:block; margin-bottom:0;
   }
   #pCharPromptField{ display:none; }
   body.prompt-service-novelai #pCharPromptField{ display:block; }
@@ -1738,12 +1774,16 @@
   .ref-uploader{ margin-top: 6px; }
   .ref-thumbs{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
   /* 添付ストリップ(サムネイル＋末尾の「＋追加」タイル。掲示板・リクエスト共通) */
-  .attach-strip{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; padding:2px; border-radius:10px; }
+  .attach-strip{
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px;
+    padding:10px 12px; border-radius:10px;
+    background: var(--bg); border:1px solid var(--line);
+  }
   .attach-strip.drag-over{ outline:2px dashed var(--accent); outline-offset:2px; background: var(--accent-dim); }
   .attach-thumb{ position:relative; width:58px; height:58px; }
   .attach-thumb img{ width:58px; height:58px; object-fit:cover; border-radius:8px; display:block; border:1px solid var(--line); cursor:pointer; }
   .attach-remove{ position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:11px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
-  .attach-add-tile{ width:58px; height:58px; border-radius:8px; border:1.5px dashed var(--line); background:transparent; color:var(--ink-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; font-size:10px; font-family:'Noto Sans JP',sans-serif; transition:border-color .15s ease, color .15s ease; }
+  .attach-add-tile{ width:58px; height:58px; border-radius:8px; border:1.5px dashed var(--line); background:var(--bg); color:var(--ink-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; font-size:10px; font-family:'Noto Sans JP',sans-serif; transition:border-color .15s ease, color .15s ease; }
   .attach-add-tile:hover{ border-color:var(--accent); color:var(--accent); }
   .attach-add-tile .plus{ font-size:20px; line-height:1; }
   /* 差分ストリップは通常の添付より一回り大きく(サムネと同じ116px)。ドロップ領域も広く見せる */
@@ -1786,16 +1826,22 @@
   .board-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .board-threads{ display:flex; flex-direction:column; gap:14px; }
   /* 掲示板: スレッドを1つのまとまりとして分かりやすく囲む(白めで太めの罫線) */
+  /* 掲示板のスレッドもコメント・詳細モーダルと同じ作り:
+     見出し(タイトル/名前/日時)の帯 + 黒い本文面 */
   .board-thread{
-    background: var(--surface); border:2px solid rgba(255,255,255,0.22);
-    border-radius:10px; padding:12px 16px 14px; position:relative;
+    background: var(--surface-2); border:1px solid var(--line);
+    border-radius:10px; padding:0; position:relative; overflow:hidden; cursor:pointer;
+  }
+  .board-thread:hover{ border-color: var(--accent); }
+  .board-thread-head{
+    padding:9px 14px; background: var(--surface); border-bottom:1px solid var(--line);
   }
   .board-subject{
-    font-size:15.5px; font-weight:800; line-height:1.4;
-    color: var(--ink); word-break:break-word; margin-bottom:4px;
+    font-size:14px; font-weight:600; line-height:1.5;
+    color: var(--ink); word-break:break-word; margin-bottom:3px;
   }
   /* メタ行(タイトル無しスレでは最上段になる)。管理ボタンとの重なりは body.admin-on 側で余白確保 */
-  .board-op-meta{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; font-size:11.5px; }
+  .board-op-meta{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:11.5px; }
   .board-name{ font-weight:700; color: var(--ink-dim); }
   .board-op-meta .comment-date{ font-size:11px; color: var(--ink-dim); }
   .board-reply-count{
@@ -1804,19 +1850,32 @@
     border-radius:999px; padding:1px 10px;
   }
   .board-latest-reply{ font-size:11px; color: var(--ink-dim); }
-  .board-op-body{ font-size:14px; line-height:1.75; white-space:pre-wrap; word-break:break-word; color: var(--ink); margin-top:8px; }
+  .board-op-body{
+    font-size:13.5px; line-height:1.75; white-space:pre-wrap; word-break:break-word; color: var(--ink);
+    background: var(--bg); border:1px solid var(--line); border-radius:8px;
+    margin:10px 14px; padding:10px 12px;
+  }
   .board-quote{ color:#7ea840; }
   .board-thread-body{ font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
   .board-replies{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
   .board-reply{
-    background: var(--surface-2); border:1px solid rgba(255,255,255,0.12);
-    border-radius:8px; padding:9px 12px 10px; position:relative;
+    background: var(--surface-2); border:1px solid var(--line);
+    border-radius:8px; padding:0; position:relative; overflow:hidden;
   }
-  .board-reply-head{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+  .board-reply-head{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:0;
+    padding:7px 12px; background: var(--surface); border-bottom:1px solid var(--line);
+  }
   .board-reply-no{ font-weight:800; color: var(--ink); font-size:12px; font-variant-numeric:tabular-nums; }
   .board-reply-head .board-name{ font-size:12px; }
   .board-reply .comment-date{ font-size:10.5px; color: var(--ink-dim); }
-  .board-reply-body{ font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
+  /* 返信「本文の表示」用。入力欄の textarea.board-reply-body に当たると
+     余白がズレるので、返信カードの中だけに限定する。 */
+  .board-reply .board-reply-body{
+    font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink);
+    background: var(--bg); border:1px solid var(--line); border-radius:8px;
+    margin:9px 12px; padding:9px 12px;
+  }
   /* 返信する + 返信N件を表示 を横並びにして空きスペースを減らす */
   .board-thread-actions{ margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .board-reply-form{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
@@ -1824,6 +1883,39 @@
   .board-reply-form .field-label{ margin-top:0; }
   .board-reply-form-row{ display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap; }
   .board-reply-status{ font-size:12px; color: var(--ink-dim); }
+  /* 返信フォームは常時表示。中身が枠の端に付かないよう内側に余白を持たせる */
+  .board-reply-form-open{
+    background: var(--surface-2); border:1px solid var(--line); border-radius:10px;
+    margin-top:14px; padding:0; border-top:1px solid var(--line);
+  }
+  .board-reply-form-inner{ padding:16px; display:flex; flex-direction:column; gap:6px; }
+  .board-reply-form-inner > .field-label{ margin:6px 0 0; }
+  .board-reply-form-inner > .field-label:first-child{ margin-top:0; }
+  .board-reply-form-inner textarea,
+  .board-reply-form-inner input[type="text"]{ margin:0; }
+  .board-reply-form-inner .attach-strip{ margin:0; }
+  .board-reply-form-inner .board-reply-form-row{ margin-top:6px; }
+  .board-reply-form-open .field-label:first-child{ margin-top:0; }
+  /* 添付画像はテキストと同じ黒い面の中に収める */
+  .board-op-body .board-ref-gallery,
+  .board-reply-body .board-ref-gallery{ margin-top:10px; }
+  .board-op-body:empty, .board-reply-body:empty{ display:none; }
+  .board-thread-detail .board-vote{ padding:0 14px 12px; }
+  /* スレッドモーダルの見出し(作品の詳細モーダルと同じ素置き) */
+  .board-thread-title{ margin-bottom: 12px; }
+  .board-thread-title .modal-title{ margin-right: 220px; }
+  .board-thread-title .modal-meta{ margin-bottom: 0; }
+  .board-thread-top{ position:absolute; top:26px; right:30px; }
+  /* 返信の編集・削除は日時と同じ行の右端へ */
+  .board-reply-head .board-admin-ctrls,
+  .comment-head .board-admin-ctrls{ margin-left:auto; display:flex; gap:6px; }
+  .board-replies-head{
+    font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:600;
+    color: var(--ink); margin:18px 0 8px;
+  }
+  /* モーダル内のスレッド本体はクリックで開く必要がないので手の形にしない */
+  .board-thread-detail{ cursor:default; }
+  .board-thread-detail:hover{ border-color: var(--line); }
   .board-replies-toggle{ margin-top:0; background:none; border:0; padding:4px 0; color: var(--accent); font-size:12.5px; font-weight:700; cursor:pointer; font-family:'Noto Sans JP',sans-serif; }
   .board-replies-toggle:hover{ text-decoration:underline; }
   /* 管理モード: 編集・削除ボタンは各カードの右下に置く(他要素の邪魔にならず、編集中も消えない) */
@@ -1856,17 +1948,27 @@
   .comment-toggle-btn .cmt-arrow{ margin-left:auto; color: var(--ink-dim); font-size:11px; }
 
   .comment-list{ display:flex; flex-direction:column; gap:12px; margin: 4px 0 20px; }
+  /* コメントも詳細モーダルの項目と同じ作り:
+     枠で囲み、名前と日時の帯を上に、本文は黒い面に置く。 */
   .comment-item{
     background: var(--surface-2); border: 1px solid var(--line);
-    border-radius: 10px; padding: 12px 14px; position:relative;
+    border-radius: 10px; padding: 0; position:relative; overflow:hidden;
   }
-  .comment-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
-  .comment-name{ font-weight:700; font-size:13px; }
+  .comment-head{
+    display:flex; align-items:center; gap:10px; margin-bottom:0;
+    padding:8px 12px; background: var(--surface); border-bottom:1px solid var(--line);
+  }
+  .comment-name{ font-weight:600; font-size:12px; color: var(--ink); }
   .comment-date{ font-size:11px; color: var(--ink-dim); }
-  .comment-body{ font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; }
+  .comment-body{
+    font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word;
+    background: var(--bg); border:1px solid var(--line); border-radius:8px;
+    margin:10px 12px; padding:10px 12px;
+  }
+  .comment-del{ z-index:2; }
   .comment-empty{ color: var(--ink-dim); font-size:13px; padding: 8px 0; }
   .comment-del{
-    position:absolute; top:10px; right:10px;
+    position:static;
     background:none; border:1px solid var(--danger); color:var(--danger);
     border-radius:6px; font-size:11px; padding:3px 8px;
   }
@@ -2217,8 +2319,10 @@
         </div>
       </div>
 
-      <label class="field-label" style="margin-top:18px;">投稿タイトル</label>
+      <div class="req-field" id="titleField">
+      <label class="field-label" style="margin-top:0;">投稿タイトル</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="titleInput" placeholder="例: 桜並木の少女">
+      </div>
 
       <div id="fixContentField" style="display:none;">
         <label class="field-label">修正依頼の具体的な内容</label>
@@ -2359,8 +2463,10 @@
         <div class="service-toggle" id="promptServiceToggle" title="どのサービス向けのプロンプト例か"></div>
       </div>
 
-      <label class="field-label">タイトル</label>
+      <div class="req-field" id="pTitleField">
+      <label class="field-label" style="margin-top:0;">タイトル</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pTitleInput" placeholder="例: オリジナルキャラ○○の基本プロンプト">
+      </div>
 
       <div class="author-field">
         <label class="field-label">投稿者(空欄で匿名)</label>
@@ -4558,6 +4664,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       <button class="btn-ghost" type="button" id="novelPreviewCloseBtn" style="margin-left:auto;">プレビューを閉じる</button>
     </div>
     <div id="novelPreviewMount"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="boardThreadOverlay">
+  <div class="modal">
+    <div class="modal-top-actions board-thread-top">
+      <div class="modal-top-row">
+        <span id="boardThreadAdmin"></span>
+        <button class="modal-close" type="button" id="boardThreadCloseBtn">✕ 閉じる</button>
+      </div>
+    </div>
+    <div id="boardThreadBody"></div>
   </div>
 </div>
 
@@ -7492,6 +7610,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     } else if (!file && !editing) {
       missing.push([document.getElementById('imageField'), mode === 'video' ? '動画' : '画像']);
     }
+    if (!document.getElementById('titleInput').value.trim()) missing.push([document.getElementById('titleField'), '投稿タイトル']);
+    // 情報共有が目的なので、プロンプトと主要な生成設定も必須にする
+    if (!novelMode) {
+      if (!document.getElementById('promptInput').value.trim()) missing.push([document.getElementById('promptField'), 'プロンプト']);
+      const req = mode === 'video'
+        ? [['wanModel', 'Model']]
+        : [['uiPreset', 'UI Preset'], ['checkpoint', 'Checkpoint']];
+      req.forEach(function (pair) {
+        const el = document.getElementById((mode === 'video' ? 'vset_' : 'set_') + pair[0]);
+        if (el && !el.value.trim()) missing.push([el.closest('.field') || el, pair[1]]);
+      });
+    }
     if (!selectedTags.length) missing.push([document.getElementById('tagsField'), 'タグ']);
     if (!selectedCategory) missing.push([document.getElementById('categoryField'), 'ジャンル']);
     if (missing.length) { reportMissing(statusText, missing); return; }
@@ -8221,7 +8351,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
             adminActionButtonsHtml(p) +
             '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
           '</div>' +
-          '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
@@ -8233,7 +8362,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
               return '<button class="variant-switch-btn' + (i === 0 ? ' active' : '') + '" type="button" data-var-idx="' + i + '" title="' + (i === 0 ? '最初に投稿した画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
             }).join('') + '</div>'
           : '') +
-        '<div class="image-actions-btns">' + (p.type === 'novel' ? '' : '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>') + '<button class="btn-ghost" type="button" id="shareBtn">共有</button></div>' +
+        '<div class="image-actions-btns">' +
+          '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
+          (p.type === 'novel' ? '' : '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>') +
+          '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
+        '</div>' +
       '</div>' +
       fixContentBlock +
       baseBlock +
@@ -8242,14 +8375,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       fixLinksBlock +
       (p.type === 'novel' ? '' :
       '<div class="detail-block">' +
-        '<div class="block-head"><div class="label">プロンプト</div></div>' +
+        '<div class="block-head"><div class="label">プロンプト</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
         '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? escapeHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
-        '<div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
       '</div>' +
       '<div class="detail-block" id="detailNegativeBlock"' + (hasText(imageSet[0].negativePrompt) ? '' : ' style="display:none;"') + '>' +
-        '<div class="block-head"><div class="label">ネガティブプロンプト</div></div>' +
+        '<div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
         '<div class="value" id="detailNegativeValue">' + escapeHtml(imageSet[0].negativePrompt || '') + '</div>' +
-        '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
       '</div>' +
       // キャラクタープロンプト(NovelAIのマルチキャラ設定)はネガティブの下に置く
       '<div id="detailCharBlocks">' + charDetailBlocksHtml(imageSet[0]) + '</div>') +
@@ -8271,9 +8402,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        // キャラクタープロンプトは settings 配下にあるので取得先を分ける
+        // data-copytext は本文をそのまま持つ(キャラクターごとのコピー用)。
+        // それ以外は投稿のプロパティ名を data-copy で指す。
         const key = btn.dataset.copy;
-        const src = key === 'characterPrompt' ? charPromptOf(imageSet[curVar])
+        const src = btn.dataset.copytext !== undefined ? btn.dataset.copytext
+          : key === 'characterPrompt' ? charPromptOf(imageSet[curVar])
           : key === 'characterNegative' ? charNegOf(imageSet[curVar])
           : (imageSet[curVar][key] || '');
         navigator.clipboard.writeText(src).then(function () {
@@ -10422,7 +10555,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const promptText = document.getElementById('pPromptInput').value.trim();
     const editing = isEditingPromptPost();
     const missing = [];
+    if (!document.getElementById('pTitleInput').value.trim()) missing.push([document.getElementById('pTitleField'), 'タイトル']);
     if (!promptText) missing.push([document.getElementById('pPromptField'), 'プロンプト']);
+    [['uiPreset', 'UI Preset'], ['checkpoint', 'Checkpoint']].forEach(function (pair) {
+      const el = document.getElementById('pset_' + pair[0]);
+      if (el && !el.value.trim()) missing.push([el.closest('.field') || el, pair[1]]);
+    });
     if (!pSelectedTags.length) missing.push([document.getElementById('pTagsField'), 'タグ']);
     if (missing.length) { reportMissing(pStatus, missing); return; }
     if (GAS_URL.indexOf('ここに') === 0) { pStatus.textContent = 'GAS_URL が未設定です(index.html を確認)'; return; }
@@ -10764,6 +10902,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function closeReferenceModal() { referenceModalOverlay.classList.remove('open'); }
 
+  document.getElementById('boardThreadCloseBtn').addEventListener('click', closeBoardThreadModal);
+  wireOverlayDismiss(document.getElementById('boardThreadOverlay'), closeBoardThreadModal);
   document.getElementById('pickReferenceBtn').addEventListener('click', openReferenceModal);
   document.getElementById('novelPickReferenceBtn').addEventListener('click', openReferenceModal);
   document.getElementById('referenceModalCloseBtn').addEventListener('click', closeReferenceModal);
@@ -11253,7 +11393,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function refGalleryHtml(p) {    const refs = p.referenceImages || [];
     if (!refs.length) return '';
-    return '<div class="detail-block"><div class="label">参考資料</div><div class="ref-gallery">' +
+    return '<div class="detail-block"><div class="label">参考資料</div><div class="ref-gallery block-gallery">' +
       refs.map(function (u) {
         return '<a href="#" class="ref-open" data-ref-url="' + escapeHtml(u) + '">' +
           imageTag(u, { size: 'w320', lazy: true, alt: '参考資料' }) + '</a>';
@@ -11390,6 +11530,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     '</div>';
   }
 
+  /* 本文と添付画像を同じ黒い面の中に収める。
+     本文が空でも画像だけで枠を出す(枠の外に画像がはみ出さないように)。 */
+  function boardBodyBlock(m, cls) {
+    const body = hasText(m.body) ? boardBodyHtml(m.body) : '';
+    const imgs = boardImagesHtml(m);
+    if (!body && !imgs) return '';
+    return '<div class="' + cls + '">' + body + imgs + '</div>';
+  }
+
   function boardImagesHtml(m) {
     const imgs = m.images || [];
     if (!imgs.length) return '';
@@ -11417,6 +11566,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         boardSort = btn.dataset.boardSort;
         renderBoardSortChips();
         renderBoard();
+        refreshBoardThreadModal();
+      refreshBoardThreadModal();
       });
     });
   }
@@ -11533,12 +11684,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const name = r.name ? escapeHtml(r.name) : '匿名';
     return '<div class="board-reply">' +
       '<div class="board-reply-main">' +
-        '<div class="board-reply-head"><span class="board-reply-no">No.' + no + '</span><span class="board-name">' + name + '</span><span class="comment-date">' + formatDateTime(r.timestamp) + '</span></div>' +
-        '<div class="board-reply-body">' + boardBodyHtml(r.body) + '</div>' +
-        boardImagesHtml(r) +
+        '<div class="board-reply-head">' +
+          '<span class="board-reply-no">No.' + no + '</span>' +
+          '<span class="board-name">' + name + '</span>' +
+          '<span class="comment-date">' + formatDateTime(r.timestamp) + '</span>' +
+          boardAdminCtrls(r.id) +
+        '</div>' +
+        boardBodyBlock(r, 'board-reply-body') +
       '</div>' +
       boardEditForm(r.id, false) +
-      (adminMode ? '<div class="board-card-foot">' + boardAdminCtrls(r.id) + '</div>' : '') +
     '</div>';
   }
 
@@ -11554,14 +11708,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // タイトルがある時だけスレタイ見出しを表示。無い時は通常の投稿(名前+日時→本文)として表示する。
     const subjectBlock = title ? '<div class="board-subject">' + escapeHtml(title) + '</div>' : '';
     const opBody = t.body ? '<div class="board-op-body">' + boardBodyHtml(t.body) + '</div>' : '';
-    const repliesBlock = replies.length
-      ? '<div class="board-replies" style="display:none;">' + replies.map(function (r, i) { return boardReplyHtml(r, i + 1); }).join('') + '</div>'
-      : '';
-    const toggleBtn = replies.length
-      ? '<button class="board-replies-toggle" type="button">返信 ' + replies.length + '件を表示 ▾</button>'
-      : '';
+    // 一覧では本文の要約までを見せ、返信は開いたモーダルで読む
     return '<div class="comment-item board-thread' + (title ? '' : ' board-thread-notitle') + '" data-thread="' + escapeHtml(String(t.id)) + '">' +
-      '<div class="board-op">' +
+      '<div class="board-thread-head">' +
         subjectBlock +
         '<div class="board-op-meta">' +
           '<span class="board-name">' + name + '</span>' +
@@ -11569,33 +11718,75 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<span class="board-reply-count">💬 ' + replies.length + '</span>' +
           (replies.length ? '<span class="board-latest-reply">最新の返信 ' + formatDateTime(latestReplyTs) + '</span>' : '') +
         '</div>' +
-        opBody +
       '</div>' +
-      boardEditForm(t.id, true) +
-      boardImagesHtml(t) +
-      boardVoteHtml(t) +
-      '<div class="board-thread-actions">' +
-        '<button class="btn-ghost board-reply-toggle" type="button">返信する</button>' +
-        toggleBtn +
-        boardAdminCtrls(t.id) +
-      '</div>' +
-      repliesBlock +
-      '<div class="board-reply-form" style="display:none;">' +
-        '<div class="board-reply-namefield">' +
-          '<label class="field-label">お名前(任意)</label>' +
-          '<input type="text" class="board-reply-name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="匿名で返信できます">' +
-        '</div>' +
-        '<label class="field-label">返信</label>' +
-        '<textarea class="board-reply-body" placeholder="このスレッドに返信する"></textarea>' +
-        '<label class="field-label">画像を添付(任意・複数可)</label>' +
-        '<div class="attach-strip board-reply-strip"></div>' +
-        '<input type="file" class="board-reply-file" accept="image/*" multiple style="display:none;">' +
-        '<div class="board-reply-form-row">' +
-          '<button class="btn-submit board-reply-submit" type="button" data-reply-submit="' + escapeHtml(String(t.id)) + '">返信する</button>' +
-          '<span class="board-reply-status"></span>' +
-        '</div>' +
-      '</div>' +
+      boardBodyBlock(t, 'board-op-body') +
     '</div>';
+  }
+
+  /* スレッドの中身(本文・返信・返信フォーム)。一覧では使わず、モーダルで表示する。 */
+  function boardThreadDetailHtml(t) {
+    const replies = allBoard.filter(function (x) { return String(x.parentId || '') === String(t.id); })
+      .sort(function (a, b) { return new Date(a.timestamp) - new Date(b.timestamp); });
+    const name = t.name ? escapeHtml(t.name) : '匿名';
+    const title = String(t.title || '').trim();
+    // 見出しは作品の詳細モーダルと同じく「タイトル→投稿日時」を素置きにする
+    return '<div class="board-thread-title">' +
+        (title ? '<h3 class="modal-title">' + escapeHtml(title) + '</h3>' : '') +
+        '<div class="modal-meta">' +
+          '<span>' + formatDateTime(t.timestamp) + '</span>' +
+          '<span class="meta-author">投稿者: ' + name + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="board-thread board-thread-detail" data-thread="' + escapeHtml(String(t.id)) + '">' +
+        boardBodyBlock(t, 'board-op-body') +
+        boardEditForm(t.id, true) +
+        boardVoteHtml(t) +
+      '</div>' +
+      '<div class="board-replies-head">返信 ' + replies.length + '件</div>' +
+      (replies.length
+        ? '<div class="board-replies">' + replies.map(function (r, i) { return boardReplyHtml(r, i + 1); }).join('') + '</div>'
+        : '<div class="comment-empty">まだ返信はありません。</div>') +
+      // 新しい投稿ほど下に並ぶので、書き込み欄は一番下に置く
+      '<div class="board-reply-form board-reply-form-open">' +
+        '<div class="board-reply-form-inner">' +
+          '<div class="board-reply-namefield">' +
+            '<label class="field-label">お名前(任意)</label>' +
+            '<input type="text" class="board-reply-name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="匿名で返信できます">' +
+          '</div>' +
+          '<label class="field-label">返信</label>' +
+          '<textarea class="board-reply-body" placeholder="このスレッドに返信する"></textarea>' +
+          '<label class="field-label">画像を添付(任意・複数可)</label>' +
+          '<div class="attach-strip board-reply-strip"></div>' +
+          '<input type="file" class="board-reply-file" accept="image/*" multiple style="display:none;">' +
+          '<div class="board-reply-form-row">' +
+            '<button class="btn-submit board-reply-submit" type="button" data-reply-submit="' + escapeHtml(String(t.id)) + '">返信する</button>' +
+            '<span class="board-reply-status"></span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  let openBoardThreadId = null;
+  function openBoardThreadModal(id) {
+    const t = allBoard.find(function (x) { return String(x.id) === String(id) && !x.parentId; });
+    if (!t) return;
+    openBoardThreadId = String(id);
+    const body = document.getElementById('boardThreadBody');
+    body.innerHTML = boardThreadDetailHtml(t);
+    // スレッドの編集・削除は「閉じる」の左に置く(作品の詳細モーダルと同じ位置)
+    const adminSlot = document.getElementById('boardThreadAdmin');
+    adminSlot.innerHTML = boardAdminCtrls(t.id);
+    wireBoardEvents(adminSlot);
+    wireBoardEvents(body);
+    openOverlay(document.getElementById('boardThreadOverlay'));
+  }
+  function closeBoardThreadModal() {
+    openBoardThreadId = null;
+    document.getElementById('boardThreadOverlay').classList.remove('open');
+  }
+  // 返信の投稿・編集・削除のあとに開いたままのモーダルを描き直す
+  function refreshBoardThreadModal() {
+    if (openBoardThreadId) openBoardThreadModal(openBoardThreadId);
   }
 
   function updateBoardVoteUI(id) {
@@ -11645,39 +11836,30 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const repliesByThread = grouped.repliesByThread;
     setListCountAndEmpty(boardCount, boardEmpty, threads.length, '件のスレッド', 'まだスレッドがありません。最初のスレッドを立ててみましょう。');
     boardList.innerHTML = threads.map(function (t) { return boardThreadHtml(t, repliesByThread[t.id] || []); }).join('');
-    boardList.querySelectorAll('[data-del-board]').forEach(function (btn) {
-      btn.addEventListener('click', function () { adminDeleteBoard(btn.dataset.delBoard); });
-    });
-    boardList.querySelectorAll('.board-vote-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () { voteBoard(btn.dataset.boardId, btn.dataset.boardVote); });
+    // 一覧のカードはクリックでスレッドのモーダルを開く
+    boardList.querySelectorAll('.board-thread').forEach(function (card) {
+      card.addEventListener('click', function () { openBoardThreadModal(card.dataset.thread); });
     });
     boardList.querySelectorAll('.ref-open').forEach(function (a) {
+      a.addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); openRefLightbox(a.dataset.refUrl); });
+    });
+  }
+
+  /* スレッドの操作(投票・返信・管理編集)の配線。一覧とモーダルの両方から使う。 */
+  function wireBoardEvents(root) {
+    root.querySelectorAll('[data-del-board]').forEach(function (btn) {
+      btn.addEventListener('click', function () { adminDeleteBoard(btn.dataset.delBoard); });
+    });
+    root.querySelectorAll('.board-vote-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { voteBoard(btn.dataset.boardId, btn.dataset.boardVote); });
+    });
+    root.querySelectorAll('.ref-open').forEach(function (a) {
       a.addEventListener('click', function (e) { e.preventDefault(); openRefLightbox(a.dataset.refUrl); });
     });
-    boardList.querySelectorAll('.board-replies-toggle').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const thread = btn.closest('.board-thread');
-        const rep = thread && thread.querySelector('.board-replies');
-        if (!rep) return;
-        const show = rep.style.display === 'none';
-        rep.style.display = show ? '' : 'none';
-        const n = rep.querySelectorAll('.board-reply').length;
-        btn.textContent = show ? ('返信 ' + n + '件を隠す ▴') : ('返信 ' + n + '件を表示 ▾');
-      });
-    });
-    boardList.querySelectorAll('.board-reply-toggle').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const thread = btn.closest('.board-thread');
-        const form = thread && thread.querySelector('.board-reply-form');
-        if (!form) return;
-        const show = form.style.display === 'none';
-        form.style.display = show ? '' : 'none';
-        btn.textContent = show ? '返信を閉じる' : '返信する';
-        if (show) { const ta = form.querySelector('.board-reply-body'); if (ta) ta.focus(); }
-      });
-    });
-    boardList.querySelectorAll('.board-reply-form').forEach(function (form) {
-      const thread = form.closest('.board-thread');
+    // 返信フォームは常時表示にしたので、開閉トグルは無し
+    root.querySelectorAll('.board-reply-form').forEach(function (form) {
+      // フォームはスレッド本体の外(最下部)にも置くので、モーダル側のIDも見る
+      const thread = form.closest('.board-thread') || root.querySelector('.board-thread');
       const threadId = thread ? thread.dataset.thread : '';
       const strip = form.querySelector('.board-reply-strip');
       const file = form.querySelector('.board-reply-file');
@@ -11689,11 +11871,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       }
       if (file) file.addEventListener('change', function () { addReplyFiles(threadId, file.files, strip, file); file.value = ''; });
     });
-    boardList.querySelectorAll('.board-reply-submit').forEach(function (btn) {
+    root.querySelectorAll('.board-reply-submit').forEach(function (btn) {
       btn.addEventListener('click', function () { submitBoardReply(btn.dataset.replySubmit, btn); });
     });
     // 管理: インライン編集フォームの値を流し込む(エスケープ事故を避けるためデータから直接セット)
-    boardList.querySelectorAll('.board-edit-form').forEach(function (form) {
+    root.querySelectorAll('.board-edit-form').forEach(function (form) {
       const msg = allBoard.find(function (m) { return String(m.id) === String(form.dataset.msgId); });
       if (!msg) return;
       const tEl = form.querySelector('.board-edit-title');
@@ -11703,7 +11885,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const bEl = form.querySelector('.board-edit-body');
       if (bEl) bEl.value = msg.body || '';
     });
-    boardList.querySelectorAll('[data-edit-board-open]').forEach(function (btn) {
+    root.querySelectorAll('[data-edit-board-open]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const box = btn.closest('.board-thread, .board-reply');
         if (!box) return;
@@ -11714,7 +11896,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (form) { const ta = form.querySelector('.board-edit-body'); if (ta) ta.focus(); }
       });
     });
-    boardList.querySelectorAll('.board-edit-cancel').forEach(function (btn) {
+    root.querySelectorAll('.board-edit-cancel').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const form = btn.closest('.board-edit-form');
         const box = btn.closest('.board-thread, .board-reply');
@@ -11723,7 +11905,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (disp) disp.style.display = '';
       });
     });
-    boardList.querySelectorAll('.board-edit-save').forEach(function (btn) {
+    root.querySelectorAll('.board-edit-save').forEach(function (btn) {
       btn.addEventListener('click', function () { saveBoardEdit(btn.dataset.editBoardSave, btn); });
     });
   }
@@ -11760,6 +11942,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (titleEl) msg.title = (result.title != null ? result.title : titleEl.value.trim());
       }
       renderBoard();
+      refreshBoardThreadModal();
     } catch (err) {
       statusEl.textContent = '保存に失敗しました: ' + (err.message || err);
       console.error(err);
@@ -11800,6 +11983,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (result.message) allBoard.push(result.message);
       delete replyRefs[threadId];
       renderBoard();
+      refreshBoardThreadModal();
       // 投稿した返信が見えるよう、そのスレッドの返信を開いた状態にする
       const thread = boardList.querySelector('.board-thread[data-thread="' + threadId + '"]');
       if (thread) {
@@ -11844,6 +12028,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       renderBoardRefThumbs();
       status.textContent = '投稿しました';
       renderBoard();
+      refreshBoardThreadModal();
     } catch (err) {
       status.textContent = '送信に失敗しました: ' + (err.message || err);
       console.error(err);
@@ -11861,6 +12046,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       allBoard = allBoard.filter(function (m) { return String(m.id) !== String(messageId); });
       renderBoard();
+      refreshBoardThreadModal();
     } catch (err) {
       window.alert('削除に失敗しました: ' + (err.message || err));
       console.error(err);
@@ -12139,24 +12325,27 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const pairs = charPairsFromSettings(holder && holder.settings);
     const cards = pairs.map(function (pair, i) {
       if (!hasText(pair.p) && !hasText(pair.n)) return '';
-      return '<div class="char-item char-item-view">' +
-          '<div class="char-item-head">' +
-            '<span class="char-item-num">キャラクター ' + (i + 1) + '</span>' +
-          '</div>' +
-          '<div class="char-item-body">' +
-            (hasText(pair.p)
-              ? '<div><label>プロンプト</label><div class="value">' + escapeHtml(pair.p) + '</div></div>'
-              : '') +
-            (hasText(pair.n)
-              ? '<div><label>ネガティブプロンプト</label><div class="value">' + escapeHtml(pair.n) + '</div></div>'
-              : '') +
-          '</div>' +
+      const sub = function (label, text) {
+        if (!hasText(text)) return '';
+        return '<div class="char-sub">' +
+            '<div class="char-sub-head">' +
+              '<label>' + label + '</label>' +
+              '<button class="btn-copy" type="button" data-copytext="' + escapeHtml(text) + '">コピー</button>' +
+            '</div>' +
+            '<div class="value">' + escapeHtml(text) + '</div>' +
+          '</div>';
+      };
+      // 入れ子のカードにせず、区切り線で1件ずつ分ける
+      return '<div class="char-row">' +
+          '<div class="char-row-num">キャラクター ' + (i + 1) + '</div>' +
+          sub('プロンプト', pair.p) +
+          sub('ネガティブプロンプト', pair.n) +
         '</div>';
     }).join('');
     if (!cards) return '';
     return '<div class="detail-block char-detail-block">' +
       '<div class="block-head"><div class="label">キャラクター設定</div></div>' +
-      '<div class="char-list">' + cards + '</div>' +
+      '<div class="char-rows">' + cards + '</div>' +
     '</div>';
   }
 
@@ -12190,10 +12379,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
-      '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div></div>' +
-      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div></div><div class="value">' + escapeHtml(p.negativePrompt) + '</div><div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div></div>' : '') +
+      '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
+      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + escapeHtml(p.negativePrompt) + '</div></div>' : '') +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
@@ -12376,9 +12565,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function commentItemHtml(c) {
     const name = c.name ? escapeHtml(c.name) : '匿名';
-    const delBtn = adminMode ? '<button class="comment-del" type="button" data-del-comment="' + escapeHtml(String(c.id)) + '">削除</button>' : '';
-    return '<div class="comment-item">' + delBtn +
-      '<div class="comment-head"><span class="comment-name">' + name + '</span><span class="comment-date">' + formatDateTime(c.timestamp) + '</span></div>' +
+    // 削除ボタンは掲示板の返信と同じく、名前・日時と同じ行の右端に置く
+    const delBtn = adminMode
+      ? '<span class="board-admin-ctrls"><button class="comment-del" type="button" data-del-comment="' + escapeHtml(String(c.id)) + '">削除</button></span>'
+      : '';
+    return '<div class="comment-item">' +
+      '<div class="comment-head">' +
+        '<span class="comment-name">' + name + '</span>' +
+        '<span class="comment-date">' + formatDateTime(c.timestamp) + '</span>' +
+        delBtn +
+      '</div>' +
       '<div class="comment-body">' + escapeHtml(c.body) + '</div>' +
     '</div>';
   }
@@ -12405,16 +12601,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="modal-top-actions"><button class="modal-close" type="button" id="commentCloseBtn">✕ 閉じる</button></div>' +
       '</div>' +
       '<div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:14px;">「' + (p.title ? escapeHtml(p.title) : '(無題)') + '」への感想・コメント</div>' +
-      '<div class="comment-form comment-form-top">' +
-        authorNameField +
-        '<label class="field-label">コメント</label>' +
-        '<textarea id="commentBodyInput" placeholder="感想やアレンジのアイデアなど"></textarea>' +
-        '<div class="submit-row">' +
-          '<button class="btn-submit" type="button" id="commentSubmitBtn">コメントする</button>' +
-          '<span class="status" id="commentStatus"></span>' +
+      '<div class="comment-list" id="commentListEl"></div>' +
+      // 掲示板のスレッドモーダルと同じく、書き込み欄は一番下に置く
+      '<div class="board-reply-form board-reply-form-open">' +
+        '<div class="board-reply-form-inner">' +
+          authorNameField +
+          '<label class="field-label">コメント</label>' +
+          '<textarea id="commentBodyInput" placeholder="感想やアレンジのアイデアなど"></textarea>' +
+          '<div class="board-reply-form-row">' +
+            '<button class="btn-submit" type="button" id="commentSubmitBtn">コメントする</button>' +
+            '<span class="status" id="commentStatus"></span>' +
+          '</div>' +
         '</div>' +
-      '</div>' +
-      '<div class="comment-list" id="commentListEl"></div>';
+      '</div>';
 
     renderCommentList(p.id);
     document.getElementById('commentCloseBtn').addEventListener('click', closeCommentModal);
@@ -12975,6 +13174,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     btn.addEventListener('click', function () {
       if (hasInput() && !window.confirm('入力中の内容を破棄して、フォームを空に戻します。よろしいですか？')) return;
       reset();
+      // 必須項目の赤枠は入力し直すまで残るので、キャンセル時にまとめて消す
+      document.querySelectorAll('.required-missing').forEach(function (el) { el.classList.remove('required-missing'); });
       const st = document.getElementById(statusId);
       if (st) {
         st.textContent = '入力内容をクリアしました';
