@@ -1235,6 +1235,33 @@
   /* キャラクタープロンプトは NovelAI を選んだときだけ出す */
   #charPromptField{ display:none; }
   body.image-service-novelai #charPromptField{ display:block; }
+  /* キャラクターごとに「プロンプト+ネガティブ」を1組にして並べる */
+  .char-list{ display:flex; flex-direction:column; gap:10px; }
+  .char-item{ background:var(--surface-2); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .char-item-head{
+    display:flex; align-items:center; gap:10px; padding:7px 12px;
+    background:var(--surface); border-bottom:1px solid var(--line);
+  }
+  .char-item-num{
+    font-family:'Noto Sans JP',sans-serif; font-size:11px; font-weight:600;
+    color:var(--accent); background:var(--accent-dim); border:1px solid var(--accent);
+    border-radius:999px; padding:3px 10px;
+  }
+  .char-item-actions{ margin-left:auto; display:flex; gap:6px; }
+  .char-item-body{ padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+  .char-item-body label{
+    font-family:'Noto Sans JP',sans-serif; font-size:11px; color:var(--ink-dim);
+    display:block; margin-bottom:4px;
+  }
+  .char-item-body textarea{ min-height:56px; }
+  .char-add{ margin-top:10px; }
+  /* 詳細モーダル側は編集画面と同じカード見た目で、入力欄のかわりに本文を出す */
+  .char-detail-block .char-list{ margin-top:10px; }
+  .char-item-view .char-item-body .value{
+    background:var(--bg); border:1px solid var(--line); border-radius:8px;
+    padding:9px 12px; font-size:13px; line-height:1.75; white-space:pre-wrap;
+    overflow-wrap:anywhere; color:var(--ink);
+  }
   #pCharPromptField{ display:none; }
   body.prompt-service-novelai #pCharPromptField{ display:block; }
 
@@ -2225,8 +2252,9 @@
       </div>
 
       <div id="charPromptField">
-      <label class="field-label">キャラクタープロンプト(NovelAI のマルチキャラ設定。1行に1キャラ)</label>
-      <textarea id="charPromptInput" class="autogrow" placeholder="例: girl, blue hair, smile"></textarea>
+      <label class="field-label">キャラクター設定</label>
+      <div class="char-list" id="charList"></div>
+      <button class="btn-ghost char-add" type="button" data-charadd="char">＋ キャラクターを追加</button>
       </div>
 
       <label class="field-label">メモ(備考)</label>
@@ -2348,8 +2376,9 @@
       <textarea id="pNegativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
 
       <div id="pCharPromptField">
-      <label class="field-label">キャラクタープロンプト(NovelAI のマルチキャラ設定。1行に1キャラ)</label>
-      <textarea id="pCharPromptInput" class="autogrow" placeholder="例: girl, blue hair, smile"></textarea>
+      <label class="field-label">キャラクター設定</label>
+      <div class="char-list" id="pCharList"></div>
+      <button class="btn-ghost char-add" type="button" data-charadd="pChar">＋ キャラクターを追加</button>
       </div>
 
       <label class="field-label">メモ(備考)</label>
@@ -2988,7 +3017,7 @@
       <h2>投稿するときに使える機能</h2>
       <div class="feature-item">
         <div class="feature-name">画像の生成情報を自動で読み取る</div>
-        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)や、NovelAIが埋め込む生成情報(PNGの<code>Comment</code>/<code>Software</code>/<code>Source</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。生成情報に「UI Preset」が含まれていないときは、Checkpoint名から自動で判定して補完します(例: 名前に <code>xl</code> を含めば <code>xl</code>、<code>flux</code> なら <code>flux</code> のように、投稿ツールのUI Presetと同じ表記が入ります)。読み取れた内容は投稿前に手で直せます。見出しの右にある「Stable / NovelAI」のボタンで、どのサービスで作った画像かを切り替えられ、それぞれに合った設定項目だけが表示されます。SD・SDXL・Illustrious・Pony・FLUX などは生成情報の形式が同じなのでまとめて「Stable」に含まれ、細かい種別は UI Preset 欄に入ります。画像をドロップしたときは中身の生成情報から自動で切り替わるので、通常は触る必要はありません。NovelAI を選んだときは、ネガティブプロンプトの下に「キャラクタープロンプト」欄が出ます(v4/v4.5/v5 のマルチキャラ設定。1行に1キャラ)。</div>
+        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)や、NovelAIが埋め込む生成情報(PNGの<code>Comment</code>/<code>Software</code>/<code>Source</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。生成情報に「UI Preset」が含まれていないときは、Checkpoint名から自動で判定して補完します(例: 名前に <code>xl</code> を含めば <code>xl</code>、<code>flux</code> なら <code>flux</code> のように、投稿ツールのUI Presetと同じ表記が入ります)。読み取れた内容は投稿前に手で直せます。見出しの右にある「Stable / NovelAI」のボタンで、どのサービスで作った画像かを切り替えられ、それぞれに合った設定項目だけが表示されます。SD・SDXL・Illustrious・Pony・FLUX などは生成情報の形式が同じなのでまとめて「Stable」に含まれ、細かい種別は UI Preset 欄に入ります。画像をドロップしたときは中身の生成情報から自動で切り替わるので、通常は触る必要はありません。NovelAI を選んだときは、ネガティブプロンプトの下に「キャラクター設定」が出ます(v4/v4.5/v5 のマルチキャラ設定)。キャラクターごとにプロンプトとネガティブプロンプトが1組のカードになっていて、「＋ キャラクターを追加」で増やせます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プレビューの拡大と取り消し</div>
@@ -3980,7 +4009,7 @@ Negative: (ここにカンマ区切りのタグ)
       <div class="guide-step">
         <div class="body">
           NovelAIで保存した画像には生成情報が埋め込まれている。「投稿」タブのドロップゾーンにそのまま入れれば、<strong>プロンプト・Undesired Content・キャラクタープロンプト・モデル名・Steps・CFG・シード値・画像サイズ</strong>が自動で読み込まれ、見出し右の切替ボタンも自動で「NovelAI」になる。
-          <div class="guide-note">キャラクターごとのプロンプトは、ネガティブプロンプトの下に出る「キャラクタープロンプト」欄に1行1キャラで入る。<code>1.5::smile::</code> のような強調表記もそのまま保持されるので、見た人がそのまま真似できる。</div>
+          <div class="guide-note">キャラクターごとのプロンプトとネガティブは、ネガティブプロンプトの下に出る「キャラクター設定」に、キャラクター1・キャラクター2…と1組ずつ分かれて入る。<code>1.5::smile::</code> のような強調表記もそのまま保持されるので、見た人がそのまま真似できる。</div>
         </div>
       </div>
       <div class="guide-step">
@@ -4863,7 +4892,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'uncondScale',       label: 'Uncond Scale',        type: 'number' },
     { key: 'smea',              label: 'SMEA',                type: 'text' },
     { key: 'smeaDyn',           label: 'SMEA DYN',            type: 'text' },
-    { key: 'characterPrompt',   label: 'キャラクタープロンプト', type: 'text' }
+    { key: 'characterPrompt',   label: 'キャラクタープロンプト', type: 'text' },
+    { key: 'characterNegative', label: 'キャラクターネガティブ', type: 'text' }
   ];
 
   /* 画像生成サービス(UI Preset)ごとに表示する設定項目。
@@ -4940,6 +4970,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     'SMEA': 'smea',
     'SMEA DYN': 'smeaDyn',
     'Character prompt': 'characterPrompt',
+    'Character negative': 'characterNegative',
     'UI Preset': 'uiPreset'
   };
 
@@ -5473,8 +5504,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // キャラクタープロンプトは専用の入力欄にあるので、保存時だけ設定へ合流させる
   function collectSettingsWithCharPrompt() {
     const s = collectSettings();
-    const el = document.getElementById('charPromptInput');
-    if (el && el.value.trim()) s.characterPrompt = el.value;
+    charPairsToSettings('char', s);
     return s;
   }
 
@@ -5490,8 +5520,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const svc = guessImageService(settingsObj);
       if (svc) setImageService(svc, false);
     }
-    const charEl = document.getElementById('charPromptInput');
-    if (charEl) { charEl.value = settingsObj.characterPrompt || ''; autoGrow(charEl); }
+    setCharPairs('char', settingsObj);
     const baseKeys = allKnownSettingKeys();
     Object.keys(settingsObj).forEach(function (k) {
       if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
@@ -5974,26 +6003,40 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      既存の解析経路(parseGenerationInfo → generationInfoToSettings)へそのまま流す。 */
   /* v4 / v4.5 / v5 のマルチキャラ設定を1つのテキストにまとめる。
      形式が版によって違うため、見つかったものを順に拾う。 */
-  function novelAiCharacterPrompts(c) {
-    const out = [];
-    function pushCap(cap, uc) {
-      const t = String(cap || '').trim();
-      if (!t) return;
-      out.push(uc ? (t + '  [negative] ' + uc) : t);
+  /* キャラごとのプロンプトとネガティブを、1行1キャラで別々に取り出す。
+     ポジティブとネガティブは行番号で対応させるため、片方しか無いキャラでも
+     行を詰めずに空行を入れて位置を合わせる(以前はポジティブが空だと
+     ネガティブごと捨てていた)。 */
+  // キャラ1人分のキャプションに実際の改行が入っていると、保存/復元時に
+  // 「1行=1キャラ」の区切りと誤認してキャラがズレてしまう。1行へ潰しておく
+  // (タグはカンマ区切りが基本なので、改行をスペースに変えても情報は失われない)。
+  function oneLineCaption(v) {
+    return String(v == null ? '' : v).replace(/\r\n|\r|\n/g, ' ').replace(/[ \t]+/g, ' ').trim();
+  }
+
+  function novelAiCharacterParts(c) {
+    const pos = [], neg = [];
+    const cap = c.v4_prompt && c.v4_prompt.caption;
+    const capN = c.v4_negative_prompt && c.v4_negative_prompt.caption;
+    const pArr = cap && Array.isArray(cap.char_captions) ? cap.char_captions : [];
+    const nArr = capN && Array.isArray(capN.char_captions) ? capN.char_captions : [];
+    const n = Math.max(pArr.length, nArr.length);
+    for (let i = 0; i < n; i++) {
+      pos.push(oneLineCaption(pArr[i] && pArr[i].char_caption));
+      neg.push(oneLineCaption(nArr[i] && nArr[i].char_caption));
     }
-    const v4 = c.v4_prompt && c.v4_prompt.caption;
-    const v4n = c.v4_negative_prompt && c.v4_negative_prompt.caption;
-    if (v4 && Array.isArray(v4.char_captions)) {
-      v4.char_captions.forEach(function (cc, i) {
-        const neg = v4n && Array.isArray(v4n.char_captions) && v4n.char_captions[i]
-          ? String(v4n.char_captions[i].char_caption || '').trim() : '';
-        pushCap(cc && cc.char_caption, neg);
+    if (!n && Array.isArray(c.characterPrompts)) {
+      c.characterPrompts.forEach(function (cp) {
+        pos.push(oneLineCaption(cp && (cp.prompt || cp.caption)));
+        neg.push(oneLineCaption(cp && cp.uc));
       });
     }
-    if (!out.length && Array.isArray(c.characterPrompts)) {
-      c.characterPrompts.forEach(function (cp) { pushCap(cp && (cp.prompt || cp.caption), cp && cp.uc); });
-    }
-    return out.join('\n');
+    const trimTail = function (arr) {
+      const a = arr.slice();
+      while (a.length && !a[a.length - 1]) a.pop();
+      return a;
+    };
+    return { prompt: trimTail(pos).join('\n'), negative: trimTail(neg).join('\n') };
   }
 
   function buildParametersFromNovelAi(chunks) {
@@ -6026,7 +6069,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     add('SMEA', c.sm === true ? 'true' : '');
     add('SMEA DYN', c.sm_dyn === true ? 'true' : '');
     add('UI Preset', 'NovelAI');
-    add('Character prompt', novelAiCharacterPrompts(c));
+    const charParts = novelAiCharacterParts(c);
+    add('Character prompt', charParts.prompt);
+    add('Character negative', charParts.negative);
     add('Version', chunks['Software']);
     if (parts.length < 3) return null;   // 最終行がパラメータ行だと判定されるのに3件必要
 
@@ -6221,13 +6266,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     setImageService(guessImageService(values), false);
 
     // キャラクタープロンプトは設定表ではなく専用の入力欄へ入れる
-    const charEl = document.getElementById('charPromptInput');
-    if (charEl && values.characterPrompt) {
-      charEl.value = values.characterPrompt;
-      autoGrow(charEl);
+    if (values.characterPrompt || values.characterNegative) {
+      setCharPairs('char', values);
       filledAny = true;
     }
     delete values.characterPrompt;
+    delete values.characterNegative;
 
     const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
     Object.keys(values).forEach(function (k) {
@@ -7402,8 +7446,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     selectedFixRequestIds = [];
     renderFixRequestDisplay();
     document.getElementById('editPwInput').value = '';
-    const charEl = document.getElementById('charPromptInput');
-    if (charEl) charEl.value = '';
+    clearCharPairs('char');
     setImageService('stable', false);
     resetNovelEditor();
     setInpaintMode(false);
@@ -8209,11 +8252,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
       '</div>' +
       // キャラクタープロンプト(NovelAIのマルチキャラ設定)はネガティブの下に置く
-      '<div class="detail-block" id="detailCharPromptBlock"' + (hasText(charPromptOf(imageSet[0])) ? '' : ' style="display:none;"') + '>' +
-        '<div class="block-head"><div class="label">キャラクタープロンプト</div></div>' +
-        '<div class="value" id="detailCharPromptValue">' + escapeHtml(charPromptOf(imageSet[0])) + '</div>' +
-        '<div class="block-foot"><button class="btn-copy" type="button" data-copy="characterPrompt">コピー</button></div>' +
-      '</div>') +
+      '<div id="detailCharBlocks">' + charDetailBlocksHtml(imageSet[0]) + '</div>') +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
@@ -8234,7 +8273,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       btn.addEventListener('click', function () {
         // キャラクタープロンプトは settings 配下にあるので取得先を分ける
         const key = btn.dataset.copy;
-        const src = key === 'characterPrompt' ? charPromptOf(imageSet[curVar]) : (imageSet[curVar][key] || '');
+        const src = key === 'characterPrompt' ? charPromptOf(imageSet[curVar])
+          : key === 'characterNegative' ? charNegOf(imageSet[curVar])
+          : (imageSet[curVar][key] || '');
         navigator.clipboard.writeText(src).then(function () {
           btn.textContent = 'コピーしました';
           setTimeout(function () { btn.textContent = 'コピー'; }, 1500);
@@ -8256,10 +8297,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           promptValEl.textContent = cur.prompt ? cur.prompt : '(入力なし)';
           negValEl.textContent = cur.negativePrompt || '';
           if (negBlockEl) negBlockEl.style.display = hasText(cur.negativePrompt) ? '' : 'none';
-          const cpVal = document.getElementById('detailCharPromptValue');
-          const cpBlock = document.getElementById('detailCharPromptBlock');
-          if (cpVal) cpVal.textContent = charPromptOf(cur);
-          if (cpBlock) cpBlock.style.display = hasText(charPromptOf(cur)) ? '' : 'none';
+          const cb = document.getElementById('detailCharBlocks');
+          if (cb) cb.innerHTML = charDetailBlocksHtml(cur);
           if (settingsBlock && settingsTableEl) {
             const entries = settingsEntriesHtml(cur);
             settingsTableEl.innerHTML = entries;
@@ -10281,14 +10320,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const el = document.getElementById('pset_' + f.key);
       if (el && el.value !== '') r[f.key] = el.value;
     });
-    const cp = document.getElementById('pCharPromptInput');
-    if (cp && cp.value.trim()) r.characterPrompt = cp.value;
+    charPairsToSettings('pChar', r);
     return r;
   }
   function clearPromptSettings() {
     SETTINGS_FIELDS.forEach(function (f) { const el = document.getElementById('pset_' + f.key); if (el) el.value = ''; });
-    const cp = document.getElementById('pCharPromptInput');
-    if (cp) cp.value = '';
+    clearCharPairs('pChar');
     setPromptService('stable', false);
   }
   function loadPromptSettingsIntoForm(settingsObj) {
@@ -10298,8 +10335,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const el = document.getElementById('pset_' + f.key);
       if (el) el.value = settingsObj[f.key] || '';
     });
-    const cp = document.getElementById('pCharPromptInput');
-    if (cp) { cp.value = settingsObj.characterPrompt || ''; autoGrow(cp); }
+    setCharPairs('pChar', settingsObj);
   }
 
   // PROMPT FORM: タグ
@@ -11995,9 +12031,133 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // PROMPT DETAIL MODAL
   // キャラクタープロンプトは設定表ではなく専用ブロックで見せるので、ここでは除外する
-  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt'];
+  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt', 'characterNegative'];
+  /* ===== キャラクター設定エディタ =====
+     保存形式は従来どおり characterPrompt / characterNegative の改行区切りで、
+     N行目どうしが同じキャラに対応する。画面上ではその対を1枚のカードにまとめて出す。
+     画像投稿フォーム(prefix 'char')とプロンプト例フォーム(prefix 'pChar')で共用。 */
+  const charPairsByPrefix = { char: [], pChar: [] };
+
+  function splitLines(v) { return String(v == null ? '' : v).split('\n'); }
+
+  function charPairsFromSettings(s) {
+    s = s || {};
+    const pos = hasText(s.characterPrompt) ? splitLines(s.characterPrompt) : [];
+    const neg = hasText(s.characterNegative) ? splitLines(s.characterNegative) : [];
+    const n = Math.max(pos.length, neg.length);
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ p: (pos[i] || '').trim(), n: (neg[i] || '').trim() });
+    return out;
+  }
+
+  function renderCharEditor(prefix) {
+    const list = document.getElementById(prefix + 'List');
+    if (!list) return;
+    const pairs = charPairsByPrefix[prefix];
+    if (!pairs.length) pairs.push({ p: '', n: '' });
+    list.innerHTML = pairs.map(function (pair, i) {
+      return '' +
+        '<div class="char-item" data-char-idx="' + i + '">' +
+          '<div class="char-item-head">' +
+            '<span class="char-item-num">キャラクター ' + (i + 1) + '</span>' +
+            '<div class="char-item-actions">' +
+              '<button class="novel-mini-btn" type="button" tabindex="-1" data-char-up' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+              '<button class="novel-mini-btn" type="button" tabindex="-1" data-char-down' + (i === pairs.length - 1 ? ' disabled' : '') + '>↓</button>' +
+              '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-char-remove' + (pairs.length <= 1 ? ' disabled' : '') + '>削除</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="char-item-body">' +
+            '<div><label>プロンプト</label>' +
+              '<textarea data-char-p placeholder="例: girl, blue hair, smile">' + escapeHtml(pair.p) + '</textarea></div>' +
+            '<div><label>ネガティブプロンプト</label>' +
+              '<textarea data-char-n placeholder="例: hat, glasses">' + escapeHtml(pair.n) + '</textarea></div>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+    list.querySelectorAll('.char-item').forEach(function (card) {
+      const i = Number(card.dataset.charIdx);
+      const pEl = card.querySelector('[data-char-p]');
+      const nEl = card.querySelector('[data-char-n]');
+      pEl.addEventListener('input', function () { pairs[i].p = this.value; });
+      nEl.addEventListener('input', function () { pairs[i].n = this.value; });
+      autoGrow(pEl); autoGrow(nEl);
+      card.querySelector('[data-char-up]').addEventListener('click', function () { moveCharPair(prefix, i, -1); });
+      card.querySelector('[data-char-down]').addEventListener('click', function () { moveCharPair(prefix, i, 1); });
+      card.querySelector('[data-char-remove]').addEventListener('click', function () {
+        if (pairs.length <= 1) return;
+        pairs.splice(i, 1);
+        renderCharEditor(prefix);
+      });
+    });
+  }
+
+  function moveCharPair(prefix, i, delta) {
+    const pairs = charPairsByPrefix[prefix];
+    const to = i + delta;
+    if (to < 0 || to >= pairs.length) return;
+    const tmp = pairs[i]; pairs[i] = pairs[to]; pairs[to] = tmp;
+    renderCharEditor(prefix);
+  }
+
+  function setCharPairs(prefix, settings) {
+    charPairsByPrefix[prefix] = charPairsFromSettings(settings);
+    renderCharEditor(prefix);
+  }
+  function clearCharPairs(prefix) {
+    charPairsByPrefix[prefix] = [];
+    renderCharEditor(prefix);
+  }
+  // 末尾の空カードは保存しない。行番号の対応を保つため途中の空欄は空行のまま残す。
+  function charPairsToSettings(prefix, target) {
+    const pairs = charPairsByPrefix[prefix].slice();
+    while (pairs.length && !hasText(pairs[pairs.length - 1].p) && !hasText(pairs[pairs.length - 1].n)) pairs.pop();
+    if (!pairs.length) return;
+    const pos = pairs.map(function (x) { return oneLineCaption(x.p); });
+    const neg = pairs.map(function (x) { return oneLineCaption(x.n); });
+    if (pos.some(hasText)) target.characterPrompt = pos.join('\n');
+    if (neg.some(hasText)) target.characterNegative = neg.join('\n');
+  }
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest && e.target.closest('[data-charadd]');
+    if (!btn) return;
+    const prefix = btn.dataset.charadd;
+    charPairsByPrefix[prefix].push({ p: '', n: '' });
+    renderCharEditor(prefix);
+  });
+
   function charPromptOf(holder) {
     return (holder && holder.settings && holder.settings.characterPrompt) || '';
+  }
+  function charNegOf(holder) {
+    return (holder && holder.settings && holder.settings.characterNegative) || '';
+  }
+
+  // キャラクター1組ずつ(プロンプト+ネガティブ)を1ブロックにして並べる
+  // 編集画面のカードと同じ見た目にして、キャラごとのまとまりを分かりやすくする
+  function charDetailBlocksHtml(holder) {
+    const pairs = charPairsFromSettings(holder && holder.settings);
+    const cards = pairs.map(function (pair, i) {
+      if (!hasText(pair.p) && !hasText(pair.n)) return '';
+      return '<div class="char-item char-item-view">' +
+          '<div class="char-item-head">' +
+            '<span class="char-item-num">キャラクター ' + (i + 1) + '</span>' +
+          '</div>' +
+          '<div class="char-item-body">' +
+            (hasText(pair.p)
+              ? '<div><label>プロンプト</label><div class="value">' + escapeHtml(pair.p) + '</div></div>'
+              : '') +
+            (hasText(pair.n)
+              ? '<div><label>ネガティブプロンプト</label><div class="value">' + escapeHtml(pair.n) + '</div></div>'
+              : '') +
+          '</div>' +
+        '</div>';
+    }).join('');
+    if (!cards) return '';
+    return '<div class="detail-block char-detail-block">' +
+      '<div class="block-head"><div class="label">キャラクター設定</div></div>' +
+      '<div class="char-list">' + cards + '</div>' +
+    '</div>';
   }
 
   function settingsEntriesHtml(p) {
