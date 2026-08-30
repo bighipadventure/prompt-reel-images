@@ -292,9 +292,10 @@
 
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 12px; min-height: 20px; }
   .chip{
-    background: var(--accent-dim);
+    background: rgba(0, 150, 250, .2);
     color: var(--accent);
-    border-radius: 999px;
+    border: 1px solid rgba(0, 150, 250, .35);
+    border-radius: 6px;
     padding: 5px 10px 5px 12px;
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
@@ -356,16 +357,21 @@
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
     padding: 6px 12px;
-    border-radius: 999px;
+    border-radius: 6px;
     border: 1px solid var(--line);
     background: var(--surface-2);
     color: var(--ink-dim);
     cursor: pointer;
     user-select: none;
   }
-  .tag-pill.state-include{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger); }
-  .clear-tags{ font-family:'Noto Sans JP', sans-serif; font-size: 11px; color: var(--ink-dim); background:none; border:none; text-decoration: underline; cursor: pointer; padding: 4px; }
+  .tag-pill.state-include{ background: rgba(0, 150, 250, .2); color: var(--accent); border-color: rgba(0, 150, 250, .5); }
+  .tag-pill.state-exclude{ background: rgba(255, 64, 96, .2); color: var(--danger); border-color: rgba(255, 64, 96, .5); }
+  .clear-tags{
+    font-family:'Noto Sans JP', sans-serif; font-size: 11px; cursor: pointer;
+    color: var(--ink-dim); background: rgba(154, 154, 154, .2);
+    border: 1px solid rgba(154, 154, 154, .35); border-radius: 6px; padding: 5px 10px;
+  }
+  .clear-tags:hover{ background: rgba(154, 154, 154, .32); color: var(--ink); }
   /* 検索パネル内の「〜をクリア」は行末要素なので、すべて行の右端に揃える。
      これで「絞り込みをクリア」と「タグ選択をクリア」が同じ軸に並ぶ。 */
   .search-row .clear-tags{ margin-left: auto; }
@@ -376,11 +382,11 @@
   .tag-cloud-wrap{ display:flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .show-all-tags{
     font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
-    background: var(--surface-2); color: var(--accent);
-    border: 1px solid var(--accent-dim); border-radius: 8px;
+    background: rgba(0, 150, 250, .2); color: var(--accent);
+    border: 1px solid rgba(0, 150, 250, .35); border-radius: 6px;
     padding: 7px 14px; cursor: pointer;
   }
-  .show-all-tags:hover{ border-color: var(--accent); }
+  .show-all-tags:hover{ background: rgba(0, 150, 250, .32); border-color: var(--accent); }
   /* 選択モーダル内の検索エリア。投稿一覧と同じ .search-panel を流用しつつ、
      モーダル内なので上下の余白だけ詰める。 */
   .picker-search-panel{ margin-bottom: 14px; }
@@ -397,6 +403,9 @@
   .search-panel .sort-chip{ padding: 5px 10px; font-size: 11.5px; }
   .search-panel .clear-tags{ font-size: 11px; }
   .search-panel .tag-pill{ padding: 5px 10px; font-size: 11.5px; }
+  /* 検索エリアの入力欄も投稿フォームと同じ黒い面に揃える */
+  .search-panel input[type="text"],
+  .search-panel .filter-input{ background: var(--bg); }
   .search-panel .search-toggle-btn{ padding: 5px 10px; font-size: 11.5px; }
   .search-panel .show-all-tags{ padding: 5px 10px; font-size: 11.5px; }
   .search-row .tag-cloud-wrap{ flex: 1 1 260px; margin: 0; }
@@ -449,15 +458,29 @@
   /* 一覧カードのタグは1行に収め、はみ出した分(2行目以降)は隠す。
      ブラウザ幅を変えても行が増えてカード高さが暴れないようにする。 */
   .list .row-tags{ max-height:24px; overflow:hidden; align-content:flex-start; }
+  /* ===== 小さいボタン・タグの共通見た目 =====
+     角丸の四角に、その色を20%だけ敷いた塗り。文字は色そのままで読みやすさを優先する。 */
+  /* カードのタグは検索エリアのタグと同じモノクロ基調。
+     青くするのは選択(絞り込みON)されているときだけ。 */
   .row-tags .tag{
     font-size: 11.5px;
-    background: transparent; color: var(--accent);
-    padding: 2px 8px; border-radius: 4px; border: 1px solid var(--line);
+    color: var(--ink-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    padding: 3px 9px; border-radius: 6px;
+  }
+  .row-tags .tag.is-active{
+    color: var(--accent);
+    background: rgba(0, 150, 250, .2);
+    border-color: rgba(0, 150, 250, .5);
   }
   /* 一覧カードのタグはクリックで絞り込みに反映できる(=押せる見た目にする) */
   .list .row-tags .tag{ cursor:pointer; transition: background .12s, border-color .12s; }
-  .list .row-tags .tag:hover{ border-color: var(--accent); background: var(--accent-dim); }
-  .list .row-tags .tag.active{ background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .list .row-tags .tag:hover{ border-color: var(--accent); color: var(--accent); }
+  .list .row-tags .tag.active,
+  .list .row-tags .tag.is-active{
+    background: rgba(0, 150, 250, .2); border-color: rgba(0, 150, 250, .5); color: var(--accent);
+  }
   .row-tags .tag::before{ content:'#'; opacity: 0.6; margin-right: 1px; }
   /* 紐づけ(オプション)バッジ: 何をベース/参考/回答にしたのかを一覧で示す */
   .row-link-badge{
@@ -626,11 +649,19 @@
      負マージンで次の見出しをコピーボタンと同じ高さ帯まで引き上げてギュッと詰める。 */
   .block-foot{ display:flex; justify-content:flex-end; margin-top:4px; margin-bottom:-20px; }
   .block-head .label{ margin-bottom: 0; }
-  .btn-copy{
-    background: var(--surface-2); color: var(--accent);
-    border: 1px solid var(--accent-dim); padding: 4px 12px; font-size: 11px;
+  /* 削除など、危険な操作のボタン(20%の赤で塗る) */
+  .btn-ghost.btn-danger{
+    background: rgba(255, 64, 96, .2);
+    border-color: rgba(255, 64, 96, .4);
+    color: var(--danger);
   }
-  .btn-copy:hover{ border-color: var(--accent); }
+  .btn-ghost.btn-danger:hover{ background: rgba(255, 64, 96, .32); border-color: var(--danger); color: var(--danger); }
+  .btn-copy{
+    background: rgba(0, 150, 250, .2); color: var(--accent);
+    border: 1px solid rgba(0, 150, 250, .35);
+    border-radius: 6px; padding: 4px 12px; font-size: 11px;
+  }
+  .btn-copy:hover{ background: rgba(0, 150, 250, .32); border-color: var(--accent); }
 
   /* ---- 読み込みオーバーレイ ---- */
   .loading-overlay{
@@ -1573,14 +1604,51 @@
   #fixRequestField{ margin-top: 18px; }
   #fixRequestField > .field-label{ margin-top: 0; }
   .link-field{ margin-top: 18px; }
-  /* 直前がリンク選択欄などのとき、見出しが詰まって見えないよう余白を確保する
-     (:first-of-type 判定で margin-top が 0 になるケースの受け皿) */
-  #settingsField{ margin-top: 18px; }
-  #settingsField > .field-label{ margin-top: 0; }
-  #promptField, #negativeField, #charPromptField{ margin-top: 18px; }
-  #promptField > .field-label,
-  #negativeField > .field-label,
-  #charPromptField > .field-label{ margin-top: 0; }
+  /* ===== 投稿フォームの各項目を、詳細モーダルの .detail-block と同じ体裁にする =====
+     枠で囲み、見出しは枠内の帯に、中身は一段沈んだ面(入力欄が黒)に置く。 */
+  .req-field,
+  .author-field,
+  #titleField, #fixContentField, #memoField,
+  #promptField, #negativeField, #charPromptField, #settingsField, #novelEditorField,
+  #rTitleField, #rRefField,
+  #pTitleField, #pNegativeField, #pMemoField, #pSettingsField, #pCharPromptField{
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-top: 14px;
+    /* 中身は左右に余白。見出しの帯だけ負マージンで枠いっぱいに広げる */
+    padding: 0 12px 12px;
+    overflow: hidden;
+  }
+  /* 見出しは枠の中の帯として全幅に敷く */
+  .req-field > .field-label,
+  .author-field > .field-label,
+  #titleField > .field-label, #fixContentField > .field-label,
+  #memoField > .field-label, #promptField > .field-label, #negativeField > .field-label,
+  #charPromptField > .field-label, #settingsField > .field-label, #novelEditorField > .field-label,
+  #rTitleField > .field-label, #rRefField > .field-label,
+  #pTitleField > .field-label, #pNegativeField > .field-label, #pMemoField > .field-label,
+  #pSettingsField > .field-label, #pCharPromptField > .field-label{
+    margin: 0 -12px 12px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  /* 枠内にある見出し行(タグの「クリア」など)も帯として全幅に広げる */
+  /* 「ラベル+クリア」を1行に持つ見出しも、他の項目と同じ帯にする */
+  .field-head-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin: 0 -12px 12px; padding: 8px 12px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .field-head-row > .field-label{ margin: 0; padding: 0; background: none; border: 0; color: var(--ink); font-size: 12px; font-weight: 600; }
+  /* 設定グリッドは枠が二重になるので、中の枠を外す */
+  #settingsField .settings-grid,
+  #pSettingsField .settings-grid{ background: none; border: 0; padding: 0; margin-top: 0; }
+  #rRefField .attach-strip, #settingsField .settings-grid{ margin-top: 0; }
   /* 作品の属性(版権/オリジナル/その他): タグと投稿ボタンの間に1行で配置する必須選択 */
   .category-select-row{ display:flex; align-items:center; gap:12px; margin:18px 0 6px; flex-wrap:wrap; }
   /* 編集用パスワード: 投稿ボタンと同じ行の右側に、1行横並びで配置する */
@@ -1969,9 +2037,10 @@
   .comment-empty{ color: var(--ink-dim); font-size:13px; padding: 8px 0; }
   .comment-del{
     position:static;
-    background:none; border:1px solid var(--danger); color:var(--danger);
+    background: rgba(255, 64, 96, .2); border:1px solid rgba(255, 64, 96, .4); color:var(--danger);
     border-radius:6px; font-size:11px; padding:3px 8px;
   }
+  .comment-del:hover{ background: rgba(255, 64, 96, .32); border-color: var(--danger); }
   .comment-form{ border-top:1px solid var(--line); margin-top:18px; padding-top:18px; }
   .comment-form-top{ border-top:none; margin-top:0; padding-top:0; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:4px; }
 
@@ -2361,8 +2430,15 @@
       <button class="btn-ghost char-add" type="button" data-charadd="char">＋ キャラクターを追加</button>
       </div>
 
+      <div id="memoField">
       <label class="field-label">メモ(備考)</label>
       <textarea id="memoInput" class="autogrow" placeholder="補足・備考があれば"></textarea>
+      </div>
+
+      <div id="settingsField">
+      <label class="field-label">生成設定(画像ドロップで自動入力)</label>
+      <div class="settings-grid open" id="settingsGrid"></div>
+      </div>
 
       <div class="link-field" data-link="basePrompt">
         <label class="field-label">ベースにしたプロンプト例(複数選択可)</label>
@@ -2412,13 +2488,8 @@
         </div>
       </div>
 
-      <div id="settingsField">
-      <label class="field-label">生成設定(画像ドロップで自動入力)</label>
-      <div class="settings-grid open" id="settingsGrid"></div>
-      </div>
-
       <div class="req-field" id="tagsField">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
+      <div class="field-head-row">
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
       </div>
@@ -2478,8 +2549,10 @@
       <textarea id="pPromptInput" class="autogrow" placeholder="Positive prompt"></textarea>
       </div>
 
+      <div id="pNegativeField">
       <label class="field-label">ネガティブプロンプト</label>
       <textarea id="pNegativeInput" class="autogrow" placeholder="Negative prompt"></textarea>
+      </div>
 
       <div id="pCharPromptField">
       <label class="field-label">キャラクター設定</label>
@@ -2487,14 +2560,18 @@
       <button class="btn-ghost char-add" type="button" data-charadd="pChar">＋ キャラクターを追加</button>
       </div>
 
+      <div id="pMemoField">
       <label class="field-label">メモ(備考)</label>
       <textarea id="pMemoInput" class="autogrow" placeholder="使い方・意図・相性のよいモデルなど"></textarea>
+      </div>
 
+      <div id="pSettingsField">
       <label class="field-label">生成時の自分の環境</label>
       <div class="settings-grid open" id="pSettingsGrid"></div>
+      </div>
 
       <div class="req-field" id="pTagsField">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 6px;">
+      <div class="field-head-row">
         <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
         <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
       </div>
@@ -2529,8 +2606,10 @@
         <h2>リクエストを投稿</h2>
       </div>
 
-      <label class="field-label">タイトル</label>
+      <div class="req-field" id="rTitleField">
+      <label class="field-label" style="margin-top:0;">タイトル</label>
       <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="rTitleInput" placeholder="例: 夕暮れの海辺に立つ猫耳の少女">
+      </div>
 
       <div class="author-field">
         <label class="field-label">投稿者(空欄で匿名)</label>
@@ -2542,9 +2621,11 @@
       <textarea id="rBodyInput" class="autogrow" placeholder="どんな画像を生成してほしいか、できるだけ具体的に書いてください"></textarea>
       </div>
 
+      <div id="rRefField">
       <label class="field-label">参考資料(複数可 / jpegに変換・縮小して保存されます)</label>
       <div class="attach-strip" id="rStrip"></div>
       <input type="file" id="rRefInput" accept="image/*" multiple style="display:none;">
+      </div>
 
       <div class="submit-row">
         <div class="submit-row-left">
@@ -5688,7 +5769,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       previewWrap.style.display = 'flex';
       setDropzoneState(true, true);
     } else {
-      previewImg.src = '';
+      previewImg.removeAttribute('src');
       previewWrap.style.display = 'none';
       setDropzoneState(false, false);
     }
@@ -5967,7 +6048,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     negEl.value = data.negativePrompt || ''; autoGrow(negEl);
     loadSettingsIntoForm(data.settings || {});
     if (src) { previewImg.src = src; previewWrap.style.display = 'flex'; }
-    else { previewImg.src = ''; previewWrap.style.display = 'none'; }
+    else { previewImg.removeAttribute('src'); previewWrap.style.display = 'none'; }
   }
 
   function setActiveSlot(idx) {
@@ -5989,7 +6070,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // □1(メイン画像)の現在のプレビューsrc。差分編集中は退避したmainSlot側を使う
   function mainImageSrc() {
-    return (activeSlot === 0) ? (previewImg.src || '') : (mainSlot.previewSrc || '');
+    // img.src は空文字を入れるとページのURLに解決されて truthy になるため、
+    // 実際に指定されているかは属性値で判定する(未選択なのにサムネが出る不具合の対策)
+    if (activeSlot !== 0) return mainSlot.previewSrc || '';
+    const attr = previewImg.getAttribute('src');
+    return attr ? attr : '';
   }
 
   function renderVariantStrip() {
@@ -7537,7 +7622,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function resetImageForm() {
     imageInput.value = '';
-    previewImg.src = '';
+    previewImg.removeAttribute('src');
     previewWrap.style.display = 'none';
     setDropzoneState(false, false);
     document.getElementById('titleInput').value = '';
@@ -8069,7 +8154,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
               (commentCount ? '<span class="row-link-badge lb-comment">コメント ' + commentCount + '件</span>' : '') +
               linkBadges +
             '</div>' +
-            (tags.length ? '<div class="row-tags">' + tags.map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+            (tags.length ? '<div class="row-tags">' + tags.map(function (t) {
+              // いま絞り込みに使っているタグだけ青くする
+              const on = (typeof tagStates !== 'undefined' && tagStates[t]) ? ' is-active' : '';
+              return '<span class="tag' + on + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+            }).join('') + '</div>' : '') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -10557,7 +10646,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const missing = [];
     if (!document.getElementById('pTitleInput').value.trim()) missing.push([document.getElementById('pTitleField'), 'タイトル']);
     if (!promptText) missing.push([document.getElementById('pPromptField'), 'プロンプト']);
-    [['uiPreset', 'UI Preset'], ['checkpoint', 'Checkpoint']].forEach(function (pair) {
+    // プロンプト例は特定のモデルに紐づかないことがあるので Checkpoint は必須にしない
+    [['uiPreset', 'UI Preset']].forEach(function (pair) {
       const el = document.getElementById('pset_' + pair[0]);
       if (el && !el.value.trim()) missing.push([el.closest('.field') || el, pair[1]]);
     });
@@ -12536,7 +12626,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const hidden = !!p && adminHiddenIds.has(String(p.id));
       return '<button class="btn-ghost" type="button" id="adminHideBtn">' + (hidden ? '非表示を解除' : '非表示') + '</button>' +
         '<button class="btn-ghost" type="button" id="adminEditBtn">管理者編集</button>' +
-        '<button class="btn-ghost" type="button" id="adminDeleteBtn" style="color:var(--danger); border-color:var(--danger);">削除</button>';
+        '<button class="btn-ghost btn-danger" type="button" id="adminDeleteBtn">削除</button>';
     }
     if (options.ownerEdit && p) {
       return '<button class="btn-ghost" type="button" id="ownerEditBtn">編集</button>';
