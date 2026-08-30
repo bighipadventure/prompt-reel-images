@@ -472,6 +472,7 @@
   .row-link-badge.lb-fix{ color:#e0824f; border-color: rgba(224,130,79,.5); background: rgba(224,130,79,.12); }
   .row-link-badge.lb-parent{ color:#b98cff; border-color: rgba(185,140,255,.5); background: rgba(185,140,255,.12); }
   .row-link-badge.lb-video{ color:#57c785; border-color: rgba(87,199,133,.5); background: rgba(87,199,133,.12); }
+  .row-link-badge.lb-memo{ color:#8f9bb3; border-color: rgba(143,155,179,.5); background: rgba(143,155,179,.12); }
   .row-link-badge.lb-lora{ color:#c9a227; border-color: rgba(201,162,39,.5); background: rgba(201,162,39,.12); }
   .row-link-badge.lb-novel{ color:#e05fd0; border-color: rgba(224,95,208,.5); background: rgba(224,95,208,.14); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
@@ -4839,7 +4840,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'uiPreset',          label: 'UI Preset',           type: 'text' },
     { key: 'checkpoint',        label: 'Checkpoint',          type: 'text' },
     { key: 'modelHash',         label: 'Model hash',          type: 'text' },
-    { key: 'loras',             label: 'LoRA(複数可)',         type: 'text' },
+    { key: 'loras',             label: 'LoRA',                type: 'text' },
     { key: 'loraHashes',        label: 'LoRA hashes',         type: 'text' },
     { key: 'vae',               label: 'VAE',                 type: 'text' },
     { key: 'textEncoder',       label: 'Text Encoder',        type: 'text' },
@@ -7920,6 +7921,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (p.type === 'video' && p.videoSourceId) s += '<span class="row-link-badge lb-video">元画像あり</span>';
     const loraCount = loraNamesOf(p.settings).length;
     if (loraCount) s += '<span class="row-link-badge lb-lora">LoRA ' + loraCount + '件</span>';
+    if (hasText(p.memo)) s += '<span class="row-link-badge lb-memo">メモ(備考)</span>';
     return s;
   }
 
