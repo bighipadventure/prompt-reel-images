@@ -2227,6 +2227,8 @@
       <div id="charPromptField">
       <label class="field-label">キャラクタープロンプト(NovelAI のマルチキャラ設定。1行に1キャラ)</label>
       <textarea id="charPromptInput" class="autogrow" placeholder="例: girl, blue hair, smile"></textarea>
+      <label class="field-label">キャラクターネガティブプロンプト(上と同じ行番号のキャラに対応)</label>
+      <textarea id="charNegInput" class="autogrow" placeholder="例: hat, glasses"></textarea>
       </div>
 
       <label class="field-label">メモ(備考)</label>
@@ -2350,6 +2352,8 @@
       <div id="pCharPromptField">
       <label class="field-label">キャラクタープロンプト(NovelAI のマルチキャラ設定。1行に1キャラ)</label>
       <textarea id="pCharPromptInput" class="autogrow" placeholder="例: girl, blue hair, smile"></textarea>
+      <label class="field-label">キャラクターネガティブプロンプト(上と同じ行番号のキャラに対応)</label>
+      <textarea id="pCharNegInput" class="autogrow" placeholder="例: hat, glasses"></textarea>
       </div>
 
       <label class="field-label">メモ(備考)</label>
@@ -2988,7 +2992,7 @@
       <h2>投稿するときに使える機能</h2>
       <div class="feature-item">
         <div class="feature-name">画像の生成情報を自動で読み取る</div>
-        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)や、NovelAIが埋め込む生成情報(PNGの<code>Comment</code>/<code>Software</code>/<code>Source</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。生成情報に「UI Preset」が含まれていないときは、Checkpoint名から自動で判定して補完します(例: 名前に <code>xl</code> を含めば <code>xl</code>、<code>flux</code> なら <code>flux</code> のように、投稿ツールのUI Presetと同じ表記が入ります)。読み取れた内容は投稿前に手で直せます。見出しの右にある「Stable / NovelAI」のボタンで、どのサービスで作った画像かを切り替えられ、それぞれに合った設定項目だけが表示されます。SD・SDXL・Illustrious・Pony・FLUX などは生成情報の形式が同じなのでまとめて「Stable」に含まれ、細かい種別は UI Preset 欄に入ります。画像をドロップしたときは中身の生成情報から自動で切り替わるので、通常は触る必要はありません。NovelAI を選んだときは、ネガティブプロンプトの下に「キャラクタープロンプト」欄が出ます(v4/v4.5/v5 のマルチキャラ設定。1行に1キャラ)。</div>
+        <div class="feature-desc">ドロップゾーンに画像を入れると、Stable Diffusion系のツールが画像に埋め込んだ生成情報(PNGの<code>parameters</code>、JPEG/WebPの<code>UserComment</code>)や、NovelAIが埋め込む生成情報(PNGの<code>Comment</code>/<code>Software</code>/<code>Source</code>)を読み取り、プロンプト・ネガティブプロンプト・生成設定をフォームへ自動入力します。生成情報に「UI Preset」が含まれていないときは、Checkpoint名から自動で判定して補完します(例: 名前に <code>xl</code> を含めば <code>xl</code>、<code>flux</code> なら <code>flux</code> のように、投稿ツールのUI Presetと同じ表記が入ります)。読み取れた内容は投稿前に手で直せます。見出しの右にある「Stable / NovelAI」のボタンで、どのサービスで作った画像かを切り替えられ、それぞれに合った設定項目だけが表示されます。SD・SDXL・Illustrious・Pony・FLUX などは生成情報の形式が同じなのでまとめて「Stable」に含まれ、細かい種別は UI Preset 欄に入ります。画像をドロップしたときは中身の生成情報から自動で切り替わるので、通常は触る必要はありません。NovelAI を選んだときは、ネガティブプロンプトの下に「キャラクタープロンプト」と「キャラクターネガティブプロンプト」の欄が出ます(v4/v4.5/v5 のマルチキャラ設定。どちらも1行に1キャラで、同じ行番号どうしが対応します)。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プレビューの拡大と取り消し</div>
@@ -3980,7 +3984,7 @@ Negative: (ここにカンマ区切りのタグ)
       <div class="guide-step">
         <div class="body">
           NovelAIで保存した画像には生成情報が埋め込まれている。「投稿」タブのドロップゾーンにそのまま入れれば、<strong>プロンプト・Undesired Content・キャラクタープロンプト・モデル名・Steps・CFG・シード値・画像サイズ</strong>が自動で読み込まれ、見出し右の切替ボタンも自動で「NovelAI」になる。
-          <div class="guide-note">キャラクターごとのプロンプトは、ネガティブプロンプトの下に出る「キャラクタープロンプト」欄に1行1キャラで入る。<code>1.5::smile::</code> のような強調表記もそのまま保持されるので、見た人がそのまま真似できる。</div>
+          <div class="guide-note">キャラクターごとのプロンプトとネガティブは、ネガティブプロンプトの下に出る「キャラクタープロンプト」「キャラクターネガティブプロンプト」の各欄に1行1キャラで入る(同じ行番号どうしが対応)。<code>1.5::smile::</code> のような強調表記もそのまま保持されるので、見た人がそのまま真似できる。</div>
         </div>
       </div>
       <div class="guide-step">
@@ -4863,7 +4867,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'uncondScale',       label: 'Uncond Scale',        type: 'number' },
     { key: 'smea',              label: 'SMEA',                type: 'text' },
     { key: 'smeaDyn',           label: 'SMEA DYN',            type: 'text' },
-    { key: 'characterPrompt',   label: 'キャラクタープロンプト', type: 'text' }
+    { key: 'characterPrompt',   label: 'キャラクタープロンプト', type: 'text' },
+    { key: 'characterNegative', label: 'キャラクターネガティブ', type: 'text' }
   ];
 
   /* 画像生成サービス(UI Preset)ごとに表示する設定項目。
@@ -4940,6 +4945,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     'SMEA': 'smea',
     'SMEA DYN': 'smeaDyn',
     'Character prompt': 'characterPrompt',
+    'Character negative': 'characterNegative',
     'UI Preset': 'uiPreset'
   };
 
@@ -5473,8 +5479,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // キャラクタープロンプトは専用の入力欄にあるので、保存時だけ設定へ合流させる
   function collectSettingsWithCharPrompt() {
     const s = collectSettings();
-    const el = document.getElementById('charPromptInput');
-    if (el && el.value.trim()) s.characterPrompt = el.value;
+    [['charPromptInput', 'characterPrompt'], ['charNegInput', 'characterNegative']].forEach(function (pair) {
+      const el = document.getElementById(pair[0]);
+      if (el && el.value.trim()) s[pair[1]] = el.value;
+    });
     return s;
   }
 
@@ -5490,8 +5498,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const svc = guessImageService(settingsObj);
       if (svc) setImageService(svc, false);
     }
-    const charEl = document.getElementById('charPromptInput');
-    if (charEl) { charEl.value = settingsObj.characterPrompt || ''; autoGrow(charEl); }
+    [['charPromptInput', 'characterPrompt'], ['charNegInput', 'characterNegative']].forEach(function (pair) {
+      const el = document.getElementById(pair[0]);
+      if (el) { el.value = settingsObj[pair[1]] || ''; autoGrow(el); }
+    });
     const baseKeys = allKnownSettingKeys();
     Object.keys(settingsObj).forEach(function (k) {
       if (baseKeys.indexOf(k) === -1 && dynamicSettingKeys.indexOf(k) === -1) dynamicSettingKeys.push(k);
@@ -5974,26 +5984,33 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      既存の解析経路(parseGenerationInfo → generationInfoToSettings)へそのまま流す。 */
   /* v4 / v4.5 / v5 のマルチキャラ設定を1つのテキストにまとめる。
      形式が版によって違うため、見つかったものを順に拾う。 */
-  function novelAiCharacterPrompts(c) {
-    const out = [];
-    function pushCap(cap, uc) {
-      const t = String(cap || '').trim();
-      if (!t) return;
-      out.push(uc ? (t + '  [negative] ' + uc) : t);
+  /* キャラごとのプロンプトとネガティブを、1行1キャラで別々に取り出す。
+     ポジティブとネガティブは行番号で対応させるため、片方しか無いキャラでも
+     行を詰めずに空行を入れて位置を合わせる(以前はポジティブが空だと
+     ネガティブごと捨てていた)。 */
+  function novelAiCharacterParts(c) {
+    const pos = [], neg = [];
+    const cap = c.v4_prompt && c.v4_prompt.caption;
+    const capN = c.v4_negative_prompt && c.v4_negative_prompt.caption;
+    const pArr = cap && Array.isArray(cap.char_captions) ? cap.char_captions : [];
+    const nArr = capN && Array.isArray(capN.char_captions) ? capN.char_captions : [];
+    const n = Math.max(pArr.length, nArr.length);
+    for (let i = 0; i < n; i++) {
+      pos.push(String((pArr[i] && pArr[i].char_caption) || '').trim());
+      neg.push(String((nArr[i] && nArr[i].char_caption) || '').trim());
     }
-    const v4 = c.v4_prompt && c.v4_prompt.caption;
-    const v4n = c.v4_negative_prompt && c.v4_negative_prompt.caption;
-    if (v4 && Array.isArray(v4.char_captions)) {
-      v4.char_captions.forEach(function (cc, i) {
-        const neg = v4n && Array.isArray(v4n.char_captions) && v4n.char_captions[i]
-          ? String(v4n.char_captions[i].char_caption || '').trim() : '';
-        pushCap(cc && cc.char_caption, neg);
+    if (!n && Array.isArray(c.characterPrompts)) {
+      c.characterPrompts.forEach(function (cp) {
+        pos.push(String((cp && (cp.prompt || cp.caption)) || '').trim());
+        neg.push(String((cp && cp.uc) || '').trim());
       });
     }
-    if (!out.length && Array.isArray(c.characterPrompts)) {
-      c.characterPrompts.forEach(function (cp) { pushCap(cp && (cp.prompt || cp.caption), cp && cp.uc); });
-    }
-    return out.join('\n');
+    const trimTail = function (arr) {
+      const a = arr.slice();
+      while (a.length && !a[a.length - 1]) a.pop();
+      return a;
+    };
+    return { prompt: trimTail(pos).join('\n'), negative: trimTail(neg).join('\n') };
   }
 
   function buildParametersFromNovelAi(chunks) {
@@ -6026,7 +6043,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     add('SMEA', c.sm === true ? 'true' : '');
     add('SMEA DYN', c.sm_dyn === true ? 'true' : '');
     add('UI Preset', 'NovelAI');
-    add('Character prompt', novelAiCharacterPrompts(c));
+    const charParts = novelAiCharacterParts(c);
+    add('Character prompt', charParts.prompt);
+    add('Character negative', charParts.negative);
     add('Version', chunks['Software']);
     if (parts.length < 3) return null;   // 最終行がパラメータ行だと判定されるのに3件必要
 
@@ -6221,13 +6240,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     setImageService(guessImageService(values), false);
 
     // キャラクタープロンプトは設定表ではなく専用の入力欄へ入れる
-    const charEl = document.getElementById('charPromptInput');
-    if (charEl && values.characterPrompt) {
-      charEl.value = values.characterPrompt;
-      autoGrow(charEl);
-      filledAny = true;
-    }
-    delete values.characterPrompt;
+    [['charPromptInput', 'characterPrompt'], ['charNegInput', 'characterNegative']].forEach(function (pair) {
+      const el = document.getElementById(pair[0]);
+      if (el && values[pair[1]]) {
+        el.value = values[pair[1]];
+        autoGrow(el);
+        filledAny = true;
+      }
+      delete values[pair[1]];
+    });
 
     const baseKeys = SETTINGS_FIELDS.map(function (f) { return f.key; });
     Object.keys(values).forEach(function (k) {
@@ -7402,8 +7423,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     selectedFixRequestIds = [];
     renderFixRequestDisplay();
     document.getElementById('editPwInput').value = '';
-    const charEl = document.getElementById('charPromptInput');
-    if (charEl) charEl.value = '';
+    ['charPromptInput', 'charNegInput'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     setImageService('stable', false);
     resetNovelEditor();
     setInpaintMode(false);
@@ -8213,6 +8236,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="block-head"><div class="label">キャラクタープロンプト</div></div>' +
         '<div class="value" id="detailCharPromptValue">' + escapeHtml(charPromptOf(imageSet[0])) + '</div>' +
         '<div class="block-foot"><button class="btn-copy" type="button" data-copy="characterPrompt">コピー</button></div>' +
+      '</div>' +
+      '<div class="detail-block" id="detailCharNegBlock"' + (hasText(charNegOf(imageSet[0])) ? '' : ' style="display:none;"') + '>' +
+        '<div class="block-head"><div class="label">キャラクターネガティブプロンプト</div></div>' +
+        '<div class="value" id="detailCharNegValue">' + escapeHtml(charNegOf(imageSet[0])) + '</div>' +
+        '<div class="block-foot"><button class="btn-copy" type="button" data-copy="characterNegative">コピー</button></div>' +
       '</div>') +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
@@ -8234,7 +8262,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       btn.addEventListener('click', function () {
         // キャラクタープロンプトは settings 配下にあるので取得先を分ける
         const key = btn.dataset.copy;
-        const src = key === 'characterPrompt' ? charPromptOf(imageSet[curVar]) : (imageSet[curVar][key] || '');
+        const src = key === 'characterPrompt' ? charPromptOf(imageSet[curVar])
+          : key === 'characterNegative' ? charNegOf(imageSet[curVar])
+          : (imageSet[curVar][key] || '');
         navigator.clipboard.writeText(src).then(function () {
           btn.textContent = 'コピーしました';
           setTimeout(function () { btn.textContent = 'コピー'; }, 1500);
@@ -8260,6 +8290,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           const cpBlock = document.getElementById('detailCharPromptBlock');
           if (cpVal) cpVal.textContent = charPromptOf(cur);
           if (cpBlock) cpBlock.style.display = hasText(charPromptOf(cur)) ? '' : 'none';
+          const cnVal = document.getElementById('detailCharNegValue');
+          const cnBlock = document.getElementById('detailCharNegBlock');
+          if (cnVal) cnVal.textContent = charNegOf(cur);
+          if (cnBlock) cnBlock.style.display = hasText(charNegOf(cur)) ? '' : 'none';
           if (settingsBlock && settingsTableEl) {
             const entries = settingsEntriesHtml(cur);
             settingsTableEl.innerHTML = entries;
@@ -10281,14 +10315,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const el = document.getElementById('pset_' + f.key);
       if (el && el.value !== '') r[f.key] = el.value;
     });
-    const cp = document.getElementById('pCharPromptInput');
-    if (cp && cp.value.trim()) r.characterPrompt = cp.value;
+    [['pCharPromptInput', 'characterPrompt'], ['pCharNegInput', 'characterNegative']].forEach(function (pair) {
+      const el = document.getElementById(pair[0]);
+      if (el && el.value.trim()) r[pair[1]] = el.value;
+    });
     return r;
   }
   function clearPromptSettings() {
     SETTINGS_FIELDS.forEach(function (f) { const el = document.getElementById('pset_' + f.key); if (el) el.value = ''; });
-    const cp = document.getElementById('pCharPromptInput');
-    if (cp) cp.value = '';
+    ['pCharPromptInput', 'pCharNegInput'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     setPromptService('stable', false);
   }
   function loadPromptSettingsIntoForm(settingsObj) {
@@ -10298,8 +10336,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const el = document.getElementById('pset_' + f.key);
       if (el) el.value = settingsObj[f.key] || '';
     });
-    const cp = document.getElementById('pCharPromptInput');
-    if (cp) { cp.value = settingsObj.characterPrompt || ''; autoGrow(cp); }
+    [['pCharPromptInput', 'characterPrompt'], ['pCharNegInput', 'characterNegative']].forEach(function (pair) {
+      const el = document.getElementById(pair[0]);
+      if (el) { el.value = settingsObj[pair[1]] || ''; autoGrow(el); }
+    });
   }
 
   // PROMPT FORM: タグ
@@ -11995,9 +12035,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // PROMPT DETAIL MODAL
   // キャラクタープロンプトは設定表ではなく専用ブロックで見せるので、ここでは除外する
-  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt'];
+  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt', 'characterNegative'];
   function charPromptOf(holder) {
     return (holder && holder.settings && holder.settings.characterPrompt) || '';
+  }
+  function charNegOf(holder) {
+    return (holder && holder.settings && holder.settings.characterNegative) || '';
   }
 
   function settingsEntriesHtml(p) {
