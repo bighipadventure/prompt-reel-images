@@ -1004,16 +1004,21 @@
     max-width: calc(var(--content-max) + var(--content-pad) * 2);
     margin: 0 auto; padding: 12px var(--content-pad) 14px;
   }
-  .cart-head{ display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap:wrap; margin-bottom: 10px; }
-  .cart-title{ font-family:'Noto Sans JP',sans-serif; font-size: 13px; font-weight:700; color: var(--ink); display:inline-flex; align-items:center; gap:8px; }
+  .cart-head{ display:flex; align-items:center; justify-content:space-between; gap: 8px; flex-wrap:wrap; margin-bottom: 10px; }
+  .cart-title{ font-family:'Noto Sans JP',sans-serif; font-size: 13px; font-weight:700; color: var(--ink); display:inline-flex; align-items:center; gap:8px; flex:none; }
   .cart-icon{ width: 16px; height: 16px; object-fit: contain; display:block; flex:none; }
   .cart-num{ color: var(--accent); font-size: 15px; }
-  .cart-actions{ display:flex; gap: 8px; flex-wrap:wrap; }
+  .cart-actions{ display:flex; gap: 6px; flex-wrap:nowrap; flex:none; }
+  /* COPY・空にする・閉じるを同じ行に収めるため、余白を切り詰めて3つとも同じ高さ・
+     COPY/空にするは同じ幅に揃える(文字数が違うぶんは min-width で吸収する) */
+  .cart-copy, .cart-clear{
+    min-width: 84px; padding: 7px 10px;
+  }
   /* 通常は非活性(枠線)デザイン。押した瞬間だけ活性(塗り)になる */
   .cart-copy{
     background: transparent; color: var(--ink-dim); border:1px solid var(--line);
-    border-radius: 8px; padding: 7px 20px; font-size: 12.5px; font-weight:700;
-    letter-spacing:.04em; cursor:pointer; min-width: 140px;
+    border-radius: 8px; font-size: 12.5px; font-weight:700; line-height: 1;
+    letter-spacing:.04em; cursor:pointer;
     transition: background .12s ease, color .12s ease, border-color .12s ease;
   }
   .cart-copy:hover{ color: var(--accent); border-color: var(--accent); }
@@ -1021,16 +1026,16 @@
   /* COPYと同じ挙動の赤版。通常は非活性(枠線)、押した瞬間だけ活性(赤塗り)にする */
   .cart-clear{
     background: transparent; color: var(--ink-dim); border:1px solid var(--line);
-    border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight:700;
-    letter-spacing:.04em; cursor:pointer; min-width: 120px;
+    border-radius: 8px; font-size: 12.5px; font-weight:700; line-height: 1;
+    letter-spacing:.04em; cursor:pointer;
     transition: background .12s ease, color .12s ease, border-color .12s ease;
   }
   .cart-clear:hover{ color: var(--danger); border-color: var(--danger); }
   .cart-clear.cleared{ background: var(--danger); color:#fff; border-color: var(--danger); }
   .cart-close{
     background: transparent; color: var(--ink-dim); border:1px solid var(--line);
-    border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight:700;
-    letter-spacing:.04em; cursor:pointer;
+    border-radius: 8px; padding: 7px 10px; font-size: 12.5px; font-weight:700; line-height: 1;
+    letter-spacing:.04em; cursor:pointer; flex:none; white-space:nowrap;
     transition: background .12s ease, color .12s ease, border-color .12s ease;
   }
   .cart-close:hover{ color: var(--ink); border-color: var(--ink-dim); }
@@ -1813,7 +1818,7 @@
   /* 詳細モーダルヘッダ: 既読ボタンを閉じるの左に置く */
   .announce-detail-read{ font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; background: var(--danger); color:#fff; border:1px solid var(--danger); border-radius:8px; padding:6px 14px; cursor:pointer; }
   .announce-detail-read:hover{ filter:brightness(1.08); }
-  .announce-detail-back{ font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; background: var(--surface); color: var(--ink-dim); border:1px solid var(--line); border-radius:8px; padding:6px 14px; cursor:pointer; }
+  .announce-detail-back{ font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:700; background: var(--surface); color: var(--ink-dim); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; }
   .announce-detail-back:hover{ color: var(--danger); border-color: var(--danger); }
   #announceBody .modal-header{ border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:20px; }
   #announceBody .modal-title{ font-size:19px; font-weight:900; letter-spacing:.02em; display:flex; align-items:center; gap:12px; margin:0; }
@@ -2048,6 +2053,9 @@
     font-family:'Noto Sans JP',sans-serif;
   }
   .board-edit-btn:hover{ color: var(--ink); border-color: var(--ink-dim); }
+  /* スレッドモーダル見出しの「編集/削除/閉じる」の高さを揃える(閉じるボタンと同じ寸法に) */
+  .modal-top-actions .board-edit-btn,
+  .modal-top-actions .comment-del{ font-size:13px; padding:6px 12px; border-radius:8px; }
   .board-edit-form input, .board-edit-form textarea{ width:100%; box-sizing:border-box; }
   .board-edit-form textarea{ min-height:84px; resize:none; }
   .board-edit-form .field-label{ margin-top:8px; }
@@ -2301,8 +2309,12 @@
     .post-mode-btn{ padding: 8px 14px; font-size: 13px; }
 
     /* ---- プロンプトデータバンクのカート ---- */
-    .cart-actions{ width: 100%; }
-    .cart-copy, .cart-clear, .cart-close{ flex: 1 1 auto; }
+    /* 幅が足りない端末向けに、見出し(カート N件)の文字とアイコンを少し詰めて
+       ボタン3つと同じ行に収まりやすくする */
+    .cart-title{ font-size: 12px; gap: 5px; }
+    .cart-icon{ width: 14px; height: 14px; }
+    .cart-copy, .cart-clear, .cart-close{ min-width: 0; padding: 6px 8px; font-size: 11.5px; }
+    .cart-copy, .cart-clear{ min-width: 72px; }
   }
 </style>
 </head>
@@ -12002,6 +12014,21 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
+  /* ===== インライン編集フォームの開閉(掲示板・お知らせで共用) =====
+     表示側(本文など)とフォームは同じ親の中に並んでいるので、
+     フォーム以外の兄弟をまとめて隠す/戻すことで切り替える。
+     ボタンが元の場所の外(見出し行など)にあっても、id で直接フォームを探すので動く。 */
+  function toggleInlineEditForm(form, showForm) {
+    if (!form) return;
+    const parent = form.parentElement;
+    if (parent) {
+      Array.prototype.forEach.call(parent.children, function (child) {
+        if (child !== form) child.style.display = showForm ? 'none' : '';
+      });
+    }
+    form.style.display = showForm ? '' : 'none';
+  }
+
   /* スレッドの操作(投票・返信・管理編集)の配線。一覧とモーダルの両方から使う。 */
   function wireBoardEvents(root) {
     root.querySelectorAll('[data-del-board]').forEach(function (btn) {
@@ -12042,24 +12069,22 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const bEl = form.querySelector('.board-edit-body');
       if (bEl) bEl.value = msg.body || '';
     });
+    // 表示側(本文・投票など)とフォームは同じ親の中に並んでいるので、
+    // フォーム以外の兄弟をまとめて隠す/戻すことで切り替える。
+    // ボタンが .board-thread の外(見出し行)にあっても、id で直接フォームを探すので動く。
     root.querySelectorAll('[data-edit-board-open]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        const box = btn.closest('.board-thread, .board-reply');
-        if (!box) return;
-        const form = box.querySelector('.board-edit-form');
-        const disp = box.querySelector('.board-op, .board-reply-main');
-        if (form) form.style.display = '';
-        if (disp) disp.style.display = 'none';
-        if (form) { const ta = form.querySelector('.board-edit-body'); if (ta) ta.focus(); }
+        const id = btn.dataset.editBoardOpen;
+        const form = document.querySelector('.board-edit-form[data-msg-id="' + CSS.escape(id) + '"]');
+        if (!form) return;
+        toggleInlineEditForm(form, true);
+        const ta = form.querySelector('.board-edit-body');
+        if (ta) ta.focus();
       });
     });
     root.querySelectorAll('.board-edit-cancel').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        const form = btn.closest('.board-edit-form');
-        const box = btn.closest('.board-thread, .board-reply');
-        const disp = box && box.querySelector('.board-op, .board-reply-main');
-        if (form) form.style.display = 'none';
-        if (disp) disp.style.display = '';
+        toggleInlineEditForm(btn.closest('.board-edit-form'), false);
       });
     });
     root.querySelectorAll('.board-edit-save').forEach(function (btn) {
@@ -14089,6 +14114,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function announceDelBtnHtml(a) {
     return adminMode ? '<button class="comment-del" type="button" data-del-announce="' + escapeHtml(String(a.id)) + '">削除</button>' : '';
   }
+  function announceEditBtnHtml(a) {
+    return adminMode ? '<button class="board-edit-btn" type="button" data-edit-announce-open="' + escapeHtml(String(a.id)) + '">編集</button>' : '';
+  }
+  // 管理モード時のインライン編集フォーム(掲示板の編集フォームと同じ考え方)
+  function announceEditFormHtml(a) {
+    if (!adminMode) return '';
+    const eid = escapeHtml(String(a.id));
+    return '<div class="board-edit-form announce-edit-form" data-msg-id="' + eid + '" style="display:none;">' +
+      '<label class="field-label">タイトル</label><input type="text" class="board-edit-title" autocomplete="off">' +
+      '<label class="field-label">本文</label><textarea class="board-edit-body"></textarea>' +
+      '<div class="board-reply-form-row">' +
+        '<button class="btn-submit board-edit-save" type="button" data-edit-announce-save="' + eid + '">保存</button>' +
+        '<button class="btn-ghost board-edit-cancel" type="button">キャンセル</button>' +
+        '<span class="board-edit-status"></span>' +
+      '</div>' +
+    '</div>';
+  }
 
   // 履歴一覧: タイトルと投稿日時の見出しだけを並べ、クリックで詳細(全文)を開く
   function openAnnounceModal() {
@@ -14128,6 +14170,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-header">' +
         '<h3 class="modal-title">お知らせ</h3>' +
         '<div class="modal-top-actions">' +
+          announceEditBtnHtml(a) +
           announceDelBtnHtml(a) +
           (back ? '<button class="announce-detail-back" type="button" id="announceBackBtn">← 一覧へ戻る</button>' : '') +
           '<button class="modal-close" type="button" id="announceCloseBtn">✕ 閉じる</button>' +
@@ -14138,6 +14181,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="announce-modal-date">' + formatDateTime(a.timestamp) + '</div>' +
         '<div class="announce-modal-text">' + escapeHtml(a.body || '') + '</div>' +
         announceImagesHtml(a) +
+        announceEditFormHtml(a) +
       '</div>';
     document.getElementById('announceCloseBtn').addEventListener('click', function () { overlay.classList.remove('open'); });
     if (back) document.getElementById('announceBackBtn').addEventListener('click', function () { back(); });
@@ -14147,7 +14191,52 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     body.querySelectorAll('[data-del-announce]').forEach(function (btn) {
       btn.addEventListener('click', function () { adminDeleteAnnounce(btn.dataset.delAnnounce); });
     });
+    body.querySelectorAll('[data-edit-announce-open]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const form = document.querySelector('.announce-edit-form[data-msg-id="' + CSS.escape(btn.dataset.editAnnounceOpen) + '"]');
+        if (!form) return;
+        const titleEl = form.querySelector('.board-edit-title');
+        const bodyEl = form.querySelector('.board-edit-body');
+        if (titleEl) titleEl.value = a.title || '';
+        if (bodyEl) { bodyEl.value = a.body || ''; autoGrow(bodyEl); }
+        toggleInlineEditForm(form, true);
+        if (bodyEl) bodyEl.focus();
+      });
+    });
+    body.querySelectorAll('.board-edit-cancel').forEach(function (btn) {
+      btn.addEventListener('click', function () { toggleInlineEditForm(btn.closest('.board-edit-form'), false); });
+    });
+    body.querySelectorAll('[data-edit-announce-save]').forEach(function (btn) {
+      btn.addEventListener('click', function () { saveAnnounceEdit(btn.dataset.editAnnounceSave, btn, back); });
+    });
     openOverlay(overlay);
+  }
+
+  async function saveAnnounceEdit(id, btn, back) {
+    const form = btn.closest('.board-edit-form');
+    if (!form) return;
+    const titleEl = form.querySelector('.board-edit-title');
+    const bodyEl = form.querySelector('.board-edit-body');
+    const statusEl = form.querySelector('.board-edit-status');
+    const title = titleEl.value.trim();
+    if (!title) { statusEl.textContent = 'タイトルを入力してください'; return; }
+    statusEl.textContent = '';
+    btn.disabled = true;
+    showLoading('保存中...');
+    try {
+      const result = await postAction({ action: 'adminEditAnnounce', password: adminPassword, id: id, title: title, body: bodyEl.value.trim() });
+      if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
+      const a = allAnnounce.find(function (x) { return String(x.id) === String(id); });
+      if (a) { a.title = result.title != null ? result.title : title; a.body = result.body != null ? result.body : bodyEl.value.trim(); }
+      renderAnnounceBar();
+      if (a) openAnnounceDetail(a, back);   // 保存内容を反映して開き直す
+    } catch (err) {
+      statusEl.textContent = '保存に失敗しました: ' + (err.message || err);
+      console.error(err);
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
   }
 
   async function adminDeleteAnnounce(id) {
