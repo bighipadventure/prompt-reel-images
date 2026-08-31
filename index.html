@@ -13419,6 +13419,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function cleanPromptToken(raw) {
     let t = String(raw).replace(/[\r\n]+/g, ' ');
+    // NovelAI(v4以降)の強調構文 "1.5::smile::" のような数値+"::"...":: " を外して
+    // 単語だけにする(これが無いと辞書のキーと一致せず、翻訳があってもヒットしない)
+    t = t.replace(/^\s*-?\d+(?:\.\d+)?\s*::/, '');
+    t = t.replace(/::\s*$/, '');
     t = t.replace(/\\([()\[\]])/g, '$1');
     t = t.replace(/[(){}\[\]]/g, ' ');
     t = t.replace(/:\s*-?\d+(?:\.\d+)?/g, ' ');
@@ -13475,10 +13479,41 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function hideWordTip() { if (wordTip) wordTip.style.display = 'none'; }
 
   // 再描画のたびに配線し直さずに済むよう、document への委譲で拾う
+  /* マウス位置にある1単語(空白区切り)を、span の実テキストから切り出す。
+     "amazing quality" のように複数語がまとめて1つの .prompt-word になっている場合、
+     複合語としての辞書登録が無いときに、カーソル直下の語だけで再検索するために使う。 */
+  function wordUnderPoint(el, x, y) {
+    let node, offset;
+    if (document.caretRangeFromPoint) {
+      const range = document.caretRangeFromPoint(x, y);
+      if (!range) return null;
+      node = range.startContainer; offset = range.startOffset;
+    } else if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(x, y);
+      if (!pos) return null;
+      node = pos.offsetNode; offset = pos.offset;
+    } else {
+      return null;
+    }
+    if (!node || node.nodeType !== 3 || !el.contains(node)) return null;
+    const text = node.textContent;
+    let start = offset, end = offset;
+    while (start > 0 && !/\s/.test(text[start - 1])) start--;
+    while (end < text.length && !/\s/.test(text[end])) end++;
+    return text.slice(start, end);
+  }
+
   document.addEventListener('mousemove', function (e) {
     const el = e.target.closest && e.target.closest('.prompt-word');
     if (!el) { hideWordTip(); return; }
-    const ja = lookupJa(el.dataset.key);
+    // まずタグ全体("amazing quality"のような複合語)のキーで探し、
+    // 登録が無ければマウス直下の1単語だけで探し直す
+    let ja = lookupJa(el.dataset.key);
+    if (!ja) {
+      const word = wordUnderPoint(el, e.clientX, e.clientY);
+      const cleaned = word ? cleanPromptToken(word) : '';
+      if (cleaned) ja = lookupJa(databankKey(cleaned));
+    }
     if (!ja) { hideWordTip(); return; }
     showWordTip(ja, e.clientX, e.clientY);
   });
