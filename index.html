@@ -1807,7 +1807,9 @@
   .announce-list-item:hover{ border-color: var(--danger); }
   .announce-list-item .ali-title{ flex:1 1 auto; min-width:0; font-size:14px; font-weight:700; color: var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .announce-list-item .ali-date{ flex:none; font-size:11.5px; color: var(--ink-dim); }
+  /* 削除ボタンは行の右端に固定する(通常の並び順に置くと左に出てしまうため) */
   body.admin-on .announce-list-item{ padding-right:64px; }
+  .announce-list-item .comment-del{ position:absolute; top:50%; right:14px; transform:translateY(-50%); }
   /* 詳細モーダルヘッダ: 既読ボタンを閉じるの左に置く */
   .announce-detail-read{ font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; background: var(--danger); color:#fff; border:1px solid var(--danger); border-radius:8px; padding:6px 14px; cursor:pointer; }
   .announce-detail-read:hover{ filter:brightness(1.08); }
@@ -1817,7 +1819,6 @@
   #announceBody .modal-title{ font-size:19px; font-weight:900; letter-spacing:.02em; display:flex; align-items:center; gap:12px; margin:0; }
   #announceBody .modal-title::before{ content:''; width:6px; height:22px; background: var(--danger); border-radius:3px; flex:none; }
   .announce-modal-latest{ position:relative; background: var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:8px; }
-  body.admin-on .announce-modal-latest, body.admin-on .announce-modal-item{ padding-right:64px; }
   .announce-modal-title{ font-size:15px; font-weight:700; color: var(--ink); margin:0 0 5px; }
   .announce-modal-date{ font-size:11.5px; color: var(--ink-dim); margin-bottom:12px; }
   .announce-modal-text{ font-size:13.5px; line-height:1.8; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
@@ -13425,7 +13426,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return t;
   }
   function splitPromptTokens(text) {
-    return String(text || '').split(',').map(cleanPromptToken).filter(Boolean);
+    // 改行でも区切る(NovelAIのキャラクタープロンプトは1行1キャラなので、
+    // 行末の語が次のキャラの語と1つのトークンに混ざらないようにする)
+    return String(text || '').split(/[,\n]/).map(cleanPromptToken).filter(Boolean);
   }
   function databankKey(token) {
     return token.toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
@@ -13517,8 +13520,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function tokenTextsOf(p) {
     let texts = [];
-    if (dbSource === 'prompt' || dbSource === 'both') texts.push(p.prompt);
-    if (dbSource === 'negative' || dbSource === 'both') texts.push(p.negativePrompt);
+    // メイン画像 + キャラクター設定(NovelAI) + 差分(2枚目以降)すべてを対象にする
+    const holders = [p].concat(p.variants || []);
+    holders.forEach(function (h) {
+      if (dbSource === 'prompt' || dbSource === 'both') {
+        texts.push(h.prompt);
+        texts.push(h.settings && h.settings.characterPrompt);
+      }
+      if (dbSource === 'negative' || dbSource === 'both') {
+        texts.push(h.negativePrompt);
+        texts.push(h.settings && h.settings.characterNegative);
+      }
+    });
     return texts;
   }
   function collectPromptTokens() {
@@ -14080,11 +14093,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-header">' +
         '<h3 class="modal-title">お知らせ</h3>' +
         '<div class="modal-top-actions">' +
+          announceDelBtnHtml(a) +
           (back ? '<button class="announce-detail-back" type="button" id="announceBackBtn">← 一覧へ戻る</button>' : '') +
           '<button class="modal-close" type="button" id="announceCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
-      '<div class="announce-modal-latest">' + announceDelBtnHtml(a) +
+      '<div class="announce-modal-latest">' +
         '<div class="announce-modal-title">' + escapeHtml(a.title || '(無題)') + '</div>' +
         '<div class="announce-modal-date">' + formatDateTime(a.timestamp) + '</div>' +
         '<div class="announce-modal-text">' + escapeHtml(a.body || '') + '</div>' +
