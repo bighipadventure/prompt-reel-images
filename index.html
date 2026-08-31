@@ -282,6 +282,8 @@
     padding: 9px 16px;
     cursor: pointer;
     transition: opacity .15s ease, background .12s ease, border-color .12s ease;
+    /* ボタンはすべて中身を天地中央に揃える(アイコン付き/文字だけ等で高さがブレないよう line-height も固定) */
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
   }
   .btn-ghost{
     background: var(--surface-2);
@@ -365,6 +367,7 @@
     color: var(--ink-dim);
     cursor: pointer;
     user-select: none;
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
   }
   .tag-pill.state-include{ background: rgba(0, 150, 250, .2); color: var(--accent); border-color: rgba(0, 150, 250, .5); }
   .tag-pill.state-exclude{ background: rgba(255, 64, 96, .2); color: var(--danger); border-color: rgba(255, 64, 96, .5); }
@@ -739,6 +742,22 @@
   .dl-item.picked{ color: var(--accent); background: var(--accent-dim); }
   .dl-item.picked::before{ content: '✓ '; }
   /* 長い候補の全文を出すツールチップ(マウス追従) */
+  /* プロンプト表示エリアの単語ホバーツールチップ(datalist候補の.dl-tipと同じ見た目) */
+  .word-tip{
+    position: fixed; z-index: 700; display: none; pointer-events: none;
+    max-width: min(320px, 80vw); background: var(--surface-2); color: #fff;
+    border: 1px solid #fff; border-radius: 8px; padding: 6px 10px;
+    font-family:'Noto Sans JP',sans-serif; font-size: 12px; line-height: 1.5;
+    white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 6px 20px rgba(0,0,0,.45);
+  }
+  /* プロンプト単語: クリックでカートに追加できることを示す下線。
+     カートに入っている単語だけ、タグと同じ配色(青の20%塗り)で強調する。 */
+  .prompt-word{ cursor: pointer; border-radius: 3px; }
+  .prompt-word:hover{ background: rgba(0, 150, 250, .18); }
+  .prompt-word.in-cart{ background: rgba(0, 150, 250, .28); box-shadow: 0 0 0 1px rgba(0, 150, 250, .5); }
+  /* タグをクリックしてコピーしたときの一瞬のフィードバック */
+  .row-tags .tag{ cursor: pointer; }
+  .row-tags .tag.tag-copied{ background: rgba(0, 150, 250, .35); border-color: var(--accent); color: var(--accent); }
   .dl-tip{
     position: fixed; z-index: 600; display: none; pointer-events: none;
     max-width: min(520px, 80vw); background: var(--surface-2); color: var(--ink);
@@ -972,7 +991,8 @@
 
   /* ---- データバンクのカート(画面最下部に固定。カードとは別デザインで「カート」と分かるようにする) ---- */
   .cart-bar{
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+    /* 詳細モーダル(z-index:100)より前面に出す */
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
     background: linear-gradient(180deg, rgba(20,22,42,.96), rgba(14,15,32,.99));
     border-top: 2px solid var(--accent);
     box-shadow: 0 -10px 30px rgba(0,0,0,.45);
@@ -1007,6 +1027,13 @@
   }
   .cart-clear:hover{ color: var(--danger); border-color: var(--danger); }
   .cart-clear.cleared{ background: var(--danger); color:#fff; border-color: var(--danger); }
+  .cart-close{
+    background: transparent; color: var(--ink-dim); border:1px solid var(--line);
+    border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight:700;
+    letter-spacing:.04em; cursor:pointer;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .cart-close:hover{ color: var(--ink); border-color: var(--ink-dim); }
   /* チップ1行分(30px = 削除ボタン20px + 上下padding8px + border2px)の高さを確保。
      チップと空メッセージは同じ枠に入れるので、空↔1個追加でも高さが変わらない。 */
   .cart-body{ min-height: 30px; }
@@ -1023,7 +1050,7 @@
   .cart-chip button:hover{ color: var(--danger); background: var(--danger-dim); }
   .cart-empty{ font-family:'Noto Sans JP',sans-serif; font-size: 11.5px; color: var(--ink-dim); }
   /* カート表示中はカートに隠れないよう一覧の下に余白を足す */
-  body.db-cart-open #tab-databank{ padding-bottom: calc(var(--cart-h, 160px) + 32px); }
+  body.db-cart-open-databank #tab-databank{ padding-bottom: calc(var(--cart-h, 160px) + 32px); }
 
   /* ---- 右下に追従するボタン群 ---- */
   .fab-stack{
@@ -1913,7 +1940,7 @@
   .board-attach-row{ display:flex; align-items:center; gap:10px; margin:14px 0 0; flex-wrap:wrap; }
   .board-attach-hint{ font-size:11.5px; color: var(--ink-dim); }
   .board-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  .board-threads{ display:flex; flex-direction:column; gap:14px; }
+  .board-threads{ display:flex; flex-direction:column; gap:18px; }
   /* 掲示板: スレッドを1つのまとまりとして分かりやすく囲む(白めで太めの罫線) */
   /* 掲示板のスレッドもコメント・詳細モーダルと同じ作り:
      見出し(タイトル/名前/日時)の帯 + 黒い本文面 */
@@ -1923,11 +1950,11 @@
   }
   .board-thread:hover{ border-color: var(--accent); }
   .board-thread-head{
-    padding:9px 14px; background: var(--surface); border-bottom:1px solid var(--line);
+    padding:14px 18px; background: var(--surface); border-bottom:1px solid var(--line);
   }
   .board-subject{
-    font-size:14px; font-weight:600; line-height:1.5;
-    color: var(--ink); word-break:break-word; margin-bottom:3px;
+    font-size:14.5px; font-weight:600; line-height:1.5;
+    color: var(--ink); word-break:break-word; margin-bottom:6px;
   }
   /* メタ行(タイトル無しスレでは最上段になる)。管理ボタンとの重なりは body.admin-on 側で余白確保 */
   .board-op-meta{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:11.5px; }
@@ -1940,9 +1967,9 @@
   }
   .board-latest-reply{ font-size:11px; color: var(--ink-dim); }
   .board-op-body{
-    font-size:13.5px; line-height:1.75; white-space:pre-wrap; word-break:break-word; color: var(--ink);
+    font-size:13.5px; line-height:1.8; white-space:pre-wrap; word-break:break-word; color: var(--ink);
     background: var(--bg); border:1px solid var(--line); border-radius:8px;
-    margin:10px 14px; padding:10px 12px;
+    margin:14px 18px; padding:14px 16px;
   }
   .board-quote{ color:#7ea840; }
   .board-thread-body{ font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color: var(--ink); }
@@ -1988,7 +2015,9 @@
   /* 添付画像はテキストと同じ黒い面の中に収める */
   .board-op-body .board-ref-gallery,
   .board-reply-body .board-ref-gallery{ margin-top:10px; }
-  .board-op-body:empty, .board-reply-body:empty{ display:none; }
+  /* div版(表示用)にだけ効かせる。textarea.board-reply-body(入力欄)まで拾うと
+     空欄の間ずっと消えてしまうため、タグで div に限定する。 */
+  div.board-op-body:empty, div.board-reply-body:empty{ display:none; }
   .board-thread-detail .board-vote{ padding:0 14px 12px; }
   /* スレッドモーダルの見出し(作品の詳細モーダルと同じ素置き) */
   .board-thread-title{ margin-bottom: 12px; }
@@ -2272,7 +2301,7 @@
 
     /* ---- プロンプトデータバンクのカート ---- */
     .cart-actions{ width: 100%; }
-    .cart-copy, .cart-clear{ flex: 1 1 auto; }
+    .cart-copy, .cart-clear, .cart-close{ flex: 1 1 auto; }
   }
 </style>
 </head>
@@ -2676,8 +2705,8 @@
         <div class="sort-chips" id="sortChips"></div>
         <div class="row-right-toggles">
           <button type="button" class="sort-chip" id="includeChildrenToggle" title="バリエーション(子作品)も一覧にすべて表示します(パネル表示を含む)">子も全て表示</button>
-          <button type="button" class="search-toggle-btn" id="toggleSearchAreaBtn">検索エリアを非表示</button>
           <button type="button" class="sort-chip fixrequest-only" id="includeFixToggle" title="修正依頼の投稿も一覧にすべて表示します(パネル表示を含む)">修正依頼作品も表示</button>
+          <button type="button" class="search-toggle-btn" id="toggleSearchAreaBtn">検索エリアを非表示</button>
         </div>
       </div>
       <div class="search-row filter-row">
@@ -3023,23 +3052,6 @@
       <span class="count" id="dbCount"></span>
     </div>
 
-    <!-- カートは画面最下部に固定表示。スクロールしながら追加できるようにする -->
-    <div class="cart-bar" id="dbCartBar" style="display:none;">
-      <div class="cart-inner">
-        <div class="cart-head">
-          <span class="cart-title"><img class="cart-icon" src="images/shopping_cart.png" alt="">カート <span class="cart-num" id="dbCartCount">0</span> 件</span>
-          <div class="cart-actions">
-            <button type="button" class="cart-copy" id="dbCartCopyBtn">COPY</button>
-            <button type="button" class="cart-clear" id="dbCartClearBtn">空にする</button>
-          </div>
-        </div>
-        <div class="cart-body">
-          <div class="cart-chips" id="dbCartChips"></div>
-          <div class="cart-empty" id="dbCartEmpty">使いたいプロンプトをクリックすると、ここに追加されます。COPYでまとめてコピーできます。</div>
-        </div>
-      </div>
-    </div>
-
     <div id="databankList"></div>
     <div class="empty" id="dbEmptyState" style="display:none;">対象のプロンプトがありません。</div>
   </div>
@@ -3350,6 +3362,14 @@
         <div class="feature-desc">「プロンプト」「ネガティブプロンプト」、NovelAIの投稿では「キャラクタープロンプト」それぞれの「コピー」ボタンで、そのまま自分の生成ツールに貼り付けられます。</div>
       </div>
       <div class="feature-item">
+        <div class="feature-name">プロンプトの単語ごとの機能</div>
+        <div class="feature-desc">プロンプト・ネガティブプロンプトの「,」区切りの各単語にマウスを乗せると、「プロンプト集計」タブの辞書に日本語訳が登録されていればツールチップで表示されます。単語をクリックすると、プロンプト集計と同じ画面下部の「カート」に追加され(連続クリックで蓄積、同じ単語をもう一度押すと外れます)、カートの「COPY」でまとめてコピーできます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">タグのコピー</div>
+        <div class="feature-desc">投稿の「#タグ」をクリックすると、その文字列をクリップボードにコピーします(一覧カードでのタグクリックは絞り込みに使うため、こちらは詳細画面や使用例一覧などで使えます)。別のタグをクリックすると内容は上書きされます。</div>
+      </div>
+      <div class="feature-item">
         <div class="feature-name">ダウンロード</div>
         <div class="feature-desc">画像を原寸で保存できます。</div>
       </div>
@@ -3400,7 +3420,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">カートでまとめてコピー</div>
-        <div class="feature-desc">「カートに入れるモード」をオンにして使いたいプロンプトをクリックすると、カートに追加されていきます。「COPY」でまとめてコピーでき(<code>A, B, C</code> の形式)、そのまま自分の画像生成に貼り付けられます。チップの ✕ で個別削除、「カートを空にする」で全消去できます。</div>
+        <div class="feature-desc">「カートに入れるモード」をオンにして使いたいプロンプトをクリックすると、カートに追加されていきます。「COPY」でまとめてコピーでき(<code>A, B, C</code> の形式)、そのまま自分の画像生成に貼り付けられます。チップの ✕ で個別削除、「カートを空にする」で全消去できます。作品詳細のプロンプト表示エリアで単語をクリックしても同じカートに追加されるので、他の作品を見ながら気に入った単語だけ集めることもできます。</div>
       </div>
       <div class="guide-note">
         日本語訳は自動翻訳をベースに管理者が整えています。訳が「—」の語は、少し待つと自動で埋まります。カートの中身はページを読み込み直すと消えるので、必要な分をコピーしてから閉じてください。
@@ -4769,6 +4789,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     <div id="novelPreviewMount"></div>
   </div>
 </div>
+
+    <div class="cart-bar" id="dbCartBar" style="display:none;">
+      <div class="cart-inner">
+        <div class="cart-head">
+          <span class="cart-title"><img class="cart-icon" src="images/shopping_cart.png" alt="">カート <span class="cart-num" id="dbCartCount">0</span> 件</span>
+          <div class="cart-actions">
+            <button type="button" class="cart-copy" id="dbCartCopyBtn">COPY</button>
+            <button type="button" class="cart-clear" id="dbCartClearBtn">空にする</button>
+            <button type="button" class="cart-close" id="dbCartCloseBtn" title="カートを閉じる">✕ 閉じる</button>
+          </div>
+        </div>
+        <div class="cart-body">
+          <div class="cart-chips" id="dbCartChips"></div>
+          <div class="cart-empty" id="dbCartEmpty">単語をクリックすると、ここに追加されます。COPYでまとめてコピーできます。</div>
+        </div>
+      </div>
+    </div>
 
 <div class="modal-overlay" id="boardThreadOverlay">
   <div class="modal">
@@ -8465,7 +8502,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
-      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? videoPlayerHtml(imageSet[0].imageUrl) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }))) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
         (hasVariants
@@ -8487,11 +8524,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       (p.type === 'novel' ? '' :
       '<div class="detail-block">' +
         '<div class="block-head"><div class="label">プロンプト</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
-        '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? escapeHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
+        '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? promptWordsHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
       '</div>' +
       '<div class="detail-block" id="detailNegativeBlock"' + (hasText(imageSet[0].negativePrompt) ? '' : ' style="display:none;"') + '>' +
         '<div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
-        '<div class="value" id="detailNegativeValue">' + escapeHtml(imageSet[0].negativePrompt || '') + '</div>' +
+        '<div class="value" id="detailNegativeValue">' + promptWordsHtml(imageSet[0].negativePrompt || '') + '</div>' +
       '</div>' +
       // キャラクタープロンプト(NovelAIのマルチキャラ設定)はネガティブの下に置く
       '<div id="detailCharBlocks">' + charDetailBlocksHtml(imageSet[0]) + '</div>') +
@@ -8538,8 +8575,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           curVar = Number(btn.dataset.varIdx);
           const cur = imageSet[curVar];
           wrap.innerHTML = imageTag(cur.imageUrl, { size: 'w1000', alt: '生成画像' });
-          promptValEl.textContent = cur.prompt ? cur.prompt : '(入力なし)';
-          negValEl.textContent = cur.negativePrompt || '';
+          promptValEl.innerHTML = cur.prompt ? promptWordsHtml(cur.prompt) : '(入力なし)';
+          negValEl.innerHTML = promptWordsHtml(cur.negativePrompt || '');
           if (negBlockEl) negBlockEl.style.display = hasText(cur.negativePrompt) ? '' : 'none';
           const cb = document.getElementById('detailCharBlocks');
           if (cb) cb.innerHTML = charDetailBlocksHtml(cur);
@@ -11350,11 +11387,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const author = authorHtml(p);
     const refCount = (p.referenceImages || []).length;
     const refMeta = refCount ? '<span>参考資料 ' + refCount + '枚</span>' : '';
+    // この依頼に応えて投稿された作品(紐づく作品)。最新のものをサムネイルにする。
+    const answered = imagePosts.filter(function (ip) { return String(ip.requestId) === String(p.id) && !ip.parentId; });
+    answered.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const newest = answered[0];
+    const thumbHtml = newest
+      ? '<div class="row-thumb' + (newest.type === 'video' ? ' is-video' : '') + '">' + imageTag(newest.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
+      : '';
     return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
       (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>') +
-      '<div class="row-main"><div class="row-body">' +
+      '<div class="row-main">' + thumbHtml + '<div class="row-body">' +
       '<div class="row-title">' + title + '</div>' +
-      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' + refMeta + '<span class="row-requested">回答作品 ' + requestAnswerCount(p) + '件</span></div>' +
+      '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' + refMeta + '<span class="row-requested">回答作品 ' + answered.length + '件</span></div>' +
       (p.title ? '<div class="request-snippet">' + escapeHtml(p.prompt || '') + '</div>' : '') +
       '</div></div></div>';
   }
@@ -11471,7 +11515,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<div class="row-title">' + title + '</div>' +
           '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span class="row-requested">対応作品 ' + fixAnswerCount(p) + '件</span></div>' +
           snippet +
-          (tags.length ? '<div class="row-tags">' + tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+          (tags.length ? '<div class="row-tags">' + tags.map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '') +
         '</div>' +
       '</div>' +
     '</div>';
@@ -12283,7 +12327,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     opts = opts || {};
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
-    const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
+    const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
     // このプロンプト例をベースにした投稿作品(紐づく作品)。最新のものをサムネイルにする。
     const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1; });
     linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
@@ -12444,7 +12488,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
               '<label>' + label + '</label>' +
               '<button class="btn-copy" type="button" data-copytext="' + escapeHtml(text) + '">コピー</button>' +
             '</div>' +
-            '<div class="value">' + escapeHtml(text) + '</div>' +
+            '<div class="value">' + promptWordsHtml(text) + '</div>' +
           '</div>';
       };
       // 入れ子のカードにせず、区切り線で1件ずつ分ける
@@ -12491,10 +12535,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
-      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
-      '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? escapeHtml(p.prompt) : '(入力なし)') + '</div></div>' +
-      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + escapeHtml(p.negativePrompt) + '</div></div>' : '') +
+      '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? promptWordsHtml(p.prompt) : '(入力なし)') + '</div></div>' +
+      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + promptWordsHtml(p.negativePrompt) + '</div></div>' : '') +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
@@ -13387,6 +13431,85 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return token.toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
+  /* ===== プロンプト表示エリアの単語ごとの機能 =====
+     「,」区切りの各単語にホバーで日本語訳のツールチップ、クリックでプロンプト集計と
+     同じカートへ追加、を付ける。対象はプロンプト/ネガティブ/キャラクター設定の本文のみ
+     (メモや設定表などは対象外)。 */
+  function promptWordsHtml(text) {
+    if (!text) return '';
+    return String(text).split('\n').map(function (line) {
+      const parts = line.split(',');
+      return parts.map(function (part, i) {
+        const sep = i < parts.length - 1 ? ',' : '';
+        const cleaned = cleanPromptToken(part);
+        const key = cleaned ? databankKey(cleaned) : '';
+        if (!key) return escapeHtml(part) + sep;
+        const inCart = dbCart.some(function (c) { return c.key === key; });
+        return '<span class="prompt-word' + (inCart ? ' in-cart' : '') + '" data-key="' + escapeHtml(key) + '" data-token="' + escapeHtml(cleaned) + '">' +
+          escapeHtml(part) + '</span>' + sep;
+      }).join('');
+    }).join('\n');
+  }
+
+  // マウス追従のツールチップ(候補メニューの dl-tip と同じ考え方の別実装)
+  let wordTip = null;
+  function showWordTip(text, x, y) {
+    if (!wordTip) {
+      wordTip = document.createElement('div');
+      wordTip.className = 'word-tip';
+      document.body.appendChild(wordTip);
+    }
+    wordTip.textContent = text;
+    wordTip.style.display = 'block';
+    const pad = 14;
+    const w = wordTip.offsetWidth, h = wordTip.offsetHeight;
+    let left = x + pad, top = y + pad;
+    if (left + w > window.innerWidth - 8) left = Math.max(8, x - pad - w);
+    if (top + h > window.innerHeight - 8) top = Math.max(8, y - pad - h);
+    wordTip.style.left = left + 'px';
+    wordTip.style.top = top + 'px';
+  }
+  function hideWordTip() { if (wordTip) wordTip.style.display = 'none'; }
+
+  // 再描画のたびに配線し直さずに済むよう、document への委譲で拾う
+  document.addEventListener('mousemove', function (e) {
+    const el = e.target.closest && e.target.closest('.prompt-word');
+    if (!el) { hideWordTip(); return; }
+    const ja = lookupJa(el.dataset.key);
+    if (!ja) { hideWordTip(); return; }
+    showWordTip(ja, e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseout', function (e) {
+    if (e.target.closest && e.target.closest('.prompt-word') && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.prompt-word'))) hideWordTip();
+  });
+  document.addEventListener('click', function (e) {
+    const el = e.target.closest && e.target.closest('.prompt-word');
+    if (!el) return;
+    // クリックのたびに、その単語だけを即コピー(上書き)しつつ、カートにも追加/解除する
+    copyPromptWord(el.dataset.token);
+    toggleCartToken(el.dataset.key, el.dataset.token);
+  });
+
+  // プロンプトとして貼り付けやすいよう、単語の後ろに必ず「, 」を付けてコピーする
+  function copyPromptWord(token) {
+    const text = String(token || '').trim() + ', ';
+    navigator.clipboard.writeText(text).catch(function () {});
+  }
+
+  /* タグ(#付きの投稿カテゴリ)をクリックしたらクリップボードへコピーする。
+     一覧カードのタグは絞り込みクリックが既に stopPropagation しているため、
+     ここへは伝播せず、詳細モーダルやプロンプト集計の使用例など「押しても
+     何も起きなかった」場所だけで動く。2つ目をクリックすると内容は上書きされる。 */
+  document.addEventListener('click', function (e) {
+    const el = e.target.closest && e.target.closest('.row-tags .tag[data-tag]');
+    if (!el) return;
+    const text = el.dataset.tag || el.textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      el.classList.add('tag-copied');
+      setTimeout(function () { el.classList.remove('tag-copied'); }, 700);
+    }).catch(function () { window.prompt('以下をコピーしてください', text); });
+  });
+
   function scopePostsForDatabank() {
     return dbScope === 'image' ? imagePosts
       : dbScope === 'prompt' ? promptPosts
@@ -13475,6 +13598,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     listEl.querySelectorAll('.databank-row').forEach(function (row) {
       row.addEventListener('click', function () {
+        // プロンプト表示エリアの単語クリックと同じく、押した単語を即コピーしておく
+        copyPromptWord(row.dataset.dbtoken);
         if (dbCartMode) toggleCartToken(row.dataset.dbkey, row.dataset.dbtoken);
         else openDatabankUsage(row.dataset.dbkey, row.dataset.dbtoken);
       });
@@ -13517,10 +13642,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const idx = dbCart.findIndex(function (c) { return c.key === key; });
     if (idx === -1) dbCart.push({ key: key, token: token });
     else dbCart.splice(idx, 1);
-    renderCart();
+    if (!dbCartMode) setCartMode(true); else renderCart();
     const inCart = dbCart.some(function (c) { return c.key === key; });
     document.querySelectorAll('#databankList .databank-row').forEach(function (row) {
       if (row.dataset.dbkey === key) row.classList.toggle('in-cart', inCart);
+    });
+    // プロンプト表示エリアの単語も、同じキーのものをまとめてハイライトする
+    document.querySelectorAll('.prompt-word[data-key]').forEach(function (el) {
+      if (el.dataset.key === key) el.classList.toggle('in-cart', inCart);
     });
   }
   function renderCart() {
@@ -13554,8 +13683,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 一覧の下余白と右下ボタンの位置を追従させる。
   function syncCartLayout() {
     const bar = document.getElementById('dbCartBar');
-    const open = dbCartMode && document.getElementById('tab-databank').classList.contains('active');
+    // カートバーは固定位置なのでどのタブからでも見える。
+    // プロンプト集計タブのときだけ、一覧の下に隠れないよう余白を足す。
+    const open = dbCartMode;
     document.body.classList.toggle('db-cart-open', open);
+    document.body.classList.toggle('db-cart-open-databank', open && document.getElementById('tab-databank').classList.contains('active'));
     if (!open) { document.body.style.removeProperty('--cart-h'); return; }
     document.body.style.setProperty('--cart-h', bar.offsetHeight + 'px');
   }
@@ -13575,7 +13707,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   window.addEventListener('resize', syncCartLayout);
   document.getElementById('dbCartCopyBtn').addEventListener('click', function () {
     if (!dbCart.length) return;
-    const text = dbCart.map(function (c) { return c.token; }).join(', ');
+    // 各単語の後ろに「, 」を付ける(最後の単語も同様)。そのままプロンプト欄に貼り付けられる形式。
+    const text = dbCart.map(function (c) { return c.token.trim() + ', '; }).join('');
     const btn = this;
     const label = btn.textContent;
     navigator.clipboard.writeText(text).then(function () {
@@ -13594,6 +13727,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     dbCart = [];
     renderCart();
     document.querySelectorAll('#databankList .databank-row.in-cart').forEach(function (row) { row.classList.remove('in-cart'); });
+    // プロンプト表示エリアの単語ハイライトも一緒に外す
+    document.querySelectorAll('.prompt-word.in-cart').forEach(function (el) { el.classList.remove('in-cart'); });
     const btn = this;
     const label = btn.textContent;
     btn.textContent = '空にしました';
@@ -13603,6 +13738,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       btn.classList.remove('cleared');
     }, 1200);
   });
+  document.getElementById('dbCartCloseBtn').addEventListener('click', function () { setCartMode(false); });
 
   document.querySelectorAll('#dbSourceToggle button').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -14673,5 +14809,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 })();
 </script>
+    <!-- カートは画面最下部に固定表示。スクロールしながら追加できるようにする -->
+
 </body>
 </html>
