@@ -290,7 +290,9 @@
   }
   .btn-ghost:hover{ border-color: var(--accent); color: var(--accent); }
 
-  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 12px; min-height: 20px; }
+  /* タグを選ぶたびに枠が伸びないよう、最初から1行分の高さを確保しておく
+     (チップの実測高さ29pxに合わせる) */
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 12px; min-height: 29px; }
   .chip{
     background: rgba(0, 150, 250, .2);
     color: var(--accent);
@@ -1282,10 +1284,15 @@
 
   /* 使用した画像生成サービスの切替(投稿フォーム見出しの右) */
   .service-toggle{ display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-left:auto; }
+  /* 見出し行はボタンの有無で高さが変わらないよう、最低高さを揃える */
+  .panel-head-row{ min-height: 34px; }
+  /* 「差分を同時に投稿」等(.head-toggle)と高さを揃える。
+     揃えないと見出し行の高さが変わり、下の最初の枠の位置がモードごとにズレる。 */
   .service-toggle button{
-    font-family:'Noto Sans JP',sans-serif; font-size:11.5px;
+    font-family:'Noto Sans JP',sans-serif; font-size:12px;
     background:var(--surface-2); color:var(--ink-dim);
-    border:1px solid var(--line); border-radius:999px; padding:5px 12px; cursor:pointer;
+    border:1px solid var(--line); border-radius:999px; padding:6px 12px; cursor:pointer;
+    display:inline-flex; align-items:center; white-space:nowrap;
   }
   .service-toggle button:hover{ border-color:var(--accent); color:var(--accent); }
   .service-toggle button.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
@@ -1316,14 +1323,20 @@
   .char-item-body textarea{ min-height:56px; }
   .char-add{ margin-top:10px; }
   /* 詳細モーダル側は入れ子のカードにせず、区切り線でキャラを分ける */
-  .char-rows{ padding: 0 12px; }
+  /* block だと余分な行ボックスが入って見出しとの間に隙間が出るので flex にする */
+  .char-rows{ padding: 0 12px; display:flex; flex-direction:column; }
+  /* 1ブロックとしてまとまって見えるよう内側を詰める。
+     区切り線の前後(12px)と、見出し帯〜1件目の間隔をそろえる。 */
   .char-row{ padding: 12px 0; border-top: 1px solid var(--line); }
-  .char-row:first-child{ border-top: 0; }
+  /* 見出し帯の下に5pxの隙間が残るので、その分だけ1件目の上余白を詰めて
+     「見出し→キャラ1」と「区切り線→キャラ2」の間隔を揃える */
+  .char-row:first-child{ border-top: 0; padding-top: 8px; }
   .char-row-num{
     font-family:'Noto Sans JP',sans-serif; font-size:11.5px; font-weight:600;
-    color: var(--ink); margin-bottom: 8px;
+    color: var(--ink); margin-bottom: 6px;
   }
-  .char-row .char-sub + .char-sub{ margin-top: 10px; }
+  .char-row .char-sub + .char-sub{ margin-top: 6px; }
+  .char-row .char-sub-head{ margin-bottom: 3px; }
   /* .char-item-body の外に出したので、ラベルの体裁をここでも指定する */
   .char-sub-head label{
     font-family:'Noto Sans JP',sans-serif; font-size:11px; color:var(--ink-dim);
@@ -1400,6 +1413,14 @@
   /* 見出し行へ移したので、フォーム内の元画像選択欄は出さない */
   body.post-mode-video .link-field[data-link="videoSource"]{ display:none !important; }
   .novel-ref-pick .base-prompt-display{ flex:0 1 auto; justify-content:flex-end; min-width:0; }
+  /* 見出し行の高さが他モードと変わらないよう、ボタンとチップを .head-toggle に合わせる */
+  /* block のままだと行の下側に余白が残って文字が上寄りに見えるので、
+     inline-flex で天地中央に置く */
+  .novel-ref-pick .btn-ghost{
+    padding:6px 12px; font-size:12px; line-height:1;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .novel-ref-pick .chip{ padding:4px 8px 4px 10px; font-size:11.5px; }
   .novel-ref-pick .base-prompt-display .chip{ max-width:260px; }
   .novel-ref-label{ font-family:'Noto Sans JP',sans-serif; font-size:11px; color:var(--ink-dim); }
   .novel-scene-count{
@@ -2016,6 +2037,7 @@
   .comment-toggle-btn .cmt-arrow{ margin-left:auto; color: var(--ink-dim); font-size:11px; }
 
   .comment-list{ display:flex; flex-direction:column; gap:12px; margin: 4px 0 20px; }
+  .comment-list:empty{ display:none; margin: 0; }
   /* コメントも詳細モーダルの項目と同じ作り:
      枠で囲み、名前と日時の帯を上に、本文は黒い面に置く。 */
   .comment-item{
@@ -12673,9 +12695,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const listEl = document.getElementById('commentListEl');
     if (!listEl) return;
     const list = commentsFor(postId);
-    listEl.innerHTML = list.length
-      ? list.map(commentItemHtml).join('')
-      : '<div class="comment-empty">まだコメントはありません。最初のひとことを書いてみましょう。</div>';
+    // コメントが無いときは何も出さない(空の案内文で余白が空くのを避ける)
+    listEl.innerHTML = list.map(commentItemHtml).join('');
     listEl.querySelectorAll('[data-del-comment]').forEach(function (btn) {
       btn.addEventListener('click', function () { adminDeleteComment(btn.dataset.delComment, postId); });
     });
