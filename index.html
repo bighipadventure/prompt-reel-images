@@ -693,7 +693,9 @@
   /* ---- 候補プルダウン付き入力欄 ---- */
   .dl-wrap{
     display:inline-flex; align-items:stretch;
-    background: var(--surface-2);
+    /* 他の入力欄と同じ黒に揃える(以前はここだけ薄いグレーで、▼ボタン側との
+       境目に色の違う隙間が見えていた) */
+    background: var(--bg);
     border: 1px solid var(--line);
     border-radius: 10px;
     width: 100%;
@@ -711,8 +713,10 @@
     flex: 0 0 auto;
     display:flex; align-items:center; justify-content:center;
     background: none; border: none;
+    border-radius: 0;   /* 角丸なし。垂直の区切り線だけで入力エリアと分ける */
+    border-left: 1px solid var(--line);
     color: var(--ink-dim); cursor: pointer;
-    font-size: 11px; padding: 0 10px 0 4px;
+    font-size: 11px; padding: 0 12px; margin-left: 6px;   /* ▼の左右を同じ幅にする */
   }
   .dl-toggle:hover{ color: var(--accent); }
   .dl-menu{
@@ -6337,7 +6341,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     add('CFG scale', c.scale);
     add('Seed', c.seed);
     if (c.width && c.height) add('Size', c.width + 'x' + c.height);
-    add('Model', chunks['Source']);
+    // Source には "NovelAI Diffusion V5 0ADF9AB7" のように末尾へ8桁の16進ハッシュが
+    //付くため、Checkpoint欄がハッシュ違いで無限に増えないよう切り落とす
+    const modelName = String(chunks['Source'] || '').replace(/\s+[0-9A-Fa-f]{6,}\s*$/, '').trim();
+    add('Model', modelName || chunks['Source']);
     add('Schedule type', c.noise_schedule);
     if (Number(c.cfg_rescale) > 0) add('CFG rescale', c.cfg_rescale);   // 0 のときは項目を増やさない
     if (c.uncond_scale !== undefined && Number(c.uncond_scale) !== 1) add('Uncond scale', c.uncond_scale);
@@ -7056,7 +7063,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         }
         const v = p.settings && p.settings[f.key];
         if (v === undefined || v === null || String(v).trim() === '') return;
-        set.add(String(v));
+        // Checkpoint候補は末尾のハッシュ(NovelAIのSourceに付く8桁前後の16進数など)を
+        // 落としてから集める。過去に保存された投稿でも候補が無限に増えないようにするため。
+        const clean = f.key === 'checkpoint'
+          ? String(v).replace(/\s+[0-9A-Fa-f]{6,}\s*$/, '').trim() || String(v).trim()
+          : String(v);
+        set.add(clean);
       });
       fillDatalist('dl_' + f.id, sortJa(Array.from(set)));
     });
