@@ -148,6 +148,10 @@
     letter-spacing: 0;
   }
   label.field-label:first-of-type{ margin-top: 0; }
+  /* 「お名前」欄(枠なしの div に入っている)の直後に来る見出しは、
+     :first-of-type 判定でこの div の中の label と競合しないため上の余白が
+     消えてしまう。直後に来る見出しにだけ余白を戻す。 */
+  .board-namefield + label.field-label{ margin-top: 18px; }
 
   /* ドロップゾーン */
   .dropzone{
@@ -1242,6 +1246,10 @@
   body.opt-no-author .author-field{ display:none !important; }
   body.opt-no-author .board-reply-namefield{ display:none !important; }
   body.opt-no-author .board-edit-namefield{ display:none !important; }
+  body.opt-no-author .board-namefield{ display:none !important; }
+  /* 投稿者名を表示しない設定のときは、スレッド/返信の「匿名」表示も出さない
+     (誰でも匿名なのが当たり前になり、表示する意味がなくなるため) */
+  body.opt-no-author .board-name{ display:none !important; }
   body.opt-no-author .dl-wrap:has(.author-filter){ display:none; }
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
@@ -1964,6 +1972,13 @@
     border-radius:10px; padding:0; position:relative; overflow:hidden; cursor:pointer;
   }
   .board-thread:hover{ border-color: var(--accent); }
+  /* 編集フォームだけを表示している間は、箱の背景・罫線・角丸を外す(枠なしで見せる) */
+  .board-thread.is-editing, .board-reply.is-editing{
+    background: none; border: none; border-radius: 0;
+  }
+  .board-thread.is-editing:hover{ border-color: transparent; }
+  /* 箱のpaddingは0が前提の構造なので、編集フォーム自身に左右の余白を持たせる */
+  .board-edit-form{ padding: 0 2px; }
   .board-thread-head{
     padding:14px 18px; background: var(--surface); border-bottom:1px solid var(--line);
   }
@@ -3083,7 +3098,7 @@
     <section class="panel">
       <h2>掲示板</h2>
 
-      <div class="author-field">
+      <div class="board-namefield">
         <label class="field-label">お名前(任意)</label>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="boardNameInput" placeholder="匿名で投稿できます">
       </div>
@@ -11703,6 +11718,77 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
   boardRefInput.addEventListener('change', function () { addBoardRefFiles(boardRefInput.files); boardRefInput.value = ''; });
 
+  /* 編集フォームの画像添付。既存画像は keep、新規に選んだ分は added として持ち、
+     保存時に keepImages / newImages としてサーバーへ送る(残す/足す/差し替えのどれも表現できる)。
+     複数の編集フォームが同時に存在しうるので、投稿IDごとに状態を持つ。 */
+  const boardEditRefs = {};   // id -> { keep: [url,...], added: [{dataUrl},...] }
+
+  function renderBoardEditStrip(id) {
+    const state = boardEditRefs[id];
+    const strip = document.querySelector('.board-edit-strip[data-edit-strip="' + CSS.escape(String(id)) + '"]');
+    if (!state || !strip) return;
+    const items = state.keep.map(function (u) { return { kind: 'keep', src: u }; })
+      .concat(state.added.map(function (a) { return { kind: 'added', src: a.dataUrl }; }));
+    strip.innerHTML = items.map(function (it, i) {
+      return '<div class="attach-thumb"><img src="' + escapeHtml(it.src) + '" alt="添付画像" data-view="' + i + '">' +
+        '<button class="attach-remove" type="button" data-idx="' + i + '" title="削除">✕</button></div>';
+    }).join('') + '<button class="attach-add-tile" type="button" data-addtile="1"><span class="plus">+</span>追加</button>';
+    strip.querySelectorAll('[data-view]').forEach(function (img) {
+      img.addEventListener('click', function () { openRefLightbox(items[Number(img.dataset.view)].src); });
+    });
+    strip.querySelectorAll('.attach-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const idx = Number(btn.dataset.idx);
+        if (idx < state.keep.length) state.keep.splice(idx, 1);
+        else state.added.splice(idx - state.keep.length, 1);
+        renderBoardEditStrip(id);
+      });
+    });
+    const tile = strip.querySelector('[data-addtile]');
+    const form = strip.closest('.board-edit-form');
+    const fileInput = form ? form.querySelector('.board-edit-file') : null;
+    if (tile && fileInput) tile.addEventListener('click', function () { fileInput.click(); });
+  }
+
+  async function addBoardEditRefFiles(id, fileList) {
+    const state = boardEditRefs[id];
+    if (!state) return;
+    const files = Array.from(fileList || []).filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    showLoading('画像を処理中...');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const dataUrl = await resizeToJpeg(files[i]);
+        state.added.push({ dataUrl: dataUrl });
+      }
+      renderBoardEditStrip(id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // 編集フォームを開くたびに、その時点の画像で状態を初期化してストリップを配線する
+  function initBoardEditImages(id, form) {
+    const msg = allBoard.find(function (m) { return String(m.id) === String(id); });
+    boardEditRefs[id] = { keep: (msg && msg.images ? msg.images.slice() : []), added: [] };
+    renderBoardEditStrip(id);
+    const strip = form.querySelector('.board-edit-strip');
+    const fileInput = form.querySelector('.board-edit-file');
+    if (strip && fileInput && !strip.dataset.dndWired) {
+      strip.dataset.dndWired = '1';
+      strip.addEventListener('dragover', function (e) { e.preventDefault(); strip.classList.add('drag-over'); });
+      strip.addEventListener('dragleave', function () { strip.classList.remove('drag-over'); });
+      strip.addEventListener('drop', function (e) {
+        e.preventDefault();
+        strip.classList.remove('drag-over');
+        if (e.dataTransfer && e.dataTransfer.files) addBoardEditRefFiles(id, e.dataTransfer.files);
+      });
+      fileInput.addEventListener('change', function () { addBoardEditRefFiles(id, fileInput.files); fileInput.value = ''; });
+    }
+  }
+
   function boardVoteHtml(m) {
     const id = escapeHtml(String(m.id));
     const vote = boardVotes[m.id];
@@ -11858,6 +11944,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       (withTitle ? '<label class="field-label">タイトル(任意)</label><input type="text" class="board-edit-title" autocomplete="off">' : '') +
       '<div class="board-edit-namefield"><label class="field-label">お名前(任意)</label><input type="text" class="board-edit-name" autocomplete="off"></div>' +
       '<label class="field-label">メッセージ</label><textarea class="board-edit-body"></textarea>' +
+      '<label class="field-label">画像を添付(任意・複数可)</label>' +
+      '<div class="attach-strip board-edit-strip" data-edit-strip="' + eid + '"></div>' +
+      '<input type="file" class="board-edit-file" accept="image/*" multiple style="display:none;">' +
       '<div class="board-reply-form-row">' +
         '<button class="btn-submit board-edit-save" type="button" data-edit-board-save="' + eid + '">保存</button>' +
         '<button class="btn-ghost board-edit-cancel" type="button">キャンセル</button>' +
@@ -12044,6 +12133,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       });
     }
     form.style.display = showForm ? '' : 'none';
+    // 編集フォームだけが見えている間は、スレッド/返信を囲む枠(グレー背景+罫線)を消す。
+    // 通常表示のときの箱を編集にも流用しているため、中身が編集欄だけになると
+    // 「編集フォーム専用の枠」に見えてしまうのを避けるため。
+    const box = form.closest('.board-thread, .board-reply');
+    if (box) box.classList.toggle('is-editing', showForm);
   }
 
   /* スレッドの操作(投票・返信・管理編集)の配線。一覧とモーダルの両方から使う。 */
@@ -12095,6 +12189,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const form = document.querySelector('.board-edit-form[data-msg-id="' + CSS.escape(id) + '"]');
         if (!form) return;
         toggleInlineEditForm(form, true);
+        initBoardEditImages(id, form);
         const ta = form.querySelector('.board-edit-body');
         if (ta) ta.focus();
       });
@@ -12118,8 +12213,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const statusEl = form.querySelector('.board-edit-status');
     const bodyVal = bodyEl.value.trim();
     const titleVal = titleEl ? titleEl.value.trim() : '';
-    const msg0 = allBoard.find(function (m) { return String(m.id) === String(id); });
-    const hasImg = !!(msg0 && msg0.images && msg0.images.length);
+    const imgState = boardEditRefs[id] || { keep: [], added: [] };
+    const hasImg = (imgState.keep.length + imgState.added.length) > 0;
     if (!bodyVal && !titleVal && !hasImg) { statusEl.textContent = '内容を入力してください'; return; }
     statusEl.textContent = '';
     btn.disabled = true;
@@ -12131,7 +12226,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         id: id,
         title: titleEl ? titleEl.value : '',
         name: nameEl.value,
-        body: bodyVal
+        body: bodyVal,
+        keepImages: imgState.keep,
+        newImages: imgState.added.map(function (a) { return a.dataUrl; })
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       const msg = allBoard.find(function (m) { return String(m.id) === String(id); });
@@ -12139,7 +12236,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         msg.body = (result.body != null ? result.body : bodyVal);
         msg.name = (result.name != null ? result.name : nameEl.value.trim());
         if (titleEl) msg.title = (result.title != null ? result.title : titleEl.value.trim());
+        if (result.images) msg.images = result.images;
       }
+      delete boardEditRefs[id];
       renderBoard();
       refreshBoardThreadModal();
     } catch (err) {
