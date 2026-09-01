@@ -8439,12 +8439,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const baseList = baseIds
       .map(function (id) { return promptPosts.find(function (pp) { return String(pp.id) === String(id); }); })
       .filter(Boolean);
+    baseList.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    // 他の紐づけ(参考にした投稿作品/関連ノベル等)と同じく、詳細の下にカード一覧としてぶら下げる
     const baseBlock = baseList.length
-      ? '<div class="detail-block"><div class="label">ベースにしたプロンプト例</div>' +
-          '<div class="value">' + baseList.map(function (bp) {
-            return '<a href="#" class="base-prompt-link" data-prompt-id="' + escapeHtml(String(bp.id)) + '" style="display:inline-block; margin: 0 10px 4px 0;">' +
-              (bp.title ? escapeHtml(bp.title) : '(無題)') + '</a>';
-          }).join('') + '</div></div>'
+      ? '<div class="linked-works-head">ベースにしたプロンプト例(' + baseList.length + '件)</div>' +
+        '<div class="list" id="baseWorks">' + baseList.map(function (bp) { return promptRowHtml(bp, { counts: false }); }).join('') + '</div>'
       : '';
 
     const parent = p.parentId
@@ -8562,7 +8561,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       fixContentBlock +
-      baseBlock +
       parentBlock +
       requestBlock +
       fixLinksBlock +
@@ -8585,6 +8583,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       videoSourceBlock +
       sourceVideosBlock +
       linkedNovelsBlock +
+      baseBlock +
       referenceSourceBlock +
       referencedByBlock;
 
@@ -8674,13 +8673,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (tryPlay && tryPlay.catch) tryPlay.catch(function () {});
     }
 
-    modalBody.querySelectorAll('.base-prompt-link').forEach(function (baseLink) {
-      baseLink.addEventListener('click', async function (e) {
-        e.preventDefault();
-        const bp = await ensurePostLoaded(baseLink.dataset.promptId);
-        if (bp) openPromptModal(bp);
+    // ベースにしたプロンプト例(カード一覧)。行の種類が prompt 固定なので直接 openPromptModal を使う。
+    const baseWorks = document.getElementById('baseWorks');
+    if (baseWorks) {
+      wireCountButtons(baseWorks);
+      baseWorks.querySelectorAll('.row').forEach(function (row) {
+        row.addEventListener('click', async function () {
+          const bp = await ensurePostLoaded(row.dataset.id);
+          if (bp) openPromptModal(bp);
+        });
       });
-    });
+    }
 
     const parentLink = modalBody.querySelector('.parent-post-link');
     if (parentLink) {
