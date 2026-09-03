@@ -8458,11 +8458,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     const imageSet = [{ imageUrl: p.imageUrl, prompt: p.prompt, negativePrompt: p.negativePrompt, settings: p.settings, type: p.type }]
       .concat((p.variants || []).map(function (v) {
+        // 差分ごとの画像情報はそれぞれ独立しているものとして扱う。
+        // 差分自身にプロンプト/設定が無くても、メイン画像の値を代わりに表示しない。
         return {
           imageUrl: v.imageUrl,
-          prompt: v.prompt || p.prompt,
-          negativePrompt: v.negativePrompt || p.negativePrompt,
-          settings: (v.settings && Object.keys(v.settings).length) ? v.settings : p.settings,
+          prompt: v.prompt || '',
+          negativePrompt: v.negativePrompt || '',
+          settings: v.settings || {},
           type: p.type
         };
       }));
