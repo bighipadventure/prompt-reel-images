@@ -715,7 +715,8 @@
     border-radius: 6px; padding: 4px 12px; font-size: 11px; margin-right: 0;
   }
   .btn-ja:hover{ background: rgba(154, 154, 154, .32); color: var(--ink); }
-  .btn-ja.active{ background: rgba(0, 150, 250, .2); color: var(--accent); border-color: rgba(0, 150, 250, .35); }
+  /* 「原文」表示中(active)も、切替前と同じグレー系のままにする */
+  .btn-ja.active{ background: rgba(154, 154, 154, .32); color: var(--ink); border-color: rgba(154, 154, 154, .5); }
   /* 日本語に差し替えて表示している単語(色は変えず白のまま) */
   .prompt-word.is-ja{ color: #fff; }
 
@@ -3237,7 +3238,7 @@
       </div>
       <div class="feature-item video-only">
         <div class="feature-name">動画投稿</div>
-        <div class="feature-desc">生成した動画を、画像投稿と同じようにプロンプト・タグ・ジャンル等を付けて共有します。動画をドロップすると、ファイルから読み取れる<strong>解像度・FPS・フレーム数</strong>が自動で入ります(動画にはプロンプトを埋め込む仕組みが無いため、モデル名などは手入力です)。「動画投稿一覧」タブに並びます。長い動画は投稿に失敗することがあります。</div>
+        <div class="feature-desc">生成した動画を、画像投稿と同じようにプロンプト・タグ・ジャンル等を付けて共有します。動画をドロップすると、ファイルから読み取れる<strong>解像度・FPS・フレーム数</strong>が自動で入ります(動画にはプロンプトを埋め込む仕組みが無いため、モデル名などは手入力です)。「動画投稿一覧」タブに並びます。<strong>GIFアニメも同じ「動画」タブから投稿できます</strong>(動画プレイヤーを使わず画像としてそのまま表示されるので、すぐに表示され、アニメーションもそのまま動きます)。</div>
       </div>
       <div class="feature-item novel-only">
         <div class="feature-name">ノベルゲーム投稿</div>
@@ -6863,6 +6864,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       'https://drive.google.com/uc?export=download&id=' + id
     ];
   }
+  /* 動画タブへGIFなどの画像を投稿した場合の表示。
+     動画プレイヤーを経由すると読み込みに時間がかかるうえ再生できないため、
+     画像としてそのまま出す。サムネイルURLだとGIFが動かないので、
+     元ファイルのURLを直接使って動きを保つ。 */
+  function isImageMediaPost(p) {
+    return !!(p && p.settings && p.settings.mediaKind === 'image');
+  }
+  function gifPlayerHtml(url) {
+    const id = driveFileIdFromUrl(url);
+    if (!id) return imageTag(url, { size: 'w1000', alt: '生成画像' });
+    // サムネイルURL(thumbnail?id=...)はGIFが静止画になるため、原寸を返す lh3 を使う。
+    // (download?export=download はダウンロード用でimg srcとしては読み込めない)
+    // 読み込みに失敗したら handleImageError が thumbnail 等へ順にフォールバックする。
+    return '<img src="https://lh3.googleusercontent.com/d/' + escapeHtml(id) + '=s0"' +
+      ' alt="生成画像" decoding="async"' +
+      ' data-fileid="' + escapeHtml(id) + '" data-size="w1000" data-retry="0">';
+  }
+
   function videoPlayerHtml(url) {
     const id = driveFileIdFromUrl(url);
     if (!id) return '<div class="value">(動画を表示できません)</div>';
@@ -7954,6 +7973,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         }));
         payload.imageMime = file.type;
         payload.imageName = file.name;
+        // 動画投稿にGIFなどの画像を上げたときは、閲覧側で動画プレイヤーを使わず
+        // そのまま画像として表示できるよう、種別を設定に控えておく。
+        if (isVideo && !isVideoFile(file) && payload.settings) {
+          payload.settings.mediaKind = 'image';
+        }
       }
       // 差分: 新規投稿は variantMode 時、画像編集は常に送る(空配列=差分なしに更新)。
       // 既存差分(imageUrl保持)は再アップロードせず、新規追加(dataUrl)だけ base64 送信する。
@@ -8350,7 +8374,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
         (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
         '<div class="row-main">' +
-          '<div class="row-thumb' + (p.type === 'video' ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(p) || p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+          '<div class="row-thumb' + ((p.type === 'video' && !isImageMediaPost(p)) ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(p) || p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
             '<div class="row-title">' + title + '</div>' +
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
@@ -8653,7 +8677,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? videoPlayerHtml(imageSet[0].imageUrl) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }))) + '</div>' +
+      '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? (isImageMediaPost(p) ? gifPlayerHtml(imageSet[0].imageUrl) : videoPlayerHtml(imageSet[0].imageUrl)) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }))) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
         (hasVariants
           ? '<div class="variant-switcher" id="variantSwitcher">' + imageSet.map(function (_, i) {
@@ -13908,6 +13932,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   document.addEventListener('mousemove', function (e) {
     const el = e.target.closest && e.target.closest('.prompt-word');
     if (!el) { hideWordTip(); return; }
+    // 日本語訳を表示中の単語は、逆に元の英語表記をツールチップに出す
+    // (訳語の上に同じ訳語を出しても意味がないため)
+    if (el.classList.contains('is-ja')) {
+      showWordTip(el.dataset.token, e.clientX, e.clientY);
+      return;
+    }
     // まずタグ全体("amazing quality"のような複合語)のキーで探し、
     // 登録が無ければマウス直下の1単語だけで探し直す
     let ja = lookupJa(el.dataset.key);
