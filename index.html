@@ -7863,7 +7863,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const isFix = editingFix || (!editing && mode === 'fix');
       const isVideo = editingVideo || (!editing && mode === 'video');
       const isNovel = novelMode;
-      const novelParts = isNovel ? buildNovelPayloadParts() : null;
+      const novelParts = isNovel ? await buildNovelPayloadParts() : null;
       const payload = {
         title: document.getElementById('titleInput').value,
         author: document.getElementById('authorInput').value,
@@ -7891,19 +7891,29 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         payload.editPassword = document.getElementById('editPwInput').value;
       }
       if (file) {
-        payload.imageBase64 = await fileToBase64(file);
+        const dataUrl = await fileToBase64(file);
+        Object.assign(payload, await prepareUploadPayload(dataUrl, function (i, n) {
+          showLoading(n > 1 ? '画像をアップロード中... (' + i + '/' + n + ')' : '画像をアップロード中...');
+        }));
         payload.imageMime = file.type;
         payload.imageName = file.name;
       }
       // 差分: 新規投稿は variantMode 時、画像編集は常に送る(空配列=差分なしに更新)。
       // 既存差分(imageUrl保持)は再アップロードせず、新規追加(dataUrl)だけ base64 送信する。
       if (!isFix && !isVideo && !isNovel && (variantMode || editing)) {
-        payload.variants = variantImages.map(function (v) {
+        const variantList = [];
+        for (let vi = 0; vi < variantImages.length; vi++) {
+          const v = variantImages[vi];
           if (v.dataUrl) {
-            return { imageBase64: v.dataUrl, imageMime: v.mime, imageName: v.name, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings };
+            const up = await prepareUploadPayload(v.dataUrl, function (i, n) {
+              showLoading('差分画像をアップロード中(' + (vi + 1) + '/' + variantImages.length + ')' + (n > 1 ? ' (' + i + '/' + n + ')' : ''));
+            });
+            variantList.push(Object.assign({ imageMime: v.mime, imageName: v.name, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings }, up));
+          } else {
+            variantList.push({ imageUrl: v.imageUrl, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings });
           }
-          return { imageUrl: v.imageUrl, prompt: v.prompt, negativePrompt: v.negativePrompt, settings: v.settings };
-        });
+        }
+        payload.variants = variantList;
       }
 
       const res = await fetch(GAS_URL, {
@@ -8934,6 +8944,43 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       body: JSON.stringify(payload)
     });
     return res.json();
+  }
+
+  /* ===== 大きい画像/動画の分割アップロード =====
+     base64化すると元のファイルより約1.33倍に膨れる。1回のPOSTにまるごと詰め込むと、
+     Google Apps Script側で(エラーメッセージも出ないまま)接続が切れ、ブラウザには
+     「Failed to fetch」とだけ表示される状態になっていた。しきい値を超えるファイルは
+     小さなチャンクに分けて何回かに分けて送り、サーバー側で結合してもらう。 */
+  const UPLOAD_CHUNK_SIZE = 7 * 1024 * 1024;        // 1回に送るbase64文字数
+  const UPLOAD_CHUNK_THRESHOLD = 7 * 1024 * 1024;   // これ以下ならこれまで通り1回で送る
+  const UPLOAD_PARALLEL = 3;                        // 同時に送るチャンク数
+  async function prepareUploadPayload(dataUrl, onProgress) {
+    const commaIdx = dataUrl.indexOf(',');
+    const b64 = commaIdx === -1 ? dataUrl : dataUrl.slice(commaIdx + 1);
+    if (b64.length <= UPLOAD_CHUNK_THRESHOLD) return { imageBase64: dataUrl };
+
+    const uploadId = 'up_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    const total = Math.ceil(b64.length / UPLOAD_CHUNK_SIZE);
+    // チャンクは順不同で受け取れるので、数本ずつ並行して送って待ち時間を短縮する
+    let done = 0;
+    let nextIndex = 0;
+    async function worker() {
+      while (true) {
+        const i = nextIndex++;
+        if (i >= total) return;
+        const chunk = b64.slice(i * UPLOAD_CHUNK_SIZE, (i + 1) * UPLOAD_CHUNK_SIZE);
+        const result = await postAction({ action: 'uploadChunk', uploadId: uploadId, index: i, total: total, data: chunk });
+        if (!result || !result.success) {
+          throw new Error('アップロードに失敗しました(' + (i + 1) + '/' + total + '): ' + ((result && result.error) || '不明なエラー'));
+        }
+        done++;
+        if (onProgress) onProgress(done, total);
+      }
+    }
+    const workers = [];
+    for (let w = 0; w < Math.min(UPLOAD_PARALLEL, total); w++) workers.push(worker());
+    await Promise.all(workers);
+    return { imageUploadId: uploadId, imageUploadChunks: total };
   }
 
   function updateCountUI(id) {
@@ -10545,22 +10592,27 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   // 送信用: シナリオ本体と、未アップロード画像(インデックス付き)に分ける
-  function buildNovelPayloadParts() {
+  async function buildNovelPayloadParts() {
     const novelImages = [];
     const firstIdxOf = {};   // 同じ画像を複製したときに二重アップロードしないための対応表
-    const scenario = novelScenes.map(function (s, i) {
+    const scenario = [];
+    for (let i = 0; i < novelScenes.length; i++) {
+      const s = novelScenes[i];
       // own: この投稿が自分でアップロードした画像かどうか(削除時に消してよいかの判断に使う)
       const entry = { bg: s.dataUrl ? '' : (s.bg || ''), own: s.dataUrl ? true : (s.own === true), lines: novelCleanLines(s.lines) };
       if (s.dataUrl) {
         if (firstIdxOf[s.dataUrl] === undefined) {
           firstIdxOf[s.dataUrl] = i;
-          novelImages.push({ index: i, imageBase64: s.dataUrl, imageMime: s.mime || 'image/png', imageName: 'novel_scene_' + (i + 1) });
+          const up = await prepareUploadPayload(s.dataUrl, function (n1, n2) {
+            showLoading('シーン画像をアップロード中(' + (i + 1) + '/' + novelScenes.length + ')' + (n2 > 1 ? ' (' + n1 + '/' + n2 + ')' : ''));
+          });
+          novelImages.push(Object.assign({ index: i, imageMime: s.mime || 'image/png', imageName: 'novel_scene_' + (i + 1) }, up));
         } else {
           entry.copyOf = firstIdxOf[s.dataUrl];   // 先に上げた同じ画像を使い回す
         }
       }
-      return entry;
-    });
+      scenario.push(entry);
+    }
     return { scenario: scenario, novelImages: novelImages };
   }
 
