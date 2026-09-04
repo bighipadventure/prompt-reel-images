@@ -543,10 +543,13 @@
   /* 枠で囲む前は「次の見出しを引き上げて詰める」ための負マージンが入っていたが、
      枠の中では下にはみ出して切れてしまうので打ち消す。 */
   /* 見出しとコピーボタンを同じ行に置く */
-  .detail-block > .block-head{ justify-content: space-between; }
+  /* ラベルだけを伸ばして、右側のボタン群(日本語訳・コピー)を隣り合わせで右端に寄せる。
+     space-between のままだと、ボタンが2つあるとき真ん中の1つが中央に散ってしまう。 */
+  .detail-block > .block-head > .label{ flex: 1 1 auto; min-width: 0; }
   .detail-block > .block-head .btn-copy{ flex: none; }
-  .char-sub-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
-  .char-sub-head label{ margin-bottom:0; }
+  .char-sub-head{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  /* こちらもラベルを伸ばして、ボタン群を隣り合わせで右端に寄せる */
+  .char-sub-head > label{ margin-bottom:0; flex: 1 1 auto; min-width: 0; }
   .detail-block > .settings-table{ padding: 10px 12px; }
   .detail-block > .block-gallery{ padding: 10px 12px; }
   .detail-block > .char-list{ padding: 10px 12px; }
@@ -705,6 +708,16 @@
     border-radius: 6px; padding: 4px 12px; font-size: 11px;
   }
   .btn-copy:hover{ background: rgba(0, 150, 250, .32); border-color: var(--accent); }
+  /* 「日本語訳」切替ボタン(コピーの左) */
+  .btn-ja{
+    background: rgba(154, 154, 154, .2); color: var(--ink-dim);
+    border: 1px solid rgba(154, 154, 154, .35);
+    border-radius: 6px; padding: 4px 12px; font-size: 11px; margin-right: 0;
+  }
+  .btn-ja:hover{ background: rgba(154, 154, 154, .32); color: var(--ink); }
+  .btn-ja.active{ background: rgba(0, 150, 250, .2); color: var(--accent); border-color: rgba(0, 150, 250, .35); }
+  /* 日本語に差し替えて表示している単語(色は変えず白のまま) */
+  .prompt-word.is-ja{ color: #fff; }
 
   /* ---- 読み込みオーバーレイ ---- */
   .loading-overlay{
@@ -1145,9 +1158,17 @@
   .list.panel-mode .row-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .list.panel-mode .row-body, .list.panel-mode .row-meta{ display:none; }
 
-  .full-image-overlay{ padding:0; align-items:stretch; justify-content:stretch; }
+  /* 画像だけに集中できるよう、背景を濃くしつつぼかす(拡大表示専用) */
+  .full-image-overlay{
+    padding:0; align-items:stretch; justify-content:stretch;
+    background: rgba(6,7,16,0.93);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
   .full-image-inner{ position:relative; width:100%; height:100%; display:flex; flex-direction:column; }
   .full-image-wrap{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding: 56px 16px 8px; position: relative; }
+  /* 差分の切替ボタンがあるときは、その高さ分だけ下に余白を作って画像と重ならないようにする */
+  .full-image-wrap.has-variants{ padding-bottom: 64px; }
   .full-image-wrap img{ max-width:100%; max-height:100%; object-fit:contain; border-radius: 6px; }
   /* パネル表示のフル画像で、差分(複数枚)があるときに中央下部へ出す切替ボタン */
   .full-image-variants{
@@ -2391,6 +2412,7 @@
       <button class="admin-btn admin-opts-btn admin-badge-btn" type="button" id="adminContactsBtn" style="display:none;">連絡一覧<span class="contact-badge" id="contactBadge">0</span></button>
       <button class="admin-btn admin-opts-btn" type="button" id="adminAnnounceBtn" style="display:none;">お知らせを投稿</button>
       <button class="admin-btn" type="button" id="refreshBtn" title="ページを再読み込みせずに、新しい投稿などを取り込みます(再ログイン不要)">更新</button>
+      <button class="admin-btn" type="button" id="likedListBtn" title="グッドを押した作品を一覧で表示します">グッド一覧</button>
       <button class="admin-btn" type="button" id="announceListBtn">お知らせ</button>
       <button class="admin-btn" type="button" id="adminBtn">管理画面</button>
     </div>
@@ -3420,6 +3442,18 @@
       <div class="feature-item">
         <div class="feature-name">プロンプトのコピー</div>
         <div class="feature-desc">「プロンプト」「ネガティブプロンプト」、NovelAIの投稿では「キャラクタープロンプト」それぞれの「コピー」ボタンで、そのまま自分の生成ツールに貼り付けられます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">プロンプトの日本語訳表示</div>
+        <div class="feature-desc">各プロンプトエリア右上の「日本語訳」ボタンを押すと、「プロンプト集計」タブの辞書に日本語訳が登録されている単語が日本語で表示されます。もう一度押す(「原文」ボタン)と元に戻ります。<strong>表示が変わるだけ</strong>で、単語のクリックによるコピーやカートへの追加は常に元の表記(英語)のままなので、そのまま生成ツールへ貼り付けられます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">グッド一覧</div>
+        <div class="feature-desc">画面右上の「グッド一覧」ボタンから、これまでにグッドを押した作品をまとめて見られます。キーワード検索と、種類(画像 / 動画 / ノベルゲーム / プロンプト例)での絞り込みができます。グッドの記録はお使いのブラウザに保存されるため、別の端末やブラウザでは共有されません。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">画像の拡大表示</div>
+        <div class="feature-desc">詳細画面の画像をクリックすると、画像だけを大きく表示する画面になります(パネル表示でサムネイルを押したときと同じ画面です)。差分がある投稿では、下の[1][2]…のボタンで切り替えられます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプトの単語ごとの機能</div>
@@ -4866,6 +4900,29 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         </div>
       </div>
     </div>
+
+<div class="modal-overlay" id="likedListOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">グッド一覧 <span class="liked-count" id="likedListCount"></span></h3>
+      <div class="modal-top-actions">
+        <button class="modal-close" type="button" id="likedListCloseBtn">✕ 閉じる</button>
+      </div>
+    </div>
+    <div class="search-panel">
+      <div class="search-row">
+        <span class="label">キーワード検索</span>
+        <input type="text" id="likedSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="タイトル・プロンプト等を検索（スペース区切り）">
+      </div>
+      <div class="search-row tag-filter-row">
+        <span class="label">種類で絞込</span>
+        <div class="tag-cloud" id="likedTypeChips"></div>
+      </div>
+    </div>
+    <div class="list" id="likedList"></div>
+    <div class="empty" id="likedEmptyState" style="display:none;">グッドを押した作品はまだありません。</div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="dlPickerOverlay">
   <div class="modal modal-narrow dl-picker-modal">
@@ -8615,11 +8672,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       fixLinksBlock +
       (p.type === 'novel' ? '' :
       '<div class="detail-block">' +
-        '<div class="block-head"><div class="label">プロンプト</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
+        '<div class="block-head"><div class="label">プロンプト</div><button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
         '<div class="value" id="detailPromptValue">' + (imageSet[0].prompt ? promptWordsHtml(imageSet[0].prompt) : '(入力なし)') + '</div>' +
       '</div>' +
       '<div class="detail-block" id="detailNegativeBlock"' + (hasText(imageSet[0].negativePrompt) ? '' : ' style="display:none;"') + '>' +
-        '<div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
+        '<div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div>' +
         '<div class="value" id="detailNegativeValue">' + promptWordsHtml(imageSet[0].negativePrompt || '') + '</div>' +
       '</div>' +
       // キャラクタープロンプト(NovelAIのマルチキャラ設定)はネガティブの下に置く
@@ -8656,6 +8713,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         });
       });
     });
+    // 詳細モーダルのサムネイルをクリックしたら、パネル表示と同じ拡大表示モーダルを開く。
+    // いま見ている差分から開くように、その番号を渡す。
+    (function () {
+      if (p.type === 'novel' || p.type === 'video') return;
+      const wrapEl = document.getElementById('detailImageWrap');
+      if (!wrapEl) return;
+      wrapEl.style.cursor = 'zoom-in';
+      wrapEl.addEventListener('click', function (e) {
+        if (e.target.tagName !== 'IMG') return;
+        openFullImageModal(p, curVar);
+      });
+    })();
     if (hasVariants) {
       const wrap = document.getElementById('detailImageWrap');
       const promptValEl = document.getElementById('detailPromptValue');
@@ -8880,11 +8949,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const fullImageVariants = document.getElementById('fullImageVariants');
 
   // 差分(1枚のメイン + variants)を中央下部の[1][2][3…]で切り替える
-  function renderFullImageVariants(imgs) {
+  function renderFullImageVariants(imgs, activeIdx) {
     if (!fullImageVariants) return;
-    if (!imgs || imgs.length <= 1) { fullImageVariants.innerHTML = ''; return; }
+    const wrap = fullImageVariants.closest('.full-image-wrap');
+    if (!imgs || imgs.length <= 1) {
+      fullImageVariants.innerHTML = '';
+      if (wrap) wrap.classList.remove('has-variants');
+      return;
+    }
+    // 切替ボタンのぶん下側の余白を広げて、縦長の画像がボタンに隠れないようにする。
+    // ボタンは絶対配置(paddingの影響を受けない)なので、位置は変わらず画像だけが縮む。
+    if (wrap) wrap.classList.add('has-variants');
+    const active = activeIdx > 0 ? activeIdx : 0;
     fullImageVariants.innerHTML = imgs.map(function (_, i) {
-      return '<button type="button" class="fiv-btn' + (i === 0 ? ' active' : '') +
+      return '<button type="button" class="fiv-btn' + (i === active ? ' active' : '') +
         '" data-fiv-idx="' + i + '" title="' + (i === 0 ? 'メイン画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
     }).join('');
     fullImageVariants.querySelectorAll('.fiv-btn').forEach(function (btn) {
@@ -8898,12 +8976,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
-  function openFullImageModal(p) {
+  function openFullImageModal(p, startIdx) {
     fullImageOverlay.dataset.id = p.id;
     const imgs = [p.imageUrl].concat((p.variants || []).map(function (v) { return v.imageUrl; })).filter(Boolean);
+    const idx = (startIdx > 0 && startIdx < imgs.length) ? startIdx : 0;
     fullImageImg.src = '';
-    fullImageImg.src = imageSrcFor(imgs[0], 'w1000');
-    renderFullImageVariants(imgs);
+    fullImageImg.src = imageSrcFor(imgs[idx], 'w1000');
+    renderFullImageVariants(imgs, idx);
     openOverlay(fullImageOverlay);
   }
   function closeFullImageModal() {
@@ -8934,8 +9013,92 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlPickerModal(); closeDbUsageModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlPickerModal(); closeDbUsageModal(); closeLikedListModal(); }
   });
+
+  /* ===== グッド一覧モーダル =====
+     グッド(いいね)を押した作品を、投稿一覧と同じカードで並べる。
+     押した記録はブラウザのlocalStorage(likedPosts)にあるので、そこから引く。 */
+  let likedTypeFilter = 'all';
+  const LIKED_TYPES = [
+    { key: 'all', label: 'すべて' },
+    { key: 'image', label: '画像' },
+    { key: 'video', label: '動画' },
+    { key: 'novel', label: 'ノベルゲーム' },
+    { key: 'prompt', label: 'プロンプト例' }
+  ];
+
+  function likedPostList() {
+    return posts.filter(function (p) {
+      if (!likedPosts[p.id]) return false;
+      if (isHiddenByDislike(p)) return false;
+      return true;
+    }).sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+  }
+
+  function renderLikedTypeChips() {
+    const wrap = document.getElementById('likedTypeChips');
+    if (!wrap) return;
+    const all = likedPostList();
+    wrap.innerHTML = LIKED_TYPES.map(function (t) {
+      const n = t.key === 'all' ? all.length : all.filter(function (p) { return (p.type || 'image') === t.key; }).length;
+      if (!n && t.key !== 'all') return '';
+      return '<span class="tag-pill' + (likedTypeFilter === t.key ? ' state-include' : '') +
+        '" data-liked-type="' + t.key + '">' + escapeHtml(t.label) + ' ' + n + '</span>';
+    }).join('');
+    wrap.querySelectorAll('[data-liked-type]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        likedTypeFilter = el.dataset.likedType;
+        renderLikedList();
+      });
+    });
+  }
+
+  function renderLikedList() {
+    const listEl = document.getElementById('likedList');
+    const emptyEl = document.getElementById('likedEmptyState');
+    const countEl = document.getElementById('likedListCount');
+    if (!listEl) return;
+    const q = (document.getElementById('likedSearchInput') || {}).value || '';
+    let arr = likedPostList();
+    if (likedTypeFilter !== 'all') arr = arr.filter(function (p) { return (p.type || 'image') === likedTypeFilter; });
+    arr = arr.filter(function (p) { return pickerMatch(p, q, 'AND'); });
+    if (countEl) countEl.textContent = arr.length + '件';
+    renderLikedTypeChips();
+    listEl.innerHTML = arr.map(function (p) {
+      return (p.type === 'prompt') ? promptRowHtml(p, { counts: false })
+        : (p.type === 'request') ? requestRowHtml(p, { counts: false })
+        : imageRowHtml(p, 'w320', { counts: false });
+    }).join('');
+    if (emptyEl) emptyEl.style.display = arr.length ? 'none' : '';
+    // カードを押したらそれぞれの詳細を開く(種類によって開く先が違うので個別に配線)
+    listEl.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', async function () {
+        const post = await ensurePostLoaded(row.dataset.id);
+        if (!post) return;
+        closeLikedListModal();
+        if (post.type === 'prompt') openPromptModal(post);
+        else if (post.type === 'request') openRequestModal(post);
+        else openModal(post);
+      });
+    });
+    wireCountButtons(listEl);
+  }
+
+  function openLikedListModal() {
+    likedTypeFilter = 'all';
+    const s = document.getElementById('likedSearchInput');
+    if (s) s.value = '';
+    renderLikedList();
+    openOverlay(document.getElementById('likedListOverlay'));
+  }
+  function closeLikedListModal() {
+    document.getElementById('likedListOverlay').classList.remove('open');
+  }
+  document.getElementById('likedListBtn').addEventListener('click', openLikedListModal);
+  document.getElementById('likedListCloseBtn').addEventListener('click', closeLikedListModal);
+  wireOverlayDismiss(document.getElementById('likedListOverlay'), closeLikedListModal);
+  document.getElementById('likedSearchInput').addEventListener('input', renderLikedList);
 
   async function postAction(payload) {
     const res = await fetch(GAS_URL, {
@@ -12725,6 +12888,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         return '<div class="char-sub">' +
             '<div class="char-sub-head">' +
               '<label>' + label + '</label>' +
+              '<button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button>' +
               '<button class="btn-copy" type="button" data-copytext="' + escapeHtml(text) + '">コピー</button>' +
             '</div>' +
             '<div class="value">' + promptWordsHtml(text) + '</div>' +
@@ -12776,8 +12940,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
-      '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? promptWordsHtml(p.prompt) : '(入力なし)') + '</div></div>' +
-      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + promptWordsHtml(p.negativePrompt) + '</div></div>' : '') +
+      '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div><button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? promptWordsHtml(p.prompt) : '(入力なし)') + '</div></div>' +
+      (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + promptWordsHtml(p.negativePrompt) + '</div></div>' : '') +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       (settingsEntries ? '<div class="detail-block"><div class="label">生成時の環境</div><div class="settings-table">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
@@ -13764,6 +13928,32 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // クリックのたびに、その単語だけを即コピー(上書き)しつつ、カートにも追加/解除する
     copyPromptWord(el.dataset.token);
     toggleCartToken(el.dataset.key, el.dataset.token);
+  });
+
+  /* 「日本語訳」ボタン: プロンプト表示エリアの各単語を、辞書に登録があれば日本語に
+     差し替えて表示する。見た目だけの切替で、クリックでのコピーやカート追加は
+     data-token(本来の表記)を使うため影響しない。 */
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest && e.target.closest('.btn-ja');
+    if (!btn) return;
+    const block = btn.closest('.detail-block') || btn.closest('.char-sub') || btn.closest('.char-row');
+    if (!block) return;
+    const on = !btn.classList.contains('active');
+    btn.classList.toggle('active', on);
+    btn.textContent = on ? '原文' : '日本語訳';
+    // .char-sub 内のボタンはその1組だけ、それ以外はブロック内すべての単語が対象
+    const scope = btn.closest('.char-sub') || block;
+    scope.querySelectorAll('.prompt-word').forEach(function (w) {
+      if (w.dataset.orig === undefined) w.dataset.orig = w.textContent;
+      if (on) {
+        const ja = lookupJa(w.dataset.key);
+        w.textContent = ja ? w.dataset.orig.replace(w.dataset.token, ja) : w.dataset.orig;
+        w.classList.toggle('is-ja', !!ja);
+      } else {
+        w.textContent = w.dataset.orig;
+        w.classList.remove('is-ja');
+      }
+    });
   });
 
   // プロンプトとして貼り付けやすいよう、単語の後ろに必ず「, 」を付けてコピーする
