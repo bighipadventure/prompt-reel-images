@@ -366,6 +366,39 @@
   .mode-toggle button.active{ background: var(--accent); color: #fff; }
 
   .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
+  /* ===== タグ一覧モーダルの索引表示 =====
+     モーダル側の入れ物は .tag-cloud(横並びのflex)なので、索引を入れたときは
+     縦積みに戻す。これをしないとタブや見出しが縦に引き伸ばされる。 */
+  .tag-cloud:has(.tag-index-tabs){ display:block; }
+  .tag-index-tabs{ display:flex; gap:6px; margin-bottom:10px; }
+  .tag-index-tab{
+    font-family:'Noto Sans JP',sans-serif; font-size:12.5px; cursor:pointer;
+    background: var(--surface-2); color: var(--ink-dim);
+    border:1px solid var(--line); border-radius:8px; padding:7px 16px;
+  }
+  .tag-index-tab:hover{ color: var(--ink); border-color: var(--ink-dim); }
+  .tag-index-tab.active{ background: rgba(0,150,250,.2); color: var(--accent); border-color: rgba(0,150,250,.5); }
+  /* 見出しへ飛ぶ索引 */
+  .tag-index-jump{
+    display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px;
+    padding-bottom:12px; border-bottom:1px solid var(--line);
+  }
+  .tag-index-jump-btn{
+    font-family:'Noto Sans JP',sans-serif; font-size:11.5px; cursor:pointer;
+    min-width:26px; padding:4px 6px; border-radius:6px;
+    background: var(--surface-2); color: var(--ink-dim); border:1px solid var(--line);
+  }
+  .tag-index-jump-btn:hover{ color: var(--accent); border-color: var(--accent); }
+  /* 一覧部分がモーダルの残り高さいっぱいに伸びるようにする(高さはJSで実測して渡す)。
+     画面が高いほど一覧も広がり、下までしっかり使える。 */
+  .tag-index-groups{ max-height: var(--tag-list-h, 52vh); overflow-y: auto; }
+  .tag-index-group + .tag-index-group{ margin-top:14px; }
+  .tag-index-head{
+    font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; color: var(--ink);
+    padding:5px 0 6px; margin-bottom:8px; border-bottom:1px solid var(--line);
+    position: sticky; top: 0; background: var(--bg); z-index: 1;
+  }
+  .tag-index-num{ color: var(--ink-dim); font-weight:400; font-size:11px; margin-left:4px; }
   .tag-pill{
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
@@ -495,7 +528,6 @@
   .list .row-tags .tag.is-active{
     background: rgba(0, 150, 250, .2); border-color: rgba(0, 150, 250, .5); color: var(--accent);
   }
-  .row-tags .tag::before{ content:'#'; opacity: 0.6; margin-right: 1px; }
   /* 紐づけ(オプション)バッジ: 何をベース/参考/回答にしたのかを一覧で示す */
   .row-link-badge{
     font-size: 10.5px; font-weight: 700; line-height: 1.4;
@@ -1006,6 +1038,11 @@
 
   /* ---- プロンプトデータバンク ---- */
   .search-row .label.label-tight{ min-width: auto; width: auto; }
+  /* プロンプト集計: 並び順・ソース・対象を1行にまとめる。
+     幅が足りないときだけ折り返す(見出しとボタンの組は離れないようにする) */
+  .db-toggle-row{ gap: 10px; }
+  .db-toggle-row .label.label-tight{ flex: 0 0 auto; }
+  .db-toggle-row .mode-toggle{ flex: 0 0 auto; margin-right: 6px; }
   .databank-table{
     display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
   }
@@ -3103,7 +3140,13 @@
   <div class="tab-panel" id="tab-databank">
 
     <div class="search-panel">
-      <div class="search-row">
+      <div class="search-row db-toggle-row">
+        <span class="label label-tight">並び順</span>
+        <div class="mode-toggle" id="dbSortToggle">
+          <button type="button" data-dbsort="count" class="active">採用回数順</button>
+          <button type="button" data-dbsort="en">英語名順</button>
+          <button type="button" data-dbsort="ja">日本語名順</button>
+        </div>
         <span class="label label-tight">ソース</span>
         <div class="mode-toggle" id="dbSourceToggle">
           <button type="button" data-dbsrc="prompt" class="active">PROMPT</button>
@@ -3115,14 +3158,6 @@
           <button type="button" data-dbscope="both" class="active">両方</button>
           <button type="button" data-dbscope="image">画像投稿</button>
           <button type="button" data-dbscope="prompt">プロンプト例</button>
-        </div>
-      </div>
-      <div class="search-row">
-        <span class="label label-tight">並び順</span>
-        <div class="mode-toggle" id="dbSortToggle">
-          <button type="button" data-dbsort="count" class="active">採用回数順</button>
-          <button type="button" data-dbsort="en">英語名順</button>
-          <button type="button" data-dbsort="ja">日本語名順</button>
         </div>
       </div>
       <div class="search-row">
@@ -7410,6 +7445,133 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     input.addEventListener('blur', function () { setTimeout(closeMenu, 120); });
   }
 
+  /* ===== タグ一覧(「全て表示」モーダル)の索引表示 =====
+     タグ数が増えると平坦に並ぶだけでは探せないため、本の索引のように
+     「英数字 / 日本語」のタブで分け、さらに先頭文字ごとの見出しで区切る。
+     6つあるタグモーダルすべてでこの関数を共用する。 */
+  const KANA_ROWS = [
+    ['あ', 'あいうえおぁぃぅぇぉ'], ['か', 'かきくけこがぎぐげごヵヶ'], ['さ', 'さしすせそざじずぜぞ'],
+    ['た', 'たちつてとだぢづでどっ'], ['な', 'なにぬねの'], ['は', 'はひふへほばびぶべぼぱぴぷぺぽ'],
+    ['ま', 'まみむめも'], ['や', 'やゆよゃゅょ'], ['ら', 'らりるれろ'], ['わ', 'わをんゎ']
+  ];
+  // カタカナ→ひらがなに寄せてから、その文字が属する行の代表文字を返す
+  function kanaRowOf(ch) {
+    const hira = ch.replace(/[\u30a1-\u30f6]/g, function (m) { return String.fromCharCode(m.charCodeAt(0) - 0x60); });
+    for (let i = 0; i < KANA_ROWS.length; i++) {
+      if (KANA_ROWS[i][1].indexOf(hira) !== -1) return KANA_ROWS[i][0];
+    }
+    return '';
+  }
+  // タグを「英数字」「日本語」のどちらのタブに入れ、どの見出しにぶら下げるかを決める
+  function tagIndexOf(tag) {
+    const raw = String(tag || '').trim();
+    if (!raw) return { tab: 'ja', key: '他' };
+    // 全角の数字・英字は半角に直してから判定する(半角側と同じ見出しにまとめるため)
+    const ch = raw.charAt(0).replace(/[０-９Ａ-Ｚａ-ｚ]/g, function (m) {
+      return String.fromCharCode(m.charCodeAt(0) - 0xFEE0);
+    });
+    if (/[0-9]/.test(ch)) return { tab: 'en', key: ch };
+    if (/[A-Za-z]/.test(ch)) return { tab: 'en', key: ch.toUpperCase() };
+    const row = kanaRowOf(ch);
+    if (row) return { tab: 'ja', key: row };
+    // 漢字の読みはブラウザ側では判定できないため、まとめて「他」に入れる。
+    // (将来もし読みを扱うなら、Yahoo!のルビ振りAPIのような外部の日本語解析を使う想定)
+    return { tab: 'ja', key: '他' };
+  }
+
+  const tagModalTabState = {};   // モーダルごとに選んだタブを覚えておく
+  function renderIndexedTagCloud(el, tags, isOn, onPick) {
+    if (!el) return;
+    const key = el.id || 'default';
+    if (!tags.length) {
+      el.innerHTML = '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
+      return;
+    }
+    const buckets = { en: {}, ja: {} };
+    tags.forEach(function (t) {
+      const info = tagIndexOf(t);
+      (buckets[info.tab][info.key] = buckets[info.tab][info.key] || []).push(t);
+    });
+    const hasEn = Object.keys(buckets.en).length > 0;
+    const hasJa = Object.keys(buckets.ja).length > 0;
+    // 中身のあるタブを選ぶ(前回の選択を優先しつつ、空なら自動で切り替える)
+    let tab = tagModalTabState[key] || (hasJa ? 'ja' : 'en');
+    if (tab === 'en' && !hasEn) tab = 'ja';
+    if (tab === 'ja' && !hasJa) tab = 'en';
+    tagModalTabState[key] = tab;
+
+    const order = tab === 'en'
+      ? '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+      : KANA_ROWS.map(function (r) { return r[0]; }).concat(['他']);
+    const groups = order.filter(function (k) { return buckets[tab][k] && buckets[tab][k].length; });
+
+    const tabsHtml = '<div class="tag-index-tabs">' +
+      (hasEn ? '<button type="button" class="tag-index-tab' + (tab === 'en' ? ' active' : '') + '" data-tagtab="en">英数字</button>' : '') +
+      (hasJa ? '<button type="button" class="tag-index-tab' + (tab === 'ja' ? ' active' : '') + '" data-tagtab="ja">日本語</button>' : '') +
+      '</div>';
+    // 索引(見出しへ飛ぶリンク)
+    const jumpHtml = groups.length > 1
+      ? '<div class="tag-index-jump">' + groups.map(function (k) {
+          return '<button type="button" class="tag-index-jump-btn" data-jump="' + escapeHtml(k) + '">' + escapeHtml(k) + '</button>';
+        }).join('') + '</div>'
+      : '';
+    const groupsHtml = '<div class="tag-index-groups">' + groups.map(function (k) {
+      const items = buckets[tab][k].slice().sort(function (a, b) { return a.localeCompare(b, 'ja'); });
+      return '<div class="tag-index-group" data-group="' + escapeHtml(k) + '">' +
+        '<div class="tag-index-head">' + escapeHtml(k) + ' <span class="tag-index-num">' + items.length + '</span></div>' +
+        '<div class="tag-cloud">' + items.map(function (t) {
+          return '<span class="tag-pill' + (isOn(t) ? ' state-include' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+        }).join('') + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+
+    el.innerHTML = tabsHtml + jumpHtml + groupsHtml;
+    el.querySelectorAll('[data-tagtab]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        tagModalTabState[key] = b.dataset.tagtab;
+        renderIndexedTagCloud(el, tags, isOn, onPick);
+      });
+    });
+    el.querySelectorAll('[data-jump]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        const g = el.querySelector('.tag-index-group[data-group="' + CSS.escape(b.dataset.jump) + '"]');
+        if (g) g.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    });
+    el.querySelectorAll('.tag-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () { onPick(pill.dataset.tag); });
+    });
+    sizeTagIndexList(el);
+  }
+
+  /* 一覧部分の高さを、モーダル内の残りスペースいっぱいに広げる。
+     画面の高さに応じて可変させ、下の方まで使えるようにする。
+     描画はモーダルを開く前に走ることがあり、その時点では高さを測れないので、
+     表示されるまで数フレーム待ってから測る。 */
+  function sizeTagIndexList(el, tries) {
+    const groups = el.querySelector('.tag-index-groups');
+    if (!groups) return;
+    const modal = el.closest('.modal');
+    if (!modal) return;
+    const overlay = el.closest('.modal-overlay');
+    if (overlay && !overlay.classList.contains('open')) {
+      if ((tries || 0) < 20) requestAnimationFrame(function () { sizeTagIndexList(el, (tries || 0) + 1); });
+      return;
+    }
+    groups.style.maxHeight = '0px';          // 残りの高さを測るため一旦潰す
+    const used = modal.getBoundingClientRect().height;
+    const avail = window.innerHeight - 80;   // オーバーレイの上下余白ぶん
+    const h = Math.max(220, avail - used);
+    groups.style.maxHeight = h + 'px';
+  }
+  // 画面サイズが変わったら開いているタグ一覧の高さを測り直す
+  window.addEventListener('resize', function () {
+    document.querySelectorAll('.modal-overlay.open .tag-index-groups').forEach(function (g) {
+      const host = g.closest('.tag-cloud');
+      if (host) sizeTagIndexList(host);
+    });
+  });
+
   function allUniqueTags() {
     const set = new Set();
     posts.forEach(function (p) { (p.tags || []).forEach(function (t) { set.add(t); }); });
@@ -7700,18 +7862,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const tagModalCloud = document.getElementById('tagModalCloud');
 
   function renderTagModalCloud() {
-    const tags = allUniqueTags();
-    tagModalCloud.innerHTML = tags.map(function (t) {
-      const cls = selectedTags.includes(t) ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-
-    tagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        toggleSelectedTag(pill.dataset.tag);
-        renderTagModalCloud();
-      });
-    });
+    renderIndexedTagCloud(tagModalCloud, allUniqueTags(),
+      function (t) { return selectedTags.includes(t); },
+      function (t) { toggleSelectedTag(t); renderTagModalCloud(); });
   }
   function openTagModal() { renderTagModalCloud(); openOverlay(tagModalOverlay); }
   function closeTagModal() { tagModalOverlay.classList.remove('open'); }
@@ -7726,21 +7879,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const browseTagModalCloud = document.getElementById('browseTagModalCloud');
 
   function renderBrowseTagModalCloud() {
-    const tags = browseTagPool();
-    browseTagModalCloud.innerHTML = tags.map(function (t) {
-      const cls = tagStates[t] ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-
-    browseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const t = pill.dataset.tag;
+    renderIndexedTagCloud(browseTagModalCloud, browseTagPool(),
+      function (t) { return !!tagStates[t]; },
+      function (t) {
         if (tagStates[t]) delete tagStates[t]; else tagStates[t] = true;
         rebuildTagUI();
         renderBrowseTagModalCloud();
         renderList();
       });
-    });
   }
   function openBrowseTagModal() { renderBrowseTagModalCloud(); openOverlay(browseTagModalOverlay); }
   function closeBrowseTagModal() { browseTagModalOverlay.classList.remove('open'); }
@@ -8406,7 +8552,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (p.refId) s += '<span class="row-link-badge lb-ref">参考作品あり</span>';
     if (p.requestId) s += '<span class="row-link-badge lb-req">リクエスト回答</span>';
     if (fixRequestIdsOf(p).length) s += '<span class="row-link-badge lb-fix">修正依頼回答</span>';
-    if (p.parentId) s += '<span class="row-link-badge lb-parent">差分(親作品あり)</span>';
+    if (p.parentId) s += '<span class="row-link-badge lb-parent">親作品あり</span>';
     if (options.video && p.type !== 'video') {
       const vc = videoPosts.filter(function (v) { return String(v.videoSourceId) === String(p.id); }).length;
       if (vc) s += '<span class="row-link-badge lb-video">動画 ' + vc + '件</span>';
@@ -8579,10 +8725,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const parent = p.parentId
       ? imagePosts.find(function (ip) { return String(ip.id) === String(p.parentId); })
       : null;
+    // 他の紐づけ(参考にした投稿作品 等)と同じく、詳細の下にカード一覧としてぶら下げる
     const parentBlock = parent
-      ? '<div class="detail-block"><div class="label">親作品</div>' +
-          '<div class="value"><a href="#" class="parent-post-link" data-post-id="' + escapeHtml(String(parent.id)) + '">' +
-          (parent.title ? escapeHtml(parent.title) : '(無題)') + '</a></div></div>'
+      ? '<div class="linked-works-head">親作品</div>' +
+        '<div class="list" id="parentWorks">' + imageRowHtml(parent, 'w320', { counts: false }) + '</div>'
       : '';
 
     const reference = p.refId
@@ -8691,7 +8837,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       fixContentBlock +
-      parentBlock +
       requestBlock +
       fixLinksBlock +
       (p.type === 'novel' ? '' :
@@ -8713,6 +8858,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       videoSourceBlock +
       sourceVideosBlock +
       linkedNovelsBlock +
+      parentBlock +
       baseBlock +
       referenceSourceBlock +
       referencedByBlock;
@@ -8827,13 +8973,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       });
     }
 
-    const parentLink = modalBody.querySelector('.parent-post-link');
-    if (parentLink) {
-      parentLink.addEventListener('click', function (e) {
-        e.preventDefault();
-        openImageDetail(parentLink.dataset.postId);
-      });
-    }
+    const parentWorks = document.getElementById('parentWorks');
+    if (parentWorks) wireImageRows(parentWorks, { detailOnly: true });
+
     const referenceSourceWorks = document.getElementById('referenceSourceWorks');
     if (referenceSourceWorks) wireImageRows(referenceSourceWorks, { detailOnly: true });
 
@@ -9434,20 +9576,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const vBrowseTagModalOverlay = document.getElementById('vBrowseTagModalOverlay');
   const vBrowseTagModalCloud = document.getElementById('vBrowseTagModalCloud');
   function renderVideoTagModalCloud() {
-    const tags = videoTagPool();
-    vBrowseTagModalCloud.innerHTML = tags.map(function (t) {
-      const cls = vTagStates[t] ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-    vBrowseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const t = pill.dataset.tag;
+    renderIndexedTagCloud(vBrowseTagModalCloud, videoTagPool(),
+      function (t) { return !!vTagStates[t]; },
+      function (t) {
         if (vTagStates[t]) delete vTagStates[t]; else vTagStates[t] = true;
         rebuildVideoTagUI();
         renderVideoTagModalCloud();
         renderVideoList();
       });
-    });
   }
   vShowAllTagsBtn.addEventListener('click', function () { renderVideoTagModalCloud(); openOverlay(vBrowseTagModalOverlay); });
   document.getElementById('vBrowseTagModalCloseBtn').addEventListener('click', function () { vBrowseTagModalOverlay.classList.remove('open'); });
@@ -10113,20 +10249,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const nBrowseTagModalOverlay = document.getElementById('nBrowseTagModalOverlay');
   const nBrowseTagModalCloud = document.getElementById('nBrowseTagModalCloud');
   function renderNovelTagModalCloud() {
-    const tags = novelTagPool();
-    nBrowseTagModalCloud.innerHTML = tags.map(function (t) {
-      const cls = nTagStates[t] ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-    nBrowseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const t = pill.dataset.tag;
+    renderIndexedTagCloud(nBrowseTagModalCloud, novelTagPool(),
+      function (t) { return !!nTagStates[t]; },
+      function (t) {
         if (nTagStates[t]) delete nTagStates[t]; else nTagStates[t] = true;
         rebuildNovelTagUI();
         renderNovelTagModalCloud();
         renderNovelList();
       });
-    });
   }
   nShowAllTagsBtn.addEventListener('click', function () { renderNovelTagModalCloud(); openOverlay(nBrowseTagModalOverlay); });
   document.getElementById('nBrowseTagModalCloseBtn').addEventListener('click', function () { nBrowseTagModalOverlay.classList.remove('open'); });
@@ -10989,18 +11119,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const pTagModalCloud = document.getElementById('pTagModalCloud');
 
   function renderPTagModalCloud() {
-    const tags = allUniquePromptTags();
-    pTagModalCloud.innerHTML = tags.map(function (t) {
-      const cls = pSelectedTags.includes(t) ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-
-    pTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        toggleSelectedPromptTag(pill.dataset.tag);
-        renderPTagModalCloud();
-      });
-    });
+    renderIndexedTagCloud(pTagModalCloud, allUniquePromptTags(),
+      function (t) { return pSelectedTags.includes(t); },
+      function (t) { toggleSelectedPromptTag(t); renderPTagModalCloud(); });
   }
   function openPTagModal() { renderPTagModalCloud(); openOverlay(pTagModalOverlay); }
   function closePTagModal() { pTagModalOverlay.classList.remove('open'); }
@@ -12706,21 +12827,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const pBrowseTagModalCloud = document.getElementById('pBrowseTagModalCloud');
 
   function renderPBrowseTagModalCloud() {
-    const tags = allUniquePromptTags();
-    pBrowseTagModalCloud.innerHTML = tags.map(function (t) {
-      const cls = pTagStates[t] ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-
-    pBrowseTagModalCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const t = pill.dataset.tag;
+    renderIndexedTagCloud(pBrowseTagModalCloud, allUniquePromptTags(),
+      function (t) { return !!pTagStates[t]; },
+      function (t) {
         if (pTagStates[t]) delete pTagStates[t]; else pTagStates[t] = true;
         rebuildPromptBrowseTagUI();
         renderPBrowseTagModalCloud();
         renderPromptList();
       });
-    });
   }
   function openPBrowseTagModal() { renderPBrowseTagModalCloud(); openOverlay(pBrowseTagModalOverlay); }
   function closePBrowseTagModal() { pBrowseTagModalOverlay.classList.remove('open'); }
