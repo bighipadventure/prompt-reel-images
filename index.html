@@ -7063,6 +7063,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (data.links) { allLinks = data.links; renderLinksListIfActive(); }
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     buildInternalDict(data.dictionary);
+    tagYomiMap = (data.tagYomi && typeof data.tagYomi === 'object') ? data.tagYomi : {};
     applyOptionsToUi();
     rebuildDerivedArraysFromPosts();
     computeNotifyCounts();
@@ -7449,6 +7450,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      タグ数が増えると平坦に並ぶだけでは探せないため、本の索引のように
      「英数字 / 日本語」のタブで分け、さらに先頭文字ごとの見出しで区切る。
      6つあるタグモーダルすべてでこの関数を共用する。 */
+  /* タグの読み仮名({ タグ名: よみ })。スプレッドシートの tag シート由来で、
+     Yahoo!のルビ振りAPIが自動で埋め、特殊な読みは管理者がシート上で直せる。
+     漢字を含むタグを五十音に振り分けるのに使う。 */
+  let tagYomiMap = {};
+
   const KANA_ROWS = [
     ['あ', 'あいうえおぁぃぅぇぉ'], ['か', 'かきくけこがぎぐげごヵヶ'], ['さ', 'さしすせそざじずぜぞ'],
     ['た', 'たちつてとだぢづでどっ'], ['な', 'なにぬねの'], ['は', 'はひふへほばびぶべぼぱぴぷぺぽ'],
@@ -7472,10 +7478,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
     if (/[0-9]/.test(ch)) return { tab: 'en', key: ch };
     if (/[A-Za-z]/.test(ch)) return { tab: 'en', key: ch.toUpperCase() };
+    // 1) tagシートに読みがあればそれを最優先(管理者が直した読みもここに入る)
+    const yomi = tagYomiMap[raw];
+    if (yomi) {
+      const yrow = kanaRowOf(String(yomi).trim().charAt(0));
+      if (yrow) return { tab: 'ja', key: yrow };
+    }
+    // 2) 先頭が仮名ならそのまま判定
     const row = kanaRowOf(ch);
     if (row) return { tab: 'ja', key: row };
-    // 漢字の読みはブラウザ側では判定できないため、まとめて「他」に入れる。
-    // (将来もし読みを扱うなら、Yahoo!のルビ振りAPIのような外部の日本語解析を使う想定)
+    // 3) 読みが未登録の漢字などは「他」にまとめる(次回の同期で読みが付けば移動する)
     return { tab: 'ja', key: '他' };
   }
 
