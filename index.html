@@ -599,9 +599,14 @@
   /* ---- 詳細モーダル ---- */
   .modal-overlay{
     position: fixed; inset: 0; z-index: 100;
-    background: rgba(10,11,24,0.78);
+    /* 背景を濃くしてぼかす。モーダルの外に出したボタンが背後の一覧に埋もれず、
+       はっきり読めるようにするため(拡大表示モーダルと同じ処理)。 */
+    background: rgba(6,7,16,0.93);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     display:none; align-items: flex-start; justify-content: center;
-    padding: 40px 16px; overflow-y: auto;
+    /* モーダル外(上)に出したボタンのぶん、上側を広めに空ける */
+    padding: 56px 16px 40px; overflow-y: auto;
   }
   .modal-overlay.open{ display:flex; }
   .modal{
@@ -680,18 +685,21 @@
   .modal-options .admin-modal-status{ margin-top: 2px; min-height: 4px; }
   .modal-options .submit-row{ margin-top: 6px; }
   .modal-close{
-    position: absolute; top: 14px; right: 14px;
+    position: absolute; bottom: calc(100% + 8px); right: 0; top: auto;
     background: var(--surface-2); color: var(--ink);
     border: 1px solid var(--line); border-radius: 8px;
     font-size: 13px; padding: 6px 12px;
   }
   .modal-title{ font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size: 20px; margin: 0 0 6px 0; word-break: break-word; }
-  .modal-header{ display:flex; align-items:flex-start; justify-content:space-between; gap: 14px; }
-  .modal-header .modal-title{ flex:1; min-width:0; }
-  /* 右側は「編集・閉じる」のみ。グッド/バッドは画像下のボタン列へ移したので、
-     見出し周りの余白が空かないようにしている。 */
-  /* ボタンは折り返さず1行に並べる(タイトル側が縮む) */
-  .modal-top-actions{ display:flex; align-items:center; justify-content:flex-end; gap: 8px; flex-wrap:nowrap; flex-shrink:0; }
+  /* 各種ボタンはモーダルの外(上)に出す。狭い画面でタイトルがボタンに幅を
+     奪われて細切れに折り返すのを避けるため、見出し行は横幅を独占させる。 */
+  .modal-header{ display:block; }
+  .modal-header .modal-title{ min-width:0; margin-right: 0; }
+  /* ボタンは折り返さず1行に並べる */
+  .modal-top-actions{
+    position: absolute; bottom: calc(100% + 8px); right: 0;
+    display:flex; align-items:center; justify-content:flex-end; gap: 8px; flex-wrap:nowrap; flex-shrink:0;
+  }
   .modal-top-row{ display:flex; align-items:center; gap: 8px; flex-wrap:nowrap; justify-content:flex-end; }
   .modal-top-actions .modal-counts{ margin-bottom: 0; justify-content:flex-end; }
   .modal-top-actions .modal-close{ position:static; }
@@ -713,6 +721,21 @@
   /* グッド/バッドはダウンロード・共有の左に、少し間を空けて置く */
   .image-actions-btns .modal-counts{ margin-bottom:0; margin-right:10px; }
   .variant-switcher{ display:flex; flex-wrap:wrap; gap:6px; }
+  /* 差分の切替ボタンの右隣に置く「パネル表示」。番号ボタンとは役割が違うので少し離す */
+  .variant-panel-btn{
+    font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; cursor:pointer;
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 0 12px; margin-left: 6px;
+  }
+  .variant-panel-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  /* パネル表示した差分の枚数バッジ */
+  #variantPanelList .row{ position:relative; cursor:pointer; }
+  .variant-panel-no{
+    position:absolute; left:8px; bottom:8px; z-index:2;
+    font-family:'Noto Sans JP',sans-serif; font-size:11.5px; font-weight:700;
+    background: rgba(0,0,0,.65); color:#fff; border-radius:6px; padding:2px 8px;
+  }
   .variant-switch-btn{
     font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:700;
     width:34px; height:34px; padding:0; border-radius:6px; cursor:pointer;
@@ -1336,6 +1359,16 @@
   body.opt-no-comment .comment-toggle-btn{ display:none; }
   body.opt-no-board .tab-btn[data-tab="board"]{ display:none; }
   body.opt-no-boardvote .board-vote{ display:none; }
+  /* 研究作品(★)。★を付けられるのは管理者だけだが、一覧は誰でも見られる。
+     オプションでオフにしたときだけカテゴリごと隠す。 */
+  body.opt-no-research .research-only{ display:none !important; }
+  .research-btn{
+    background: var(--surface-2); color: var(--ink-dim);
+    border: 1px solid var(--line); border-radius: 8px;
+    font-size: 15px; line-height: 1; padding: 8px 12px;
+  }
+  .research-btn:hover{ color: #ffcc45; border-color: #ffcc45; }
+  .research-btn.on{ color: #ffcc45; background: rgba(255, 204, 69, .18); border-color: rgba(255, 204, 69, .55); }
   body.opt-no-tab-post .tab-btn[data-tab="post"],
   body.opt-no-tab-browse .tab-btn[data-tab="browse"],
   body.opt-no-tab-prompt .tab-btn[data-tab="promptBrowse"],
@@ -2133,9 +2166,8 @@
   .board-thread-detail .board-vote{ padding:0 14px 12px; }
   /* スレッドモーダルの見出し(作品の詳細モーダルと同じ素置き) */
   .board-thread-title{ margin-bottom: 12px; }
-  .board-thread-title .modal-title{ margin-right: 220px; }
   .board-thread-title .modal-meta{ margin-bottom: 0; }
-  .board-thread-top{ position:absolute; top:26px; right:30px; }
+  .board-thread-top{ right: 0; }
   /* 返信の編集・削除は日時と同じ行の右端へ */
   .board-reply-head .board-admin-ctrls,
   .comment-head .board-admin-ctrls{ margin-left:auto; display:flex; gap:6px; }
@@ -2405,7 +2437,8 @@
     #list:not(.panel-mode) .row-tags{ display: none; }
 
     /* ---- 詳細モーダル ---- */
-    .modal-overlay{ padding: 16px 8px; }
+    /* 上に出したボタンのぶんは狭い画面でも確保する */
+    .modal-overlay{ padding: 52px 8px 16px; }
     .modal{ padding: 18px 16px 20px; border-radius: 12px; }
     .modal-title{ font-size: 17px; }
     .modal-top-actions button.btn-ghost{ padding: 6px 10px; font-size: 11.5px; }
@@ -2868,6 +2901,7 @@
         <button type="button" data-catfilter="copyright">版権<span class="seg-count" data-count="copyright">0</span></button>
         <button type="button" data-catfilter="original">オリジナル<span class="seg-count" data-count="original">0</span></button>
         <button type="button" data-catfilter="other">その他<span class="seg-count" data-count="other">0</span></button>
+        <button type="button" class="research-only" data-catfilter="research">研究作品<span class="seg-count" data-count="research">0</span></button>
       </div>
       <div class="toolbar-right">
         <label class="panel-size-control" id="panelSizeControl">
@@ -3482,6 +3516,10 @@
       <div class="feature-item">
         <div class="feature-name">プロンプトの日本語訳表示</div>
         <div class="feature-desc">各プロンプトエリア右上の「日本語訳」ボタンを押すと、「プロンプト集計」タブの辞書に日本語訳が登録されている単語が日本語で表示されます。もう一度押す(「原文」ボタン)と元に戻ります。<strong>表示が変わるだけ</strong>で、単語のクリックによるコピーやカートへの追加は常に元の表記(英語)のままなので、そのまま生成ツールへ貼り付けられます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">研究作品</div>
+        <div class="feature-desc">一覧の「すべて / 版権 / オリジナル / その他」の右にある「研究作品」を押すと、管理者が★を付けた作品だけが表示されます。研究色の強い作品が埋もれてしまわないよう、後から見返しやすくするための絞り込みです。★を付けられるのは管理者だけですが、一覧は誰でも見られます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">グッド一覧</div>
@@ -4851,7 +4889,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="tagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="tagModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">タグを選択</h3>
+    <h3 class="modal-title">タグを選択</h3>
     <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除</p>
     <div class="tag-cloud" id="tagModalCloud"></div>
   </div>
@@ -4860,7 +4898,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="browseTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="browseTagModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <h3 class="modal-title">タグで絞込</h3>
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
       <div class="mode-toggle" id="browseTagModalMatchModeToggle">
         <button type="button" data-tagmode="AND">AND</button>
@@ -4877,7 +4915,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="vBrowseTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="vBrowseTagModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <h3 class="modal-title">タグで絞込</h3>
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
       <div class="mode-toggle" id="vBrowseTagModalMatchModeToggle">
         <button type="button" data-tagmode="AND">AND</button>
@@ -4894,7 +4932,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="nBrowseTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="nBrowseTagModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <h3 class="modal-title">タグで絞込</h3>
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
       <div class="mode-toggle" id="nBrowseTagModalMatchModeToggle">
         <button type="button" data-tagmode="AND">AND</button>
@@ -4937,6 +4975,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       </div>
     </div>
 
+<div class="modal-overlay" id="variantPanelOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="variantPanelCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title" id="variantPanelTitle">差分をパネル表示</h3>
+    <div class="modal-meta"><span id="variantPanelCount"></span></div>
+    <div class="list panel-mode" id="variantPanelList"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="likedListOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -4963,7 +5010,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="dlPickerOverlay">
   <div class="modal modal-narrow dl-picker-modal">
     <button class="modal-close" type="button" id="dlPickerCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" id="dlPickerTitle" style="margin-right:90px;">候補を選択</h3>
+    <h3 class="modal-title" id="dlPickerTitle">候補を選択</h3>
     <input type="text" id="dlPickerSearch" class="dl-picker-search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="絞り込み">
     <div class="dl-picker-hint" id="dlPickerHint" style="display:none;">クリックで追加 / もう一度クリックで解除(複数選択できます)</div>
     <div class="dl-picker-list" id="dlPickerList"></div>
@@ -4985,7 +5032,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="pTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="pTagModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">タグを選択</h3>
+    <h3 class="modal-title">タグを選択</h3>
     <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除</p>
     <div class="tag-cloud" id="pTagModalCloud"></div>
   </div>
@@ -4994,7 +5041,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="pBrowseTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="pBrowseTagModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">タグで絞込</h3>
+    <h3 class="modal-title">タグで絞込</h3>
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
       <div class="mode-toggle" id="pBrowseTagModalMatchModeToggle">
         <button type="button" data-tagmode="AND">AND</button>
@@ -5011,7 +5058,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="adminAuthOverlay">
   <div class="modal modal-narrow">
     <button class="modal-close" type="button" id="adminAuthCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">管理画面ログイン</h3>
+    <h3 class="modal-title">管理画面ログイン</h3>
     <label class="field-label">パスワード</label>
     <input type="password" id="adminPasswordInput" placeholder="管理用パスワード" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <div class="admin-modal-status" id="adminAuthStatus"></div>
@@ -5024,7 +5071,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="ownerAuthOverlay">
   <div class="modal modal-narrow">
     <button class="modal-close" type="button" id="ownerAuthCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">投稿の編集</h3>
+    <h3 class="modal-title">投稿の編集</h3>
     <label class="field-label">編集用パスワード</label>
     <input type="password" id="ownerPasswordInput" placeholder="投稿時に設定したパスワード" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <div class="admin-modal-status" id="ownerAuthStatus"></div>
@@ -5053,7 +5100,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="linkComposeOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="linkComposeCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" id="linkComposeTitle" style="margin-right:90px;">リンクを追加</h3>
+    <h3 class="modal-title" id="linkComposeTitle">リンクを追加</h3>
     <label class="field-label">タイトル</label>
     <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="linkTitleInput" placeholder="表示名">
     <label class="field-label">ジャンル(任意)</label>
@@ -5095,7 +5142,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="basePromptModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="basePromptModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">ベースにするプロンプト例を選択</h3>
+    <h3 class="modal-title">ベースにするプロンプト例を選択</h3>
     <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除(複数選択可)</p>
     <div class="search-panel picker-search-panel">
       <div class="search-row sort-row">
@@ -5123,7 +5170,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="parentModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="parentModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">親にする投稿作品を選択</h3>
+    <h3 class="modal-title">親にする投稿作品を選択</h3>
     <div class="search-panel picker-search-panel">
       <div class="search-row sort-row">
         <span class="label">並び順</span>
@@ -5150,7 +5197,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="referenceModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="referenceModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">参考にした投稿作品を選択</h3>
+    <h3 class="modal-title">参考にした投稿作品を選択</h3>
     <div class="search-panel picker-search-panel">
       <div class="search-row sort-row">
         <span class="label">並び順</span>
@@ -5177,7 +5224,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="videoSourceModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="videoSourceModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">動画の元になった画像作品を選択</h3>
+    <h3 class="modal-title">動画の元になった画像作品を選択</h3>
     <div class="search-panel picker-search-panel">
       <div class="search-row sort-row">
         <span class="label">並び順</span>
@@ -5204,7 +5251,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="requestModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="requestModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">応えるリクエストを選択</h3>
+    <h3 class="modal-title">応えるリクエストを選択</h3>
     <div class="search-panel picker-search-panel">
       <div class="search-row sort-row">
         <span class="label">並び順</span>
@@ -5231,7 +5278,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 <div class="modal-overlay" id="fixRequestModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="fixRequestModalCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" style="margin-right:90px;">対応する修正依頼を選択</h3>
+    <h3 class="modal-title">対応する修正依頼を選択</h3>
     <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除(複数選択可)</p>
     <div class="search-panel picker-search-panel">
       <div class="search-row sort-row">
@@ -5420,9 +5467,37 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { match: 'pid',    preset: 'pid' }
   ];
 
+  /* 過去の投稿で、同じCheckpointがどのUI Presetで使われていたかを調べる。
+     名前から推測できない独自名(例: tekitoMix)でも、一度誰かが投稿していれば
+     以後は自動で埋められるようにするため。表記ゆれを避けて完全一致で照合し、
+     複数あるときは最も多く使われているものを採る。 */
+  function uiPresetFromPastPosts(checkpoint) {
+    const key = String(checkpoint || '').trim().toLowerCase();
+    if (!key) return '';
+    const counts = {};
+    posts.forEach(function (p) {
+      const holders = [p].concat(p.variants || []);
+      holders.forEach(function (h) {
+        const s = h && h.settings;
+        if (!s) return;
+        if (String(s.checkpoint || '').trim().toLowerCase() !== key) return;
+        const preset = String(s.uiPreset || '').trim();
+        if (preset) counts[preset] = (counts[preset] || 0) + 1;
+      });
+    });
+    let best = '', bestN = 0;
+    for (const k in counts) {
+      if (counts[k] > bestN) { best = k; bestN = counts[k]; }
+    }
+    return best;
+  }
+
   function guessUiPreset(checkpoint) {
     const name = String(checkpoint || '').toLowerCase();
     if (!name) return '';
+    // 過去の投稿での実績を最優先(名前の綴りでは判断できない独自名に対応するため)
+    const past = uiPresetFromPastPosts(checkpoint);
+    if (past) return past;
     for (let i = 0; i < UI_PRESET_RULES.length; i++) {
       if (name.indexOf(UI_PRESET_RULES[i].match) !== -1) return UI_PRESET_RULES[i].preset;
     }
@@ -5647,6 +5722,33 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let adminHiddenIds = new Set();
   try { adminHiddenIds = new Set((JSON.parse(localStorage.getItem('pr_admin_hidden') || '[]') || []).map(String)); } catch (e) {}
   function saveAdminHidden() { try { localStorage.setItem('pr_admin_hidden', JSON.stringify(Array.from(adminHiddenIds))); } catch (e) {} }
+
+  /* ===== 研究作品(★) =====
+     管理者が★を付けた投稿。研究色の強い作品が埋もれないよう、一覧の
+     「研究作品」で後から見返せるようにするための印。
+     記録は postsシートの research 列(投稿1件につき1セル)なので、
+     件数が増えても1箇所に集約されず、壊れても影響はその1件で済む。 */
+  function isResearchPost(p) { return !!p && p.research === true; }
+  async function toggleResearch(id) {
+    if (!adminMode) return;
+    id = String(id);
+    const post = posts.find(function (x) { return String(x.id) === id; });
+    if (!post) return;
+    const next = !post.research;
+    // 画面には即座に反映し、保存は裏で行う(押すたびに待たされないように)
+    post.research = next;
+    refreshAfterAdminChange();
+    try {
+      const result = await postAction({ action: 'adminSetResearch', password: adminPassword, id: id, research: next });
+      if (!result || !result.success) throw new Error((result && result.error) || '保存に失敗しました');
+    } catch (err) {
+      // 失敗したら元に戻して知らせる(見た目だけ変わったまま残らないように)
+      post.research = !next;
+      refreshAfterAdminChange();
+      window.alert('研究作品の保存に失敗しました: ' + (err.message || err));
+    }
+  }
+
   // 管理モード中のみ true。通常ログイン時は常に false=非表示は効かない。
   function isAdminHidden(p) { return adminMode && !!p && adminHiddenIds.has(String(p.id)); }
   function setPostHidden(id, on) {
@@ -7725,8 +7827,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   // 各カテゴリの件数(カテゴリ以外の全フィルタ適用後の集合で算出)をボタンのバッジに反映
   function updateCategoryFilterCounts(arr) {
-    const counts = { all: arr.length, copyright: 0, original: 0, other: 0 };
-    arr.forEach(function (p) { if (p.category && counts[p.category] !== undefined) counts[p.category]++; });
+    const counts = { all: arr.length, copyright: 0, original: 0, other: 0, research: 0 };
+    arr.forEach(function (p) {
+      if (p.category && counts[p.category] !== undefined) counts[p.category]++;
+      if (isResearchPost(p)) counts.research++;
+    });
     document.querySelectorAll('#categoryFilterToggle .seg-count').forEach(function (el) {
       const k = el.dataset.count;
       el.textContent = counts[k] != null ? counts[k] : 0;
@@ -8260,6 +8365,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.body.classList.toggle('opt-no-author', !options.author);
     document.body.classList.toggle('opt-no-board', !options.board);
     document.body.classList.toggle('opt-no-boardvote', !options.boardVote);
+    document.body.classList.toggle('opt-no-research', !options.research);
     document.body.classList.toggle('opt-fixrequest', !!options.fixRequest);
     document.body.classList.toggle('opt-owneredit', !!options.ownerEdit);
     document.body.classList.toggle('opt-inpaint', !!options.inpaint);
@@ -8393,6 +8499,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!opts.likeOnly && options.downloadCount) {
       parts += '<span class="count-badge">⬇ <span data-dl-count="' + p.id + '">' + (Number(p.downloadCount) || 0) + '</span></span>';
     }
+    // 管理モードのみ: ★(研究作品)の切り替え。押した作品は一覧の「研究作品」に集まる
+    if (adminMode && options.research && !opts.likeOnly) {
+      const on = isResearchPost(p);
+      parts += '<button class="research-btn' + (on ? ' on' : '') + '" type="button" data-research="' + p.id + '"' +
+        ' title="研究作品として印を付ける(管理者のみ)">★</button>';
+    }
     if (!parts) return '';
     return '<span class="count-badges">' + parts + '</span>';
   }
@@ -8423,7 +8535,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     filtered.sort(compareByKeys);
 
     updateCategoryFilterCounts(filtered);
-    if (categoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === categoryFilter; });
+    if (categoryFilter === 'research') filtered = filtered.filter(isResearchPost);
+    else if (categoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === categoryFilter; });
 
     list.classList.toggle('panel-mode', viewMode === 'panel');
     emptyState.style.display = filtered.length ? 'none' : 'block';
@@ -8581,6 +8694,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 行クリック(詳細を開く)へ伝播させないよう必ず stopPropagation する。
   // 各一覧が個別に配線すると漏れるため、この関数に集約している。
   function wireCountButtons(container) {
+    container.querySelectorAll('.research-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleResearch(btn.dataset.research);
+      });
+    });
     container.querySelectorAll('.like-btn').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -8840,7 +8959,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         (hasVariants
           ? '<div class="variant-switcher" id="variantSwitcher">' + imageSet.map(function (_, i) {
               return '<button class="variant-switch-btn' + (i === 0 ? ' active' : '') + '" type="button" data-var-idx="' + i + '" title="' + (i === 0 ? '最初に投稿した画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
-            }).join('') + '</div>'
+            }).join('') +
+            '<button class="variant-panel-btn" type="button" id="variantPanelBtn" title="この作品の差分をパネル表示で並べて見る">パネル表示</button>' +
+            '</div>'
           : '') +
         '<div class="image-actions-btns">' +
           '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
@@ -8908,6 +9029,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       });
     })();
     if (hasVariants) {
+      const panelBtn = document.getElementById('variantPanelBtn');
+      if (panelBtn) panelBtn.addEventListener('click', function () { openVariantPanelModal(p, imageSet); });
       const wrap = document.getElementById('detailImageWrap');
       const promptValEl = document.getElementById('detailPromptValue');
       const negValEl = document.getElementById('detailNegativeValue');
@@ -9191,7 +9314,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlPickerModal(); closeDbUsageModal(); closeLikedListModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlPickerModal(); closeDbUsageModal(); closeLikedListModal(); closeVariantPanelModal(); }
   });
 
   /* ===== グッド一覧モーダル =====
@@ -9277,6 +9400,39 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   document.getElementById('likedListCloseBtn').addEventListener('click', closeLikedListModal);
   wireOverlayDismiss(document.getElementById('likedListOverlay'), closeLikedListModal);
   document.getElementById('likedSearchInput').addEventListener('input', renderLikedList);
+
+  /* 表示中の作品の差分だけをパネル表示で並べるモーダル。
+     一覧のパネル表示と同じ敷き詰めレイアウト(layoutPanelGridFor)を使うので、
+     縦横比の違う差分もきれいに並ぶ。クリックで拡大表示に切り替えられる。 */
+  function openVariantPanelModal(p, imageSet) {
+    const listEl = document.getElementById('variantPanelList');
+    const titleEl = document.getElementById('variantPanelTitle');
+    const countEl = document.getElementById('variantPanelCount');
+    if (!listEl) return;
+    titleEl.textContent = (p.title ? p.title : '(無題)') + ' の差分';
+    countEl.textContent = imageSet.length + '枚';
+    listEl.innerHTML = imageSet.map(function (v, i) {
+      return '<div class="row" data-var-idx="' + i + '">' +
+        '<div class="row-main"><div class="row-thumb">' +
+          imageTag(v.imageUrl, { size: 'w640', lazy: true, alt: (i + 1) + '枚目' }) +
+        '</div></div>' +
+        '<span class="variant-panel-no">' + (i + 1) + '</span>' +
+      '</div>';
+    }).join('');
+    listEl.querySelectorAll('.row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        openFullImageModal(p, Number(row.dataset.varIdx));
+      });
+    });
+    listEl.addEventListener('error', handleImageError, true);
+    openOverlay(document.getElementById('variantPanelOverlay'));
+    layoutPanelGridFor(listEl);
+  }
+  function closeVariantPanelModal() {
+    document.getElementById('variantPanelOverlay').classList.remove('open');
+  }
+  document.getElementById('variantPanelCloseBtn').addEventListener('click', closeVariantPanelModal);
+  wireOverlayDismiss(document.getElementById('variantPanelOverlay'), closeVariantPanelModal);
 
   async function postAction(payload) {
     const res = await fetch(GAS_URL, {
@@ -13415,6 +13571,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'linkParent', group: 'post', label: '紐づけ: 親にする投稿作品', desc: 'オフにすると投稿フォームから「親にする投稿作品(バリエーション)」の選択欄を非表示にします' },
     { key: 'linkReference', group: 'post', label: '紐づけ: 参考にした投稿作品', desc: 'オフにすると投稿フォームから「参考にした投稿作品」の選択欄を非表示にします' },
     { key: 'linkRequest', group: 'post', label: '紐づけ: 応えるリクエスト', desc: 'オフにすると投稿フォームから「応えるリクエスト」の選択欄を非表示にします' },
+    { key: 'research', group: 'react', label: '研究作品(★)', desc: '一覧に「研究作品」を追加します。★を付けられるのは管理者だけですが(管理モード中にグッド/バッドの右へ★ボタンが出ます)、一覧は誰でも見られます。研究色の強い作品が埋もれないようにするための機能です' },
     { key: 'fixRequest', group: 'post', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
     { key: 'ownerEdit', group: 'post', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示され、詳細画面には常に「編集」ボタンが表示されます(表示の統一のため)。「編集」ボタンを押すとパスワード入力画面が出て、投稿時に設定したパスワードを入力した人だけが編集できます。パスワードを設定していない投稿はボタンは出ますが、どの値を入力しても編集できません(オフのときは欄もボタンも表示されません)' },
     { key: 'inpaint', group: 'post', label: '修正後画像モード', desc: 'オンにすると、画像投稿フォームの右上に「修正後画像モード」トグルが表示されます。トグルを押すと、元画像からプロンプト・生成設定だけを読み取り、実際に投稿する画像には修正後(inpaint など)の画像を選べます(オフのときはトグルごと表示されません)' },
@@ -14243,7 +14400,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const body = document.getElementById('dbUsageBody');
     const ja = lookupJa(key);
     let html = '<button class="modal-close" type="button" id="dbUsageCloseBtn">✕ 閉じる</button>' +
-      '<h3 class="modal-title" style="margin-right:90px;">「' + escapeHtml(token) + '」を使用した作品</h3>' +
+      '<h3 class="modal-title">「' + escapeHtml(token) + '」を使用した作品</h3>' +
       '<div class="modal-meta"><span>' + used.length + ' 件</span>' + (ja ? '<span>訳: ' + escapeHtml(ja) + '</span>' : '') + '</div>';
     if (!used.length) {
       html += '<div class="empty">このプロンプトを含む作品はありません。</div>';
