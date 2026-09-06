@@ -2969,6 +2969,7 @@
         <button type="button" data-catfilter="copyright">版権<span class="seg-count" data-count="copyright">0</span></button>
         <button type="button" data-catfilter="original">オリジナル<span class="seg-count" data-count="original">0</span></button>
         <button type="button" data-catfilter="other">その他<span class="seg-count" data-count="other">0</span></button>
+        <button type="button" class="research-only" data-catfilter="research">研究作品<span class="seg-count" data-count="research">0</span></button>
       </div>
       <div class="toolbar-right">
         <label class="panel-size-control" id="vPanelSizeControl">
@@ -3030,6 +3031,7 @@
         <button type="button" data-catfilter="copyright">版権<span class="seg-count" data-count="copyright">0</span></button>
         <button type="button" data-catfilter="original">オリジナル<span class="seg-count" data-count="original">0</span></button>
         <button type="button" data-catfilter="other">その他<span class="seg-count" data-count="other">0</span></button>
+        <button type="button" class="research-only" data-catfilter="research">研究作品<span class="seg-count" data-count="research">0</span></button>
       </div>
       <div class="toolbar-right">
         <label class="panel-size-control" id="nPanelSizeControl">
@@ -5735,9 +5737,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const post = posts.find(function (x) { return String(x.id) === id; });
     if (!post) return;
     const next = !post.research;
-    // 画面には即座に反映し、保存は裏で行う(押すたびに待たされないように)
+    // 画面には即座に反映し、保存は裏で行う(押すたびに待たされないように)。
+    // 一覧の並びだけでなく、開いたままの詳細モーダルの★の色もその場で更新する。
     post.research = next;
     refreshAfterAdminChange();
+    updateCountUI(id);
     try {
       const result = await postAction({ action: 'adminSetResearch', password: adminPassword, id: id, research: next });
       if (!result || !result.success) throw new Error((result && result.error) || '保存に失敗しました');
@@ -5745,6 +5749,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       // 失敗したら元に戻して知らせる(見た目だけ変わったまま残らないように)
       post.research = !next;
       refreshAfterAdminChange();
+      updateCountUI(id);
       window.alert('研究作品の保存に失敗しました: ' + (err.message || err));
     }
   }
@@ -8449,6 +8454,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (likeBtn) likeBtn.addEventListener('click', function () { toggleLike(likeBtn.dataset.like); });
     const dislikeBtn = modalBody.querySelector('.modal-counts .dislike-btn');
     if (dislikeBtn) dislikeBtn.addEventListener('click', function () { toggleDislike(dislikeBtn.dataset.dislike); });
+    // 詳細モーダルは wireCountButtons を通らず個別に配線しているので、★もここで繋ぐ
+    const researchBtn = modalBody.querySelector('.modal-counts .research-btn');
+    if (researchBtn) researchBtn.addEventListener('click', function () { toggleResearch(researchBtn.dataset.research); });
   }
 
   function compareByKeys(a, b) {
@@ -9500,6 +9508,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.querySelectorAll('.dislike-btn[data-dislike="' + id + '"]').forEach(function (btn) {
       btn.classList.toggle('disliked', disliked);
     });
+    // ★(研究作品)。一覧・詳細モーダルのどちらに出ていてもその場で色を切り替える
+    document.querySelectorAll('.research-btn[data-research="' + id + '"]').forEach(function (btn) {
+      btn.classList.toggle('on', p.research === true);
+    });
   }
 
   async function toggleLike(id) {
@@ -9567,8 +9579,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function updateVideoCategoryCounts(arr) {
-    const counts = { all: arr.length, copyright: 0, original: 0, other: 0 };
-    arr.forEach(function (p) { if (p.category && counts[p.category] !== undefined) counts[p.category]++; });
+    const counts = { all: arr.length, copyright: 0, original: 0, other: 0, research: 0 };
+    arr.forEach(function (p) {
+      if (p.category && counts[p.category] !== undefined) counts[p.category]++;
+      if (isResearchPost(p)) counts.research++;
+    });
     document.querySelectorAll('#vCategoryFilterToggle .seg-count').forEach(function (el) {
       const k = el.dataset.count;
       el.textContent = counts[k] != null ? counts[k] : 0;
@@ -9603,7 +9618,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     filtered.sort(function (a, b) { return compareWithKeys(a, b, vSortKeys); });
 
     updateVideoCategoryCounts(filtered);
-    if (vCategoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === vCategoryFilter; });
+    if (vCategoryFilter === 'research') filtered = filtered.filter(isResearchPost);
+    else if (vCategoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === vCategoryFilter; });
 
     videoListEl.classList.toggle('panel-mode', vViewMode === 'panel');
     videoEmptyEl.style.display = filtered.length ? 'none' : 'block';
@@ -10250,8 +10266,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function updateNovelCategoryCounts(arr) {
-    const counts = { all: arr.length, copyright: 0, original: 0, other: 0 };
-    arr.forEach(function (p) { if (p.category && counts[p.category] !== undefined) counts[p.category]++; });
+    const counts = { all: arr.length, copyright: 0, original: 0, other: 0, research: 0 };
+    arr.forEach(function (p) {
+      if (p.category && counts[p.category] !== undefined) counts[p.category]++;
+      if (isResearchPost(p)) counts.research++;
+    });
     document.querySelectorAll('#nCategoryFilterToggle .seg-count').forEach(function (el) {
       const k = el.dataset.count;
       el.textContent = counts[k] != null ? counts[k] : 0;
@@ -10279,7 +10298,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     filtered.sort(function (a, b) { return compareWithKeys(a, b, nSortKeys); });
 
     updateNovelCategoryCounts(filtered);
-    if (nCategoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === nCategoryFilter; });
+    if (nCategoryFilter === 'research') filtered = filtered.filter(isResearchPost);
+    else if (nCategoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === nCategoryFilter; });
 
     novelListEl.classList.toggle('panel-mode', nViewMode === 'panel');
     novelEmptyEl.style.display = filtered.length ? 'none' : 'block';
