@@ -2248,8 +2248,12 @@
   .qa-item:last-child{ border-bottom: none; padding-bottom: 0; }
   .qa-q{ font-weight: 700; font-size: 14px; margin-bottom: 9px; display:flex; gap: 8px; line-height:1.6; }
   .qa-q::before{ content:'Q.'; color: var(--accent); font-weight: 900; }
-  .qa-a{ font-size: 13.5px; line-height: 1.8; color: var(--ink-dim); display:flex; gap: 8px; }
-  .qa-a::before{ content:'A.'; color: var(--ink); font-weight: 900; }
+  /* A. の見出しだけを左に出し、本文は通常の文章として流す。
+     .qa-a 自体を flex にすると本文中の <b> などが別々の列に分かれて崩れるため、
+     擬似要素を float させて回り込ませる。 */
+  .qa-a{ font-size: 13.5px; line-height: 1.8; color: var(--ink-dim); }
+  .qa-a::before{ content:'A.'; color: var(--ink); font-weight: 900; float: left; margin-right: 8px; }
+  .qa-a::after{ content:''; display: block; clear: both; }
 
   /* ---- 説明ページ(使い方 / はじめてガイド)の見出し ---- */
   #tab-usage .panel > h2,
@@ -3483,6 +3487,14 @@
         <div class="feature-desc">タグはクリックでON/OFF。こちらも AND / OR / NOT を切り替えられます。タグクラウドは1行だけ表示されますが、右端の「全て表示」で全タグの一覧を開けます。選んだタグは必ず先頭に並ぶので、1行に収まらなくても見失いません。</div>
       </div>
       <div class="feature-item">
+        <div class="feature-name">研究作品</div>
+        <div class="feature-desc">一覧の「すべて / 版権 / オリジナル / その他」の右にある「研究作品」を押すと、管理者が★を付けた作品だけが表示されます。研究色の強い作品が埋もれてしまわないよう、後から見返しやすくするための絞り込みです。★を付けられるのは管理者だけですが、一覧は誰でも見られます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">グッド一覧</div>
+        <div class="feature-desc">画面右上の「グッド一覧」ボタンから、これまでにグッドを押した作品をまとめて見られます。キーワード検索と、種類(画像 / 動画 / ノベルゲーム / プロンプト例)での絞り込みができます。グッドの記録はお使いのブラウザに保存されるため、別の端末やブラウザでは共有されません。</div>
+      </div>
+      <div class="feature-item">
         <div class="feature-name">リスト表示 / パネル表示</div>
         <div class="feature-desc">画像投稿一覧では表示形式を切り替えられます。パネル表示は画像を元の縦横比のまま敷き詰める形式で、隣の「表示サイズ」スライダーで大きさを調整できます。</div>
       </div>
@@ -3512,24 +3524,20 @@
         </div>
       </div>
       <div class="feature-item">
+        <div class="feature-name">画像の拡大表示</div>
+        <div class="feature-desc">詳細画面の画像をクリックすると、画像だけを大きく表示する画面になります(パネル表示でサムネイルを押したときと同じ画面です)。差分がある投稿では、下の[1][2]…のボタンで切り替えられます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">画像の切り替え(差分投稿)</div>
+        <div class="feature-desc">複数枚をまとめた投稿では、画像のすぐ下の左側に番号ボタン(1・2…)が四角で並びます。押すと表示する画像が切り替わり、プロンプト / ネガティブプロンプト / キャラクタープロンプト / 設定関係も画像ごとに切り替わります(1 が最初に投稿された画像です)。ダウンロードは、そのとき表示している画像が対象になります。</div>
+      </div>
+      <div class="feature-item">
         <div class="feature-name">プロンプトのコピー</div>
         <div class="feature-desc">「プロンプト」「ネガティブプロンプト」、NovelAIの投稿では「キャラクタープロンプト」それぞれの「コピー」ボタンで、そのまま自分の生成ツールに貼り付けられます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプトの日本語訳表示</div>
         <div class="feature-desc">各プロンプトエリア右上の「日本語訳」ボタンを押すと、「プロンプト集計」タブの辞書に日本語訳が登録されている単語が日本語で表示されます。もう一度押す(「原文」ボタン)と元に戻ります。<strong>表示が変わるだけ</strong>で、単語のクリックによるコピーやカートへの追加は常に元の表記(英語)のままなので、そのまま生成ツールへ貼り付けられます。</div>
-      </div>
-      <div class="feature-item">
-        <div class="feature-name">研究作品</div>
-        <div class="feature-desc">一覧の「すべて / 版権 / オリジナル / その他」の右にある「研究作品」を押すと、管理者が★を付けた作品だけが表示されます。研究色の強い作品が埋もれてしまわないよう、後から見返しやすくするための絞り込みです。★を付けられるのは管理者だけですが、一覧は誰でも見られます。</div>
-      </div>
-      <div class="feature-item">
-        <div class="feature-name">グッド一覧</div>
-        <div class="feature-desc">画面右上の「グッド一覧」ボタンから、これまでにグッドを押した作品をまとめて見られます。キーワード検索と、種類(画像 / 動画 / ノベルゲーム / プロンプト例)での絞り込みができます。グッドの記録はお使いのブラウザに保存されるため、別の端末やブラウザでは共有されません。</div>
-      </div>
-      <div class="feature-item">
-        <div class="feature-name">画像の拡大表示</div>
-        <div class="feature-desc">詳細画面の画像をクリックすると、画像だけを大きく表示する画面になります(パネル表示でサムネイルを押したときと同じ画面です)。差分がある投稿では、下の[1][2]…のボタンで切り替えられます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプトの単語ごとの機能</div>
@@ -3542,10 +3550,6 @@
       <div class="feature-item">
         <div class="feature-name">ダウンロード</div>
         <div class="feature-desc">画像を原寸で保存できます。</div>
-      </div>
-      <div class="feature-item">
-        <div class="feature-name">画像の切り替え(差分投稿)</div>
-        <div class="feature-desc">複数枚をまとめた投稿では、画像のすぐ下の左側に番号ボタン(1・2…)が四角で並びます。押すと表示する画像が切り替わり、プロンプト / ネガティブプロンプト / キャラクタープロンプト / 設定関係も画像ごとに切り替わります(1 が最初に投稿された画像です)。ダウンロードは、そのとき表示している画像が対象になります。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">共有</div>
