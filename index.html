@@ -8325,8 +8325,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function parseKeywords(value) {
     return String(value || '').split(/[\s\u3000]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
   }
+  /* 投稿の「中身」を持つ入れ物を本体+差分でまとめて返す。
+     差分は1枚ごとに独自のプロンプト/生成設定を持てるので、
+     バッジ・検索・絞り込みはこの全体を見ないと差分ぶんを取りこぼす。 */
+  function postContentHolders(p) {
+    return [p].concat((p && p.variants) || []);
+  }
   function postKeywordHaystack(p) {
-    return (String(p.title || '') + ' ' + String(p.prompt || '') + ' ' + String(p.negativePrompt || '') + ' ' + String(p.memo || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+    // 差分のプロンプト/ネガティブも検索対象に含める
+    const texts = postContentHolders(p).map(function (h) {
+      return String(h.prompt || '') + ' ' + String(h.negativePrompt || '');
+    });
+    return (String(p.title || '') + ' ' + texts.join(' ') + ' ' + String(p.memo || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
   }
   function matchKeywords(haystack, keywords, mode) {
     if (!keywords.length) return true;
@@ -8523,7 +8533,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function matchesTextFilter(p, filterValue, getter) {
     if (!filterValue) return true;
-    return String(getter(p) || '').toLowerCase().indexOf(filterValue) !== -1;
+    // 差分のどれか1枚でも条件に合えばその投稿を残す
+    return postContentHolders(p).some(function (h) {
+      return String(getter(h) || '').toLowerCase().indexOf(filterValue) !== -1;
+    });
   }
 
   function renderList() {
@@ -8705,7 +8718,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
     // 動画側にも「元になった画像がある」ことを示すバッジを出す(従来は画像側だけだった)
     if (p.type === 'video' && p.videoSourceId) s += '<span class="row-link-badge lb-video">元画像あり</span>';
-    const loraCount = loraNamesOf(p.settings).length;
+    // LoRAは差分ごとに違うものを使えるので、本体+差分をまとめて数える(同じ名前は1件)
+    const loraSet = new Set();
+    postContentHolders(p).forEach(function (h) {
+      loraNamesOf(h.settings).forEach(function (n) { loraSet.add(n); });
+    });
+    const loraCount = loraSet.size;
     if (loraCount) s += '<span class="row-link-badge lb-lora">LoRA ' + loraCount + '件</span>';
     if (hasText(p.memo)) s += '<span class="row-link-badge lb-memo">メモ(備考)</span>';
     return s;
