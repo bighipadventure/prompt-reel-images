@@ -3488,7 +3488,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">研究作品</div>
-        <div class="feature-desc">一覧の「すべて / 版権 / オリジナル / その他」の右にある「研究作品」を押すと、管理者が★を付けた作品だけが表示されます。研究色の強い作品が埋もれてしまわないよう、後から見返しやすくするための絞り込みです。★を付けられるのは管理者だけですが、一覧は誰でも見られます。</div>
+        <div class="feature-desc">一覧の「すべて / 版権 / オリジナル / その他」の右にある「研究作品」を押すと、管理者が★を付けた作品だけが表示されます。研究色の強い作品が埋もれてしまわないよう、後から見返しやすくするための絞り込みです。★を付けられるのは管理者だけですが、一覧は誰でも見られます。なお、通常は隠れているバリエーション(子作品)も、★が付いていればこの一覧には表示されます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">グッド一覧</div>
@@ -8527,7 +8527,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function renderList() {
-    let base = showChildren ? imagePosts.slice() : imagePosts.filter(function (p) { return !p.parentId; });
+    // 子作品(差分)は通常は隠す。ただし★を付けたものは「研究作品」で必ず見返せるよう
+    // いったん母集団に含めておき(件数を正しく数えるため)、後段で研究作品以外から除く。
+    let base = showChildren
+      ? imagePosts.slice()
+      : imagePosts.filter(function (p) { return !p.parentId || isResearchPost(p); });
     if (showFixWorks && options.fixRequest) base = base.concat(fixPosts.slice());
     base = visiblePosts(base);
     let filtered = base.filter(passesTagFilter);
@@ -8547,8 +8551,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     filtered.sort(compareByKeys);
 
     updateCategoryFilterCounts(filtered);
-    if (categoryFilter === 'research') filtered = filtered.filter(isResearchPost);
-    else if (categoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === categoryFilter; });
+    if (categoryFilter === 'research') {
+      filtered = filtered.filter(isResearchPost);
+    } else {
+      // 「研究作品」以外では、★付きでも子作品は従来どおり隠す(一覧が差分で埋まらないように)
+      if (!showChildren) filtered = filtered.filter(function (p) { return !p.parentId; });
+      if (categoryFilter !== 'all') filtered = filtered.filter(function (p) { return p.category === categoryFilter; });
+    }
 
     list.classList.toggle('panel-mode', viewMode === 'panel');
     emptyState.style.display = filtered.length ? 'none' : 'block';
