@@ -5563,7 +5563,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { notifyBrowse: true, notifyVideo: true, notifyNovel: true, notifyPrompt: true, notifyRequest: true, notifyFix: true, notifyBoard: true, like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { notifyBrowse: true, notifyVideo: true, notifyNovel: true, notifyPrompt: true, notifyRequest: true, notifyFix: true, notifyBoard: true, like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, research: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let selectedCategory = ''; // 投稿フォーム用: 作品の属性(版権/オリジナル/その他)
@@ -13591,7 +13591,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'linkParent', group: 'post', label: '紐づけ: 親にする投稿作品', desc: 'オフにすると投稿フォームから「親にする投稿作品(バリエーション)」の選択欄を非表示にします' },
     { key: 'linkReference', group: 'post', label: '紐づけ: 参考にした投稿作品', desc: 'オフにすると投稿フォームから「参考にした投稿作品」の選択欄を非表示にします' },
     { key: 'linkRequest', group: 'post', label: '紐づけ: 応えるリクエスト', desc: 'オフにすると投稿フォームから「応えるリクエスト」の選択欄を非表示にします' },
-    { key: 'research', group: 'react', label: '研究作品(★)', desc: '一覧に「研究作品」を追加します。★を付けられるのは管理者だけですが(管理モード中にグッド/バッドの右へ★ボタンが出ます)、一覧は誰でも見られます。研究色の強い作品が埋もれないようにするための機能です' },
+    { key: 'research', group: 'reaction', label: '研究作品(★)', desc: '一覧に「研究作品」を追加します。★を付けられるのは管理者だけですが(管理モード中にグッド/バッドの右へ★ボタンが出ます)、一覧は誰でも見られます。研究色の強い作品が埋もれないようにするための機能です' },
     { key: 'fixRequest', group: 'post', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
     { key: 'ownerEdit', group: 'post', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示され、詳細画面には常に「編集」ボタンが表示されます(表示の統一のため)。「編集」ボタンを押すとパスワード入力画面が出て、投稿時に設定したパスワードを入力した人だけが編集できます。パスワードを設定していない投稿はボタンは出ますが、どの値を入力しても編集できません(オフのときは欄もボタンも表示されません)' },
     { key: 'inpaint', group: 'post', label: '修正後画像モード', desc: 'オンにすると、画像投稿フォームの右上に「修正後画像モード」トグルが表示されます。トグルを押すと、元画像からプロンプト・生成設定だけを読み取り、実際に投稿する画像には修正後(inpaint など)の画像を選べます(オフのときはトグルごと表示されません)' },
