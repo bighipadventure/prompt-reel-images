@@ -14597,13 +14597,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       window.prompt('以下をコピーしてください', text);
     });
   });
-  document.getElementById('dbCartClearBtn').addEventListener('click', function () {
+  function clearDbCart() {
     if (!dbCart.length) return;
     dbCart = [];
     renderCart();
     document.querySelectorAll('#databankList .databank-row.in-cart').forEach(function (row) { row.classList.remove('in-cart'); });
     // プロンプト表示エリアの単語ハイライトも一緒に外す
     document.querySelectorAll('.prompt-word.in-cart').forEach(function (el) { el.classList.remove('in-cart'); });
+  }
+  document.getElementById('dbCartClearBtn').addEventListener('click', function () {
+    if (!dbCart.length) return;
+    clearDbCart();
     const btn = this;
     const label = btn.textContent;
     btn.textContent = '空にしました';
@@ -14613,7 +14617,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       btn.classList.remove('cleared');
     }, 1200);
   });
-  document.getElementById('dbCartCloseBtn').addEventListener('click', function () { setCartMode(false); });
+  // 閉じるときはカートの中身もリセットする(次に開いたときは空の状態から)
+  document.getElementById('dbCartCloseBtn').addEventListener('click', function () {
+    clearDbCart();
+    setCartMode(false);
+  });
 
   document.querySelectorAll('#dbSourceToggle button').forEach(function (btn) {
     btn.addEventListener('click', function () {
