@@ -8921,9 +8921,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       ? requestPosts.find(function (rp) { return String(rp.id) === String(p.requestId); })
       : null;
     const requestBlock = request
-      ? '<div class="detail-block"><div class="label">応えたリクエスト</div>' +
-          '<div class="value"><a href="#" class="request-post-link request-link" data-request-id="' + escapeHtml(String(request.id)) + '">' +
-          escapeHtml(requestLabel(request)) + '</a></div></div>'
+      ? '<div class="linked-works-head">応えたリクエスト</div>' +
+        '<div class="list" id="answeredRequestWork">' + requestRowHtml(request, { counts: false }) + '</div>'
       : '';
 
     const children = imagePosts.filter(function (ip) { return String(ip.parentId) === String(p.id); });
@@ -8960,11 +8959,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       .map(function (id) { return fixPosts.find(function (fp) { return String(fp.id) === String(id); }); })
       .filter(Boolean);
     const fixLinksBlock = (options.fixRequest && fixList.length)
-      ? '<div class="detail-block"><div class="label">対応した修正依頼</div>' +
-          '<div class="value">' + fixList.map(function (fp) {
-            return '<a href="#" class="fix-post-link" data-fix-id="' + escapeHtml(String(fp.id)) + '" style="display:inline-block; margin: 0 10px 4px 0;">' +
-              (fp.title ? escapeHtml(fp.title) : '(無題)') + '</a>';
-          }).join('') + '</div></div>'
+      ? '<div class="linked-works-head">対応した修正依頼(' + fixList.length + '件)</div>' +
+        '<div class="list" id="fixLinkWorks">' + fixList.map(function (fp) { return imageRowHtml(fp, 'w320', { counts: false }); }).join('') + '</div>'
       : '';
 
     // 修正依頼の詳細を開いたとき: 依頼内容と、それに対応して投稿された画像作品の一覧
@@ -9009,8 +9005,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       fixContentBlock +
-      requestBlock +
-      fixLinksBlock +
       (p.type === 'novel' ? '' :
       '<div class="detail-block">' +
         '<div class="block-head"><div class="label">プロンプト</div><button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div>' +
@@ -9032,6 +9026,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       linkedNovelsBlock +
       parentBlock +
       baseBlock +
+      requestBlock +
+      fixLinksBlock +
       referenceSourceBlock +
       referencedByBlock;
 
@@ -9156,12 +9152,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const videoSourceWorks = document.getElementById('videoSourceWorks');
     if (videoSourceWorks) wireImageRows(videoSourceWorks, { detailOnly: true });
 
-    const requestLink = modalBody.querySelector('.request-post-link');
-    if (requestLink) {
-      requestLink.addEventListener('click', async function (e) {
-        e.preventDefault();
-        const rp = await ensurePostLoaded(requestLink.dataset.requestId);
-        if (rp) openRequestModal(rp);
+    const requestWork = document.getElementById('answeredRequestWork');
+    if (requestWork) {
+      wireCountButtons(requestWork);
+      requestWork.querySelectorAll('.row').forEach(function (row) {
+        row.addEventListener('click', async function () {
+          const rp = await ensurePostLoaded(row.dataset.id);
+          if (rp) openRequestModal(rp);
+        });
       });
     }
 
@@ -9177,12 +9175,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const referencedByWorks = document.getElementById('referencedByWorks');
     if (referencedByWorks) wireImageRows(referencedByWorks, { detailOnly: true });
 
-    modalBody.querySelectorAll('.fix-post-link').forEach(function (fixLink) {
-      fixLink.addEventListener('click', function (e) {
-        e.preventDefault();
-        openImageDetail(fixLink.dataset.fixId);
-      });
-    });
+    const fixLinkWorks = document.getElementById('fixLinkWorks');
+    if (fixLinkWorks) wireImageRows(fixLinkWorks, { detailOnly: true });
+
     const fixAnswerWorks = document.getElementById('fixAnswerWorks');
     if (fixAnswerWorks) wireImageRows(fixAnswerWorks, { detailOnly: true });
 
