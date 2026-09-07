@@ -730,6 +730,10 @@
   }
   .variant-panel-btn:hover{ border-color: var(--accent); color: var(--accent); }
   /* パネル表示した差分の枚数バッジ */
+  /* 差分のパネル表示は一覧と同じく横幅いっぱいまで使う */
+  .variant-panel-modal{ max-width: min(1600px, 96vw); }
+  .variant-panel-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:12px; }
+  .variant-panel-head .modal-meta{ margin-bottom:0; }
   #variantPanelList .row{ position:relative; cursor:pointer; }
   .variant-panel-no{
     position:absolute; left:8px; bottom:8px; z-index:2;
@@ -4982,10 +4986,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     </div>
 
 <div class="modal-overlay" id="variantPanelOverlay">
-  <div class="modal">
+  <div class="modal variant-panel-modal">
     <button class="modal-close" type="button" id="variantPanelCloseBtn">✕ 閉じる</button>
     <h3 class="modal-title" id="variantPanelTitle">差分をパネル表示</h3>
-    <div class="modal-meta"><span id="variantPanelCount"></span></div>
+    <div class="variant-panel-head">
+      <span class="modal-meta" id="variantPanelCount"></span>
+      <label class="panel-size-control active" id="variantPanelSizeControl">
+        <span>表示サイズ</span>
+        <input type="range" id="variantPanelSizeRange" min="140" max="520" step="20" value="260">
+      </label>
+    </div>
     <div class="list panel-mode" id="variantPanelList"></div>
   </div>
 </div>
@@ -8863,18 +8873,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     clearNotifyForActiveTab();
     openDetailPostId = p.id;
 
-    const imageSet = [{ imageUrl: p.imageUrl, prompt: p.prompt, negativePrompt: p.negativePrompt, settings: p.settings, type: p.type }]
-      .concat((p.variants || []).map(function (v) {
-        // 差分ごとの画像情報はそれぞれ独立しているものとして扱う。
-        // 差分自身にプロンプト/設定が無くても、メイン画像の値を代わりに表示しない。
-        return {
-          imageUrl: v.imageUrl,
-          prompt: v.prompt || '',
-          negativePrompt: v.negativePrompt || '',
-          settings: v.settings || {},
-          type: p.type
-        };
-      }));
+    // 差分ごとの画像情報はそれぞれ独立しているものとして扱う(共通処理)
+    const imageSet = variantImageSetOf(p);
     const hasVariants = imageSet.length > 1;
     // ノベルは settings にシナリオを入れているので、生成設定テーブルとしては表示しない
     const anySettings = p.type !== 'novel' && imageSet.some(function (v) { return v.settings && Object.keys(v.settings).length; });
@@ -9301,10 +9301,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // ボタンは絶対配置(paddingの影響を受けない)なので、位置は変わらず画像だけが縮む。
     if (wrap) wrap.classList.add('has-variants');
     const active = activeIdx > 0 ? activeIdx : 0;
+    // 番号ボタンの右に、差分をまとめて見るための「パネル表示」を置く(詳細モーダルと同じ位置関係)
     fullImageVariants.innerHTML = imgs.map(function (_, i) {
       return '<button type="button" class="fiv-btn' + (i === active ? ' active' : '') +
         '" data-fiv-idx="' + i + '" title="' + (i === 0 ? 'メイン画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
-    }).join('');
+    }).join('') +
+      '<button type="button" class="variant-panel-btn" id="fullImagePanelBtn" title="この作品の差分をパネル表示で並べて見る">パネル表示</button>';
+    const fiPanelBtn = fullImageVariants.querySelector('#fullImagePanelBtn');
+    if (fiPanelBtn) {
+      fiPanelBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const post = currentFullImagePost();
+        if (!post) return;
+        // 拡大表示は閉じ、詳細モーダルと同じ内容でパネル表示を開く
+        closeFullImageModal();
+        openVariantPanelModal(post, variantImageSetOf(post));
+      });
+    }
     fullImageVariants.querySelectorAll('.fiv-btn').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -9314,6 +9327,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         fullImageVariants.querySelectorAll('.fiv-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
       });
     });
+  }
+
+  /* 詳細モーダルの imageSet と同じ形(本体+差分)を作る。
+     差分ごとの情報は独立しているので、本体の値で埋めたりはしない。 */
+  function variantImageSetOf(p) {
+    return [{ imageUrl: p.imageUrl, prompt: p.prompt, negativePrompt: p.negativePrompt, settings: p.settings, type: p.type }]
+      .concat((p.variants || []).map(function (v) {
+        return { imageUrl: v.imageUrl, prompt: v.prompt || '', negativePrompt: v.negativePrompt || '', settings: v.settings || {}, type: p.type };
+      }));
   }
 
   function openFullImageModal(p, startIdx) {
@@ -9464,6 +9486,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       });
     });
     listEl.addEventListener('error', handleImageError, true);
+    // 一覧のパネル表示と同じく、スライダーで1枚あたりの幅を決めて敷き詰める
+    listEl.style.setProperty('--panel-col', variantPanelSizeRange.value + 'px');
     openOverlay(document.getElementById('variantPanelOverlay'));
     layoutPanelGridFor(listEl);
   }
@@ -9472,6 +9496,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   document.getElementById('variantPanelCloseBtn').addEventListener('click', closeVariantPanelModal);
   wireOverlayDismiss(document.getElementById('variantPanelOverlay'), closeVariantPanelModal);
+  const variantPanelSizeRange = document.getElementById('variantPanelSizeRange');
+  variantPanelSizeRange.addEventListener('input', function () {
+    const el = document.getElementById('variantPanelList');
+    el.style.setProperty('--panel-col', this.value + 'px');
+    layoutPanelGridFor(el);
+  });
+  // モーダルを開いたまま画面幅が変わっても敷き詰め直す
+  window.addEventListener('resize', function () {
+    const ov = document.getElementById('variantPanelOverlay');
+    if (ov && ov.classList.contains('open')) layoutPanelGridFor(document.getElementById('variantPanelList'));
+  });
 
   async function postAction(payload) {
     const res = await fetch(GAS_URL, {
