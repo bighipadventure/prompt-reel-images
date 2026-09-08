@@ -8887,9 +8887,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       .filter(Boolean);
     baseList.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     // 他の紐づけ(参考にした投稿作品/関連ノベル等)と同じく、詳細の下にカード一覧としてぶら下げる
+    const baseThumbUsed = new Set();
     const baseBlock = baseList.length
       ? '<div class="linked-works-head">ベースにしたプロンプト例(' + baseList.length + '件)</div>' +
-        '<div class="list" id="baseWorks">' + baseList.map(function (bp) { return promptRowHtml(bp, { counts: false }); }).join('') + '</div>'
+        '<div class="list" id="baseWorks">' + baseList.map(function (bp) { return promptRowHtml(bp, { counts: false, usedThumbIds: baseThumbUsed }); }).join('') + '</div>'
       : '';
 
     const parent = p.parentId
@@ -9422,8 +9423,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     arr = arr.filter(function (p) { return pickerMatch(p, q, 'AND'); });
     if (countEl) countEl.textContent = arr.length + '件';
     renderLikedTypeChips();
+    const likedThumbUsed = new Set();
     listEl.innerHTML = arr.map(function (p) {
-      return (p.type === 'prompt') ? promptRowHtml(p, { counts: false })
+      return (p.type === 'prompt') ? promptRowHtml(p, { counts: false, usedThumbIds: likedThumbUsed })
         : (p.type === 'request') ? requestRowHtml(p, { counts: false })
         : imageRowHtml(p, 'w320', { counts: false });
     }).join('');
@@ -11530,9 +11532,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       return pickerMatch(p, q, pickerKeywordMode('basePrompt'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, basePromptSortKeys); });
+    const basePickerThumbUsed = new Set();
     basePromptListEl.innerHTML = items.map(function (p) {
       const selected = selectedBasePromptIds.some(function (id) { return String(id) === String(p.id); });
-      return promptRowHtml(p, { selected: selected, counts: false });
+      return promptRowHtml(p, { selected: selected, counts: false, usedThumbIds: basePickerThumbUsed });
     }).join('');
     wirePickerRows(basePromptListEl, function (id) {
       const idx = selectedBasePromptIds.findIndex(function (x) { return String(x) === String(id); });
@@ -13113,16 +13116,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function promptRowHtml(p, opts) {
-    opts = opts || {};
+    opts = (opts && typeof opts === 'object') ? opts : {};
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
     const tags = (p.tags && p.tags.length) ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' : '';
-    // このプロンプト例をベースにした投稿作品(紐づく作品)。最新のものをサムネイルにする。
+    // このプロンプト例をベースにした投稿作品(紐づく作品)。一番古い(最初に紐づけられた)ものを
+    // サムネイルにする。同じ画面に並ぶ他のプロンプト例と重複しないよう、既に使われた作品は
+    // 避けて次に古いものを選ぶ(opts.usedThumbIds で呼び出し元から共有する)。
     const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1; });
-    linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
-    const newest = linked[0];
-    const thumbHtml = newest
-      ? '<div class="row-thumb' + (newest.type === 'video' ? ' is-video' : '') + '">' + imageTag(newest.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
+    linked.sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
+    let thumbWork = linked[0];
+    if (opts.usedThumbIds && linked.length) {
+      const free = linked.find(function (ip) { return !opts.usedThumbIds.has(String(ip.id)); });
+      thumbWork = free || linked[0];   // 全部使用済みなら、無いよりましで一番古いものを表示する
+    }
+    if (thumbWork && opts.usedThumbIds) opts.usedThumbIds.add(String(thumbWork.id));
+    const thumbHtml = thumbWork
+      ? '<div class="row-thumb' + (thumbWork.type === 'video' ? ' is-video' : '') + '">' + imageTag(thumbWork.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
       : '';
     return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
       (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>') +
@@ -13149,7 +13159,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     filtered.sort(function (a, b) { return compareWithKeys(a, b, pSortKeys); });
 
     setListCountAndEmpty(pPostCount, pEmptyState, filtered.length, '件', '条件に一致するプロンプト投稿がありません。');
-    pList.innerHTML = filtered.map(promptRowHtml).join('');
+    const promptListThumbUsed = new Set();
+    pList.innerHTML = filtered.map(function (p) { return promptRowHtml(p, { usedThumbIds: promptListThumbUsed }); }).join('');
 
     wireCountButtons(pList);
     pList.querySelectorAll('.row').forEach(function (row) {
@@ -14486,8 +14497,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!used.length) {
       html += '<div class="empty">このプロンプトを含む作品はありません。</div>';
     } else {
+      const usageThumbUsed = new Set();
       html += '<div class="list">' + used.map(function (p) {
-        return p.type === 'prompt' ? promptRowHtml(p, { counts: false }) : imageRowHtml(p, 'w320', { counts: false });
+        return p.type === 'prompt' ? promptRowHtml(p, { counts: false, usedThumbIds: usageThumbUsed }) : imageRowHtml(p, 'w320', { counts: false });
       }).join('') + '</div>';
     }
     body.innerHTML = html;
