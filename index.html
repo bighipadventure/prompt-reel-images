@@ -839,6 +839,12 @@
     scrollbar-width: thin;
     scrollbar-color: var(--line) transparent;
   }
+  /* 下に十分な余白が無いときはこちらを付けて上向きに開く(見切れ対策) */
+  .dl-menu.dl-menu-up{ top: auto; bottom: calc(100% + 4px); }
+  /* タグの予測変換候補: どんな入れ物の中にあっても切れないよう、
+     document.body 直下に置いて position:fixed で位置をJSから追いかける。
+     left/top/bottom/width はすべてJSが都度セットするので、ここでは right を使わない。 */
+  .dl-menu.dl-menu-detached{ position: fixed; right: auto; z-index: 500; }
   .dl-menu::-webkit-scrollbar{ width: 10px; }
   .dl-menu::-webkit-scrollbar-track{ background: transparent; }
   .dl-menu::-webkit-scrollbar-thumb{
@@ -7487,10 +7493,35 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     let items = [];
     let activeIndex = -1;
 
+    // カード等の枠の中に入れると、その枠の外へはみ出せない(overflowで切れる)ことがあるため、
+    // 候補一覧は document.body 直下に置き、position:fixed で入力欄の位置を追いかける。
+    // これで、どんな入れ物の中にあっても常に画面のいちばん手前に出せる。
+    function positionMenu() {
+      if (!menu) return;
+      const r = wrap.getBoundingClientRect();
+      const menuH = menu.offsetHeight;
+      const spaceBelow = window.innerHeight - r.bottom;
+      const spaceAbove = r.top;
+      const up = spaceBelow < menuH && spaceAbove > spaceBelow;
+      menu.classList.toggle('dl-menu-up', up);
+      menu.style.left = r.left + 'px';
+      menu.style.width = r.width + 'px';
+      if (up) {
+        menu.style.top = '';
+        menu.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+      } else {
+        menu.style.bottom = '';
+        menu.style.top = (r.bottom + 4) + 'px';
+      }
+    }
+    function onViewportChange() { if (menu) positionMenu(); }
+
     function closeMenu() {
       if (menu) { menu.remove(); menu = null; }
       items = [];
       activeIndex = -1;
+      window.removeEventListener('scroll', onViewportChange, true);
+      window.removeEventListener('resize', onViewportChange);
     }
 
     function buildMenu() {
@@ -7509,13 +7540,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       if (!menu) {
         menu = document.createElement('div');
-        menu.className = 'dl-menu';
-        wrap.appendChild(menu);
+        menu.className = 'dl-menu dl-menu-detached';
+        document.body.appendChild(menu);
+        window.addEventListener('scroll', onViewportChange, true);
+        window.addEventListener('resize', onViewportChange);
       }
       items = cands;
       activeIndex = -1;
       menu.innerHTML = cands.map(function (t, i) {
         return '<div class="dl-item" data-i="' + i + '">' + escapeHtml(t) + '</div>';
+
       }).join('');
       menu.querySelectorAll('.dl-item').forEach(function (el) {
         el.addEventListener('mousedown', function (ev) {
@@ -7523,6 +7557,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           commit(items[parseInt(el.dataset.i, 10)]);
         });
       });
+      positionMenu();
     }
 
     function setActive(i) {
