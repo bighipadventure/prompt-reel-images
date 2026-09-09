@@ -620,35 +620,6 @@
     position: relative;
   }
   .modal-narrow{ max-width: 480px; }
-  /* ===== 候補選択モーダル(UI Preset / Checkpoint 等の▼から開く) =====
-     どの入力欄から開いても同じ場所・同じ大きさで開くので、画面の上下どちらでも
-     見切れる心配が無い。検索欄で絞り込める。
-     他のモーダル(リンク追加など)の中から開かれることもあるため、同じ
-     .modal-overlay どうしでは開いた順ではなくDOM順で重なりが決まってしまう
-     問題を避けて、常に最前面に出るよう z-index を上げておく。 */
-  #dlPickerOverlay{ z-index: 250; }
-  .dl-picker-modal{ max-width: 420px; }
-  .dl-picker-search{ margin-top: 16px; }
-  .dl-picker-hint{
-    margin-top: 10px; font-family:'Noto Sans JP',sans-serif; font-size: 11.5px; color: var(--ink-dim);
-  }
-  .dl-picker-list{
-    margin-top: 12px; max-height: min(50vh, 420px); overflow-y: auto;
-    border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
-    scrollbar-width: thin; scrollbar-color: var(--line) transparent;
-  }
-  .dl-picker-item{
-    display:flex; align-items:center; gap:8px; padding: 10px 14px;
-    font-family:'Noto Sans JP',sans-serif; font-size: 13px; color: var(--ink);
-    cursor: pointer; border-bottom: 1px solid var(--line);
-    white-space: pre-wrap; overflow-wrap: anywhere;
-  }
-  .dl-picker-item:last-child{ border-bottom: 0; }
-  .dl-picker-item:hover{ background: var(--surface-2); }
-  .dl-picker-item.picked{ color: var(--accent); background: rgba(0, 150, 250, .12); }
-  .dl-picker-check{ flex: none; width: 16px; color: var(--accent); font-weight: 700; }
-  .dl-picker-text{ flex: 1 1 auto; min-width: 0; }
-  .dl-picker-empty{ padding: 18px 14px; text-align:center; color: var(--ink-dim); font-size: 12.5px; font-family:'Noto Sans JP',sans-serif; }
   /* 詳細モーダルの前後移動ボタン(左右余白があるときだけJSで表示)。
      矢印は viewBox 中央に配置した SVG シェブロンで描画=左右完全対称(フォント/枠線角寄りの影響なし)。 */
   .modal-nav-btn{
@@ -5029,16 +5000,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   </div>
 </div>
 
-<div class="modal-overlay" id="dlPickerOverlay">
-  <div class="modal modal-narrow dl-picker-modal">
-    <button class="modal-close" type="button" id="dlPickerCloseBtn">✕ 閉じる</button>
-    <h3 class="modal-title" id="dlPickerTitle">候補を選択</h3>
-    <input type="text" id="dlPickerSearch" class="dl-picker-search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="絞り込み">
-    <div class="dl-picker-hint" id="dlPickerHint" style="display:none;">クリックで追加 / もう一度クリックで解除(複数選択できます)</div>
-    <div class="dl-picker-list" id="dlPickerList"></div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="boardThreadOverlay">
   <div class="modal">
     <div class="modal-top-actions board-thread-top">
@@ -7369,6 +7330,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 候補付き入力欄: ▼を押すと、検索できるモーダルで候補一覧を選べる。手入力も引き続き可能。
   // (以前はその場に候補メニューを開いていたが、開く位置によって画面の上下どちらでも
   // 見切れることがあったため、常に同じ場所・同じ大きさで開くモーダル方式に統一した)
+  // ===== 候補付き入力欄(生成設定・検索絞り込み等) =====
+  // 以前はモーダルで候補一覧を出していたが、いちいちモーダルを開くのが煩わしいとの
+  // ことなので、タグの予測変換(attachTagAutocomplete)と同じ「入れ物の外(body直下)に
+  // 固定表示するリスト」方式に統一する。▼を押すと全候補、入力すると絞り込む。
   function attachDatalistDropdown(input) {
     if (!input || input.dataset.dlWrapped) return;
     input.dataset.dlWrapped = '1';
@@ -7387,92 +7352,125 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     btn.textContent = '▼';
     wrap.appendChild(btn);
 
+    const isMulti = /(^|_)loras$/.test(input.id || '');
+    let menu = null;
+    let items = [];
+    let activeIndex = -1;
+
+    function positionMenu() {
+      if (!menu) return;
+      const r = wrap.getBoundingClientRect();
+      const menuH = menu.offsetHeight;
+      const spaceBelow = window.innerHeight - r.bottom;
+      const spaceAbove = r.top;
+      const up = spaceBelow < menuH && spaceAbove > spaceBelow;
+      menu.classList.toggle('dl-menu-up', up);
+      menu.style.left = r.left + 'px';
+      menu.style.width = r.width + 'px';
+      if (up) { menu.style.top = ''; menu.style.bottom = (window.innerHeight - r.top + 4) + 'px'; }
+      else { menu.style.bottom = ''; menu.style.top = (r.bottom + 4) + 'px'; }
+    }
+    function onViewportChange() { if (menu) positionMenu(); }
+
+    function closeMenu() {
+      if (menu) { menu.remove(); menu = null; }
+      items = [];
+      activeIndex = -1;
+      window.removeEventListener('scroll', onViewportChange, true);
+      window.removeEventListener('resize', onViewportChange);
+    }
+
+    function currentValues() {
+      const dl = document.getElementById(input.dataset.dlList);
+      return dl ? Array.from(dl.options).map(function (o) { return o.value; }) : [];
+    }
+    function pickedValues() {
+      return isMulti ? input.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [input.value];
+    }
+
+    function commit(val) {
+      if (isMulti) {
+        const cur = pickedValues();
+        const at = cur.indexOf(val);
+        if (at === -1) cur.push(val); else cur.splice(at, 1);   // もう一度選ぶと外れる
+        input.value = cur.join(', ');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        buildMenu();   // 選んだ/外した状態を反映して開いたまま
+      } else {
+        input.value = val;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        closeMenu();
+      }
+    }
+
+    function buildMenu() {
+      const q = input.value.trim().toLowerCase();
+      const all = currentValues();
+      // 単一選択の欄は、今まさに選ばれている値そのままで打っているだけのときは
+      // 絞り込まず全候補を見せる(タグの予測変換と違い、既存値をクリックで
+      // 開いたときにも一覧を見渡せるようにするため)。複数選択は常に絞り込む。
+      const cands = q ? all.filter(function (v) { return v.toLowerCase().indexOf(q) !== -1; }) : all;
+      if (!cands.length) { closeMenu(); return; }
+
+      if (!menu) {
+        menu = document.createElement('div');
+        menu.className = 'dl-menu dl-menu-detached';
+        document.body.appendChild(menu);
+        window.addEventListener('scroll', onViewportChange, true);
+        window.addEventListener('resize', onViewportChange);
+      }
+      items = cands;
+      activeIndex = -1;
+      const picked = pickedValues();
+      const hint = isMulti ? '<div class="dl-item dl-item-hint">クリックで追加/解除(複数選択できます)</div>' : '';
+      menu.innerHTML = hint + cands.map(function (v, i) {
+        return '<div class="dl-item' + (picked.indexOf(v) !== -1 ? ' picked' : '') + '" data-i="' + i + '">' + escapeHtml(v) + '</div>';
+      }).join('');
+      menu.querySelectorAll('.dl-item:not(.dl-item-hint)').forEach(function (el) {
+        el.addEventListener('mousedown', function (ev) {
+          ev.preventDefault();
+          commit(items[parseInt(el.dataset.i, 10)]);
+        });
+      });
+      positionMenu();
+    }
+
+    function setActive(i) {
+      const els = menu ? menu.querySelectorAll('.dl-item:not(.dl-item-hint)') : [];
+      if (!els.length) return;
+      if (i < 0) i = els.length - 1;
+      if (i >= els.length) i = 0;
+      activeIndex = i;
+      els.forEach(function (el, idx) { el.classList.toggle('active', idx === activeIndex); });
+      els[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      openDlPickerModal(input);
+      if (menu) { closeMenu(); return; }
+      buildMenu();
+      input.focus();
     });
-  }
-
-  // 見出しラベルがあればそれを、無ければ placeholder を、それも無ければ既定文言をモーダルの題名にする
-  function dlFieldLabel(input) {
-    const field = input.closest('.field');
-    if (field) {
-      const lbl = field.querySelector(':scope > label');
-      if (lbl && lbl.textContent.trim()) return lbl.textContent.trim();
-    }
-    // 生成設定グリッド以外では、見出しラベルが .field で囲まれず直前の兄弟として
-    // 並んでいるだけのことが多い(リンク追加フォームなど)ので、そちらも見る。
-    // input 自体は attachDatalistDropdown で .dl-wrap の中に移動済みのため、
-    // .dl-wrap を基準に直前の兄弟を見る必要がある。
-    const wrap = input.closest('.dl-wrap');
-    const prev = wrap ? wrap.previousElementSibling : input.previousElementSibling;
-    if (prev && prev.tagName === 'LABEL' && prev.textContent.trim()) return prev.textContent.trim();
-    if (input.placeholder && input.placeholder.trim()) return input.placeholder.trim();
-    return '候補';
-  }
-
-  let dlPickerCtx = null;   // { input, isMulti }
-  function openDlPickerModal(input) {
-    const dl = document.getElementById(input.dataset.dlList);
-    const values = dl ? Array.from(dl.options).map(function (o) { return o.value; }) : [];
-    const isMulti = /(^|_)loras$/.test(input.id || '');
-    dlPickerCtx = { input: input, values: values, isMulti: isMulti };
-    document.getElementById('dlPickerTitle').textContent = dlFieldLabel(input) + 'を選択';
-    document.getElementById('dlPickerHint').style.display = isMulti ? '' : 'none';
-    const search = document.getElementById('dlPickerSearch');
-    search.value = '';
-    renderDlPickerList('');
-    openOverlay(document.getElementById('dlPickerOverlay'));
-    search.focus();
-  }
-
-  function renderDlPickerList(q) {
-    const ctx = dlPickerCtx;
-    const list = document.getElementById('dlPickerList');
-    if (!ctx) { list.innerHTML = ''; return; }
-    const query = String(q || '').trim().toLowerCase();
-    const filtered = query ? ctx.values.filter(function (v) { return v.toLowerCase().indexOf(query) !== -1; }) : ctx.values;
-    if (!filtered.length) {
-      list.innerHTML = '<div class="dl-picker-empty">' + (ctx.values.length ? '一致する候補がありません' : '候補がありません') + '</div>';
-      return;
-    }
-    const current = ctx.isMulti
-      ? ctx.input.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean)
-      : [ctx.input.value];
-    list.innerHTML = filtered.map(function (v) {
-      const picked = current.indexOf(v) !== -1;
-      return '<div class="dl-picker-item' + (picked ? ' picked' : '') + '" data-val="' + escapeHtml(v) + '">' +
-        (ctx.isMulti ? '<span class="dl-picker-check">' + (picked ? '✓' : '') + '</span>' : '') +
-        '<span class="dl-picker-text">' + escapeHtml(v) + '</span>' +
-      '</div>';
-    }).join('');
-    list.querySelectorAll('.dl-picker-item').forEach(function (item) {
-      item.addEventListener('click', function () { pickDlPickerItem(item.dataset.val); });
+    input.addEventListener('input', buildMenu);
+    input.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === 'ArrowDown') {
+        if (!menu) { buildMenu(); if (menu) setActive(0); }
+        else setActive(activeIndex + 1);
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        if (menu) { setActive(activeIndex - 1); e.preventDefault(); }
+      } else if (e.key === 'Tab') {
+        if (menu && items.length) { setActive(activeIndex + 1); e.preventDefault(); }
+      } else if (e.key === 'Enter') {
+        if (menu && activeIndex >= 0) { e.preventDefault(); commit(items[activeIndex]); }
+        else closeMenu();
+      } else if (e.key === 'Escape') {
+        if (menu) { closeMenu(); e.preventDefault(); }
+      }
     });
-  }
-
-  function pickDlPickerItem(val) {
-    const ctx = dlPickerCtx;
-    if (!ctx) return;
-    if (ctx.isMulti) {
-      const cur = ctx.input.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-      const at = cur.indexOf(val);
-      if (at === -1) cur.push(val); else cur.splice(at, 1);   // もう一度選ぶと外れる
-      ctx.input.value = cur.join(', ');
-      ctx.input.dispatchEvent(new Event('input', { bubbles: true }));
-      renderDlPickerList(document.getElementById('dlPickerSearch').value);
-    } else {
-      ctx.input.value = val;
-      ctx.input.dispatchEvent(new Event('input', { bubbles: true }));
-      closeDlPickerModal();
-    }
-  }
-
-  function closeDlPickerModal() {
-    const overlay = document.getElementById('dlPickerOverlay');
-    if (overlay) overlay.classList.remove('open');
-    dlPickerCtx = null;
+    input.addEventListener('blur', function () { setTimeout(closeMenu, 120); });
   }
 
   function attachDatalistDropdowns(root) {
@@ -9406,7 +9404,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDlPickerModal(); closeDbUsageModal(); closeLikedListModal(); closeVariantPanelModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDbUsageModal(); closeLikedListModal(); closeVariantPanelModal(); }
   });
 
   /* ===== グッド一覧モーダル =====
@@ -11785,9 +11783,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function closeReferenceModal() { referenceModalOverlay.classList.remove('open'); }
 
-  document.getElementById('dlPickerCloseBtn').addEventListener('click', closeDlPickerModal);
-  wireOverlayDismiss(document.getElementById('dlPickerOverlay'), closeDlPickerModal);
-  document.getElementById('dlPickerSearch').addEventListener('input', function () { renderDlPickerList(this.value); });
   document.getElementById('boardThreadCloseBtn').addEventListener('click', closeBoardThreadModal);
   wireOverlayDismiss(document.getElementById('boardThreadOverlay'), closeBoardThreadModal);
   document.getElementById('pickReferenceBtn').addEventListener('click', openReferenceModal);
