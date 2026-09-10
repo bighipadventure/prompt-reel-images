@@ -492,6 +492,11 @@
   }
   .row-thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
   .row-thumb{ position: relative; }
+  /* 紐づく作品が無いときの仮サムネイル: 黒地に白文字で「no image」 */
+  .row-thumb-none{
+    background: #000; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:11px; font-family:'Noto Sans JP',sans-serif; text-align:center;
+  }
   img.img-failed{ opacity: 0.25; }
   .row-body{ flex:1; min-width:0; display:flex; flex-direction: column; gap: 7px; }
   .row-title{
@@ -12113,6 +12118,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return imagePosts.filter(function (ip) { return String(ip.requestId) === String(p.id) && !ip.parentId; }).length;
   }
 
+  // 紐づく作品が無く実サムネイルが用意できないとき用の、黒地に白文字の仮サムネイル。
+  // 一覧の見た目を揃えるため(空欄のまま詰めるとカードの高さがガタつく)。
+  function noImageThumbHtml() {
+    return '<div class="row-thumb row-thumb-none"><span>no image</span></div>';
+  }
+
   function requestRowHtml(p, opts) {
     opts = opts || {};
     const title = escapeHtml(requestLabel(p));
@@ -12125,7 +12136,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const newest = answered[0];
     const thumbHtml = newest
       ? '<div class="row-thumb' + (newest.type === 'video' ? ' is-video' : '') + '">' + imageTag(newest.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
-      : '';
+      : noImageThumbHtml();
     return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
       (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>') +
       '<div class="row-main">' + thumbHtml + '<div class="row-body">' +
@@ -13163,7 +13174,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (thumbWork && opts.usedThumbIds) opts.usedThumbIds.add(String(thumbWork.id));
     const thumbHtml = thumbWork
       ? '<div class="row-thumb' + (thumbWork.type === 'video' ? ' is-video' : '') + '">' + imageTag(thumbWork.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
-      : '';
+      : noImageThumbHtml();
     return '<div class="row prompt-row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
       (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>') +
       '<div class="row-main">' + thumbHtml + '<div class="row-body">' +
