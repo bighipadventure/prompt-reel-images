@@ -283,11 +283,13 @@
     font-size: 13px;
     border: none;
     border-radius: 8px;
-    padding: 9px 16px;
+    padding: 10px 16px 8px;
     cursor: pointer;
     transition: opacity .15s ease, background .12s ease, border-color .12s ease;
-    /* ボタンはすべて中身を天地中央に揃える(アイコン付き/文字だけ等で高さがブレないよう line-height も固定) */
-    display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
+    /* ボタンはすべて中身を天地中央に揃える。line-height を詰めて、CJKフォントで
+       文字が上寄りに見えがちなのを避け、paddingも上下をわずかに非対称にして
+       視覚上のベースラインを気持ち下げている。 */
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1;
   }
   .btn-ghost{
     background: var(--surface-2);
@@ -304,9 +306,9 @@
     color: var(--accent);
     border: 1px solid rgba(0, 150, 250, .35);
     border-radius: 6px;
-    padding: 5px 10px 5px 12px;
+    padding: 6px 10px 4px 12px;
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 12px;
+    font-size: 12px; line-height: 1;
     display:flex; align-items:center; gap:6px;
   }
   .chip button{
@@ -325,7 +327,7 @@
     background: var(--accent);
     color: #fff;
     font-weight: 600;
-    padding: 11px 22px;
+    padding: 12px 22px 10px;
   }
   .btn-submit:hover{ opacity: 0.9; }
   .btn-submit:disabled{ opacity: 0.5; cursor: default; }
@@ -402,14 +404,14 @@
   .tag-pill{
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
-    padding: 6px 12px;
+    padding: 7px 12px 5px;
     border-radius: 6px;
     border: 1px solid var(--line);
     background: var(--surface-2);
     color: var(--ink-dim);
     cursor: pointer;
     user-select: none;
-    display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1;
   }
   .tag-pill.state-include{ background: rgba(0, 150, 250, .2); color: var(--accent); border-color: rgba(0, 150, 250, .5); }
   .tag-pill.state-exclude{ background: rgba(255, 64, 96, .2); color: var(--danger); border-color: rgba(255, 64, 96, .5); }
@@ -725,6 +727,12 @@
   .variant-switch-btn:hover{ color: var(--accent); border-color: var(--accent); }
   .variant-switch-btn.active{ background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .image-actions-row .btn-ghost{ padding: 6px 14px; font-size: 12px; }
+  /* 同じ行に並ぶグッド/バッド/★とダウンロード/共有の高さを揃える。
+     .modal-counts 単体の見た目(他のモーダルでの大きめ表示)はそのまま残し、
+     ここでは「一緒に並ぶとき」だけ上書きする。 */
+  .image-actions-row .modal-counts .like-btn,
+  .image-actions-row .modal-counts .dislike-btn{ padding: 7px 14px 5px 11px; font-size: 12px; }
+  .image-actions-row .modal-counts .research-btn{ padding: 7px 12px 5px; font-size: 12px; }
   .block-head{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
   /* コピーボタンは右寄せ・次ブロックの見出しは左寄せで横方向に干渉しないため、
      負マージンで次の見出しをコピーボタンと同じ高さ帯まで引き上げてギュッと詰める。 */
@@ -740,14 +748,14 @@
   .btn-copy{
     background: rgba(0, 150, 250, .2); color: var(--accent);
     border: 1px solid rgba(0, 150, 250, .35);
-    border-radius: 6px; padding: 4px 12px; font-size: 11px;
+    border-radius: 6px; padding: 5px 12px 3px; font-size: 11px;
   }
   .btn-copy:hover{ background: rgba(0, 150, 250, .32); border-color: var(--accent); }
   /* 「日本語訳」切替ボタン(コピーの左) */
   .btn-ja{
     background: rgba(154, 154, 154, .2); color: var(--ink-dim);
     border: 1px solid rgba(154, 154, 154, .35);
-    border-radius: 6px; padding: 4px 12px; font-size: 11px; margin-right: 0;
+    border-radius: 6px; padding: 5px 12px 3px; font-size: 11px; margin-right: 0;
   }
   .btn-ja:hover{ background: rgba(154, 154, 154, .32); color: var(--ink); }
   /* 「原文」表示中(active)も、切替前と同じグレー系のままにする */
@@ -886,8 +894,8 @@
   }
   .like-btn{
     background: var(--surface-2); border: 1px solid var(--line);
-    padding: 5px 12px 5px 10px; border-radius: 999px; cursor: pointer;
-    font-size: 13px; color: var(--ink-dim);
+    padding: 6px 12px 4px 10px; border-radius: 999px; cursor: pointer;
+    font-size: 13px; line-height: 1; color: var(--ink-dim);
     display:inline-flex; align-items:center; gap: 6px;
     transition: color .12s ease, border-color .12s ease, background .12s ease;
   }
@@ -916,6 +924,8 @@
   .modal-counts .like-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
   .modal-counts .dislike-btn{ padding: 8px 16px 8px 13px; font-size: 15px; }
   .modal-counts .btn-icon{ width: 19px; height: 19px; }
+  /* ダウンロード等の通常ボタンと高さを揃えるため、同じ行に並ぶときはアイコンも少し控えめに */
+  .image-actions-row .modal-counts .btn-icon{ width: 14px; height: 14px; }
   .modal-counts .count-badge{ font-size: 15px; }
 
   /* ---- はじめてガイド ---- */
@@ -1975,7 +1985,7 @@
   .dislike-btn{
     display:inline-flex; align-items:center; gap:4px; background: var(--surface-2);
     color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px;
-    padding: 4px 10px; font-size: 12px; cursor: pointer; font-family:'Noto Sans JP',sans-serif;
+    padding: 5px 10px 3px; font-size: 12px; line-height: 1; cursor: pointer; font-family:'Noto Sans JP',sans-serif;
   }
   /* バッドは赤ではなく青(役割は違うが警告色にはしない) */
   .dislike-btn:hover{ color: var(--accent); border-color: var(--accent); }
@@ -3079,9 +3089,6 @@
           </div>
           <button class="clear-tags" id="pClearBrowseTagsBtn" type="button">タグ選択をクリア</button>
         </div>
-      </div>
-      <div style="margin-top:8px; font-size:11px; color:var(--ink-dim); font-family:'Noto Sans JP',sans-serif;">
-        投稿されたプロンプト例の一覧です。例を開くと、その例をベースにして投稿された画像作品がその下にまとめて表示されます。
       </div>
     </div>
 
