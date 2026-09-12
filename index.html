@@ -281,6 +281,7 @@
 
   button{
     font-size: 13px;
+    font-family: inherit;
     border: none;
     border-radius: 8px;
     padding: 10px 16px 8px;
@@ -901,6 +902,9 @@
   }
   .like-btn:hover{ color: var(--like); border-color: var(--like); }
   .like-btn.liked{ color: var(--like); border-color: var(--like); background: var(--danger-dim); }
+  /* グッド/バッドの件数だけ、数字を少し上に詰めて表示する */
+  .like-btn [data-like-count],
+  .dislike-btn [data-dislike-count]{ position: relative; top: -2px; }
 
   /* ---- グッド/バッドのアイコン画像(images/thumb_up.png, images/thumb_down.png) ---- */
   .btn-icon{
