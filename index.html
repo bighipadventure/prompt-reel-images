@@ -1983,9 +1983,9 @@
   .contact-unread-tag{ display:inline-block; font-size:10.5px; font-weight:700; color: var(--accent); border:1px solid var(--accent); border-radius:5px; padding:1px 6px; margin-bottom:6px; }
   body.opt-no-dislike .dislike-btn{ display:none; }
   .dislike-btn{
-    display:inline-flex; align-items:center; gap:4px; background: var(--surface-2);
+    display:inline-flex; align-items:center; gap:6px; background: var(--surface-2);
     color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px;
-    padding: 5px 10px 3px; font-size: 12px; line-height: 1; cursor: pointer; font-family:'Noto Sans JP',sans-serif;
+    padding: 6px 12px 4px 10px; font-size: 13px; line-height: 1; cursor: pointer; font-family:'Noto Sans JP',sans-serif;
   }
   /* バッドは赤ではなく青(役割は違うが警告色にはしない) */
   .dislike-btn:hover{ color: var(--accent); border-color: var(--accent); }
@@ -2857,7 +2857,7 @@
         <span class="label">並び順</span>
         <div class="sort-chips" id="sortChips"></div>
         <div class="row-right-toggles">
-          <button type="button" class="sort-chip" id="includeChildrenToggle" title="バリエーション(子作品)も一覧にすべて表示します(パネル表示を含む)">子も全て表示</button>
+          <button type="button" class="sort-chip" id="includeChildrenToggle" title="バリエーション(子作品)を一覧から隠します">子を非表示</button>
           <button type="button" class="sort-chip fixrequest-only" id="includeFixToggle" title="修正依頼の投稿も一覧にすべて表示します(パネル表示を含む)">修正依頼作品も表示</button>
           <button type="button" class="search-toggle-btn" id="toggleSearchAreaBtn">検索エリアを非表示</button>
         </div>
@@ -3492,7 +3492,7 @@
         <div class="feature-desc">画像投稿一覧では表示形式を切り替えられます。パネル表示は画像を元の縦横比のまま敷き詰める形式で、隣の「表示サイズ」スライダーで大きさを調整できます。</div>
       </div>
       <div class="feature-item">
-        <div class="feature-name">子も全て表示</div>
+        <div class="feature-name">子を非表示 / 子も全て表示</div>
         <div class="feature-desc">通常は隠れているバリエーション(親に紐づいた子作品)も、このボタンを押すと一覧にすべて表示されます。</div>
       </div>
       <div class="feature-item fixrequest-only">
@@ -3676,7 +3676,7 @@
 
       <div class="qa-item opt-only-link-parent">
         <div class="qa-q">同じ設定で生成した画像が何枚もあります。全部投稿してもいいですか？</div>
-        <div class="qa-a">はい。ただし一覧が同じような作品であふれないように「親子紐づけ」を使ってください。まず1枚を普通に投稿し、2枚目以降は画像投稿フォームの「親にする投稿作品」でその作品を選んで投稿します。子になった作品は画像投稿一覧には表示されず、親の詳細を開くと「この作品のバリエーション」として下に一覧表示され、クリックで詳細を見られます。なお、一覧上部の「子も全て表示」を押すと、子の作品も含めてすべてを一覧(パネル表示を含む)に表示できます。</div>
+        <div class="qa-a">はい。ただし一覧が同じような作品であふれないように「親子紐づけ」を使ってください。まず1枚を普通に投稿し、2枚目以降は画像投稿フォームの「親にする投稿作品」でその作品を選んで投稿します。子になった作品は画像投稿一覧には表示されず、親の詳細を開くと「この作品のバリエーション」として下に一覧表示され、クリックで詳細を見られます。なお、既定では子の作品も一覧(パネル表示を含む)にすべて表示されており、一覧上部のボタン(「子を非表示」)を押すと親だけの表示に切り替えられます。</div>
       </div>
 
       <div class="qa-item">
@@ -3736,7 +3736,7 @@
 
       <div class="qa-item">
         <div class="qa-q">投稿が一覧から消えました。</div>
-        <div class="qa-a">親作品に紐づけた「子」の投稿<span class="fixrequest-only">や修正依頼の投稿</span>は、既定では一覧に出ません。一覧上部の「子も全て表示」<span class="fixrequest-only">「修正依頼作品も表示」</span>を押すと表示されます。<span class="opt-only-dislike">また、バッドが規定数に達した投稿は自動的に非表示になります。</span>それでも見つからない場合は、管理者が削除した可能性があります。</div>
+        <div class="qa-a">親作品に紐づけた「子」の投稿<span class="fixrequest-only">や修正依頼の投稿</span>は、既定では一覧に出ません。既定では一覧に表示されています。もし見当たらない場合は、一覧上部のボタンが「子も全て表示」になっていないか(=親だけの表示になっていないか)確認してください<span class="fixrequest-only">。「修正依頼作品も表示」も同様です</span>。<span class="opt-only-dislike">また、バッドが規定数に達した投稿は自動的に非表示になります。</span>それでも見つからない場合は、管理者が削除した可能性があります。</div>
       </div>
 
       <div class="qa-item">
@@ -5564,7 +5564,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let tagMatchMode = 'AND'; // ONにしたタグ同士の絞り込み方: AND / OR / NOT
   let keywordMode = 'AND';
   let viewMode = 'list';
-  let showChildren = false;
+  let showChildren = true;
   let categoryFilter = 'all';
   try { categoryFilter = localStorage.getItem('pr_category_filter') || 'all'; } catch (e) { categoryFilter = 'all'; }
 
@@ -7213,44 +7213,55 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     try { localStorage.removeItem(CACHE_KEY_PARENTS); localStorage.removeItem(CACHE_KEY_REST); } catch (e) {}
   }
 
-  // アプリを開いたときの初回読み込み専用。まず親の画像投稿だけを取得して一覧を表示し、
-  // その時点で読み込み中表示を解除してから、残りを loadRestStage() で背後取得する。
+  // アプリを開いたときの初回読み込み専用。
+  // 投稿一覧のカードは「確定した最新データ」で表示することを優先し、通常は
+  // 読み込み中表示のまま取得完了を待つ。前回のキャッシュは、取得が長引いた
+  // ときだけ「取り急ぎの緊急表示」として一時的に使う(初回訪問でキャッシュが
+  // 無ければ、これまでどおり取得完了を待つだけになる)。
+  const CACHE_EMERGENCY_DELAY_MS = 3000;   // これより待たされたら、いったんキャッシュを出す
+
   async function loadPosts() {
-    // 1) 前回のデータが残っていれば、まずそれで画面を作って待ち時間を無くす
+    showLoading('読み込み中...');
     let shownFromCache = false;
+    let emergencyTimer = null;
+
     const cachedParents = loadStageCache(CACHE_KEY_PARENTS);
     if (cachedParents) {
-      try {
-        applyParentsData(cachedParents);
-        const cachedRest = loadStageCache(CACHE_KEY_REST);
-        if (cachedRest) { applyRestData(cachedRest); restStageLoaded = true; }
-        if (document.getElementById('tab-browse').classList.contains('active')) renderList();
-        hideLoading();
-        shownFromCache = true;
-      } catch (e) {
-        console.error('キャッシュの表示に失敗しました(最新の取得に進みます):', e);
-        shownFromCache = false;
-      }
+      emergencyTimer = setTimeout(function () {
+        try {
+          applyParentsData(cachedParents);
+          const cachedRest = loadStageCache(CACHE_KEY_REST);
+          if (cachedRest) { applyRestData(cachedRest); restStageLoaded = true; }
+          if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+          hideLoading();
+          shownFromCache = true;
+          statusText.textContent = '読み込みに時間がかかっているため、前回表示していた内容を一時的に表示しています。最新のデータを取得中です…';
+        } catch (e) {
+          console.error('緊急表示用キャッシュの適用に失敗しました(そのまま取得を待ちます):', e);
+        }
+      }, CACHE_EMERGENCY_DELAY_MS);
     }
 
-    // 2) キャッシュを出したかどうかに関わらず、必ず最新を取りに行く
-    if (!shownFromCache) showLoading('読み込み中...');
     try {
       const data = await fetchStageWithRetry('parents', function (n, total) {
         if (!shownFromCache) showLoading('読み込みに時間がかかっています…(' + n + '/' + total + '回目)');
       });
+      if (emergencyTimer) clearTimeout(emergencyTimer);
       applyParentsData(data);
       saveStageCache(CACHE_KEY_PARENTS, data);
       if (document.getElementById('tab-browse').classList.contains('active')) renderList();
       statusText.textContent = '';
     } catch (err) {
-      // キャッシュを表示できているなら、通信が失敗しても画面は使える
+      if (emergencyTimer) clearTimeout(emergencyTimer);
+      // 緊急表示できているなら、通信が失敗しても画面は(前回のデータのまま)使える
       statusText.textContent = shownFromCache
         ? '最新データの取得に失敗しました(表示中の内容は前回のものです)。'
         : '読み込みに失敗しました(通信が不安定な可能性があります)。ページを再読み込みしてください。';
       console.error(err);
-      document.body.classList.add('tabs-ready');
-      if (typeof scheduleReflowTabs === 'function') scheduleReflowTabs();
+      if (!shownFromCache) {
+        document.body.classList.add('tabs-ready');
+        if (typeof scheduleReflowTabs === 'function') scheduleReflowTabs();
+      }
     } finally {
       hideLoading();
     }
@@ -7932,9 +7943,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
     renderList();
   });
+  // ボタンの文言は「押すと何が起きるか」を表す。既定でオンなので、
+  // 最初は「子を非表示」(押せば隠せる)、押すと「子も全て表示」(押せばまた出る)に変わる。
+  function syncIncludeChildrenBtn() {
+    const btn = document.getElementById('includeChildrenToggle');
+    btn.classList.toggle('active', showChildren);
+    btn.textContent = showChildren ? '子を非表示' : '子も全て表示';
+    btn.title = showChildren
+      ? 'バリエーション(子作品)を一覧から隠します'
+      : 'バリエーション(子作品)も一覧にすべて表示します(パネル表示を含む)';
+  }
+  syncIncludeChildrenBtn();
   document.getElementById('includeChildrenToggle').addEventListener('click', function () {
     showChildren = !showChildren;
-    this.classList.toggle('active', showChildren);
+    syncIncludeChildrenBtn();
     renderList();
   });
   document.getElementById('includeFixToggle').addEventListener('click', function () {
@@ -8813,7 +8835,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
               (uiPreset ? '<span>UI Preset: ' + escapeHtml(uiPreset) + '</span>' : '') +
               (checkpoint ? '<span>Checkpoint: ' + escapeHtml(checkpoint) + '</span>' : '') +
-              (p.type === 'novel' ? '<span class="row-link-badge lb-novel">ノベルゲーム ' + novelScenarioOf(p).length + 'シーン/' + novelStepsOf(p.settings && p.settings.scenario).length + '行</span>' : '') +
+              (p.type === 'novel' ? '<span class="row-link-badge lb-novel">' + novelScenarioOf(p).length + 'シーン / ' + novelCharCountOf(p.settings && p.settings.scenario) + '文字</span>' : '') +
               (p.type !== 'novel' && novelsReferencing(p.id).length ? '<span class="row-link-badge lb-novel">ノベルゲーム ' + novelsReferencing(p.id).length + '件</span>' : '') +
               (childCount ? '<span class="row-link-badge lb-child">子作品 ' + childCount + '件</span>' : '') +
               (commentCount ? '<span class="row-link-badge lb-comment">コメント ' + commentCount + '件</span>' : '') +
@@ -8835,7 +8857,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     let s = '';
     const variantCount = (p.variants || []).length;
     if (variantCount) s += '<span class="row-link-badge lb-variant">差分 ' + variantCount + '枚</span>';
-    if (basePromptIdsOf(p).length) s += '<span class="row-link-badge lb-base">プロンプト例ベース</span>';
+    if (basePromptIdsOf(p).length) s += '<span class="row-link-badge lb-base">プロンプト例</span>';
     if (p.refId) s += '<span class="row-link-badge lb-ref">参考作品あり</span>';
     if (p.requestId) s += '<span class="row-link-badge lb-req">リクエスト回答</span>';
     if (fixRequestIdsOf(p).length) s += '<span class="row-link-badge lb-fix">修正依頼回答</span>';
@@ -10048,6 +10070,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return steps.filter(function (st, i) {
       return st.bg || st.text || st.name || i === 0;
     });
+  }
+
+  // 一覧バッジ等で使う、シナリオ全体の文字数(セリフ・地の文の本文のみ。話者名は含めない)
+  function novelCharCountOf(scenario) {
+    return novelStepsOf(scenario).reduce(function (sum, st) { return sum + st.text.length; }, 0);
   }
 
   /* ====================================================================
