@@ -7181,27 +7181,81 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     renderRequestDisplay();
   }
 
+  /* ===== 表示用キャッシュ(2回目以降を速くする) =====
+     取得したデータをブラウザに保存しておき、次に開いたときは**まずそれを表示**して
+     待ち時間を無くす。表示した直後に必ず最新データを取りに行き、届いたら静かに
+     差し替えるので、「速く出る」と「必ず最新になる」を両立できる。
+     保存形式を変えたときは CACHE_VERSION を上げれば古いキャッシュは無視される。 */
+  const CACHE_VERSION = 'v1';
+  const CACHE_KEY_PARENTS = 'pr_cache_parents_' + CACHE_VERSION;
+  const CACHE_KEY_REST = 'pr_cache_rest_' + CACHE_VERSION;
+  const CACHE_MAX_CHARS = 4000000;   // localStorageの上限(概ね5MB)に収まる範囲に抑える
+
+  function saveStageCache(key, data) {
+    try {
+      const str = JSON.stringify({ savedAt: Date.now(), data: data });
+      if (str.length > CACHE_MAX_CHARS) { localStorage.removeItem(key); return; }
+      localStorage.setItem(key, str);
+    } catch (e) {
+      // 容量超過などで保存できなくても動作に支障は無いので、古い分だけ消しておく
+      try { localStorage.removeItem(key); } catch (e2) {}
+    }
+  }
+  function loadStageCache(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      return (obj && obj.data) ? obj.data : null;
+    } catch (e) { return null; }
+  }
+  function clearStageCache() {
+    try { localStorage.removeItem(CACHE_KEY_PARENTS); localStorage.removeItem(CACHE_KEY_REST); } catch (e) {}
+  }
+
   // アプリを開いたときの初回読み込み専用。まず親の画像投稿だけを取得して一覧を表示し、
   // その時点で読み込み中表示を解除してから、残りを loadRestStage() で背後取得する。
   async function loadPosts() {
-    showLoading('読み込み中...');
+    // 1) 前回のデータが残っていれば、まずそれで画面を作って待ち時間を無くす
+    let shownFromCache = false;
+    const cachedParents = loadStageCache(CACHE_KEY_PARENTS);
+    if (cachedParents) {
+      try {
+        applyParentsData(cachedParents);
+        const cachedRest = loadStageCache(CACHE_KEY_REST);
+        if (cachedRest) { applyRestData(cachedRest); restStageLoaded = true; }
+        if (document.getElementById('tab-browse').classList.contains('active')) renderList();
+        hideLoading();
+        shownFromCache = true;
+      } catch (e) {
+        console.error('キャッシュの表示に失敗しました(最新の取得に進みます):', e);
+        shownFromCache = false;
+      }
+    }
+
+    // 2) キャッシュを出したかどうかに関わらず、必ず最新を取りに行く
+    if (!shownFromCache) showLoading('読み込み中...');
     try {
       const data = await fetchStageWithRetry('parents', function (n, total) {
-        showLoading('読み込みに時間がかかっています…(' + n + '/' + total + '回目)');
+        if (!shownFromCache) showLoading('読み込みに時間がかかっています…(' + n + '/' + total + '回目)');
       });
       applyParentsData(data);
+      saveStageCache(CACHE_KEY_PARENTS, data);
       if (document.getElementById('tab-browse').classList.contains('active')) renderList();
       statusText.textContent = '';
     } catch (err) {
-      statusText.textContent = '読み込みに失敗しました(通信が不安定な可能性があります)。ページを再読み込みしてください。';
+      // キャッシュを表示できているなら、通信が失敗しても画面は使える
+      statusText.textContent = shownFromCache
+        ? '最新データの取得に失敗しました(表示中の内容は前回のものです)。'
+        : '読み込みに失敗しました(通信が不安定な可能性があります)。ページを再読み込みしてください。';
       console.error(err);
       document.body.classList.add('tabs-ready');
       if (typeof scheduleReflowTabs === 'function') scheduleReflowTabs();
     } finally {
-      // 親の画像投稿の読み込みが終わった時点で読み込み中表示を解除する。
-      // 子画像・プロンプト例・リクエスト・修正依頼・コメント・掲示板・辞書は続けて背後で取得する。
       hideLoading();
     }
+    // キャッシュから復元済みでも、最新を取り直すため restStageLoaded を戻してから読み込む
+    restStageLoaded = false;
     loadRestStage();
   }
 
@@ -7214,6 +7268,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     try {
       const data = await fetchStageWithRetry('rest');
       applyRestData(data);
+      saveStageCache(CACHE_KEY_REST, data);
       restStageLoaded = true;
       rerenderActiveList();
       if (document.getElementById('tab-databank').classList.contains('active')) renderDatabank();
@@ -7237,12 +7292,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     try {
       const parentsData = await fetchStageWithRetry('parents', null, fresh);
       applyParentsData(parentsData);
+      saveStageCache(CACHE_KEY_PARENTS, parentsData);
       const restData = await fetchStageWithRetry('rest', null, fresh);
       applyRestData(restData);
+      saveStageCache(CACHE_KEY_REST, restData);
       restStageLoaded = true;
       restStageLoading = false;
     } catch (err) {
       console.error('再読み込みに失敗しました:', err);
+      // 取り直しに失敗したときは、古いキャッシュを残して混乱させないよう破棄する
+      clearStageCache();
       statusText.textContent = '再読み込みに失敗しました。ページを再読み込みしてください。';
     } finally {
       hideLoading();
@@ -8387,11 +8446,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return [p].concat((p && p.variants) || []);
   }
   function postKeywordHaystack(p) {
-    // 差分のプロンプト/ネガティブも検索対象に含める
-    const texts = postContentHolders(p).map(function (h) {
-      return String(h.prompt || '') + ' ' + String(h.negativePrompt || '');
+    // 差分のプロンプトも検索対象に含める(ネガティブプロンプトは対象外)
+    const texts = postContentHolders(p).map(function (h) { return String(h.prompt || ''); });
+    // プロンプトの単語に日本語訳が登録されていれば、それも検索できるようにする
+    const jaWords = [];
+    postContentHolders(p).forEach(function (h) {
+      splitPromptTokens(h.prompt).forEach(function (tok) {
+        const ja = lookupJa(databankKey(tok));
+        if (ja) jaWords.push(ja);
+      });
     });
-    return (String(p.title || '') + ' ' + texts.join(' ') + ' ' + String(p.memo || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+    return (String(p.title || '') + ' ' + texts.join(' ') + ' ' + jaWords.join(' ') + ' ' + String(p.memo || '') + ' ' + (p.tags || []).join(' ')).toLowerCase();
   }
   function matchKeywords(haystack, keywords, mode) {
     if (!keywords.length) return true;
@@ -8629,6 +8694,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     list.classList.toggle('panel-mode', viewMode === 'panel');
     emptyState.style.display = filtered.length ? 'none' : 'block';
+    // 一覧はプロンプト本文を省いた軽い状態で先に表示されるため、
+    // 読み込み完了前にプロンプトで検索すると一時的に0件になりうる。
+    // その場合だけ、待てば見つかる旨を添えて誤解を防ぐ。
+    if (!filtered.length) {
+      emptyState.textContent = (!restStageLoaded && keywords.length)
+        ? '条件に一致する投稿がありません。(プロンプト本文をまだ読み込み中です。数秒後にもう一度お試しください)'
+        : '条件に一致する投稿がありません。';
+    }
 
     const thumbSize = viewMode === 'panel' ? 'w640' : 'w320';
     browseFiltered = filtered;
