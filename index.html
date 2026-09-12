@@ -7947,7 +7947,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 最初は「子を非表示」(押せば隠せる)、押すと「子も全て表示」(押せばまた出る)に変わる。
   function syncIncludeChildrenBtn() {
     const btn = document.getElementById('includeChildrenToggle');
-    btn.classList.toggle('active', showChildren);
+    // 既定(子を表示している=絞り込み無し)は非活性(青くしない)。
+    // 子を隠している状態(=絞り込みがかかっている)のときだけ活性表示にする。
+    btn.classList.toggle('active', !showChildren);
     btn.textContent = showChildren ? '子を非表示' : '子も全て表示';
     btn.title = showChildren
       ? 'バリエーション(子作品)を一覧から隠します'
