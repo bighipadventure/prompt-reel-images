@@ -3773,6 +3773,7 @@
     <div class="guide-switch" id="guideSwitch">
       <button type="button" class="active" data-guide="image">画像の作り方</button>
       <button type="button" class="video-only" data-guide="video">動画の作り方</button>
+      <button type="button" data-guide="llm">ローカルLLM</button>
     </div>
 
     <div id="guideImage" class="guide-variant">
@@ -4872,6 +4873,248 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           <button class="btn-submit" type="button" id="h3CopyBtn">プロンプトをコピー</button>
           <button class="btn-ghost" type="button" id="h3ResetBtn">初期状態に戻す</button>
           <span class="status" id="h3CopyStatus"></span>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <div id="guideLlm" class="guide-variant" style="display:none;">
+    <nav class="guide-toc" aria-label="ローカルLLMガイド目次">
+      <div class="guide-toc-head"><span class="guide-toc-title">目次(ローカルLLM)</span></div>
+      <div class="guide-toc-groups">
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">準備</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="llm-intro"><span class="toc-badge">◆</span>これは何か</a>
+            <a class="guide-toc-link" data-scroll="llm-spec"><span class="toc-badge">◆</span>必要なPC性能</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">環境構築</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="llm-step-install"><span class="toc-badge">1</span>インストール</a>
+            <a class="guide-toc-link" data-scroll="llm-step-model"><span class="toc-badge">2</span>モデル入手</a>
+            <a class="guide-toc-link" data-scroll="llm-step-agent"><span class="toc-badge">3</span>エージェント設定</a>
+            <a class="guide-toc-link" data-scroll="llm-step-project"><span class="toc-badge">4</span>プロジェクト作成</a>
+            <a class="guide-toc-link" data-scroll="llm-step-run"><span class="toc-badge">5</span>画像を読ませる</a>
+          </div>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">使いこなし</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="llm-prompt"><span class="toc-badge">◆</span>指示文の例</a>
+            <a class="guide-toc-link" data-scroll="llm-trouble"><span class="toc-badge">◆</span>困ったとき</a>
+            <a class="guide-toc-link" data-scroll="llm-links"><span class="toc-badge">◆</span>リンク</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section class="panel" id="llm-intro">
+      <h2>これは何をするものか</h2>
+      <div class="guide-note">
+        <strong>やりたいこと:</strong> 手元のPCで動くAIに<strong>好きな画像をドラッグ&amp;ドロップして、その画像のプロンプトを考えてもらう</strong>。画像もプロンプトも自分のPCの中だけで処理されるので、外部に送信されない。
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>用語の整理:</strong> <strong>LM Studio Bionic</strong>(以下 Bionic)は、ローカルLLMを動かす <strong>ツール(土台)</strong>。<strong>モデル</strong>はその上に載せる<strong>AIの本体</strong>で、別途ダウンロードする。この2つは別物で、<strong>ツールを入れただけでは何もできない</strong>(モデルが要る)。
+          <div class="guide-note">Bionicは2026年7月に公開された、LM Studio と<strong>同じ開発元の別アプリ</strong>。従来のLM Studioが「AIとチャットする」ものだったのに対し、Bionicは<strong>ファイルを読ませて作業させる「エージェント」</strong>として作られている。今回のように画像を渡して読み取らせる用途はBionic向き。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>重要な注意点:</strong> 画像を理解するには <strong>画像認識(Vision)に対応したモデル</strong>が必要。テキストだけのモデルでは画像を渡しても読めない。STEP 2でここを間違えないこと。
+          <div class="guide-warn"><strong>Bionicはまだ初期プレビュー版。</strong>更新が速く、画面の名称や配置がこの手順と変わっている可能性がある。見当たらない項目があれば、近い名前の設定を探すか公式ドキュメントを確認すること。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-spec">
+      <h2>必要なPC性能の目安</h2>
+      <div class="guide-step">
+        <div class="body">
+          ローカルLLMは<strong>VRAM(グラフィックボードのメモリ)</strong>が効く。画像生成をしている環境なら、たいてい足りている。
+          <table class="guide-table">
+            <tr><th>VRAM</th><th>目安</th></tr>
+            <tr><td>8GB未満</td><td>4B級の軽量モデルなら動く。返答は素朴になりがち</td></tr>
+            <tr><td>8〜12GB</td><td>4B〜12B級が快適。まずはここを狙うとよい</td></tr>
+            <tr><td>16GB以上</td><td>12B超も選択肢に入り、精度が上がる</td></tr>
+          </table>
+          <div class="guide-note"><strong>モデル名の「4B」「12B」はパラメータ数</strong>(=モデルの規模)。大きいほど賢いがVRAMを食う。まず小さいモデルで通しで動かし、物足りなければ大きくするのが安全。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>画像生成ツールとの同時起動には注意。</strong>ForgeやComfyUIを起動したままだとVRAMを取り合って、どちらかが極端に遅くなるか落ちる。<strong>片方を終了してから</strong>使うのが確実。
+          <div class="guide-note">同じ理由で、Bionicの音声入力(ローカル音声認識)も使うとVRAMをさらに消費する。画像のプロンプト化が目的なら、音声機能はオフのままでよい。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-step-install">
+      <h2>STEP 1. Bionic をインストールする</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          <a href="https://lmstudio.ai/" target="_blank" rel="noopener">LM Studio公式サイト</a> から <strong>LM Studio Bionic</strong> をダウンロードしてインストールする。<strong>アカウント登録もAPIキーも不要</strong>で、インストールすればそのまま使える。
+          <div class="guide-note">従来の「LM Studio」とは別アプリ。すでにLM Studioを入れていても、Bionicは別途インストールする。<strong>2つは同時に起動できない</strong>ので、Bionicを使うときはLM Studio本体を終了しておく。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          初回起動すると、プロジェクトを作る画面が出る。ここではまだ何も作らず、先に<strong>モデルの用意(STEP 2)</strong>へ進んでよい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-step-model">
+      <h2>STEP 2. 画像を読めるモデルを入れる</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          Bionicのモデル選択画面(またはモデル管理画面)から、モデルを<strong>検索してダウンロード</strong>する。ここで<strong>必ず画像認識に対応したモデルを選ぶ</strong>。対応モデルには <strong>Vision</strong> / <strong>VL</strong> / <strong>マルチモーダル</strong> といった表記や、目のようなアイコンが付いていることが多い。
+          <div class="guide-warn"><strong>ここが一番の詰まりどころ。</strong>テキスト専用モデルを入れてしまうと、画像をドロップしても「画像が読めない」という結果になる。モデル名や説明に画像対応の記載があるか確認してから落とすこと。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          モデル選びの考え方。<strong>Gemma系</strong>は軽量でも画像対応版があり、Bionicでの動作報告も多く最初の1つに向く。<strong>Qwen-VL系</strong>は画像認識に強い系統として知られる。いずれも<strong>数GB〜十数GB</strong>のダウンロードになるので、回線と空き容量に余裕をみておく。
+          <div class="guide-note">同じモデルでも<strong>量子化</strong>(圧縮)の度合い違いが複数並ぶことがある(QAT、Q4、Q8 など)。数字が小さいほど軽くて粗く、大きいほど重くて高品質。<strong>VRAMが不安なら軽い方</strong>から試すとよい。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          ダウンロードが終わったら、そのモデルが一覧に出ていることを確認する。これで「AIの本体」の用意は完了。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-step-agent">
+      <h2>STEP 3. エージェントの設定をする</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          設定画面を開き、左メニューの <strong>「エージェント」</strong> を選ぶ。ここで<strong>どのモデルを使うか</strong>を指定する。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>「ルートモデル」</strong>に、STEP 2で入れたモデルを指定する。これが普段の会話や作業に使われる既定のモデルになる。
+          <div class="guide-note">モデル名の先頭に付く <strong>「ローカル」</strong> は、自分のPCで動かすという意味。クラウド上のモデルを選ぶこともできるが、<strong>手元で完結させたいならローカルを選ぶ</strong>。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>「画像認識サブエージェントのモデル」</strong>にも、<strong>画像対応のモデル</strong>を指定する。ここが今回の用途では<strong>いちばん重要</strong>で、画像を読む担当がこのモデルになる。
+          <div class="guide-warn">ルートモデルにテキスト専用モデルを使いたい場合でも、<strong>この欄だけは画像対応モデルにしておく</strong>こと。そうすればテキスト専用モデルでも、画像の内容をこのサブエージェント経由で理解できる。両方同じ画像対応モデルにしておくのがいちばん簡単。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">4</div>
+        <div class="body">
+          同じ設定画面の<strong>「動作」</strong>の項目も確認しておく。<strong>ウェブ検索</strong>をオンにすると、AIが分からない用語を自分で調べられるようになる。プロンプトを考えさせる用途では<strong>オンのままで構わない</strong>が、完全に外部通信を断ちたい場合はオフにする。
+          <div class="guide-note">画像のプロンプト化だけが目的なら、<strong>探索エージェント</strong>などの他の機能は既定のままでよい。まず動かすことを優先し、必要になったら触る。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-step-project">
+      <h2>STEP 4. プロジェクトを作る</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          Bionicは<strong>プロジェクト単位</strong>で作業する。新規プロジェクトを作成し、種類は <strong>Work</strong>(資料・文章向け)を選ぶ。画像からプロンプトを考える用途はこちらでよい(Codeはコード作業向け)。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          プロジェクトには<strong>作業フォルダ</strong>が割り当てられる。プロンプト化したい画像をこのフォルダに入れておくと、AIがファイルとして読みやすくなる。ドラッグ&amp;ドロップで直接渡す場合は、この準備は必須ではない。
+          <div class="guide-note">用途ごとにプロジェクトを分けておくと、過去のやりとりが混ざらず扱いやすい。「プロンプト考察用」などの名前を付けておくとよい。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-step-run">
+      <h2>STEP 5. 画像をドロップしてプロンプトを出す</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          プロジェクトのチャット欄に、<strong>画像をドラッグ&amp;ドロップ</strong>する。画像が添付された状態になったら、<strong>何をしてほしいかを文章で書いて</strong>送信する。
+          <div class="guide-warn">画像を入れただけでは何も起きない。<strong>必ず指示文を添える</strong>こと。指示が曖昧だと、ただの感想が返ってくる。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          初回はモデルの読み込みに時間がかかる。2回目以降は速くなる。返答が出たら、<strong>使えるところだけ抜き出して自分で整える</strong>のが現実的。ローカルの軽量モデルは、そのまま完成品を出すというより<strong>下書きを作る相棒</strong>として捉えるとよい。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          できたプロンプトは「投稿」タブからこのサイトに投稿できる。<strong>プロンプト集計</strong>タブで単語の意味を確認したり、<strong>カート</strong>で単語を集めたりすると、さらに詰めやすい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-prompt">
+      <h2>指示文の例</h2>
+      <div class="guide-step">
+        <div class="body">
+          そのままコピーして使える指示文。<strong>出力の形を指定する</strong>のがコツで、これがないと文章で説明されてしまい、生成ツールに貼れない。
+          <table class="guide-table">
+            <tr><th>目的</th><th>指示文の例</th></tr>
+            <tr><td>基本</td><td>この画像を再現するための画像生成プロンプトを、英単語をカンマ区切りで並べた形式で出力して。説明文は不要。</td></tr>
+            <tr><td>要素ごとに分けたい</td><td>この画像のプロンプトを、キャラクター・服装・背景・構図・画風の5項目に分けて、それぞれ英単語のカンマ区切りで出して。</td></tr>
+            <tr><td>ネガティブも欲しい</td><td>この画像のプロンプトと、避けるべき要素のネガティブプロンプトを、それぞれ英単語のカンマ区切りで出して。</td></tr>
+            <tr><td>画風だけ知りたい</td><td>この画像の画風・雰囲気だけを英単語で表現して。被写体の内容には触れないで。</td></tr>
+          </table>
+          <div class="guide-note">日本語で指示しても<strong>「出力は英語で」と明記</strong>すれば英語のプロンプトが返る。画像生成ツールは英語前提のものが多いので、英語で出させるのが無難。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>うまくいかないときの言い換え。</strong>「〜という形式で出して」と<strong>形を強く指定</strong>し、それでも崩れるなら<strong>手順を分ける</strong>(まず画像の内容を箇条書きさせ、次にそれを英単語にさせる)と安定しやすい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-trouble">
+      <h2>困ったとき</h2>
+      <div class="guide-step">
+        <div class="body">
+          <table class="guide-table">
+            <tr><th>症状</th><th>確認すること</th></tr>
+            <tr><td>画像を渡しても内容を答えない</td><td><strong>まずここを疑う。</strong>設定→エージェントの<strong>「画像認識サブエージェントのモデル」</strong>が画像対応モデルになっているか。テキスト専用モデルだと読めない</td></tr>
+            <tr><td>動作が極端に遅い・落ちる</td><td>VRAM不足の可能性。画像生成ツールなど他のAIツールを終了する。それでも厳しければ<strong>より軽いモデル</strong>や量子化の強い版に替える</td></tr>
+            <tr><td>説明文ばかりでプロンプトが出ない</td><td>指示文で<strong>出力形式を明示</strong>する(「英単語をカンマ区切りで」「説明は不要」)</td></tr>
+            <tr><td>日本語の返答が不自然</td><td>軽量モデルは日本語が苦手なことがある。<strong>英語で出力させる</strong>か、日本語が得意なモデルに替える</td></tr>
+            <tr><td>LM Studioが起動できない</td><td>Bionicと本体は<strong>同時起動できない</strong>。片方を終了する</td></tr>
+            <tr><td>設定画面の項目名が違う</td><td>Bionicは<strong>初期プレビュー版</strong>で更新が速い。近い名前の項目を探すか、公式ドキュメントを確認する</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="llm-links">
+      <h2>公式ドキュメントとリンク</h2>
+      <div class="guide-step">
+        <div class="body">
+          仕様は更新が速いので、食い違いがあれば公式を優先すること。
+          <table class="guide-table">
+            <tr><th>リンク</th><th>内容</th></tr>
+            <tr><td><a href="https://lmstudio.ai/" target="_blank" rel="noopener">LM Studio 公式サイト</a></td><td>Bionic・本体のダウンロード</td></tr>
+            <tr><td><a href="https://lmstudio.ai/docs/bionic" target="_blank" rel="noopener">Bionic 公式ドキュメント</a></td><td>機能・設定の詳細。困ったらここ</td></tr>
+            <tr><td><a href="https://lmstudio.ai/docs" target="_blank" rel="noopener">LM Studio ドキュメント</a></td><td>本体側の設定やモデルの扱い</td></tr>
+            <tr><td><a href="https://huggingface.co/models?pipeline_tag=image-text-to-text" target="_blank" rel="noopener">Hugging Face(画像対応モデル一覧)</a></td><td>画像を読めるモデルを探す。Bionic内の検索で見つからないときに</td></tr>
+          </table>
+          <div class="guide-note">Bionicは<strong>ローカルだけでなくクラウドのモデル</strong>も選べる。手元のPCが非力な場合の逃げ道になるが、その場合は画像が外部に送られる点に留意すること。</div>
         </div>
       </div>
     </section>
@@ -15599,7 +15842,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     var guideSwitch = document.getElementById('guideSwitch');
     var guideVariants = {
       image: document.getElementById('guideImage'),
-      video: document.getElementById('guideVideo')
+      video: document.getElementById('guideVideo'),
+      llm: document.getElementById('guideLlm')
     };
     if (guideSwitch) {
       guideSwitch.querySelectorAll('button').forEach(function (btn) {
