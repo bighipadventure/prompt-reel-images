@@ -4442,6 +4442,12 @@ Negative: (ここにカンマ区切りのタグ)
     </div>
 
     <div id="guideVideo" class="guide-variant" style="display:none;">
+    <div class="guide-switch guide-subswitch" id="guideVideoSwitch">
+      <button type="button" class="active" data-vidguide="fl2va">基本（FL2VA）</button>
+      <button type="button" data-vidguide="ref2va">参照素材から作る（Ref2VA）</button>
+    </div>
+
+    <div id="guideVideoFl" class="guide-subvariant">
     <nav class="guide-toc" aria-label="動画ガイド目次">
       <div class="guide-toc-head"><span class="guide-toc-title">目次(動画)</span></div>
       <div class="guide-toc-groups">
@@ -4876,6 +4882,426 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         </div>
       </div>
     </section>
+    </div>
+
+    <div id="guideVideoRef" class="guide-subvariant" style="display:none;">
+    <nav class="guide-toc" aria-label="Ref2VAガイド目次">
+      <div class="guide-toc-head"><span class="guide-toc-title">目次(Ref2VA)</span></div>
+      <div class="guide-toc-groups">
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">Ref2VA の使い方</div>
+          <div class="guide-toc-grid">
+            <a class="guide-toc-link" data-scroll="ref-intro"><span class="toc-badge">◆</span>できること</a>
+            <a class="guide-toc-link" data-scroll="ref-prepare"><span class="toc-badge">1</span>準備するもの</a>
+            <a class="guide-toc-link" data-scroll="ref-nodes"><span class="toc-badge">2</span>ノード導入</a>
+            <a class="guide-toc-link" data-scroll="ref-models"><span class="toc-badge">3</span>モデル配置</a>
+            <a class="guide-toc-link" data-scroll="ref-workflow"><span class="toc-badge">4</span>ワークフロー</a>
+            <a class="guide-toc-link" data-scroll="ref-prompt"><span class="toc-badge">5</span>プロンプトを書く</a>
+            <a class="guide-toc-link" data-scroll="ref-example"><span class="toc-badge">◆</span>ひな形</a>
+            <a class="guide-toc-link" data-scroll="ref-meta"><span class="toc-badge">AI</span>AIに作ってもらう</a>
+            <a class="guide-toc-link" data-scroll="ref-gen"><span class="toc-badge">6</span>生成する</a>
+            <a class="guide-toc-link" data-scroll="ref-colab"><span class="toc-badge">◆</span>Colabで動かす</a>
+            <a class="guide-toc-link" data-scroll="ref-trouble"><span class="toc-badge">◆</span>困ったとき</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section class="panel" id="ref-intro">
+      <h2>Ref2VA とは(できること)</h2>
+      <div class="guide-note">
+        <strong>ここから先は応用編。</strong>このページの上半分(STEP 1〜5)で <strong>ComfyUI + MiniMax H3 が動く状態</strong>になっていることが前提。まだの人は先にそちらを済ませること。
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>Ref2VA(Reference to Video)</strong>は、MiniMax H3 のもう一つのモデル。<strong>手持ちの素材を「参照」させて動画を作る</strong>のが役割で、テキストや1枚の画像から作る FL2VA とはここが違う。
+          <table class="guide-table">
+            <tr><th>読み込める素材</th><th>最大数</th></tr>
+            <tr><td>画像</td><td>9枚</td></tr>
+            <tr><td>音声</td><td>3つ</td></tr>
+            <tr><td>動画</td><td>3つ</td></tr>
+          </table>
+          <div class="guide-note">合計<strong>最大12個</strong>の素材を同時に渡して、1本の動画に反映させられる。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          できることの例。<strong>素材を組み合わせる</strong>という発想なので、FL2VAとは用途がかなり違う。
+          <table class="guide-table">
+            <tr><th>やりたいこと</th><th>渡す素材</th></tr>
+            <tr><td>同じ人物を別の衣装・場所で登場させる</td><td>顔の画像 + 全身や背景の画像</td></tr>
+            <tr><td>好きな声で喋らせる(声だけ借りる)</td><td>声の参照音声 + キャラ画像。セリフはプロンプトで指定</td></tr>
+            <tr><td>背景やカメラワークはそのままで人物だけ差し替え</td><td>元の動画 + 差し替えたい人物の画像</td></tr>
+            <tr><td>ダンスの振り付けを別キャラにさせる</td><td>ダンス動画 + 踊らせたいキャラの画像</td></tr>
+            <tr><td>キャラに歌わせる</td><td>楽曲の音声 + キャラ画像</td></tr>
+            <tr><td>複数人の掛け合いドラマ</td><td>キャラ画像を複数 + 背景画像</td></tr>
+          </table>
+          <div class="guide-warn"><strong>Ref2VAの本当の難所はプロンプト。</strong>素材を渡すだけでは動かず、<strong>公式仕様の特殊な書式</strong>で「どの素材が何なのか」を定義する必要がある。ただしSTEP 5で紹介する無料ツールを使えば手書きせずに済むので、初心者でも実用できる。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-prepare">
+      <h2>STEP 1. 準備するものを確認する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          <strong>VRAM 8GB〜16GB</strong>で動かせる。Ref2VAは素材を多数読み込むぶん本来は重いが、<strong>軽量版(GGUF)のモデル</strong>と<strong>少ないステップ数で仕上げるLoRA</strong>を組み合わせることで、一般的なPCでも動く構成にできる。
+          <div class="guide-note">ここで使う軽量化の考え方は3つ。①モデル本体を圧縮した<strong>GGUF形式</strong>を使う ②プロンプトを解析するエンコーダーを<strong>2ファイルに分割</strong>してメモリの山を作らない ③通常20ステップ以上かかる処理を<strong>4〜8ステップ</strong>で終わらせる専用LoRAを使う。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          用意するのは<strong>モデル6ファイル</strong>と<strong>カスタムノード6種</strong>。次のSTEPで順に入れていく。
+          <div class="guide-note"><strong>すでにFL2VAを使っている人は、大半が使い回せる。</strong>追加で必要なのは <strong>Ref2VA本体</strong>と<strong>Ref2VA用のTurbo LoRA</strong>、それとノード2種だけ。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-nodes">
+      <h2>STEP 2. カスタムノードを入れる</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          ComfyUIの <code>custom_nodes</code> フォルダで、以下を <code>git clone</code> する(ComfyUI Managerから名前で検索して入れてもよい)。
+          <table class="guide-table">
+            <tr><th>ノード</th><th>役割</th></tr>
+            <tr><td>ComfyUI-Fantastic-MiniMaxH3-PromptBuilder</td><td><strong>Media Loader</strong>。素材をまとめて読み込む(Ref2VA用)</td></tr>
+            <tr><td>ComfyUI-KJNodes</td><td>生成途中を確認できるプレビュー機能(Ref2VA用)</td></tr>
+            <tr><td>ComfyUI-MiniMax-H3-Turbo</td><td>Turbo LoRAを使うため(FL2VAと共通)</td></tr>
+            <tr><td>ComfyUI-H3-Multishot</td><td>複数ショットの扱い(FL2VAと共通)</td></tr>
+            <tr><td>ComfyUI-GGUF</td><td>軽量なGGUF形式を読むため(FL2VAと共通)</td></tr>
+            <tr><td>ComfyUI-VideoHelperSuite</td><td>動画の入出力(FL2VAと共通)</td></tr>
+          </table>
+          <div class="guide-note">下の「リンク集」に各ノードのURLをまとめてある。FL2VAを動かしている人は、下4つはすでに入っているはず。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          入れ終わったら<strong>ComfyUIを再起動</strong>する。再起動しないと新しいノードが認識されない。
+          <div class="guide-warn">起動時に赤いエラーが出る場合は、ノードの依存パッケージが入っていない可能性がある。ComfyUI Manager から入れ直すか、エラーに出ているパッケージ名を確認すること。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-models">
+      <h2>STEP 3. モデルを配置する</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          6つのファイルを、ComfyUIの<strong>それぞれ決まったフォルダ</strong>に置く。置き場所を間違えるとノードの一覧に出てこないので注意。
+          <table class="guide-table">
+            <tr><th>種類</th><th>ファイル</th><th>置き場所</th></tr>
+            <tr><td><strong>本体(Ref2VA)</strong></td><td>minimax-h3-ref2va-Q4_0.gguf</td><td><code>models/unet</code>(GGUF用の場所)</td></tr>
+            <tr><td><strong>Turbo LoRA</strong></td><td>minimax_h3_ref2v_turbo_4step_...safetensors</td><td><code>models/loras</code></td></tr>
+            <tr><td>テキストエンコーダー</td><td>MiniMax-H3-encoder-Q4_K_M.gguf</td><td><code>models/text_encoders</code></td></tr>
+            <tr><td>同(画像参照用)</td><td>MiniMax-H3-encoder-mmproj-F16.gguf</td><td><code>models/text_encoders</code></td></tr>
+            <tr><td>VAE(音声)</td><td>minimax_h3_audio_vae_fp32.safetensors</td><td><code>models/vae</code></td></tr>
+            <tr><td>VAE(映像)</td><td>minimax_h3_video_vae_fp16.safetensors</td><td><code>models/vae</code></td></tr>
+          </table>
+          <div class="guide-warn"><strong>上2つがRef2VA専用。</strong>FL2VA用の本体・LoRAとは<strong>別物</strong>なので、名前に <code>ref2va</code> / <code>ref2v</code> が入っているものを落とすこと。下4つはFL2VAと共通なので、すでにあれば流用できる。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          全部でかなりの容量になる。回線と空き容量に余裕をみておくこと。ダウンロード中に次のSTEPのワークフローを入手しておくとよい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-workflow">
+      <h2>STEP 4. ワークフローを読み込む</h2>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          ワークフロー(<code>.json</code>)を、<strong>ComfyUIの画面にドラッグ&amp;ドロップ</strong>すると、必要なノードが一括で並ぶ。<strong>下のボタンから、このガイドで解説している構成のワークフローをダウンロードできる。</strong>
+          <div class="h3-output-actions" style="margin:10px 0 4px;">
+            <button class="btn-submit" type="button" id="refWorkflowDlBtn">ワークフローをダウンロード（.json）</button>
+            <span class="status" id="refWorkflowDlStatus"></span>
+          </div>
+          <div class="guide-note">これは <strong>Media Loader 有りの構成</strong>。最大12個の素材スロットを手で配線すると画面がケーブルだらけになるが、<strong>Media Loader</strong> でまとめて読み込み <strong>Reference Splitter</strong> で振り分けるので、配線がすっきりしている。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          読み込んだら、各ノードで<strong>STEP 3で置いたファイルが選択されているか</strong>を確認する。赤く表示されているノードがあれば、ファイル名が違うか置き場所が間違っている。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          あわせて<strong>Live Preview(ライブプレビュー)</strong>ノードを入れておくと便利。生成途中の状態が見えるので、<strong>1フレーム目の構図や表情が失敗していたら、完了を待たずに中断してやり直せる</strong>。動画生成は1回が長いので、この差は大きい。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-prompt">
+      <h2>STEP 5. プロンプトを書く(ここが本番)</h2>
+      <div class="guide-step">
+        <div class="body">
+          Ref2VAは<strong>ほぼプロンプトだけで指示する</strong>ので、操作自体は簡単。ただし<strong>「渡した素材が何なのか」をプロンプト側で定義する</strong>必要がある。素材を読み込ませただけでは、モデルはそれをどう使えばいいか分からない。
+          <div class="guide-note">FL2VAなどの基本モードは<strong>3項目</strong>で書くが、<strong>Ref2VAは6項目</strong>の専用書式を使う。項目名と<strong>並び順は決まっている</strong>ので、そのとおりに書くこと。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>全体の型。</strong>この6つを、この順番で書く。
+          <table class="guide-table">
+            <tr><th>順</th><th>項目名</th><th>何を書くか</th></tr>
+            <tr><td>1</td><td><code>subject_definitions</code></td><td><strong>素材の定義。</strong>渡した画像・動画・音声が何なのかを1行ずつ説明する</td></tr>
+            <tr><td>2</td><td><code>summary</code></td><td><strong>やりたいことの要約。</strong>どんな動画を作るのかを短く1段落で</td></tr>
+            <tr><td>3</td><td><code>retention_analysis</code></td><td><strong>各素材をどれだけ保つか。</strong>1素材につき1行</td></tr>
+            <tr><td>4</td><td><code>detailed_description</code></td><td><strong>本編。</strong>再生順にショットごとの映像・動き・セリフ・音を書く</td></tr>
+            <tr><td>5</td><td><code>overall_soundscape</code></td><td>環境音・物音など、全体を通しての音</td></tr>
+            <tr><td>6</td><td><code>non_diegetic_music</code></td><td>BGM(劇伴)。不要なら <code>N/A</code></td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">1</div>
+        <div class="body">
+          <strong>素材にラベルを付ける(いちばん大事なルール)。</strong>渡した素材は <code>&lt;Picture 1&gt;</code> <code>&lt;Video 1&gt;</code> <code>&lt;Audio 1&gt;</code> のような<strong>ラベル</strong>で呼ぶ。番号は<strong>読み込ませた順</strong>。人物やモノなど、動画の中で何度も出てくるものには <code>&lt;Subject 1&gt;</code> というラベルを別に付ける。
+          <div class="guide-warn"><strong>一度決めたラベルは、6項目すべてで同じ意味で使い続けること。</strong>途中で指すものが変わったり、定義していないラベルを本編で使ったりすると失敗する。画像・動画・音声の番号は<strong>それぞれ独立</strong>(Picture 1 と Audio 1 は無関係)。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>1. subject_definitions を書く。</strong>素材1つにつき1行。<strong>そのラベルが何を指すか・何の役割か・どんな特徴を引き継ぐか</strong>を書く。
+          <div class="guide-note">例:<br>
+          <code>&lt;Subject 1&gt; is the young woman with long black hair and a white blouse in &lt;Picture 1&gt;.</code><br>
+          <code>&lt;Video 1&gt; is the source video providing the camera work and pacing.</code><br>
+          <code>&lt;Audio 1&gt; is the voice timbre reference for &lt;Subject 1&gt;.</code><br>
+          <strong>「声だけ借りる」場合は、その音声が"声質の参照"であることを明記する</strong>のがコツ。セリフの内容ではなく声の質を使う、と伝わる。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>2. summary を書く。</strong>作る動画の内容と、素材同士の関係を<strong>短く1段落</strong>で。長く書く必要はない。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">4</div>
+        <div class="body">
+          <strong>3. retention_analysis を書く。</strong>素材ごとに<strong>「どれだけ元のまま保つか」</strong>を決められた語で指定する。1素材1行。
+          <table class="guide-table">
+            <tr><th>映像向けの語</th><th>意味</th></tr>
+            <tr><td><code>fully_preserved</code></td><td>そのまま完全に保つ(顔や背景を変えたくないとき)</td></tr>
+            <tr><td><code>partially_preserved</code></td><td>一部だけ保つ</td></tr>
+            <tr><td><code>attribute_transfer</code></td><td>特徴だけ移す(髪型・服装だけ移植するなど)</td></tr>
+            <tr><td><code>weak_reference</code></td><td>雰囲気だけ参考にする</td></tr>
+          </table>
+          <table class="guide-table">
+            <tr><th>音声向けの語</th><th>意味</th></tr>
+            <tr><td><code>fully_copy</code></td><td>音をそのまま使う</td></tr>
+            <tr><td><code>partially_copy</code></td><td>一部を使う</td></tr>
+            <tr><td><code>reference</code></td><td>参考にする(声質だけ借りる場合はこれ)</td></tr>
+            <tr><td><code>weak_reference</code></td><td>ゆるく参考にする</td></tr>
+          </table>
+          <div class="guide-note">書き方の例:<br>
+          <code>&lt;Subject 1&gt; (appears in [Shot 1], [Shot 2]): fully_preserved - identity, hair, and clothing are retained.</code><br>
+          <code>&lt;Audio 1&gt;: reference - only the voice timbre is used.</code><br>
+          後ろに <code>-</code> をつけて<strong>理由を一言</strong>添える。</div>
+          <div class="guide-warn">ここで<strong>話者ID (S1) は書かない</strong>(次のdetailed_descriptionで使う)。また、<strong>新しく足した動きや背景は「元を保てていない」とは考えない</strong>ので、そこを気にして語を弱める必要はない。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">5</div>
+        <div class="body">
+          <strong>4. detailed_description を書く(本編・ここが一番長い)。</strong>まず<strong>全体の画風</strong>を書き、そのあと <code>[Shot 1]</code> <code>[Shot 2]</code> … と<strong>再生順</strong>にショットを並べる。各ショットでは<strong>構図・登場人物・場所・動き・カメラ・音</strong>を具体的に書く。
+          <div class="guide-note"><strong>セリフの書き方:</strong> 喋る人には <code>(S1)</code> <code>(S2)</code> のような話者IDを付け、セリフは <code>&lt;d&gt;[Japanese] こんにちは。&lt;/d&gt;</code> のように囲む。<strong>セリフ・歌詞・画面に映る文字は、元の言語のまま</strong>書く(日本語で喋らせたいなら日本語で書く)。説明部分は英語で書く。</div>
+          <div class="guide-note"><strong>話者IDの付け方:</strong> 動画内で<strong>実際に声が出てくる順</strong>に (S1)(S2)… と割り当て、同じ人には同じIDを使い続ける。音声素材を特定の人物に紐づけた場合も、その人物のIDを使う(新しい番号を作らない)。</div>
+          <div class="guide-warn"><strong>音は、それを出している動作のすぐ横に書く。</strong>離して書くとタイミングがずれる。また<strong>あらすじの要約ではなく、見える通りの描写</strong>を書くこと。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="num">6</div>
+        <div class="body">
+          <strong>5. overall_soundscape / 6. non_diegetic_music を書く。</strong>前者は全体を通しての環境音や物音(室内の空気感、風、足音など)。後者は<strong>観客にだけ聞こえるBGM</strong>で、<strong>不要なら <code>N/A</code></strong> と書く。
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>最後に必ず確認すること。</strong>ここを外すと生成が崩れやすい。
+          <table class="guide-table">
+            <tr><th>確認</th><th>内容</th></tr>
+            <tr><td>長さが合っているか</td><td><strong>描写の合計時間を、指定した秒数に合わせる</strong>(対応は4〜15秒)。ショットを詰め込みすぎない</td></tr>
+            <tr><td>ラベルの未定義がないか</td><td>本編で使ったラベルが、すべて <code>subject_definitions</code> で定義されているか</td></tr>
+            <tr><td>ラベルがブレていないか</td><td>同じラベルが最後まで同じものを指しているか</td></tr>
+            <tr><td>渡した素材と一致しているか</td><td><strong>渡していない素材を書かない・渡した素材を書き忘れない</strong></td></tr>
+            <tr><td>順番が正しいか</td><td>6項目が決められた順に並んでいるか</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          書けたら、そのまま ComfyUI の <strong>CLIP Text Encode</strong> ノードに貼り付ける。
+          <div class="guide-note"><strong>最初から完璧を狙わない。</strong>まず素材2〜3個・1〜2ショットの短いもので通し、意図どおり動いたら素材やショットを増やすのが結局いちばん速い。<strong>書式の詳細は公式ガイド</strong>(下のリンク集)に実例つきでまとまっているので、慣れるまでは手元に開いておくとよい。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-example">
+      <h2>そのまま使えるひな形</h2>
+      <div class="guide-step">
+        <div class="body">
+          <strong>例: 画像の人物に、別の音声の声で喋らせる(8秒)。</strong>渡す素材は画像1枚 + 音声1つ。<code>&lt; &gt;</code> の中身を自分の素材に合わせて書き換えれば、そのまま使える。
+          <table class="guide-table">
+            <tr><th>項目</th><th>記入例</th></tr>
+            <tr><td><code>subject_definitions</code></td><td>&lt;Subject 1&gt; is the young woman with long black hair and a white blouse in &lt;Picture 1&gt;.<br>&lt;Audio 1&gt; is the voice timbre reference for &lt;Subject 1&gt;.</td></tr>
+            <tr><td><code>summary</code></td><td>An 8-second video in which &lt;Subject 1&gt; speaks to the camera in a quiet room, using the voice timbre of &lt;Audio 1&gt;.</td></tr>
+            <tr><td><code>retention_analysis</code></td><td>&lt;Subject 1&gt; (appears in [Shot 1]): fully_preserved - identity, hair, and clothing are retained.<br>&lt;Audio 1&gt;: reference - only the voice timbre is used.</td></tr>
+            <tr><td><code>detailed_description</code></td><td>Soft natural lighting, realistic style.<br>[Shot 1] Medium close-up of &lt;Subject 1&gt; sitting by a window, facing the camera. She smiles slightly and begins to speak. (S1) &lt;d&gt;[Japanese] こんにちは、今日はいい天気ですね。&lt;/d&gt; The camera holds still.</td></tr>
+            <tr><td><code>overall_soundscape</code></td><td>Quiet indoor room tone with faint birdsong outside the window.</td></tr>
+            <tr><td><code>non_diegetic_music</code></td><td>N/A</td></tr>
+          </table>
+          <div class="guide-note"><strong>応用のしかた。</strong>ダンスを移植するなら <code>&lt;Video 1&gt;</code> を足して <code>attribute_transfer</code>(動きだけ移す)にする。複数人の掛け合いなら <code>&lt;Subject 2&gt;</code> を足し、本編で <code>(S1)</code> <code>(S2)</code> を交互に使う。<strong>足すのはラベルと行だけ</strong>で、6項目の型は変わらない。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-meta">
+      <h2>AIにプロンプトを作ってもらう（コピペ用）</h2>
+      <div class="guide-step">
+        <div class="body">
+          6項目を自分で書くのが大変なときは、<strong>ChatGPTやClaudeなどのAIに書かせる</strong>のが早い。下の指示文をコピーしてAIに貼り付け、末尾の欄に<strong>「使う素材」と「作りたい内容」を日本語で書き足す</strong>だけで、Ref2VA用の6項目プロンプトを出力してくれる。
+          <div class="guide-note"><strong>素材そのものをAIに渡す必要はない。</strong>「1枚目の画像＝主人公の顔」のように<strong>何番目が何なのかを文章で伝えれば</strong>よい。画像を読めるAIなら、実際に画像を添付して書かせるとより正確になる。</div>
+          <div class="guide-warn"><strong>ComfyUIに読み込ませる順番と、ここで書く番号を必ず一致させること。</strong>「1枚目＝顔」と書いたなら、ComfyUI側でもその画像を1番目に読み込む。ここがズレると、まったく違う結果になる。</div>
+        </div>
+      </div>
+      <textarea class="h3-output" data-no-autogrow id="refMetaPrompt" readonly spellcheck="false" style="min-height:300px;">あなたは動画生成モデル「MiniMax H3」の Ref2VA(参照素材から動画を作るモード)用のプロンプト作成アシスタントです。私がこの後に書く「使う素材」と「作りたい動画の内容」を、Ref2VA公式形式のプロンプトに変換して出力してください。
+
+# 出力する形式
+次の6項目を、この順番・この英語ラベルで出力する。項目を増やしたり順番を変えたりしない。
+  subject_definitions:
+  summary:
+  retention_analysis:
+  detailed_description:
+  overall_soundscape:
+  non_diegetic_music:
+
+# 各項目の書き方
+- subject_definitions: 私が渡す素材を1行ずつ定義する。そのラベルが何を指すか、どんな役割か、引き継ぐべき特徴は何かを書く。
+  例: <Subject 1> is the young woman with long black hair and a white blouse in <Picture 1>.
+  例: <Video 1> is the source video providing the camera work and pacing.
+  例: <Audio 1> is the voice timbre reference for <Subject 1>.
+- summary: 作る動画の内容と素材同士の関係を、短い1段落で書く。
+- retention_analysis: 素材ごとに1行。どこに出てくるかと、どれだけ元を保つかを決められた語で指定し、末尾に「- 理由」を一言添える。
+  映像に使える語: fully_preserved / partially_preserved / attribute_transfer / weak_reference
+  音声に使える語: fully_copy / partially_copy / reference / weak_reference
+  例: <Subject 1> (appears in [Shot 1], [Shot 2]): fully_preserved - identity, hair, and clothing are retained.
+  例: <Audio 1>: reference - only the voice timbre is used.
+  ここには話者ID (S1) を書かない。新しく足した動作や背景は「元を保てていない」とは扱わない。
+- detailed_description: 本編。まず全体の画風を1文で書き、そのあと [Shot 1] [Shot 2] … と再生順にショットを並べる。各ショットで構図・人物・場所・動作・カメラ・音を具体的に描写する。音は、それを出している動作のすぐ横に書く。
+- overall_soundscape: 全体を通しての環境音・物理音を1〜4文の英文で。会話の中身はここに繰り返さない。無音なら N/A。
+- non_diegetic_music: 観客だけに聞こえるBGMを1〜3文で(楽器・テンポ・強弱を具体的に)。無ければ N/A。
+
+# 守るルール
+- 説明・描写は英語で書く。ただしセリフ・歌詞・画面に映る文字は、私が指定した言語のまま書く(翻訳しない)。
+- 素材のラベルは <Picture 1> <Video 1> <Audio 1> の形式。番号は私が伝えた読み込み順に合わせる。画像・動画・音声の番号はそれぞれ独立して数える。
+- 動画内で繰り返し登場する人物やモノには <Subject 1> <Subject 2> … を割り当てる。
+- 一度決めたラベルは6項目すべてで同じ意味で使い続ける。定義していないラベルを本編で使わない。
+- 私が渡していない素材を勝手に増やさない。渡した素材を無視しない。
+- 話す人には (S1)(S2) の固定IDを付ける。IDは動画内で実際に声が出る順に割り当て、同じ人は別ショットでも同じIDを使う。音声素材を特定の人物の声として使う場合も、その人物のIDを使い、新しい番号を作らない。
+- セリフは <d>[言語] 本文</d> の中だけに入れる(例: <d>[Japanese] 次の駅で降ります。</d>)。
+- 画面に映す文字は "..." で正確に囲む(原文のまま)。
+- 描写の合計の長さを、私が指定した秒数に合わせる(4〜15秒の範囲)。ショットを詰め込みすぎない。
+- 命令形(「〜な動画を作って」等)は使わず、画面に起きていることを現在形で描写する。
+- 抽象語の羅列(cinematic, dramatic 等)ではなく、実際に見える/聞こえる出来事を書く。
+
+# 進め方
+- 素材の数と役割 / 動画の長さ / セリフの有無と言語 のうち不明な点があれば、私に1回だけまとめて質問する。分かる範囲で埋められるなら質問せず進めてよい。
+- 最終出力は、完成した6項目のプロンプト本文だけを1つのコードブロックで返す(前置き・解説は不要)。
+
+# 使う素材(読み込ませる順に書く)
+・画像1枚目:
+・画像2枚目:
+・動画1つ目(あれば):
+・音声1つ目(あれば):
+
+# 作りたい動画の内容
+・やりたいこと(例: 1枚目の顔の人物を、2枚目の背景で喋らせる):
+・場面/雰囲気:
+・してほしい動作やカメラ:
+・セリフ(あれば。言語も):
+・動画の長さ(秒):
+</textarea>
+      <div class="h3-output-actions">
+        <button class="btn-submit" type="button" id="refMetaCopyBtn">この指示文をコピー</button>
+        <span class="status" id="refMetaCopyStatus"></span>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          <strong>使い方の流れ。</strong>①上のボタンでコピー → ②AIに貼り付け → ③末尾の「使う素材」「作りたい動画の内容」を日本語で埋めて送信 → ④出てきた6項目を ComfyUI の <strong>CLIP Text Encode</strong> ノードに貼り付ける。
+          <div class="guide-note">出力されたものは<strong>そのまま鵜呑みにせず、STEP 5の確認表</strong>(ラベルの未定義がないか、渡した素材と一致しているか、長さが合っているか)で一度目を通すと失敗が減る。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-gen">
+      <h2>STEP 6. 生成する(初回の設定が肝心)</h2>
+      <div class="guide-step">
+        <div class="body">
+          Ref2VAは素材の解析(エンコード)が入るぶん、<strong>生成開始までにも時間がかかる</strong>。長時間待った末にメモリ不足で落ちると徒労なので、<strong>初回は必ず軽い設定で通しテスト</strong>をすること。
+          <table class="guide-table">
+            <tr><th>項目</th><th>初回テスト</th><th>本番</th></tr>
+            <tr><td>解像度</td><td><strong>0.2Mpx</strong>(608×352 など)</td><td>問題なければ上げる</td></tr>
+            <tr><td>長さ</td><td><strong>5秒</strong>程度</td><td>徐々に伸ばす</td></tr>
+            <tr><td>ステップ数</td><td>4ステップで動作確認</td><td><strong>6ステップ以上</strong>を推奨</td></tr>
+          </table>
+          <div class="guide-note"><strong>ステップ数は結果を大きく左右する。</strong>4ステップは速い反面、精度が落ちやすい。<strong>6ステップ以上にすると画質と口の動き(リップシンク)の精度が大きく向上する</strong>ので、動作確認が済んだら上げること。</div>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="body">
+          まず<strong>動きとリップシンクが意図通りか</strong>を低解像度で確かめ、問題なければ解像度・長さ・ステップ数を上げて本番を回す。この順番を守るのが結局いちばん速い。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-colab">
+      <h2>PCのVRAMが足りないとき(Google Colab)</h2>
+      <div class="guide-step">
+        <div class="body">
+          自分のPCで動かない・途中で固まる場合は、<strong>Google Colab</strong>(クラウドのGPU)という手がある。配布されているRef2VA用のノートブックを開き、接続して実行すれば、<strong>セットアップから生成まで一気に通せる</strong>。
+          <div class="guide-note">GPUは <strong>L4</strong> が推奨。モデルの容量が大きいため、<strong>初回起動の完了まで15分以上</strong>かかることもあるが、起動後は快適に動く。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="ref-trouble">
+      <h2>困ったとき / リンク集</h2>
+      <div class="guide-step">
+        <div class="body">
+          <table class="guide-table">
+            <tr><th>症状</th><th>確認すること</th></tr>
+            <tr><td>生成の途中でメモリ不足(OOM)になる</td><td>解像度を <strong>0.2Mpx</strong> まで下げ、長さを5秒にする。他のAIツールを終了してVRAMを空ける</td></tr>
+            <tr><td>ノードが赤い・ファイルが選べない</td><td>モデルの<strong>置き場所</strong>が合っているか(STEP 3の表)。ComfyUIを再起動したか</td></tr>
+            <tr><td>素材が反映されない</td><td>プロンプト側で<strong>その素材が何なのか定義されているか</strong>。ツールで作り直すのが早い</td></tr>
+            <tr><td>口の動きが合わない</td><td><strong>ステップ数を6以上</strong>に上げる</td></tr>
+            <tr><td>FL2VAのモデルで動かない</td><td>Ref2VAは<strong>専用の本体とLoRA</strong>が必要。名前に <code>ref2va</code> / <code>ref2v</code> が入っているか確認</td></tr>
+          </table>
+          <table class="guide-table">
+            <tr><th>リンク</th><th>内容</th></tr>
+            <tr><td><a href="https://note.com/synth_brain/n/nbd4c5297e6f4" target="_blank" rel="noopener">解説記事(note / cue氏)</a></td><td><strong>このガイドの元記事。</strong>ワークフロー・モデル・ノードの配布リンク一式はここから</td></tr>
+            <tr><td><a href="https://www.youtube.com/watch?v=e3fHQwTY8VM" target="_blank" rel="noopener">解説動画(Ref2VA)</a></td><td>実際の生成結果と操作の流れ</td></tr>
+            <tr><td><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md" target="_blank" rel="noopener">公式プロンプトガイド(Ref2VA)</a></td><td><strong>STEP 5の書式の出典。</strong>ラベル規則・各項目の詳細・実例つき</td></tr>
+            <tr><td><a href="https://github.com/MiniMax-AI/MiniMax-H3/tree/main/skills" target="_blank" rel="noopener">MiniMax H3 公式 skills</a></td><td>プロンプト書式の公式仕様。自力で書きたい人向け</td></tr>
+            <tr><td><a href="https://huggingface.co/molbal/MiniMax-H3-GGUF" target="_blank" rel="noopener">本体モデル(GGUF)</a></td><td><code>minimax-h3-ref2va-Q4_0.gguf</code></td></tr>
+            <tr><td><a href="https://huggingface.co/lightx2v/Minimax-h3-Turbo" target="_blank" rel="noopener">Turbo LoRA</a></td><td>Ref2VA用の4ステップLoRA</td></tr>
+            <tr><td><a href="https://huggingface.co/joeygambino/MiniMax-H3-encoder-GGUF" target="_blank" rel="noopener">テキストエンコーダー</a></td><td>本体用と画像参照用の2ファイル</td></tr>
+            <tr><td><a href="https://huggingface.co/Comfy-Org/MiniMax-H3" target="_blank" rel="noopener">VAE</a></td><td>音声用と映像用の2ファイル</td></tr>
+          </table>
+          <div class="guide-note">配布物やモデルは更新されることがある。食い違いがあれば<strong>元記事と配布元</strong>を優先すること。</div>
+        </div>
+      </div>
+    </section>
+
     </div>
 
     <div id="guideLlm" class="guide-variant" style="display:none;">
@@ -15859,6 +16285,53 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     // 「画像の作り方」内の切替(Forge Neo / NovelAI)
+    /* Ref2VA用ワークフロー(.json)のダウンロード。
+       外部サーバーに置かずページ内に埋め込んであるので、オフラインでも落とせる。 */
+    var REF2VA_WORKFLOW_JSON = "{\"id\":\"ca0eb1e7-f39e-4a3d-9516-61f1508f7ecc\",\"revision\":0,\"last_node_id\":176,\"last_link_id\":375,\"nodes\":[{\"id\":115,\"type\":\"ResolutionSelector\",\"pos\":[-1494,5550],\"size\":[255,126],\"flags\":{},\"order\":11,\"mode\":0,\"showAdvanced\":false,\"inputs\":[],\"outputs\":[{\"name\":\"width\",\"type\":\"INT\",\"links\":[352]},{\"name\":\"height\",\"type\":\"INT\",\"links\":[353]}],\"title\":\"Resolution Selector (Size)\",\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"ResolutionSelector\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"2:3 (Portrait Photo)\",0.4,32],\"widgets_values_named\":{\"aspect_ratio\":\"2:3 (Portrait Photo)\",\"megapixels\":0.4,\"multiple\":32},\"color\":\"#322\",\"bgcolor\":\"#533\"},{\"id\":116,\"type\":\"MarkdownNote\",\"pos\":[-3537,5661],\"size\":[450,891],\"flags\":{},\"order\":0,\"mode\":0,\"inputs\":[],\"outputs\":[],\"title\":\"Note: MiniMax H3\",\"properties\":{\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"## MiniMax H3\\n\\n[MiniMax H3](https://www.minimax.io/blog/minimax-h3) is MiniMax's general-purpose, omni-modal generation model. It jointly understands text, image, video, and audio, and generates video with **native stereo audio**: voice, sound effects, and music are modeled jointly in a single forward pass, not layered on afterward. Output is up to 2K resolution, 24fps, and up to about 15 seconds.\\n\\n## ComfyUI links\\n- [ComfyUI#15224](https://github.com/Comfy-Org/ComfyUI/pull/15224)\\n- [🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\\n\\n## About this workflow\\n\\nThis template runs the **reference-to-video (ref2va)** task using the `MiniMaxH3ReferenceToVideo` node. It takes any mix of reference images, videos, and standalone audio, and weaves them into the generation to lock in a character's identity, a style, a motion, a camera move, or a voice.\\n\\n**Key inputs**\\n\\n- **ref_images / ref_videos / ref_video_audios / ref_audios**: up to 9 reference images, 3 reference videos (each may carry its own paired soundtrack), and 3 standalone reference audio clips\\n- **prompt**: reference the inputs by tag, in the exact order they were connected, for example `<Picture 1>`, `<Video 1>`, `<Audio 1>`, then describe the target scene, motion, and audio\\n- **ref_image_size**: `match` scales references down to the generation's resolution (faster); `max` keeps up to a 2048px short edge for stronger identity fidelity, at the cost of speed since reference tokens ride along every sampling step\\n- **width / height**: set via Resolution Selector.\\n- **duration (seconds)**: converted to a valid frame `length` by the Math Expression node\\n\\n**Sampling and decode**\\n\\n- Sampler: `res_multistep`. `beta` or `normal` scheduler tends to outperform `simple` for reference-heavy prompts like this one\\n- The sampler's joint audio+video `LATENT` output feeds directly into both `VAEDecode` (video, `minimax_h3_video_vae_fp16`) and `VAEDecodeAudio` (audio, `minimax_h3_audio_vae_fp32`); each decode node automatically pulls its own half out of the packed latent. `CreateVideo` then muxes the two into a single MP4 with synced sound\\n- The diffusion model here is `minimax_h3_ref2va_pruned_int8_convrot.safetensors`, a different set of weights from the `fl2va` model used by the t2v/i2v templates\\n\\nRef2va's output is very sensitive to prompt wording; matching the reference tags precisely and being explicit about which reference drives which part of the shot tends to work best.\"],\"widgets_values_named\":{\"text\":\"## MiniMax H3\\n\\n[MiniMax H3](https://www.minimax.io/blog/minimax-h3) is MiniMax's general-purpose, omni-modal generation model. It jointly understands text, image, video, and audio, and generates video with **native stereo audio**: voice, sound effects, and music are modeled jointly in a single forward pass, not layered on afterward. Output is up to 2K resolution, 24fps, and up to about 15 seconds.\\n\\n## ComfyUI links\\n- [ComfyUI#15224](https://github.com/Comfy-Org/ComfyUI/pull/15224)\\n- [🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\\n\\n## About this workflow\\n\\nThis template runs the **reference-to-video (ref2va)** task using the `MiniMaxH3ReferenceToVideo` node. It takes any mix of reference images, videos, and standalone audio, and weaves them into the generation to lock in a character's identity, a style, a motion, a camera move, or a voice.\\n\\n**Key inputs**\\n\\n- **ref_images / ref_videos / ref_video_audios / ref_audios**: up to 9 reference images, 3 reference videos (each may carry its own paired soundtrack), and 3 standalone reference audio clips\\n- **prompt**: reference the inputs by tag, in the exact order they were connected, for example `<Picture 1>`, `<Video 1>`, `<Audio 1>`, then describe the target scene, motion, and audio\\n- **ref_image_size**: `match` scales references down to the generation's resolution (faster); `max` keeps up to a 2048px short edge for stronger identity fidelity, at the cost of speed since reference tokens ride along every sampling step\\n- **width / height**: set via Resolution Selector.\\n- **duration (seconds)**: converted to a valid frame `length` by the Math Expression node\\n\\n**Sampling and decode**\\n\\n- Sampler: `res_multistep`. `beta` or `normal` scheduler tends to outperform `simple` for reference-heavy prompts like this one\\n- The sampler's joint audio+video `LATENT` output feeds directly into both `VAEDecode` (video, `minimax_h3_video_vae_fp16`) and `VAEDecodeAudio` (audio, `minimax_h3_audio_vae_fp32`); each decode node automatically pulls its own half out of the packed latent. `CreateVideo` then muxes the two into a single MP4 with synced sound\\n- The diffusion model here is `minimax_h3_ref2va_pruned_int8_convrot.safetensors`, a different set of weights from the `fl2va` model used by the t2v/i2v templates\\n\\nRef2va's output is very sensitive to prompt wording; matching the reference tags precisely and being explicit about which reference drives which part of the shot tends to work best.\"},\"color\":\"#222\",\"bgcolor\":\"#000\"},{\"id\":117,\"type\":\"MarkdownNote\",\"pos\":[-3453,4851],\"size\":[441,741],\"flags\":{},\"order\":1,\"mode\":0,\"inputs\":[],\"outputs\":[],\"title\":\"Note: Model Links\",\"properties\":{\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"## Model Links\\n[🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\\n\\n**vae**\\n\\n- [minimax_h3_video_vae_fp16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors)\\n- [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors)\\n\\n**diffusion_models**\\n\\n- [minimax_h3_ref2va_pruned_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors)\\n\\n**text_encoders**\\n\\n- [qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors)\\n\\n\\n## Model Storage Location\\n\\n```\\n📂 ComfyUI/\\n├── 📂 models/\\n│   ├── 📂 vae/\\n│   │   ├── minimax_h3_video_vae_fp16.safetensors\\n│   │   └── minimax_h3_audio_vae_fp32.safetensors\\n│   ├── 📂 diffusion_models/\\n│   │   └── minimax_h3_ref2va_pruned_int8_convrot.safetensors\\n│   └── 📂 text_encoders/\\n│       └── qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\\n```\\n\\n## Report Issue\\n\\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\\n\\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\\n\"],\"widgets_values_named\":{\"text\":\"## Model Links\\n[🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\\n\\n**vae**\\n\\n- [minimax_h3_video_vae_fp16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors)\\n- [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors)\\n\\n**diffusion_models**\\n\\n- [minimax_h3_ref2va_pruned_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors)\\n\\n**text_encoders**\\n\\n- [qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors)\\n\\n\\n## Model Storage Location\\n\\n```\\n📂 ComfyUI/\\n├── 📂 models/\\n│   ├── 📂 vae/\\n│   │   ├── minimax_h3_video_vae_fp16.safetensors\\n│   │   └── minimax_h3_audio_vae_fp32.safetensors\\n│   ├── 📂 diffusion_models/\\n│   │   └── minimax_h3_ref2va_pruned_int8_convrot.safetensors\\n│   └── 📂 text_encoders/\\n│       └── qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\\n```\\n\\n## Report Issue\\n\\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\\n\\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\\n\"},\"color\":\"#222\",\"bgcolor\":\"#000\"},{\"id\":119,\"type\":\"VAELoader\",\"pos\":[-1494,5316],\"size\":[393,60],\"flags\":{},\"order\":7,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"VAE\",\"type\":\"VAE\",\"links\":[251,341]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"VAELoader\",\"models\":[{\"name\":\"minimax_h3_video_vae_fp16.safetensors\",\"url\":\"https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors\",\"directory\":\"vae\"}],\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"minimax_h3_video_vae_fp16.safetensors\"],\"widgets_values_named\":{\"vae_name\":\"minimax_h3_video_vae_fp16.safetensors\"}},{\"id\":120,\"type\":\"VAELoader\",\"pos\":[-1491,5424],\"size\":[390,60],\"flags\":{},\"order\":6,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"VAE\",\"type\":\"VAE\",\"links\":[250,342]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"VAELoader\",\"models\":[{\"name\":\"minimax_h3_audio_vae_fp32.safetensors\",\"url\":\"https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors\",\"directory\":\"vae\"}],\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"minimax_h3_audio_vae_fp32.safetensors\"],\"widgets_values_named\":{\"vae_name\":\"minimax_h3_audio_vae_fp32.safetensors\"}},{\"id\":121,\"type\":\"VAEDecodeAudio\",\"pos\":[-180,5673],\"size\":[177,48],\"flags\":{\"collapsed\":false},\"order\":27,\"mode\":0,\"inputs\":[{\"name\":\"samples\",\"type\":\"LATENT\",\"link\":281},{\"name\":\"vae\",\"type\":\"VAE\",\"link\":250}],\"outputs\":[{\"name\":\"AUDIO\",\"type\":\"AUDIO\",\"links\":[304]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"VAEDecodeAudio\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}}},{\"id\":122,\"type\":\"VAEDecode\",\"pos\":[-180,5577],\"size\":[183,48],\"flags\":{\"collapsed\":false},\"order\":26,\"mode\":0,\"inputs\":[{\"name\":\"samples\",\"type\":\"LATENT\",\"link\":280},{\"name\":\"vae\",\"type\":\"VAE\",\"link\":251}],\"outputs\":[{\"name\":\"IMAGE\",\"type\":\"IMAGE\",\"links\":[303]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"VAEDecode\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}}},{\"id\":124,\"type\":\"BasicScheduler\",\"pos\":[-213,5232],\"size\":[255,111],\"flags\":{},\"order\":24,\"mode\":0,\"inputs\":[{\"name\":\"model\",\"type\":\"MODEL\",\"link\":367}],\"outputs\":[{\"name\":\"SIGMAS\",\"type\":\"SIGMAS\",\"links\":[256]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"BasicScheduler\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"simple\",6,1],\"widgets_values_named\":{\"scheduler\":\"simple\",\"steps\":6,\"denoise\":1},\"color\":\"#322\",\"bgcolor\":\"#533\"},{\"id\":125,\"type\":\"SamplerCustomAdvanced\",\"pos\":[-213,5406],\"size\":[243,108],\"flags\":{},\"order\":25,\"mode\":0,\"inputs\":[{\"name\":\"noise\",\"type\":\"NOISE\",\"link\":253},{\"name\":\"guider\",\"type\":\"GUIDER\",\"link\":254},{\"name\":\"sampler\",\"type\":\"SAMPLER\",\"link\":307},{\"name\":\"sigmas\",\"type\":\"SIGMAS\",\"link\":256},{\"name\":\"latent_image\",\"type\":\"LATENT\",\"link\":357}],\"outputs\":[{\"name\":\"output\",\"type\":\"LATENT\",\"links\":[280,281]},{\"name\":\"denoised_output\",\"type\":\"LATENT\",\"links\":[]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"SamplerCustomAdvanced\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}}},{\"id\":126,\"type\":\"BasicGuider\",\"pos\":[-300,5052],\"size\":[327,48],\"flags\":{},\"order\":23,\"mode\":0,\"inputs\":[{\"name\":\"model\",\"type\":\"MODEL\",\"link\":366},{\"name\":\"conditioning\",\"type\":\"CONDITIONING\",\"link\":356}],\"outputs\":[{\"name\":\"GUIDER\",\"type\":\"GUIDER\",\"links\":[254]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"BasicGuider\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}}},{\"id\":127,\"type\":\"UNETLoader\",\"pos\":[-3720,4503],\"size\":[642,90],\"flags\":{},\"order\":4,\"mode\":4,\"inputs\":[],\"outputs\":[{\"name\":\"MODEL\",\"type\":\"MODEL\",\"links\":[]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"UNETLoader\",\"models\":[{\"name\":\"minimax_h3_ref2va_pruned_int8_convrot.safetensors\",\"url\":\"https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors\",\"directory\":\"diffusion_models\"}],\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"minimax_h3_ref2va_pruned_int8_convrot.safetensors\",\"default\"],\"widgets_values_named\":{\"unet_name\":\"minimax_h3_ref2va_pruned_int8_convrot.safetensors\",\"weight_dtype\":\"default\"}},{\"id\":128,\"type\":\"CLIPLoader\",\"pos\":[-3708,4674],\"size\":[642,120],\"flags\":{},\"order\":2,\"mode\":4,\"inputs\":[],\"outputs\":[{\"name\":\"CLIP\",\"type\":\"CLIP\",\"links\":[]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"CLIPLoader\",\"models\":[{\"name\":\"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\",\"url\":\"https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\",\"directory\":\"text_encoders\"}],\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\",\"minimax\",\"default\"],\"widgets_values_named\":{\"clip_name\":\"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\",\"type\":\"minimax\",\"device\":\"default\"}},{\"id\":129,\"type\":\"RandomNoise\",\"pos\":[-300,4920],\"size\":[306,84],\"flags\":{},\"order\":8,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"NOISE\",\"type\":\"NOISE\",\"links\":[253]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"RandomNoise\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[681205404725805,\"randomize\"],\"widgets_values_named\":{\"noise_seed\":681205404725805,\"control_after_generate\":\"randomize\"}},{\"id\":131,\"type\":\"ComfyMathExpression\",\"pos\":[-1113,5697],\"size\":[282,129],\"flags\":{\"collapsed\":true},\"order\":18,\"mode\":0,\"inputs\":[{\"label\":\"a\",\"name\":\"values.a\",\"type\":\"FLOAT,INT,BOOLEAN\",\"link\":261},{\"label\":\"b\",\"name\":\"values.b\",\"shape\":7,\"type\":\"FLOAT,INT,BOOLEAN\",\"link\":null}],\"outputs\":[{\"name\":\"FLOAT\",\"type\":\"FLOAT\",\"links\":[]},{\"name\":\"INT\",\"type\":\"INT\",\"links\":[354]},{\"name\":\"BOOL\",\"type\":\"BOOLEAN\",\"links\":[]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"ComfyMathExpression\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17\"],\"widgets_values_named\":{\"expression\":\"max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17\"}},{\"id\":132,\"type\":\"PrimitiveFloat\",\"pos\":[-1230,5559],\"size\":[210,60],\"flags\":{},\"order\":12,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"FLOAT\",\"type\":\"FLOAT\",\"links\":[261]}],\"title\":\"Float (Duration)\",\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"PrimitiveFloat\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[5],\"widgets_values_named\":{\"value\":5},\"color\":\"#322\",\"bgcolor\":\"#533\"},{\"id\":138,\"type\":\"PrimitiveStringMultiline\",\"pos\":[-2292,4920],\"size\":[750,1638],\"flags\":{},\"order\":13,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"STRING\",\"type\":\"STRING\",\"links\":[]}],\"title\":\"Input Text (Prompt)\",\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"PrimitiveStringMultiline\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"subject_definitions:\\n- <Picture 1>: A young woman (older sister) with short brown hair, wearing a green tracksuit with white stripes on the sleeves and legs.\\n- <Picture 2>: A muscular young man (younger brother) with messy black hair, wearing a white tank top and dark shorts.\\n- <Picture 3>: A stern navy officer (Japan Maritime Self-Defense Force style) in a dark blue sailor-style uniform and an officer's peaked cap.\\n- <Picture 4>: The flight deck of a modern aircraft carrier, featuring a large grey bridge tower and a flat asphalt-like deck with white markings under a clear sky.\\n\\nsummary:\\nA 10-second high-quality anime-style video set on an aircraft carrier deck. Two siblings (<Picture 1> and <Picture 2>) are caught loitering by a stern officer (<Picture 3>). The scene is comedic and expressive, focusing on character interactions and dialogue.\\n\\nretention_analysis:\\n- <Picture 1>: fully_preserved. Her green tracksuit and short hairstyle must be maintained throughout.\\n- <Picture 2>: fully_preserved. His muscular physique and white tank top must be consistent.\\n- <Picture 3>: fully_preserved. His formal naval uniform and angry facial expression must be accurate.\\n- <Picture 4>: fully_preserved. This serves as the fixed environment for the entire scene.\\n\\ndetailed_description:\\n- [0s-3s]: The scene opens with a medium shot on the carrier deck (<Picture 4>). The older sister (<Picture 1>) and the younger brother (<Picture 2>) are standing side-by-side. They are both leaning in to look at the smartphone held by the sister. The sister looks frustrated, shaking the phone and shouting <d>[Japanese] 「電波ないじゃん！」</d>. The brother looks at her with a deadpan, exasperated face, sighing at her behavior.\\n- [3s-7s]: The camera angle widens as the navy officer (<Picture 3>) enters the frame from behind the siblings, walking with a brisk, heavy pace. His face is contorted with anger. He stands behind them and yells authoritatively, <d>[Japanese] 「遊びに来たのか？」</d>.\\n- [7s-10s]: Reaction shot. The younger brother (<Picture 2>) winces with a guilty and awkward expression, shrinking his shoulders. In contrast, the older sister (<Picture 1>) turns around, raises her smartphone high towards the sky as if searching for a signal, and pouts her cheeks in a sulky, defiant manner while whining, <d>[Japanese] 「だってー！」</d>. The camera focuses on her expressive, puffed-out face.\\n\\noverall_soundscape:\\nThe ambient sound of wind blowing across an open sea deck, the faint hum of ship machinery, and the rhythmic metallic clank of the officer's boots. Clear, expressive Japanese voice acting for the dialogue.\\n\\nnon_diegetic_music:\\nA lighthearted, comedic orchestral track that emphasizes the \\\"slice-of-life\\\" comedy style, with a brief dramatic orchestral sting when the officer appears.\"],\"widgets_values_named\":{\"value\":\"subject_definitions:\\n- <Picture 1>: A young woman (older sister) with short brown hair, wearing a green tracksuit with white stripes on the sleeves and legs.\\n- <Picture 2>: A muscular young man (younger brother) with messy black hair, wearing a white tank top and dark shorts.\\n- <Picture 3>: A stern navy officer (Japan Maritime Self-Defense Force style) in a dark blue sailor-style uniform and an officer's peaked cap.\\n- <Picture 4>: The flight deck of a modern aircraft carrier, featuring a large grey bridge tower and a flat asphalt-like deck with white markings under a clear sky.\\n\\nsummary:\\nA 10-second high-quality anime-style video set on an aircraft carrier deck. Two siblings (<Picture 1> and <Picture 2>) are caught loitering by a stern officer (<Picture 3>). The scene is comedic and expressive, focusing on character interactions and dialogue.\\n\\nretention_analysis:\\n- <Picture 1>: fully_preserved. Her green tracksuit and short hairstyle must be maintained throughout.\\n- <Picture 2>: fully_preserved. His muscular physique and white tank top must be consistent.\\n- <Picture 3>: fully_preserved. His formal naval uniform and angry facial expression must be accurate.\\n- <Picture 4>: fully_preserved. This serves as the fixed environment for the entire scene.\\n\\ndetailed_description:\\n- [0s-3s]: The scene opens with a medium shot on the carrier deck (<Picture 4>). The older sister (<Picture 1>) and the younger brother (<Picture 2>) are standing side-by-side. They are both leaning in to look at the smartphone held by the sister. The sister looks frustrated, shaking the phone and shouting <d>[Japanese] 「電波ないじゃん！」</d>. The brother looks at her with a deadpan, exasperated face, sighing at her behavior.\\n- [3s-7s]: The camera angle widens as the navy officer (<Picture 3>) enters the frame from behind the siblings, walking with a brisk, heavy pace. His face is contorted with anger. He stands behind them and yells authoritatively, <d>[Japanese] 「遊びに来たのか？」</d>.\\n- [7s-10s]: Reaction shot. The younger brother (<Picture 2>) winces with a guilty and awkward expression, shrinking his shoulders. In contrast, the older sister (<Picture 1>) turns around, raises her smartphone high towards the sky as if searching for a signal, and pouts her cheeks in a sulky, defiant manner while whining, <d>[Japanese] 「だってー！」</d>. The camera focuses on her expressive, puffed-out face.\\n\\noverall_soundscape:\\nThe ambient sound of wind blowing across an open sea deck, the faint hum of ship machinery, and the rhythmic metallic clank of the officer's boots. Clear, expressive Japanese voice acting for the dialogue.\\n\\nnon_diegetic_music:\\nA lighthearted, comedic orchestral track that emphasizes the \\\"slice-of-life\\\" comedy style, with a brief dramatic orchestral sting when the officer appears.\"},\"color\":\"#322\",\"bgcolor\":\"#533\"},{\"id\":140,\"type\":\"MarkdownNote\",\"pos\":[-339,5787],\"size\":[450,804],\"flags\":{},\"order\":14,\"mode\":0,\"inputs\":[],\"outputs\":[],\"title\":\"Note: Size Settings Reference\",\"properties\":{\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"| megapixels | Aspect | Output (multiple=32) |\\n|---|---|---|\\n| 0.2 | 16:9 | 608 x 352 |\\n| 0.3 | 16:9 | 736 x 416 |\\n| 0.4 | 16:9 | 864 x 480 |\\n| 0.5 | 16:9 | 960 x 544 |\\n| 0.6 | 16:9 | 1056 x 608 |\\n| 0.7 | 16:9 | 1152 x 640 |\\n| 0.8 | 16:9 | 1216 x 672 |\\n| 0.9 | 16:9 | 1280 x 736 |\\n| 0.98 | 16:9 | 1344 x 768 |\\n| 1.0 | 16:9 | 1376 x 768 |\\n| 1.2 | 16:9 | 1504 x 832 |\\n| 1.5 | 16:9 | 1664 x 928 |\\n| 1.8 | 16:9 | 1824 x 1024 |\\n| 2.0 | 16:9 | 1920 x 1088 |\\n\"],\"widgets_values_named\":{\"text\":\"| megapixels | Aspect | Output (multiple=32) |\\n|---|---|---|\\n| 0.2 | 16:9 | 608 x 352 |\\n| 0.3 | 16:9 | 736 x 416 |\\n| 0.4 | 16:9 | 864 x 480 |\\n| 0.5 | 16:9 | 960 x 544 |\\n| 0.6 | 16:9 | 1056 x 608 |\\n| 0.7 | 16:9 | 1152 x 640 |\\n| 0.8 | 16:9 | 1216 x 672 |\\n| 0.9 | 16:9 | 1280 x 736 |\\n| 0.98 | 16:9 | 1344 x 768 |\\n| 1.0 | 16:9 | 1376 x 768 |\\n| 1.2 | 16:9 | 1504 x 832 |\\n| 1.5 | 16:9 | 1664 x 928 |\\n| 1.8 | 16:9 | 1824 x 1024 |\\n| 2.0 | 16:9 | 1920 x 1088 |\\n\"},\"color\":\"#222\",\"bgcolor\":\"#000\"},{\"id\":143,\"type\":\"H3ModelLoaderAny\",\"pos\":[-1485,4917],\"size\":[438,84],\"flags\":{},\"order\":5,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"MODEL\",\"type\":\"MODEL\",\"links\":[284]}],\"properties\":{\"cnr_id\":\"comfyui-h3-multishot\",\"ver\":\"d25f7b5e1e6f3374acc3c7087e3bd209f8c766f2\",\"Node name for S&R\":\"H3ModelLoaderAny\",\"aux_id\":\"jlucasmcrell/ComfyUI-H3-Multishot\",\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"}},\"widgets_values\":[\"minimax-h3-ref2va-Q4_0.gguf\",0],\"widgets_values_named\":{\"model_name\":\"minimax-h3-ref2va-Q4_0.gguf\",\"activation_reserve_gb\":0},\"color\":\"#1532c6\",\"bgcolor\":\"#011eb2\"},{\"id\":144,\"type\":\"H3ClipLoaderAny\",\"pos\":[-1485,5064],\"size\":[438,108],\"flags\":{},\"order\":10,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"CLIP\",\"type\":\"CLIP\",\"links\":[283]}],\"properties\":{\"cnr_id\":\"comfyui-h3-multishot\",\"ver\":\"d25f7b5e1e6f3374acc3c7087e3bd209f8c766f2\",\"Node name for S&R\":\"H3ClipLoaderAny\",\"aux_id\":\"jlucasmcrell/ComfyUI-H3-Multishot\",\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"}},\"widgets_values\":[\"MiniMax-H3\\\\MiniMax-H3-encoder-Q4_K_M.gguf\",\"minimax\"],\"widgets_values_named\":{\"clip_name\":\"MiniMax-H3\\\\MiniMax-H3-encoder-Q4_K_M.gguf\",\"type\":\"minimax\"},\"color\":\"#1532c6\",\"bgcolor\":\"#011eb2\"},{\"id\":145,\"type\":\"SelectCLIPDevice\",\"pos\":[-1251,5214],\"size\":[210,60],\"flags\":{},\"order\":17,\"mode\":0,\"inputs\":[{\"name\":\"clip\",\"type\":\"CLIP\",\"link\":283}],\"outputs\":[{\"name\":\"CLIP\",\"type\":\"CLIP\",\"links\":[340]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"SelectCLIPDevice\",\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"}},\"widgets_values\":[\"cpu\"],\"widgets_values_named\":{\"device\":\"cpu\"},\"color\":\"#432\",\"bgcolor\":\"#653\"},{\"id\":146,\"type\":\"MiniMaxH3TurboLoRA\",\"pos\":[-963,4905],\"size\":[444,108],\"flags\":{\"collapsed\":false},\"order\":16,\"mode\":0,\"inputs\":[{\"name\":\"model\",\"type\":\"MODEL\",\"link\":284}],\"outputs\":[{\"name\":\"MODEL\",\"type\":\"MODEL\",\"links\":[309]}],\"properties\":{\"cnr_id\":\"comfyui-minimax-h3-turbo\",\"ver\":\"55fee864dd7b2976b1c4ce3c3d5f7968f181409f\",\"Node name for S&R\":\"MiniMaxH3TurboLoRA\",\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"},\"aux_id\":\"Larryvrh/ComfyUI-MiniMax-H3-Turbo\"},\"widgets_values\":[\"MinimaxH3\\\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors\",1,false],\"widgets_values_named\":{\"lora_name\":\"MinimaxH3\\\\minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors\",\"strength\":1,\"low_vram\":false},\"color\":\"#1532c6\",\"bgcolor\":\"#011eb2\"},{\"id\":154,\"type\":\"Label (rgthree)\",\"pos\":[-2316,4788],\"size\":[699.421875,48],\"flags\":{\"allow_interaction\":true},\"order\":3,\"mode\":0,\"inputs\":[],\"outputs\":[],\"title\":\"◉MMH3 Ref2VA + MediaLoader\",\"properties\":{\"fontSize\":48,\"fontFamily\":\"Arial\",\"fontColor\":\"#ffffff\",\"textAlign\":\"left\",\"backgroundColor\":\"transparent\",\"padding\":0,\"borderRadius\":0,\"angle\":0,\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"}},\"color\":\"#fff0\",\"bgcolor\":\"#fff0\"},{\"id\":156,\"type\":\"MiniMaxH3SigmaShift\",\"pos\":[-963,5088],\"size\":[261,84],\"flags\":{},\"order\":20,\"mode\":0,\"inputs\":[{\"name\":\"model\",\"type\":\"MODEL\",\"link\":309}],\"outputs\":[{\"name\":\"MODEL\",\"type\":\"MODEL\",\"links\":[365]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.31.0\",\"Node name for S&R\":\"MiniMaxH3SigmaShift\",\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"}},\"widgets_values\":[12,3],\"widgets_values_named\":{\"shift_video\":12,\"shift_audio\":3},\"color\":\"#1532c6\",\"bgcolor\":\"#011eb2\"},{\"id\":159,\"type\":\"VHS_VideoCombine\",\"pos\":[123,4905],\"size\":[669,334],\"flags\":{},\"order\":28,\"mode\":0,\"inputs\":[{\"name\":\"images\",\"type\":\"IMAGE\",\"link\":303},{\"name\":\"audio\",\"shape\":7,\"type\":\"AUDIO\",\"link\":304},{\"name\":\"meta_batch\",\"shape\":7,\"type\":\"VHS_BatchManager\",\"link\":null},{\"name\":\"vae\",\"shape\":7,\"type\":\"VAE\",\"link\":null}],\"outputs\":[{\"name\":\"Filenames\",\"type\":\"VHS_FILENAMES\",\"links\":null}],\"properties\":{\"cnr_id\":\"comfyui-videohelpersuite\",\"ver\":\"4ee72c065db22c9d96c2427954dc69e7b908444b\",\"Node name for S&R\":\"VHS_VideoCombine\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":{\"frame_rate\":24,\"loop_count\":1,\"filename_prefix\":\"MiniMax/%date:yyyyMMdd_hhmmss_%\",\"format\":\"video/h264-mp4\",\"pix_fmt\":\"yuv420p\",\"crf\":19,\"save_metadata\":true,\"trim_to_audio\":true,\"pingpong\":false,\"save_output\":true,\"videopreview\":{\"hidden\":true,\"paused\":false,\"params\":{\"filename\":\"20260825_025115__00001-audio.mp4\",\"subfolder\":\"MiniMax\",\"type\":\"output\",\"format\":\"video/h264-mp4\",\"frame_rate\":24,\"workflow\":\"20260825_025115__00001.png\",\"fullpath\":\"/content/drive/MyDrive/ComfyUI_GDRIVE_OUTPUT/MiniMax/MiniMax/20260825_025115__00001-audio.mp4\"}}},\"widgets_values_named\":{\"frame_rate\":24,\"loop_count\":1,\"filename_prefix\":\"MiniMax/%date:yyyyMMdd_hhmmss_%\",\"format\":\"video/h264-mp4\",\"pix_fmt\":\"yuv420p\",\"crf\":19,\"save_metadata\":true,\"trim_to_audio\":true,\"pingpong\":false,\"save_output\":true,\"videopreview\":{\"hidden\":true,\"paused\":false,\"params\":{\"filename\":\"20260825_025115__00001-audio.mp4\",\"subfolder\":\"MiniMax\",\"type\":\"output\",\"format\":\"video/h264-mp4\",\"frame_rate\":24,\"workflow\":\"20260825_025115__00001.png\",\"fullpath\":\"/content/drive/MyDrive/ComfyUI_GDRIVE_OUTPUT/MiniMax/MiniMax/20260825_025115__00001-audio.mp4\"}}}},{\"id\":162,\"type\":\"MiniMaxH3TurboSampler\",\"pos\":[-294,5157],\"size\":[315,27],\"flags\":{},\"order\":9,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"SAMPLER\",\"type\":\"SAMPLER\",\"links\":[307]}],\"properties\":{\"cnr_id\":\"comfyui-minimax-h3-turbo\",\"ver\":\"4274783a23afcfdbea3b4876cb79effd6c510785\",\"Node name for S&R\":\"MiniMaxH3TurboSampler\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"color\":\"#1532c6\",\"bgcolor\":\"#011eb2\"},{\"id\":165,\"type\":\"MiniMaxH3MediaLoader\",\"pos\":[-1512,5784],\"size\":[1137,801],\"flags\":{},\"order\":15,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"references\",\"type\":\"H3_REFS\",\"links\":[312]}],\"properties\":{\"cnr_id\":\"fantastic-minimax-h3-prompt-builder\",\"ver\":\"6f070268cc84e988ff3b911997bacef73dd5ed0f\",\"Node name for S&R\":\"MiniMaxH3MediaLoader\",\"aux_id\":\"Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder\",\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"}},\"widgets_values\":[\"[]\",null,null,\"\"],\"widgets_values_named\":{\"media_state\":\"[]\",\"Open loader…\":null,\"+ Native-output splitter\":null,\"mml_panel\":\"\"},\"color\":\"#1532c6\",\"bgcolor\":\"#011eb2\"},{\"id\":168,\"type\":\"MiniMaxH3ReferenceSplitter\",\"pos\":[-966,5250],\"size\":[267,366],\"flags\":{},\"order\":19,\"mode\":0,\"inputs\":[{\"name\":\"references\",\"type\":\"H3_REFS\",\"link\":312}],\"outputs\":[{\"name\":\"picture_1\",\"type\":\"IMAGE\",\"links\":[343]},{\"name\":\"picture_2\",\"type\":\"IMAGE\",\"links\":[345]},{\"name\":\"picture_3\",\"type\":\"IMAGE\",\"links\":[346]},{\"name\":\"picture_4\",\"type\":\"IMAGE\",\"links\":[351]},{\"name\":\"picture_5\",\"type\":\"IMAGE\",\"links\":[368]},{\"name\":\"picture_6\",\"type\":\"IMAGE\",\"links\":[369]},{\"name\":\"picture_7\",\"type\":\"IMAGE\",\"links\":[370]},{\"name\":\"picture_8\",\"type\":\"IMAGE\",\"links\":[371]},{\"name\":\"picture_9\",\"type\":\"IMAGE\",\"links\":[372]},{\"name\":\"video_1\",\"type\":\"IMAGE\",\"links\":[319,347]},{\"name\":\"video_2\",\"type\":\"IMAGE\",\"links\":[373]},{\"name\":\"video_3\",\"type\":\"IMAGE\",\"links\":[374]},{\"name\":\"video_audio_1\",\"type\":\"AUDIO\",\"links\":[363]},{\"name\":\"video_audio_2\",\"type\":\"AUDIO\",\"links\":[364]},{\"name\":\"video_audio_3\",\"type\":\"AUDIO\",\"links\":[375]},{\"name\":\"audio_1\",\"type\":\"AUDIO\",\"links\":[348]},{\"name\":\"audio_2\",\"type\":\"AUDIO\",\"links\":[349]},{\"name\":\"audio_3\",\"type\":\"AUDIO\",\"links\":[350]}],\"properties\":{\"cnr_id\":\"fantastic-minimax-h3-prompt-builder\",\"ver\":\"6f070268cc84e988ff3b911997bacef73dd5ed0f\",\"Node name for S&R\":\"MiniMaxH3ReferenceSplitter\",\"ue_properties\":{\"widget_ue_connectable\":{},\"input_ue_unconnectable\":{},\"version\":\"7.8\"}}},{\"id\":171,\"type\":\"MiniMaxH3ReferenceToVideo\",\"pos\":[-669,5085],\"size\":[288,606],\"flags\":{},\"order\":21,\"mode\":0,\"inputs\":[{\"name\":\"clip\",\"type\":\"CLIP\",\"link\":340},{\"name\":\"vae\",\"type\":\"VAE\",\"link\":341},{\"name\":\"audio_vae\",\"type\":\"VAE\",\"link\":342},{\"label\":\"ref_image_0\",\"name\":\"ref_images.ref_image_0\",\"shape\":7,\"type\":\"IMAGE\",\"link\":343},{\"label\":\"ref_image_1\",\"name\":\"ref_images.ref_image_1\",\"shape\":7,\"type\":\"IMAGE\",\"link\":345},{\"label\":\"ref_image_2\",\"name\":\"ref_images.ref_image_2\",\"shape\":7,\"type\":\"IMAGE\",\"link\":346},{\"label\":\"ref_image_3\",\"name\":\"ref_images.ref_image_3\",\"shape\":7,\"type\":\"IMAGE\",\"link\":351},{\"label\":\"ref_image_4\",\"name\":\"ref_images.ref_image_4\",\"shape\":7,\"type\":\"IMAGE\",\"link\":368},{\"label\":\"ref_image_5\",\"name\":\"ref_images.ref_image_5\",\"shape\":7,\"type\":\"IMAGE\",\"link\":369},{\"label\":\"ref_image_6\",\"name\":\"ref_images.ref_image_6\",\"shape\":7,\"type\":\"IMAGE\",\"link\":370},{\"label\":\"ref_image_7\",\"name\":\"ref_images.ref_image_7\",\"shape\":7,\"type\":\"IMAGE\",\"link\":371},{\"label\":\"ref_image_8\",\"name\":\"ref_images.ref_image_8\",\"shape\":7,\"type\":\"IMAGE\",\"link\":372},{\"label\":\"ref_video_0\",\"name\":\"ref_videos.ref_video_0\",\"shape\":7,\"type\":\"IMAGE\",\"link\":347},{\"label\":\"ref_video_1\",\"name\":\"ref_videos.ref_video_1\",\"shape\":7,\"type\":\"IMAGE\",\"link\":373},{\"label\":\"ref_video_2\",\"name\":\"ref_videos.ref_video_2\",\"shape\":7,\"type\":\"IMAGE\",\"link\":374},{\"label\":\"ref_video_audio_0\",\"name\":\"ref_video_audios.ref_video_audio_0\",\"shape\":7,\"type\":\"AUDIO\",\"link\":363},{\"label\":\"ref_video_audio_1\",\"name\":\"ref_video_audios.ref_video_audio_1\",\"shape\":7,\"type\":\"AUDIO\",\"link\":364},{\"label\":\"ref_video_audio_2\",\"name\":\"ref_video_audios.ref_video_audio_2\",\"shape\":7,\"type\":\"AUDIO\",\"link\":375},{\"label\":\"ref_audio_0\",\"name\":\"ref_audios.ref_audio_0\",\"shape\":7,\"type\":\"AUDIO\",\"link\":348},{\"label\":\"ref_audio_1\",\"name\":\"ref_audios.ref_audio_1\",\"shape\":7,\"type\":\"AUDIO\",\"link\":349},{\"label\":\"ref_audio_2\",\"name\":\"ref_audios.ref_audio_2\",\"shape\":7,\"type\":\"AUDIO\",\"link\":350},{\"name\":\"width\",\"type\":\"INT\",\"widget\":{\"name\":\"width\"},\"link\":352},{\"name\":\"height\",\"type\":\"INT\",\"widget\":{\"name\":\"height\"},\"link\":353},{\"name\":\"length\",\"type\":\"INT\",\"widget\":{\"name\":\"length\"},\"link\":354}],\"outputs\":[{\"name\":\"positive\",\"type\":\"CONDITIONING\",\"links\":[356]},{\"name\":\"LATENT\",\"type\":\"LATENT\",\"links\":[357]}],\"properties\":{\"cnr_id\":\"comfy-core\",\"ver\":\"0.33.0\",\"Node name for S&R\":\"MiniMaxH3ReferenceToVideo\",\"ue_properties\":{\"widget_ue_connectable\":{\"prompt\":true,\"width\":true,\"height\":true,\"length\":true},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[\"\",1344,768,124,\"match\"],\"widgets_values_named\":{\"prompt\":\"\",\"width\":1344,\"height\":768,\"length\":124,\"ref_image_size\":\"match\"},\"color\":\"#b76314\",\"bgcolor\":\"#a34f00\"},{\"id\":176,\"type\":\"ModelPreviewOverrideKJ\",\"pos\":[138,5337],\"size\":[450,1023],\"flags\":{},\"order\":22,\"mode\":0,\"inputs\":[{\"name\":\"model\",\"type\":\"MODEL\",\"link\":365},{\"name\":\"vae\",\"shape\":7,\"type\":\"VAE\",\"link\":null}],\"outputs\":[{\"name\":\"MODEL\",\"type\":\"MODEL\",\"links\":[366,367]}],\"properties\":{\"cnr_id\":\"comfyui-kjnodes\",\"ver\":\"3f20054214fec9f9234fd3841ae6f1e4287948f6\",\"Node name for S&R\":\"ModelPreviewOverrideKJ\",\"ue_properties\":{\"widget_ue_connectable\":{},\"version\":\"7.8\",\"input_ue_unconnectable\":{}}},\"widgets_values\":[1024,80,true,1,12,\"none\",\"\"],\"widgets_values_named\":{\"max_resolution\":1024,\"jpeg_quality\":80,\"suppress_default_preview\":true,\"preview_frames\":1,\"preview_fps\":12,\"tiny_vae\":\"none\",\"preview\":\"\"}}],\"links\":[[250,120,0,121,1,\"VAE\"],[251,119,0,122,1,\"VAE\"],[253,129,0,125,0,\"NOISE\"],[254,126,0,125,1,\"GUIDER\"],[256,124,0,125,3,\"SIGMAS\"],[261,132,0,131,0,\"FLOAT\"],[280,125,0,122,0,\"LATENT\"],[281,125,0,121,0,\"LATENT\"],[283,144,0,145,0,\"CLIP\"],[284,143,0,146,0,\"MODEL\"],[303,122,0,159,0,\"IMAGE\"],[304,121,0,159,1,\"AUDIO\"],[307,162,0,125,2,\"SAMPLER\"],[309,146,0,156,0,\"MODEL\"],[312,165,0,168,0,\"H3_REFS\"],[340,145,0,171,0,\"CLIP\"],[341,119,0,171,1,\"VAE\"],[342,120,0,171,2,\"VAE\"],[343,168,0,171,3,\"IMAGE\"],[345,168,1,171,4,\"IMAGE\"],[346,168,2,171,5,\"IMAGE\"],[347,168,9,171,12,\"IMAGE\"],[348,168,15,171,18,\"AUDIO\"],[349,168,16,171,19,\"AUDIO\"],[350,168,17,171,20,\"AUDIO\"],[351,168,3,171,6,\"IMAGE\"],[352,115,0,171,21,\"INT\"],[353,115,1,171,22,\"INT\"],[354,131,1,171,23,\"INT\"],[356,171,0,126,1,\"CONDITIONING\"],[357,171,1,125,4,\"LATENT\"],[363,168,12,171,15,\"AUDIO\"],[364,168,13,171,16,\"AUDIO\"],[365,156,0,176,0,\"MODEL\"],[366,176,0,126,0,\"MODEL\"],[367,176,0,124,0,\"MODEL\"],[368,168,4,171,7,\"IMAGE\"],[369,168,5,171,8,\"IMAGE\"],[370,168,6,171,9,\"IMAGE\"],[371,168,7,171,10,\"IMAGE\"],[372,168,8,171,11,\"IMAGE\"],[373,168,10,171,13,\"IMAGE\"],[374,168,11,171,14,\"IMAGE\"],[375,168,14,171,17,\"AUDIO\"]],\"groups\":[{\"id\":1,\"title\":\"Models\",\"bounding\":[-1512,4839,516,891],\"color\":\"#3f789e\",\"flags\":{}},{\"id\":2,\"title\":\"Sampling\",\"bounding\":[-360,4842,445.7530763770171,896.8413501058676],\"color\":\"#3f789e\",\"flags\":{}},{\"id\":3,\"title\":\"Conditioning\",\"bounding\":[-984,4839,609.1427885696103,891],\"color\":\"#3f789e\",\"flags\":{}},{\"id\":5,\"title\":\"Prompt_MMH3\",\"bounding\":[-2313,4839,781.723478916133,1743.1104125901438],\"color\":\"#3f789e\",\"flags\":{}}],\"config\":{},\"extra\":{\"ds\":{\"scale\":0.531406208687879,\"offset\":[2688.1421396813917,-4408.619346390246]},\"frontendVersion\":\"1.49.6\",\"VHS_latentpreview\":false,\"VHS_latentpreviewrate\":0,\"VHS_MetadataImage\":true,\"VHS_KeepIntermediate\":true,\"ue_links\":[],\"links_added_by_ue\":[]},\"version\":0.4}";
+    var refWfBtn = document.getElementById('refWorkflowDlBtn');
+    var refWfStatus = document.getElementById('refWorkflowDlStatus');
+    if (refWfBtn) {
+      refWfBtn.addEventListener('click', function () {
+        try {
+          var blob = new Blob([REF2VA_WORKFLOW_JSON], { type: 'application/json' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'MMH3_Ref2VA_MediaLoader.json';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          if (refWfStatus) {
+            refWfStatus.textContent = 'ダウンロードしました';
+            setTimeout(function () { refWfStatus.textContent = ''; }, 2000);
+          }
+        } catch (e) {
+          console.error(e);
+          if (refWfStatus) refWfStatus.textContent = 'ダウンロードに失敗しました';
+        }
+      });
+    }
+
+    // 「動画の作り方」内の切替(基本FL2VA / 参照素材Ref2VA)
+    var vidGuideSwitch = document.getElementById('guideVideoSwitch');
+    var vidGuideVariants = {
+      fl2va: document.getElementById('guideVideoFl'),
+      ref2va: document.getElementById('guideVideoRef')
+    };
+    if (vidGuideSwitch) {
+      vidGuideSwitch.querySelectorAll('button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var target = btn.dataset.vidguide;
+          vidGuideSwitch.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          Object.keys(vidGuideVariants).forEach(function (key) {
+            var el = vidGuideVariants[key];
+            if (el) el.style.display = (key === target) ? '' : 'none';
+          });
+        });
+      });
+    }
+
     var imgGuideSwitch = document.getElementById('guideImageSwitch');
     var imgGuideVariants = {
       forge: document.getElementById('guideImageForge'),
@@ -16038,6 +16511,28 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     // AIにプロンプトを作らせる用のコピペ指示文
+    // Ref2VA用のコピペ指示文(FL2VA用と同じ仕組みで、対象の要素だけ差し替える)
+    var refMetaEl = document.getElementById('refMetaPrompt');
+    var refMetaBtn = document.getElementById('refMetaCopyBtn');
+    var refMetaStatus = document.getElementById('refMetaCopyStatus');
+    if (refMetaBtn && refMetaEl) {
+      refMetaBtn.addEventListener('click', function () {
+        var done = function () {
+          if (refMetaStatus) {
+            refMetaStatus.textContent = GUIDE_TOOL_SETTINGS.copyDoneText;
+            setTimeout(function () { refMetaStatus.textContent = ''; }, GUIDE_TOOL_SETTINGS.copyResetMs);
+          }
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(refMetaEl.value).then(done, function () { refMetaEl.select(); document.execCommand('copy'); done(); });
+        } else {
+          refMetaEl.select();
+          document.execCommand('copy');
+          done();
+        }
+      });
+    }
+
     var metaEl = document.getElementById('h3MetaPrompt');
     var metaBtn = document.getElementById('h3MetaCopyBtn');
     var metaStatus = document.getElementById('h3MetaCopyStatus');
