@@ -10095,6 +10095,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const fullImageOverlay = document.getElementById('fullImageOverlay');
   const fullImageImg = document.getElementById('fullImageImg');
   const fullImageVariants = document.getElementById('fullImageVariants');
+  // いま拡大表示している差分の番号(0=1枚目)と、実際に表示している画像URLの並び。
+  // ダウンロードは必ずこの並びから取るので、表示とダウンロードがずれない。
+  let fullImageCurIdx = 0;
+  let fullImageUrls = [];
 
   // 差分(1枚のメイン + variants)を中央下部の[1][2][3…]で切り替える
   function renderFullImageVariants(imgs, activeIdx) {
@@ -10130,6 +10134,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         const idx = Number(btn.dataset.fivIdx);
+        fullImageCurIdx = idx;
         fullImageImg.src = '';
         fullImageImg.src = imageSrcFor(imgs[idx], 'w1000');
         fullImageVariants.querySelectorAll('.fiv-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
@@ -10150,6 +10155,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     fullImageOverlay.dataset.id = p.id;
     const imgs = [p.imageUrl].concat((p.variants || []).map(function (v) { return v.imageUrl; })).filter(Boolean);
     const idx = (startIdx > 0 && startIdx < imgs.length) ? startIdx : 0;
+    fullImageUrls = imgs;
+    fullImageCurIdx = idx;   // 別の作品を開いたときに前の番号を引き継がない
     fullImageImg.src = '';
     fullImageImg.src = imageSrcFor(imgs[idx], 'w1000');
     renderFullImageVariants(imgs, idx);
@@ -10179,7 +10186,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
   document.getElementById('fullImageDownloadBtn').addEventListener('click', function () {
     const post = currentFullImagePost();
-    if (post) downloadImage(post);
+    if (!post) return;
+    // 1枚目固定ではなく、いま表示している差分の画像をダウンロードする
+    const url = fullImageUrls[fullImageCurIdx] || post.imageUrl;
+    downloadImage({ imageUrl: url, title: post.title, id: post.id, type: post.type });
   });
 
   document.addEventListener('keydown', function (e) {
