@@ -8142,7 +8142,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     function commit(val) {
       if (isMulti) {
+        const all = currentValues();
         const cur = pickedValues();
+        // 末尾が入力途中の断片(候補に無い語)なら、それを選んだ候補で置き換える
+        if (cur.length && all.indexOf(cur[cur.length - 1]) === -1) cur.pop();
         const at = cur.indexOf(val);
         if (at === -1) cur.push(val); else cur.splice(at, 1);   // もう一度選ぶと外れる
         input.value = cur.join(', ');
@@ -8156,8 +8159,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     function buildMenu() {
-      const q = input.value.trim().toLowerCase();
       const all = currentValues();
+      // 複数選択の欄は「選んだ値のカンマ区切り」が入っているので、全体を検索語にすると
+      // 1つ選んだ時点で他の候補が絞り込まれて消えてしまう。いま入力中の部分
+      // (最後のカンマより後ろ)だけを検索語にし、それが選択済みの値そのものなら絞り込まない。
+      let q;
+      if (isMulti) {
+        const last = input.value.split(',').pop().trim();
+        q = (all.indexOf(last) !== -1) ? '' : last.toLowerCase();
+      } else {
+        q = input.value.trim().toLowerCase();
+      }
       // 単一選択の欄は、今まさに選ばれている値そのままで打っているだけのときは
       // 絞り込まず全候補を見せる(タグの予測変換と違い、既存値をクリックで
       // 開いたときにも一覧を見渡せるようにするため)。複数選択は常に絞り込む。
