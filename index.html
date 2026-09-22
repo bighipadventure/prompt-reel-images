@@ -15095,7 +15095,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const key = cleaned ? databankKey(cleaned) : '';
         if (!key) return escapeHtml(part) + sep;
         const inCart = dbCart.some(function (c) { return c.key === key; });
-        return '<span class="prompt-word' + (inCart ? ' in-cart' : '') + '" data-key="' + escapeHtml(key) + '" data-token="' + escapeHtml(cleaned) + '">' +
+        // data-key / data-token は辞書で引くための整形済みの語(重みや括弧を外したもの)。
+        // コピーやカートには、<lora:name:1> の ":1" なども含めた元の表記(data-raw)を使う。
+        const raw = part.trim();
+        return '<span class="prompt-word' + (inCart ? ' in-cart' : '') + '" data-key="' + escapeHtml(key) + '" data-token="' + escapeHtml(cleaned) + '" data-raw="' + escapeHtml(raw) + '">' +
           escapeHtml(part) + '</span>' + sep;
       }).join('');
     }).join('\n');
@@ -15152,7 +15155,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // 日本語訳を表示中の単語は、逆に元の英語表記をツールチップに出す
     // (訳語の上に同じ訳語を出しても意味がないため)
     if (el.classList.contains('is-ja')) {
-      showWordTip(el.dataset.token, e.clientX, e.clientY);
+      showWordTip(el.dataset.raw || el.dataset.token, e.clientX, e.clientY);
       return;
     }
     // まずタグ全体("amazing quality"のような複合語)のキーで探し、
@@ -15173,8 +15176,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const el = e.target.closest && e.target.closest('.prompt-word');
     if (!el) return;
     // クリックのたびに、その単語だけを即コピー(上書き)しつつ、カートにも追加/解除する
-    copyPromptWord(el.dataset.token);
-    toggleCartToken(el.dataset.key, el.dataset.token);
+    const raw = el.dataset.raw || el.dataset.token;
+    copyPromptWord(raw);
+    toggleCartToken(el.dataset.key, raw);
   });
 
   /* 「日本語訳」ボタン: プロンプト表示エリアの各単語を、辞書に登録があれば日本語に
