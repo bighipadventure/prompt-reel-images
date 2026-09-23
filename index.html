@@ -8242,7 +8242,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   // ===== TAG AUTOCOMPLETE (画像投稿タグ) =====
-  function attachTagAutocomplete(input, addFn) {
+  /* タグ入力の予測変換。候補は「全投稿のタグ」から出し、そのフォームで既に
+     選択済みのものだけを除く。selectedGetter を渡すと、そのフォームの
+     選択リストを見るようになる(省略時は画像投稿フォームのもの)。 */
+  function attachTagAutocomplete(input, addFn, selectedGetter) {
     if (!input || input.dataset.acWrapped) return;
     input.dataset.acWrapped = '1';
 
@@ -8288,7 +8291,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     function buildMenu() {
       const q = input.value.trim().toLowerCase();
-      let cands = allUniqueTags().filter(function (t) { return !selectedTags.includes(t); });
+      const chosen = (typeof selectedGetter === 'function') ? (selectedGetter() || []) : selectedTags;
+      let cands = allUniqueTags().filter(function (t) { return chosen.indexOf(t) === -1; });
       if (q) {
         cands = cands.filter(function (t) { return t.toLowerCase().includes(q); })
           .sort(function (a, b) {
@@ -8874,7 +8878,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
   attachTagAutocomplete(document.getElementById('newTagInput'), function () {
     document.getElementById('addNewTagBtn').click();
-  });
+  }, function () { return selectedTags; });
 
   function setSelectedCategory(cat) {
     selectedCategory = cat;
@@ -12199,9 +12203,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (v && !pSelectedTags.includes(v)) { pSelectedTags.push(v); renderPromptChips(); }
     input.value = '';
   });
-  document.getElementById('pNewTagInput').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('pAddNewTagBtn').click(); }
-  });
+  // 予測変換を有効にする(Enter確定・候補クリックは attachTagAutocomplete 側が担当)
+  attachTagAutocomplete(document.getElementById('pNewTagInput'), function () {
+    document.getElementById('pAddNewTagBtn').click();
+  }, function () { return pSelectedTags; });
   document.getElementById('pClearTagsBtn').addEventListener('click', function () { pSelectedTags = []; renderPromptChips(); });
 
   /* ---------- タグ選択モーダル(プロンプト投稿フォーム用) ---------- */
