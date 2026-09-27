@@ -513,6 +513,10 @@
   /* 一覧カードのタグは1行に収め、はみ出した分(2行目以降)は隠す。
      ブラウザ幅を変えても行が増えてカード高さが暴れないようにする。 */
   .list .row-tags{ max-height:24px; overflow:hidden; align-content:flex-start; }
+  /* 日時・投稿者・バッジの行も同様に1行だけにする。狭い画面で折り返すと
+     行が増えてカードが伸び、グッド/バッドのボタンと重なってしまうため、
+     収まらない分は(タイトル等と同じ考え方で)表示しない。 */
+  .list .row-meta{ max-height:20px; overflow:hidden; align-content:flex-start; }
   /* ===== 小さいボタン・タグの共通見た目 =====
      角丸の四角に、その色を20%だけ敷いた塗り。文字は色そのままで読みやすさを優先する。 */
   /* カードのタグは検索エリアのタグと同じモノクロ基調。
@@ -542,19 +546,21 @@
     padding: 1px 7px; border-radius: 999px; white-space: nowrap;
     border: 1px solid transparent;
   }
-  .row-link-badge.lb-child{ color:#4f7fe0; border-color: rgba(79,127,224,.5); background: rgba(79,127,224,.14); }
-  .row-link-badge.lb-comment{ color:#9bb534; border-color: rgba(155,181,52,.5); background: rgba(155,181,52,.12); }
-  .row-link-badge.lb-variant{ color:#c8715e; border-color: rgba(200,113,94,.5); background: rgba(200,113,94,.12); }
-  .row-link-badge.lb-base{ color:#c9a227; border-color: rgba(201,162,39,.5); background: rgba(201,162,39,.12); }
-  .row-link-badge.lb-ref{ color:#ef85a3; border-color: rgba(239,133,163,.5); background: rgba(239,133,163,.14); }
-  .row-link-badge.lb-req{ color:#4db6e6; border-color: rgba(77,182,230,.5); background: rgba(77,182,230,.12); }
-  .row-link-badge.lb-fix{ color:#e0824f; border-color: rgba(224,130,79,.5); background: rgba(224,130,79,.12); }
-  .row-link-badge.lb-parent{ color:#b98cff; border-color: rgba(185,140,255,.5); background: rgba(185,140,255,.12); }
-  .row-link-badge.lb-video{ color:#57c785; border-color: rgba(87,199,133,.5); background: rgba(87,199,133,.12); }
-  .row-link-badge.lb-memo{ color:#8f9bb3; border-color: rgba(143,155,179,.5); background: rgba(143,155,179,.12); }
-  /* プロンプト例(lb-base)と同じ黄色だったので、空いていたシアン系に変更 */
-  .row-link-badge.lb-lora{ color:#72cc5c; border-color: rgba(114,204,92,.5); background: rgba(114,204,92,.12); }
-  .row-link-badge.lb-novel{ color:#e05fd0; border-color: rgba(224,95,208,.5); background: rgba(224,95,208,.14); }
+  /* バッジの配色。よく出る4つ(差分/LoRA/メモ/プロンプト例)は彩度をとくに低く抑えている。
+     くすませると色相だけでは見分けがつかなくなるため、「実際の見え方の差(ΔE)」が
+     全12色どの組み合わせでも十分に開くよう自動調整してある。明度も揃えてあるので浮く色は無い。 */
+  .row-link-badge.lb-variant{ color:#a07f7d; border-color: rgba(160,127,125,.42); background: rgba(160,127,125,.10); }   /* よく出る */
+  .row-link-badge.lb-lora{ color:#7ea776; border-color: rgba(126,167,118,.42); background: rgba(126,167,118,.10); }   /* よく出る */
+  .row-link-badge.lb-memo{ color:#a8b2c7; border-color: rgba(168,178,199,.42); background: rgba(168,178,199,.10); }   /* よく出る */
+  .row-link-badge.lb-base{ color:#c7c1a8; border-color: rgba(199,193,168,.42); background: rgba(199,193,168,.10); }   /* よく出る */
+  .row-link-badge.lb-child{ color:#6f64ba; border-color: rgba(111,100,186,.42); background: rgba(111,100,186,.10); }
+  .row-link-badge.lb-comment{ color:#c8c578; border-color: rgba(200,197,120,.42); background: rgba(200,197,120,.10); }
+  .row-link-badge.lb-ref{ color:#be608c; border-color: rgba(190,96,140,.42); background: rgba(190,96,140,.10); }
+  .row-link-badge.lb-req{ color:#6288bf; border-color: rgba(98,136,191,.42); background: rgba(98,136,191,.10); }
+  .row-link-badge.lb-fix{ color:#bd6560; border-color: rgba(189,101,96,.42); background: rgba(189,101,96,.10); }
+  .row-link-badge.lb-parent{ color:#b993ca; border-color: rgba(185,147,202,.42); background: rgba(185,147,202,.10); }
+  .row-link-badge.lb-video{ color:#7ac8be; border-color: rgba(122,200,190,.42); background: rgba(122,200,190,.10); }
+  .row-link-badge.lb-novel{ color:#be60bb; border-color: rgba(190,96,187,.42); background: rgba(190,96,187,.10); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
   .detail-image{ flex: 0 0 260px; }
   .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
