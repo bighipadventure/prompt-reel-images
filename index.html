@@ -546,21 +546,21 @@
     padding: 1px 7px; border-radius: 999px; white-space: nowrap;
     border: 1px solid transparent;
   }
-  /* バッジの配色。よく出る4つ(差分/LoRA/メモ/プロンプト例)は彩度をとくに低く抑えている。
-     くすませると色相だけでは見分けがつかなくなるため、「実際の見え方の差(ΔE)」が
-     全12色どの組み合わせでも十分に開くよう自動調整してある。明度も揃えてあるので浮く色は無い。 */
-  .row-link-badge.lb-variant{ color:#a07f7d; border-color: rgba(160,127,125,.42); background: rgba(160,127,125,.10); }   /* よく出る */
-  .row-link-badge.lb-lora{ color:#7ea776; border-color: rgba(126,167,118,.42); background: rgba(126,167,118,.10); }   /* よく出る */
-  .row-link-badge.lb-memo{ color:#a8b2c7; border-color: rgba(168,178,199,.42); background: rgba(168,178,199,.10); }   /* よく出る */
-  .row-link-badge.lb-base{ color:#c7c1a8; border-color: rgba(199,193,168,.42); background: rgba(199,193,168,.10); }   /* よく出る */
-  .row-link-badge.lb-child{ color:#6f64ba; border-color: rgba(111,100,186,.42); background: rgba(111,100,186,.10); }
-  .row-link-badge.lb-comment{ color:#c8c578; border-color: rgba(200,197,120,.42); background: rgba(200,197,120,.10); }
-  .row-link-badge.lb-ref{ color:#be608c; border-color: rgba(190,96,140,.42); background: rgba(190,96,140,.10); }
-  .row-link-badge.lb-req{ color:#6288bf; border-color: rgba(98,136,191,.42); background: rgba(98,136,191,.10); }
-  .row-link-badge.lb-fix{ color:#bd6560; border-color: rgba(189,101,96,.42); background: rgba(189,101,96,.10); }
-  .row-link-badge.lb-parent{ color:#b993ca; border-color: rgba(185,147,202,.42); background: rgba(185,147,202,.10); }
-  .row-link-badge.lb-video{ color:#7ac8be; border-color: rgba(122,200,190,.42); background: rgba(122,200,190,.10); }
-  .row-link-badge.lb-novel{ color:#be60bb; border-color: rgba(190,96,187,.42); background: rgba(190,96,187,.10); }
+  /* バッジの配色。よく出る4つ(差分/LoRA/メモ/プロンプト例)は彩度を控えめにして主張を弱めつつ、
+     色褪せて見えない程度の鮮やかさは残している。色相だけでは見分けがつかなくなるため、
+     「実際の見え方の差(ΔE)」が全12色どの組み合わせでも十分開くよう自動調整してある。 */
+  .row-link-badge.lb-variant{ color:#c69694; border-color: rgba(198,150,148,.45); background: rgba(198,150,148,.13); }   /* よく出る */
+  .row-link-badge.lb-lora{ color:#69b766; border-color: rgba(105,183,102,.45); background: rgba(105,183,102,.13); }   /* よく出る */
+  .row-link-badge.lb-memo{ color:#6f9aae; border-color: rgba(111,154,174,.45); background: rgba(111,154,174,.13); }   /* よく出る */
+  .row-link-badge.lb-base{ color:#cecd97; border-color: rgba(206,205,151,.45); background: rgba(206,205,151,.13); }   /* よく出る */
+  .row-link-badge.lb-child{ color:#4f4ac9; border-color: rgba(79,74,201,.45); background: rgba(79,74,201,.13); }
+  .row-link-badge.lb-comment{ color:#c0c94a; border-color: rgba(192,201,74,.45); background: rgba(192,201,74,.13); }
+  .row-link-badge.lb-ref{ color:#c94f4a; border-color: rgba(201,79,74,.45); background: rgba(201,79,74,.13); }
+  .row-link-badge.lb-req{ color:#4b79c9; border-color: rgba(75,121,201,.45); background: rgba(75,121,201,.13); }
+  .row-link-badge.lb-fix{ color:#c98b4a; border-color: rgba(201,139,74,.45); background: rgba(201,139,74,.13); }
+  .row-link-badge.lb-parent{ color:#c755cb; border-color: rgba(199,85,203,.45); background: rgba(199,85,203,.13); }
+  .row-link-badge.lb-video{ color:#4ac9b6; border-color: rgba(74,201,182,.45); background: rgba(74,201,182,.13); }
+  .row-link-badge.lb-novel{ color:#c05588; border-color: rgba(192,85,136,.45); background: rgba(192,85,136,.13); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
   .detail-image{ flex: 0 0 260px; }
   .detail-image img{ width:100%; border-radius: 10px; border: 1px solid var(--line); display:block; }
@@ -2046,6 +2046,11 @@
   .attach-add-tile .plus{ font-size:20px; line-height:1; }
   /* 差分ストリップは通常の添付より一回り大きく(サムネと同じ116px)。ドロップ領域も広く見せる */
   #variantStrip{ gap:12px; min-height:120px; align-content:flex-start; }
+  /* 並べ替え: 掴んでいるサムネイルを薄く、落とす位置に縦線を出す */
+  #variantStrip .variant-thumb{ cursor: grab; }
+  #variantStrip .variant-thumb.dragging{ opacity:.4; cursor: grabbing; }
+  #variantStrip .variant-thumb.drop-before{ box-shadow: -3px 0 0 0 var(--accent); }
+  #variantStrip .variant-thumb.drop-after{ box-shadow: 3px 0 0 0 var(--accent); }
   #variantStrip .attach-add-tile{ width:116px; height:116px; font-size:12px; }
   #variantStrip .attach-add-tile .plus{ font-size:30px; }
   .variant-remove{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
@@ -6789,9 +6794,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     e.preventDefault();
     dropzone.classList.remove('drag-over');
     if (variantLocked()) return;
-    if (e.dataTransfer.files && e.dataTransfer.files.length) {
-      imageInput.files = e.dataTransfer.files;
-      imageInput.dispatchEvent(new Event('change'));
+    const dropped = (e.dataTransfer && e.dataTransfer.files) ? Array.from(e.dataTransfer.files) : [];
+    if (!dropped.length) return;
+    // 画像を複数まとめて落としたときは、1枚目をメイン画像にして
+    // 残りは差分として取り込み、差分投稿モードに切り替える。
+    const imgs = dropped.filter(function (f) { return /^image\//.test(f.type); });
+    const multi = imgs.length > 1;
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(multi ? imgs[0] : dropped[0]);
+      imageInput.files = dt.files;
+    } catch (err) {
+      imageInput.files = e.dataTransfer.files;   // 作れない環境では従来どおり
+    }
+    imageInput.dispatchEvent(new Event('change'));
+    if (multi) {
+      if (!variantMode) setVariantMode(true);
+      addVariantFiles(imgs.slice(1));
     }
   });
   function isVideoFile(f) { return !!f && String(f.type || '').indexOf('video/') === 0; }
@@ -6982,6 +7001,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let variantImages = [];
   let activeSlot = 0;
   let mainSlot = { prompt: '', negativePrompt: '', settings: {}, previewSrc: '' };
+  // 編集で開いた投稿のメイン画像URL(新しく選び直していないとき用)。
+  // 並べ替え・削除で[1]が入れ替わったとき、どの画像が[1]なのかを見失わないために持つ。
+  let mainExistingUrl = '';
+  let variantDragFrom = null;   // サムネイル並べ替えで掴んでいる番号
   const variantInput = document.getElementById('variantInput');
   const variantField = document.getElementById('variantField');
   const variantStrip = document.getElementById('variantStrip');
@@ -7076,31 +7099,169 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return attr ? attr : '';
   }
 
+  /* ===== [1]〜[N] を1つの並びとして扱うための橋渡し =====
+     メイン画像([1])は「選んだファイル」、差分([2]以降)は「読み込んだデータ」と
+     別々に持っているため、そのままでは入れ替えられない。ここで共通の形に変換し、
+     並べ替えや削除のあとに元の持ち方へ書き戻す。 */
+  function slotsAsList() {
+    flushActiveSlot();   // 編集中の内容を取りこぼさない
+    const mainFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+    const mainSrc = mainSlot.previewSrc || '';
+    const main = {
+      file: mainFile,
+      dataUrl: mainSrc.indexOf('data:') === 0 ? mainSrc : '',
+      imageUrl: mainExistingUrl || '',
+      previewSrc: mainSrc,
+      mime: mainFile ? mainFile.type : '',
+      name: mainFile ? mainFile.name : '',
+      prompt: mainSlot.prompt || '',
+      negativePrompt: mainSlot.negativePrompt || '',
+      settings: mainSlot.settings || {}
+    };
+    const rest = variantImages.map(function (v) {
+      return {
+        file: v.file || null,
+        dataUrl: v.dataUrl || '',
+        imageUrl: v.imageUrl || '',
+        previewSrc: variantImgSrc(v, 'w1000'),
+        mime: v.mime || '',
+        name: v.name || '',
+        prompt: v.prompt || '',
+        negativePrompt: v.negativePrompt || '',
+        settings: v.settings || {}
+      };
+    });
+    return [main].concat(rest);
+  }
+
+  // data: 形式の画像を、メイン画像の入力欄に入れられるファイルへ変換する
+  async function dataUrlToFile(dataUrl, name, mime) {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return new File([blob], name || ('image.' + ((mime || 'image/png').split('/')[1] || 'png')), { type: mime || blob.type || 'image/png' });
+  }
+
+  async function applySlotList(list) {
+    const main = list[0];
+    // [2]以降はそのまま差分として持ち直す
+    variantImages = list.slice(1).map(function (s) {
+      return { file: s.file || null, dataUrl: s.dataUrl || '', imageUrl: s.imageUrl || '',
+               mime: s.mime || '', name: s.name || '',
+               prompt: s.prompt, negativePrompt: s.negativePrompt, settings: s.settings };
+    });
+    if (!main) { activeSlot = 0; renderVariantStrip(); return; }
+
+    // [1]はファイルとして入力欄に戻す(無ければデータから作り直す)
+    let file = main.file;
+    if (!file && main.dataUrl) {
+      try { file = await dataUrlToFile(main.dataUrl, main.name, main.mime); } catch (e) { console.error(e); }
+    }
+    try {
+      const dt = new DataTransfer();
+      if (file) dt.items.add(file);
+      imageInput.files = dt.files;
+    } catch (e) { console.error('メイン画像の差し替えに失敗しました:', e); }
+
+    mainExistingUrl = file ? '' : (main.imageUrl || '');
+    mainSlot.prompt = main.prompt;
+    mainSlot.negativePrompt = main.negativePrompt;
+    mainSlot.settings = main.settings;
+    mainSlot.previewSrc = main.previewSrc || main.dataUrl || (main.imageUrl ? imageSrcFor(main.imageUrl, 'w1000') : '');
+
+    activeSlot = 0;
+    loadSlot(0);
+    setDropzoneState(!!mainSlot.previewSrc, !!adminEditingPost);
+    updateVariantEditUi();
+    renderVariantStrip();
+  }
+
+  // 並べ替え(from番目をto番目へ移動)
+  async function moveSlot(from, to) {
+    const list = slotsAsList();
+    if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return;
+    const moved = list.splice(from, 1)[0];
+    list.splice(to, 0, moved);
+    await applySlotList(list);
+  }
+
+  // 削除([1]を消した場合は[2]が[1]へ繰り上がる)
+  async function removeSlot(idx) {
+    const list = slotsAsList();
+    if (idx < 0 || idx >= list.length) return;
+    list.splice(idx, 1);
+    if (!list.length) {
+      // 全部消えたらメイン画像も空にする
+      clearSelectedImage();
+      variantImages = [];
+      mainExistingUrl = '';
+      mainSlot = { prompt: '', negativePrompt: '', settings: {}, previewSrc: '' };
+      activeSlot = 0;
+      renderVariantStrip();
+      updateVariantEditUi();
+      return;
+    }
+    await applySlotList(list);
+  }
+
   function renderVariantStrip() {
     variantStrip.querySelectorAll('.variant-thumb').forEach(function (el) { el.remove(); });
-    // [1] = メイン画像。[2..]と同じ感覚で切り替えられるよう、先頭にサムネイルとして出す(画像がある時のみ)
+    // [1]=メイン画像、[2]以降=差分。すべて同じ見た目のサムネイルとして並べ、
+    // ドラッグで並べ替え、✕で削除できるようにする([1]も削除できる)。
     const mainSrc = mainImageSrc();
-    if (mainSrc) {
-      const mThumb = document.createElement('div');
-      mThumb.className = 'variant-thumb' + (activeSlot === 0 ? ' active' : '');
-      mThumb.innerHTML = '<img src="' + escapeHtml(mainSrc) + '" alt="メイン画像" title="クリックでメイン画像(1)の設定を編集">' +
-        '<span class="variant-num">1</span>';
-      mThumb.querySelector('img').addEventListener('click', function () { setActiveSlot(0); });
-      variantStrip.insertBefore(mThumb, variantAddTile);
-    }
-    variantImages.forEach(function (v, i) {
-      const slotIdx = i + 1;
+    const srcs = [];
+    if (mainSrc) srcs.push({ src: mainSrc, alt: 'メイン画像' });
+    variantImages.forEach(function (v) { srcs.push({ src: variantImgSrc(v, 'w320'), alt: '差分画像' }); });
+
+    srcs.forEach(function (s, idx) {
       const thumb = document.createElement('div');
-      thumb.className = 'variant-thumb' + (activeSlot === slotIdx ? ' active' : '');
-      thumb.innerHTML = '<img src="' + escapeHtml(variantImgSrc(v, 'w320')) + '" alt="差分画像" title="クリックでこの差分の設定を編集">' +
-        '<span class="variant-num">' + (i + 2) + '</span>' +
+      thumb.className = 'variant-thumb' + (activeSlot === idx ? ' active' : '');
+      thumb.draggable = true;
+      thumb.dataset.slotIdx = String(idx);
+      thumb.innerHTML = '<img src="' + escapeHtml(s.src) + '" alt="' + s.alt + '" title="クリックでこの画像の設定を編集 / ドラッグで並べ替え">' +
+        '<span class="variant-num">' + (idx + 1) + '</span>' +
         '<button class="variant-remove" type="button" title="削除">✕</button>';
-      thumb.querySelector('img').addEventListener('click', function () { setActiveSlot(slotIdx); });
+      thumb.querySelector('img').addEventListener('click', function () { setActiveSlot(idx); });
       thumb.querySelector('.variant-remove').addEventListener('click', function (e) {
         e.stopPropagation();
-        setActiveSlot(0);
-        variantImages.splice(i, 1);
-        renderVariantStrip();
+        removeSlot(idx);
+      });
+      // ---- ドラッグで並べ替え ----
+      thumb.addEventListener('dragstart', function (e) {
+        variantDragFrom = idx;
+        thumb.classList.add('dragging');
+        try { e.dataTransfer.setData('text/plain', 'slot:' + idx); } catch (err) {}
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      thumb.addEventListener('dragend', function () {
+        variantDragFrom = null;
+        variantStrip.querySelectorAll('.variant-thumb').forEach(function (el) {
+          el.classList.remove('dragging', 'drop-before', 'drop-after');
+        });
+      });
+      thumb.addEventListener('dragover', function (e) {
+        if (variantDragFrom === null) return;   // 外部ファイルのドロップはここでは扱わない
+        e.preventDefault();
+        e.stopPropagation();
+        const r = thumb.getBoundingClientRect();
+        const after = (e.clientX - r.left) > r.width / 2;
+        thumb.classList.toggle('drop-before', !after);
+        thumb.classList.toggle('drop-after', after);
+      });
+      thumb.addEventListener('dragleave', function () {
+        thumb.classList.remove('drop-before', 'drop-after');
+      });
+      thumb.addEventListener('drop', function (e) {
+        if (variantDragFrom === null) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const r = thumb.getBoundingClientRect();
+        const after = (e.clientX - r.left) > r.width / 2;
+        let to = idx + (after ? 1 : 0);
+        if (variantDragFrom < to) to -= 1;   // 自分を抜いた後の位置に合わせる
+        const from = variantDragFrom;
+        variantDragFrom = null;
+        thumb.classList.remove('drop-before', 'drop-after');
+        moveSlot(from, to);
       });
       variantStrip.insertBefore(thumb, variantAddTile);
     });
@@ -7161,7 +7322,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   variantStrip.addEventListener('drop', function (e) {
     e.preventDefault();
     variantStrip.classList.remove('drag-over');
-    if (e.dataTransfer && e.dataTransfer.files) addVariantFiles(e.dataTransfer.files);
+    // サムネイルの並べ替え中は、ファイル追加として扱わない
+    if (variantDragFrom !== null) return;
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addVariantFiles(e.dataTransfer.files);
   });
 
   /* ---------- 画像メタデータ(生成情報)読み取り ---------- */
@@ -9068,6 +9231,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         payload.id = adminEditingPost.id;
       } else if (options.ownerEdit) {
         payload.editPassword = document.getElementById('editPwInput').value;
+      }
+      // 編集で[1]が別の既存画像に入れ替わった場合は、そのURLをメイン画像として指定する
+      if (!file && editing && mainExistingUrl && adminEditingPost && String(mainExistingUrl) !== String(adminEditingPost.imageUrl || '')) {
+        payload.mainImageUrl = mainExistingUrl;
       }
       if (file) {
         const dataUrl = await fileToBase64(file);
@@ -14915,6 +15082,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       variantMode = false;
       activeSlot = 0;
       mainSlot = { prompt: '', negativePrompt: '', settings: {}, previewSrc: '' };
+      mainExistingUrl = (type === 'image' || type === 'fix' || type === 'video') ? (p.imageUrl || '') : '';
       variantImages = [];
       if (type === 'image') {
         variantImages = (p.variants || []).map(function (v) {
