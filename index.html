@@ -604,6 +604,10 @@
     display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
     gap: 8px 16px; font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
   }
+  /* LoRA名のような途中で改行できない長い語が、列からはみ出して隣の列の文字に
+     重なってしまうのを防ぐ。min-width:0 が無いとグリッドの列は中身の幅まで
+     広がろうとするため、併せて指定する。 */
+  .settings-table > div{ min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
   .settings-table div span{ color: var(--ink-dim); display:block; font-size:10.5px; }
 
   .empty{
