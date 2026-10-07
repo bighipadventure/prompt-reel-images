@@ -40,6 +40,11 @@
     --content-pad: 20px;
   }
   *{ box-sizing: border-box; }
+  /* Stillmotion から動画を受け取ったときのお知らせ(投稿フォームの先頭) */
+  .stillmotion-notice{ display:flex; align-items:flex-start; gap:10px; margin:0 0 14px; padding:10px 12px; border:1px solid var(--accent); border-radius:8px; background: var(--accent-dim); color: var(--ink); font-size:13px; line-height:1.6; }
+  .stillmotion-notice span{ flex:1; }
+  .stillmotion-notice-close{ flex:none; background:none; border:none; color: var(--ink-dim); cursor:pointer; font-size:14px; padding:0 2px; }
+  .stillmotion-notice-close:hover{ color: var(--ink); }
   html,body{ margin:0; padding:0; }
   /* 表示テキスト・画像など編集不可の場所に出る点滅キャレット(縦線)を消す。
      入力欄(input/textarea)のカーソルは残す。選択(ドラッグ)とコピーには影響しない。 */
@@ -6863,6 +6868,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!info || !info.width) await videoElementSize(file, setIfEmpty);
     const st = document.getElementById('statusText');
     if (st && !st.textContent) st.textContent = '動画から解像度などを読み込みました';
+    // Stillmotion で作った MP4 なら、埋め込まれた生成情報(プロンプト・モデル・LoRA など)も入れる
+    try {
+      const sm = await readStillmotionMetadata(file);
+      if (sm && applyStillmotionMeta(sm) && st) st.textContent = '動画から Stillmotion の生成情報を読み込みました';
+    } catch (e) { console.error(e); }
   }
 
   // MP4以外(webm等)や解析に失敗したとき用のフォールバック
@@ -6881,6 +6891,207 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       v.onerror = function () { URL.revokeObjectURL(url); resolve(); };
       v.src = url;
     });
+  }
+
+
+  /* ===== Stillmotion 連携(動画の受け取り・メタデータの自動入力) =====
+     Stillmotion(同じオリジン https://bighipadventure.github.io の別アプリ)で生成した動画を、
+     ・「Prompt Reel に投稿」ボタン → IndexedDB 経由で受け取り、動画投稿フォームへ流し込む(importFromStillmotion)
+     ・Stillmotion で保存した MP4 をドロップ → MP4 に埋め込まれた生成情報で自動入力(readVideoMetadata から呼ぶ)
+     のどちらでも、同じ applyStillmotionMeta で入力欄を埋める。
+     受け取りは proceedToApp(=ログイン認証が済んだ後)からだけ呼ぶので、認証前に動画や情報が出ることはない。 */
+  const STILLMOTION_DB = 'stillmotion-handoff';
+  const STILLMOTION_STORE = 'videos';
+  const STILLMOTION_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 受け取られずに残ったデータは3日で掃除
+  let stillmotionImportKey = '';
+
+  function stillmotionDb() {
+    return new Promise(function (resolve, reject) {
+      const req = indexedDB.open(STILLMOTION_DB, 1);
+      req.onupgradeneeded = function () {
+        if (!req.result.objectStoreNames.contains(STILLMOTION_STORE)) req.result.createObjectStore(STILLMOTION_STORE);
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  async function stillmotionStoreDo(mode, fn) {
+    const db = await stillmotionDb();
+    try {
+      return await new Promise(function (resolve, reject) {
+        const tx = db.transaction(STILLMOTION_STORE, mode);
+        const req = fn(tx.objectStore(STILLMOTION_STORE));
+        tx.oncomplete = function () { resolve(req ? req.result : undefined); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    } finally { db.close(); }
+  }
+
+  // MP4 の moov/udta/meta/ilst/©cmt に入っている Stillmotion の生成情報(JSON)を読む。無ければ null。
+  async function readStillmotionMetadata(file) {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    const view = new DataView(buf);
+    function boxes(start, end) {
+      const list = [];
+      let p = start;
+      while (p + 8 <= end) {
+        let size = view.getUint32(p);
+        let header = 8;
+        if (size === 1) { size = Number(view.getBigUint64(p + 8)); header = 16; }
+        else if (size === 0) { size = end - p; }
+        if (size < header || p + size > end) break;
+        list.push({ type: String.fromCharCode(bytes[p + 4], bytes[p + 5], bytes[p + 6], bytes[p + 7]), start: p, end: p + size, header: header });
+        p += size;
+      }
+      return list;
+    }
+    function find(box, type, skip) {
+      return box && boxes(box.start + box.header + (skip || 0), box.end).find(function (b) { return b.type === type; });
+    }
+    const moov = boxes(0, bytes.length).find(function (b) { return b.type === 'moov'; });
+    const meta = find(find(moov, 'udta'), 'meta');
+    if (!meta) return null;
+    const first = String.fromCharCode.apply(null, bytes.subarray(meta.start + meta.header + 4, meta.start + meta.header + 8));
+    const data = find(find(find(meta, 'ilst', first === 'hdlr' ? 0 : 4), '©cmt'), 'data');
+    if (!data) return null;
+    try {
+      const json = JSON.parse(new TextDecoder().decode(bytes.subarray(data.start + data.header + 8, data.end)));
+      return json && json.format === 'stillmotion-metadata' ? json : null;
+    } catch (e) { return null; }
+  }
+
+  // Stillmotion の生成情報 → 動画投稿フォーム(プロンプト・ネガ・動画の生成設定・メモ)
+  function stillmotionToVideoSettings(meta) {
+    const s = meta.sampling || {};
+    const v = meta.video || {};
+    const models = meta.models || [];
+    const pick = function (type) { return models.filter(function (m) { return m.type === type; }).map(function (m) { return m.name; }); };
+    const loras = (meta.loras || []).map(function (l) { return l.strength === null || l.strength === undefined ? l.name : l.name + ':' + l.strength; });
+    const fps = s.fps || '';
+    const frames = v.frames || (v.duration && fps ? Math.round(v.duration * fps) : '');
+    return {
+      wanModel: pick('unet_name').concat(pick('ckpt_name')).join(', '),
+      wanVariant: (meta.options && meta.options.mode) || '',
+      loras: loras.join(', '),
+      vae: pick('vae_name').join(', '),
+      clip: pick('clip_name').concat(pick('clip_name1'), pick('clip_name2')).join(', '),
+      sampler: s.sampler || '', scheduler: s.scheduler || '',
+      steps: s.steps, cfg: s.cfg, shift: s.shift, denoise: s.denoise,
+      width: v.width, height: v.height, length: frames, fps: fps,
+      seed: v.seed === null || v.seed === undefined ? '' : String(v.seed)
+    };
+  }
+
+  function applyStillmotionMeta(meta) {
+    const promptEl = document.getElementById('promptInput');
+    const negEl = document.getElementById('negativeInput');
+    const memoEl = document.getElementById('memoInput');
+    const prompt = (meta.prompt && meta.prompt.en) || '';
+    if (prompt) { promptEl.value = prompt; autoGrow(promptEl); }
+    if (meta.negative) { negEl.value = meta.negative; autoGrow(negEl); }
+    const settings = stillmotionToVideoSettings(meta);
+    Object.keys(settings).forEach(function (key) {
+      const val = settings[key];
+      const el = document.getElementById('vset_' + key);
+      if (el && val !== '' && val !== null && val !== undefined) el.value = String(val);
+    });
+    if (memoEl && !memoEl.value.trim()) {
+      const v = meta.video || {};
+      const lines = ['Stillmotion で生成' + (meta.workflow ? '(' + meta.workflow + ')' : '') + (v.seconds ? ' / ' + v.seconds + '秒' : '') + (v.aspect ? ' / ' + String(v.aspect).split(' ')[0] : '')];
+      if (meta.direction) lines.push('狙い: ' + meta.direction);
+      // 日本語訳の先頭にある英語の参照画像の対応文(For the target video... / How the reference pictures...)はメモには不要なので外す
+      const ja = meta.prompt && meta.prompt.ja ? String(meta.prompt.ja).replace(/^\s*(For the target video,|How the reference pictures align)[^\n]*\n*/, '').trim() : '';
+      if (ja) lines.push('', '日本語訳:', ja);
+      memoEl.value = lines.join('\n');
+      autoGrow(memoEl);
+    }
+    return !!prompt;
+  }
+
+  function showStillmotionNotice(text) {
+    let el = document.getElementById('stillmotionNotice');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'stillmotionNotice';
+      el.className = 'stillmotion-notice';
+      el.setAttribute('role', 'status');
+      const form = document.getElementById('imagePostForm');
+      form.insertBefore(el, form.firstChild);
+    }
+    el.innerHTML = '';
+    const msg = document.createElement('span');
+    msg.textContent = text;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'stillmotion-notice-close';
+    close.textContent = '✕';
+    close.setAttribute('aria-label', 'お知らせを閉じる');
+    close.addEventListener('click', function () { el.remove(); });
+    el.appendChild(msg);
+    el.appendChild(close);
+  }
+
+  async function importFromStillmotion() {
+    const params = new URLSearchParams(location.search);
+    if (params.get('import') !== 'stillmotion') return;
+    const key = params.get('key') || '';
+    // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
+    params.delete('import');
+    params.delete('key');
+    history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
+    if (!options.tabPost || !options.video) {
+      alert('いまは動画の投稿が無効になっているため、Stillmotion から受け取れません。管理者に確認してください。');
+      return;
+    }
+    let record = null;
+    try {
+      record = await stillmotionStoreDo('readonly', function (st) { return st.get(key); });
+    } catch (e) { console.error('Stillmotion データの読み込みに失敗:', e); }
+    switchTab('post');
+    if (!record || !record.blob) {
+      showStillmotionNotice('Stillmotion から受け取る動画が見つかりませんでした。もう一度 Stillmotion の「Prompt Reel に投稿」を押してください。');
+      return;
+    }
+    if (isEditingImagePost()) await cancelAdminEdit(false);
+    resetImageForm();
+    setPostMode('video');
+    const file = new File([record.blob], record.name || 'stillmotion.mp4', { type: record.mime || 'video/mp4' });
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      imageInput.files = dt.files;
+      imageInput.dispatchEvent(new Event('change'));
+    } catch (e) { console.error(e); }
+    if (record.meta) applyStillmotionMeta(record.meta);
+    stillmotionImportKey = key;
+    showStillmotionNotice('Stillmotion から動画を受け取りました。タイトル・タグ・「動画の元になった画像作品」などを確認して「投稿する」を押してください。');
+    cleanupStillmotionRecords(key);
+  }
+
+  // 投稿が済んだら受け取ったデータを消す(submit の成功時に呼ぶ)
+  function finishStillmotionImport() {
+    const notice = document.getElementById('stillmotionNotice');
+    if (notice) notice.remove();
+    if (!stillmotionImportKey) return;
+    const key = stillmotionImportKey;
+    stillmotionImportKey = '';
+    stillmotionStoreDo('readwrite', function (st) { return st.delete(key); }).catch(function (e) { console.error(e); });
+  }
+
+  // 受け取られないまま古くなったデータを掃除する(いま取り込んだものは残す)
+  function cleanupStillmotionRecords(keep) {
+    stillmotionStoreDo('readwrite', function (st) {
+      const req = st.openCursor();
+      req.onsuccess = function () {
+        const cur = req.result;
+        if (!cur) return;
+        if (cur.key !== keep && (!cur.value || Date.now() - (cur.value.createdAt || 0) > STILLMOTION_MAX_AGE_MS)) cur.delete();
+        cur.continue();
+      };
+      return null;
+    }).catch(function (e) { console.error(e); });
   }
 
   /* MP4のボックス構造をたどって映像トラックの情報を取り出す。外部ライブラリは使わない。
@@ -9283,7 +9494,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       statusText.textContent = editing ? '保存しました' : '投稿しました';
       const targetId = editing ? adminEditingPost.id : result.id;
-      if (editing) cancelAdminEdit(false); else resetImageForm();
+      if (editing) cancelAdminEdit(false); else { resetImageForm(); finishStillmotionImport(); }
 
       await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
@@ -15736,7 +15947,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function proceedToApp() {
     showLoading('読み込み中...');
     document.getElementById('loginGate').classList.add('hidden');
-    loadPosts().then(function () { openSharedFromUrl(); tryAutoAdminLogin(); });
+    loadPosts().then(function () { openSharedFromUrl(); tryAutoAdminLogin(); importFromStillmotion(); });
   }
 
   async function startApp() {
