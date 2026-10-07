@@ -6903,7 +6903,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ・「Prompt Reel に投稿」ボタン → IndexedDB 経由で受け取り、動画投稿フォームへ流し込む(importFromStillmotion)
      ・Stillmotion で保存した MP4 をドロップ → MP4 に埋め込まれた生成情報で自動入力(readVideoMetadata から呼ぶ)
      のどちらでも、同じ applyStillmotionMeta で入力欄を埋める。
-     受け取りは proceedToApp(=ログイン認証が済んだ後)からだけ呼ぶので、認証前に動画や情報が出ることはない。 */
+     受け取りは proceedToApp(=ログイン認証が済んだ後)からだけ呼ぶので、認証前に動画や情報が出ることはない。
+     Stillmotion 側ではパスワードを聞かない。初回のログインも本アプリのいつものログイン画面で行う。 */
   const STILLMOTION_DB = 'stillmotion-handoff';
   const STILLMOTION_STORE = 'videos';
   const STILLMOTION_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 受け取られずに残ったデータは3日で掃除
@@ -7062,10 +7063,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       : '元になった画像作品「' + title + '」を自動で選びました。';
   }
 
-  // 受け取りは必ずログイン済み(トークンあり)で行う。ログイン画面を管理者がオフにしていても、
-  // 保存済みのログインパスワードで認証できないときは取り込まない。
+  // 受け取りはアプリ本体と同じ条件で行う。ログイン画面が有効ならログイン済みのときだけ取り込み、
+  // 管理者がログイン画面をオフにしているときは、アプリ本体と同じくログインなしで取り込む。
   async function ensureStillmotionAuth() {
-    if (siteAuthToken) return true;
+    if (!siteLoginEnabled || siteAuthToken) return true;
     const stored = localStorage.getItem('pr_login_pw');
     if (!stored) return false;
     try {
@@ -7098,21 +7099,31 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     el.appendChild(close);
   }
 
+  // ログイン画面を出している間、受け取り待ちのキーを覚えておく(ログイン後の proceedToApp で再開する)
+  let stillmotionPendingKey = null;
+
   async function importFromStillmotion() {
-    const params = new URLSearchParams(location.search);
-    if (params.get('import') !== 'stillmotion') return;
-    const key = params.get('key') || '';
-    // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
-    params.delete('import');
-    params.delete('key');
-    history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
+    let key = stillmotionPendingKey;
+    stillmotionPendingKey = null;
+    if (key === null) {
+      const params = new URLSearchParams(location.search);
+      if (params.get('import') !== 'stillmotion') return;
+      key = params.get('key') || '';
+      // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
+      params.delete('import');
+      params.delete('key');
+      history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
+    }
     if (!options.tabPost || !options.video) {
       alert('いまは動画の投稿が無効になっているため、Stillmotion から受け取れません。管理者に確認してください。');
       return;
     }
     if (!(await ensureStillmotionAuth())) {
-      switchTab('post');
-      showStillmotionNotice('ログインが確認できなかったため、Stillmotion の動画は受け取っていません。Stillmotion からもう一度「Prompt Reel に投稿」を押し、ログインパスワードを入れてください。');
+      // ログイン画面が有効なのに認証が確認できないとき(通常は起こらない)の保険。
+      // 本アプリのいつものログイン画面を出し、通ったら(submitLogin → proceedToApp)続きから受け取る。
+      stillmotionPendingKey = key;
+      document.getElementById('loginGate').classList.remove('hidden');
+      showLoginGate({ message: 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
       return;
     }
     let record = null;
@@ -8021,6 +8032,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // ログイン認証トークン(loginAuth成功時に受け取る)。データ取得GETに付けてサーバ認証を通す。
   // これが無い/不正だとサーバは何も返さない(URL直打ちでは中身が見えない)。
   let siteAuthToken = '';
+  let siteLoginEnabled = true; // ログイン画面(閲覧前ログイン)が有効か。startApp で設定値に合わせる
   function authParam() { return siteAuthToken ? ('&token=' + encodeURIComponent(siteAuthToken)) : ''; }
 
   // stage: 'parents' | 'rest'。GAS側のdoGetが対応するstageパラメータ付きで取得する。
@@ -16040,6 +16052,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (checkingText) checkingText.textContent = '認証中...';
       }
     }
+    siteLoginEnabled = !!(cfg && cfg.enabled);
     if (cfg && cfg.enabled) {
       // 「認証中...」の間にオプション(タブ表示など)を先に確定させておく。
       // これで「読み込み中...」へ切り替わった瞬間から、オンのタブだけが
