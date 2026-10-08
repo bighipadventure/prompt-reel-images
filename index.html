@@ -40,11 +40,6 @@
     --content-pad: 20px;
   }
   *{ box-sizing: border-box; }
-  /* Stillmotion から動画を受け取ったときのお知らせ(投稿フォームの先頭) */
-  .stillmotion-notice{ display:flex; align-items:flex-start; gap:10px; margin:0 0 14px; padding:10px 12px; border:1px solid var(--accent); border-radius:8px; background: var(--accent-dim); color: var(--ink); font-size:13px; line-height:1.6; }
-  .stillmotion-notice span{ flex:1; }
-  .stillmotion-notice-close{ flex:none; background:none; border:none; color: var(--ink-dim); cursor:pointer; font-size:14px; padding:0 2px; }
-  .stillmotion-notice-close:hover{ color: var(--ink); }
   html,body{ margin:0; padding:0; }
   /* 表示テキスト・画像など編集不可の場所に出る点滅キャレット(縦線)を消す。
      入力欄(input/textarea)のカーソルは残す。選択(ドラッグ)とコピーには影響しない。 */
@@ -859,11 +854,49 @@
   }
   .dl-item:hover{ background: var(--accent-dim); color: var(--accent); }
   .dl-item-empty{ color: var(--ink-dim); cursor: default; }
-  .dl-item-hint{ color: var(--ink-dim); cursor: default; font-size: 11px; border-bottom: 1px solid var(--line); }
+  /* 案内文は1行に収まらないことがあるので、…で切らずに折り返す */
+  .dl-item-hint{
+    color: var(--ink-dim); cursor: default; font-size: 11px; border-bottom: 1px solid var(--line);
+    white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.5;
+  }
   .dl-item-hint:hover{ background: none; color: var(--ink-dim); }
   /* 複数選択中の候補 */
   .dl-item.picked{ color: var(--accent); background: var(--accent-dim); }
   .dl-item.picked::before{ content: '✓ '; }
+  /* ---- 複数入力(LoRAなど)の補助機能 ----
+     入力欄には「値1, 値2」とカンマ区切りで入るが、手で区切りを打つのが面倒なので、
+     プルダウンの中で「選択中の値をチップで出し入れ」「打った文字をEnterでそのまま追加」
+     ができるようにする。チップと追加行はプルダウン上部に固定(sticky)して、
+     候補をスクロールしても常に見えるようにする。 */
+  .dl-menu.dl-menu-multi{ max-height: 340px; min-width: 260px; }
+  .dl-multi-head{
+    position: sticky; top: 0; z-index: 1; background: var(--surface);
+    border-bottom: 1px solid var(--line); padding: 8px 10px;
+  }
+  .dl-multi-top{
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: 11px; color: var(--ink-dim);
+  }
+  .dl-multi-clear{ cursor: pointer; padding: 2px 4px; }
+  .dl-multi-clear:hover{ color: var(--accent); }
+  .dl-chips{
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+    max-height: 86px; overflow-y: auto;
+  }
+  .dl-chip{
+    display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
+    font-size: 12px; line-height: 1.3; padding: 4px 6px 4px 9px; border-radius: 999px;
+    border: 1px solid var(--accent); color: var(--accent); background: var(--accent-dim);
+    overflow-wrap: anywhere;
+  }
+  .dl-chip-x{ cursor: pointer; opacity: .7; font-size: 13px; line-height: 1; }
+  .dl-chip-x:hover{ opacity: 1; }
+  /* 打った文字をそのまま1件として追加する行。長い名前でも全文見せたいので折り返す。 */
+  .dl-item.dl-free{
+    color: var(--accent); border-bottom: 1px solid var(--line);
+    white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+  }
+  .dl-free-key{ color: var(--ink-dim); font-size: 11px; margin-left: 4px; }
   /* 長い候補の全文表示は、候補モーダル(検索できる一覧)に統合したため廃止した */
   /* プロンプト表示エリアの単語ホバーツールチップ */
   .word-tip{
@@ -6705,11 +6738,21 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     dynamicSettingKeys = Object.keys(set).sort();
   }
 
+  /* 複数入力の欄(LoRA)は、入力補助が「次をそのまま打ち始められるように」末尾へ
+     区切りを足した状態になっていることがある。保存時はその余りを落としておく。
+     (読み出し側は空要素を捨てるので動作上の害は無いが、保存される文字列は整える) */
+  function normalizeSettingValue(key, v) {
+    if (key !== 'loras') return v;
+    return String(v).split(',').map(function (s) { return s.trim(); }).filter(Boolean).join(', ');
+  }
+
   function collectSettings() {
     const result = {};
     allSettingsFields().forEach(function (f) {
       const el = document.getElementById(f.id);
-      if (el && el.value !== '') result[f.key] = el.value;
+      if (!el) return;
+      const v = normalizeSettingValue(f.key, el.value);
+      if (v !== '') result[f.key] = v;
     });
     return result;
   }
@@ -6868,15 +6911,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!info || !info.width) await videoElementSize(file, setIfEmpty);
     const st = document.getElementById('statusText');
     if (st && !st.textContent) st.textContent = '動画から解像度などを読み込みました';
-    // Stillmotion で作った MP4 なら、埋め込まれた生成情報(プロンプト・モデル・LoRA など)も入れる
-    try {
-      const sm = await readStillmotionMetadata(file);
-      if (sm && applyStillmotionMeta(sm) && st) st.textContent = '動画から Stillmotion の生成情報を読み込みました';
-      if (sm) {
-        const note = await autoSelectStillmotionSource(sm);
-        if (note && st) st.textContent = '動画から Stillmotion の生成情報を読み込みました。' + note;
-      }
-    } catch (e) { console.error(e); }
   }
 
   // MP4以外(webm等)や解析に失敗したとき用のフォールバック
@@ -6895,287 +6929,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       v.onerror = function () { URL.revokeObjectURL(url); resolve(); };
       v.src = url;
     });
-  }
-
-
-  /* ===== Stillmotion 連携(動画の受け取り・メタデータの自動入力) =====
-     Stillmotion(同じオリジン https://bighipadventure.github.io の別アプリ)で生成した動画を、
-     ・「Prompt Reel に投稿」ボタン → IndexedDB 経由で受け取り、動画投稿フォームへ流し込む(importFromStillmotion)
-     ・Stillmotion で保存した MP4 をドロップ → MP4 に埋め込まれた生成情報で自動入力(readVideoMetadata から呼ぶ)
-     のどちらでも、同じ applyStillmotionMeta で入力欄を埋める。
-     受け取りは proceedToApp(=ログイン認証が済んだ後)からだけ呼ぶので、認証前に動画や情報が出ることはない。
-     Stillmotion 側ではパスワードを聞かない。初回のログインも本アプリのいつものログイン画面で行う。 */
-  const STILLMOTION_DB = 'stillmotion-handoff';
-  const STILLMOTION_STORE = 'videos';
-  const STILLMOTION_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 受け取られずに残ったデータは3日で掃除
-  let stillmotionImportKey = '';
-
-  function stillmotionDb() {
-    return new Promise(function (resolve, reject) {
-      const req = indexedDB.open(STILLMOTION_DB, 1);
-      req.onupgradeneeded = function () {
-        if (!req.result.objectStoreNames.contains(STILLMOTION_STORE)) req.result.createObjectStore(STILLMOTION_STORE);
-      };
-      req.onsuccess = function () { resolve(req.result); };
-      req.onerror = function () { reject(req.error); };
-    });
-  }
-
-  async function stillmotionStoreDo(mode, fn) {
-    const db = await stillmotionDb();
-    try {
-      return await new Promise(function (resolve, reject) {
-        const tx = db.transaction(STILLMOTION_STORE, mode);
-        const req = fn(tx.objectStore(STILLMOTION_STORE));
-        tx.oncomplete = function () { resolve(req ? req.result : undefined); };
-        tx.onerror = function () { reject(tx.error); };
-      });
-    } finally { db.close(); }
-  }
-
-  // MP4 の moov/udta/meta/ilst/©cmt に入っている Stillmotion の生成情報(JSON)を読む。無ければ null。
-  async function readStillmotionMetadata(file) {
-    const buf = await file.arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    const view = new DataView(buf);
-    function boxes(start, end) {
-      const list = [];
-      let p = start;
-      while (p + 8 <= end) {
-        let size = view.getUint32(p);
-        let header = 8;
-        if (size === 1) { size = Number(view.getBigUint64(p + 8)); header = 16; }
-        else if (size === 0) { size = end - p; }
-        if (size < header || p + size > end) break;
-        list.push({ type: String.fromCharCode(bytes[p + 4], bytes[p + 5], bytes[p + 6], bytes[p + 7]), start: p, end: p + size, header: header });
-        p += size;
-      }
-      return list;
-    }
-    function find(box, type, skip) {
-      return box && boxes(box.start + box.header + (skip || 0), box.end).find(function (b) { return b.type === type; });
-    }
-    const moov = boxes(0, bytes.length).find(function (b) { return b.type === 'moov'; });
-    const meta = find(find(moov, 'udta'), 'meta');
-    if (!meta) return null;
-    const first = String.fromCharCode.apply(null, bytes.subarray(meta.start + meta.header + 4, meta.start + meta.header + 8));
-    const data = find(find(find(meta, 'ilst', first === 'hdlr' ? 0 : 4), '©cmt'), 'data');
-    if (!data) return null;
-    try {
-      const json = JSON.parse(new TextDecoder().decode(bytes.subarray(data.start + data.header + 8, data.end)));
-      return json && json.format === 'stillmotion-metadata' ? json : null;
-    } catch (e) { return null; }
-  }
-
-  // Stillmotion の生成情報 → 動画投稿フォーム(プロンプト・ネガ・動画の生成設定・メモ)
-  function stillmotionToVideoSettings(meta) {
-    const s = meta.sampling || {};
-    const v = meta.video || {};
-    const models = meta.models || [];
-    const pick = function (type) { return models.filter(function (m) { return m.type === type; }).map(function (m) { return m.name; }); };
-    const loras = (meta.loras || []).map(function (l) { return l.strength === null || l.strength === undefined ? l.name : l.name + ':' + l.strength; });
-    const fps = s.fps || '';
-    const frames = v.frames || (v.duration && fps ? Math.round(v.duration * fps) : '');
-    return {
-      wanModel: pick('unet_name').concat(pick('ckpt_name')).join(', '),
-      wanVariant: (meta.options && meta.options.mode) || '',
-      loras: loras.join(', '),
-      vae: pick('vae_name').join(', '),
-      clip: pick('clip_name').concat(pick('clip_name1'), pick('clip_name2')).join(', '),
-      sampler: s.sampler || '', scheduler: s.scheduler || '',
-      steps: s.steps, cfg: s.cfg, shift: s.shift, denoise: s.denoise,
-      width: v.width, height: v.height, length: frames, fps: fps,
-      seed: v.seed === null || v.seed === undefined ? '' : String(v.seed)
-    };
-  }
-
-  function applyStillmotionMeta(meta) {
-    const promptEl = document.getElementById('promptInput');
-    const negEl = document.getElementById('negativeInput');
-    const prompt = (meta.prompt && meta.prompt.en) || '';
-    if (prompt) { promptEl.value = prompt; autoGrow(promptEl); }
-    if (meta.negative) { negEl.value = meta.negative; autoGrow(negEl); }
-    const settings = stillmotionToVideoSettings(meta);
-    Object.keys(settings).forEach(function (key) {
-      const val = settings[key];
-      const el = document.getElementById('vset_' + key);
-      if (el && val !== '' && val !== null && val !== undefined) el.value = String(val);
-    });
-    // 備考(メモ)欄には何も入れない(投稿者が自由に書く欄のため)
-    return !!prompt;
-  }
-
-  /* 動画の元になった画像(Stillmotion に入れた PNG の SD プロンプトとシード)と同じ画像投稿を探す。
-     画像投稿本体と差分(variants)を対象にし、子作品で一致したらその親を選ぶ(選べるのは親の画像投稿だけのため)。
-     プロンプト+シードが両方一致するものを採用する。シードが違う作品は別の画像なので選ばない。
-     作品側にシードが記録されていない場合だけ、プロンプトの一致(1件のときに限る)で採用する(loose)。 */
-  function normalizeSourcePrompt(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
-  function findStillmotionSourcePost(src, allowLoose) {
-    const prompt = normalizeSourcePrompt(src && src.prompt);
-    if (!prompt) return { post: null, count: 0 };
-    const seed = src.seed === null || src.seed === undefined ? '' : String(src.seed).trim();
-    const collect = function (loose) {
-      const hits = [];
-      imagePosts.forEach(function (p) {
-        const slots = [{ prompt: p.prompt, settings: p.settings }].concat(p.variants || []);
-        const ok = slots.some(function (sl) {
-          if (normalizeSourcePrompt(sl.prompt) !== prompt) return false;
-          const postSeed = String(((sl.settings || {}).seed) ?? '').trim();
-          return loose ? (!postSeed || !seed) : (!!seed && postSeed === seed);
-        });
-        if (!ok) return;
-        const parent = p.parentId ? imagePosts.find(function (x) { return String(x.id) === String(p.parentId); }) : p;
-        if (parent && !parent.parentId && hits.indexOf(parent) === -1) hits.push(parent);
-      });
-      hits.sort(function (a, b) { return String(b.timestamp).localeCompare(String(a.timestamp)); });
-      return hits;
-    };
-    let hits = collect(false);
-    if (!hits.length && allowLoose) { hits = collect(true); if (hits.length !== 1) hits = []; }
-    return { post: hits[0] || null, count: hits.length };
-  }
-
-  // 見つかった画像作品を「元になった画像作品」に選ぶ(ピッカーで選んだときと同じく、タグと空のタイトルも引き継ぐ)
-  function selectStillmotionSource(post) {
-    selectedVideoSourceId = post.id;
-    (post.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
-    renderChips();
-    const titleEl = document.getElementById('titleInput');
-    if (titleEl && !titleEl.value.trim()) titleEl.value = post.title || '';
-    renderVideoSourceDisplay();
-  }
-
-  // 子作品は段階読み込みの後半(stage=rest)で届くため、見つからなければ読み込み完了を待ってもう一度探す
-  async function autoSelectStillmotionSource(meta) {
-    const src = meta && meta.source_image && meta.source_image.metadata;
-    if (!src || selectedVideoSourceId) return '';
-    // 完全一致(プロンプト+シード)が見つかるまで、全投稿の読み込み完了を待つ。ゆるい一致は全件そろってからだけ使う
-    let found = findStillmotionSourcePost(src, restStageLoaded);
-    for (let i = 0; !found.post && !restStageLoaded && i < 120; i++) {
-      await new Promise(function (r) { setTimeout(r, 500); });
-      found = findStillmotionSourcePost(src, restStageLoaded);
-    }
-    if (!found.post || selectedVideoSourceId || currentPostMode() !== 'video') return '';
-    selectStillmotionSource(found.post);
-    const title = found.post.title || '(無題)';
-    return found.count > 1
-      ? '元になった画像作品は、同じプロンプトとシードの作品が ' + found.count + ' 件あったため、いちばん新しい「' + title + '」を選びました。'
-      : '元になった画像作品「' + title + '」を自動で選びました。';
-  }
-
-  // 受け取りはアプリ本体と同じ条件で行う。ログイン画面が有効ならログイン済みのときだけ取り込み、
-  // 管理者がログイン画面をオフにしているときは、アプリ本体と同じくログインなしで取り込む。
-  async function ensureStillmotionAuth() {
-    if (!siteLoginEnabled || siteAuthToken) return true;
-    const stored = localStorage.getItem('pr_login_pw');
-    if (!stored) return false;
-    try {
-      const r = await postAction({ action: 'loginAuth', password: stored });
-      if (r && r.success) { siteAuthToken = r.token || ''; return true; }
-    } catch (e) { console.error(e); }
-    return false;
-  }
-
-  function showStillmotionNotice(text) {
-    let el = document.getElementById('stillmotionNotice');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'stillmotionNotice';
-      el.className = 'stillmotion-notice';
-      el.setAttribute('role', 'status');
-      const form = document.getElementById('imagePostForm');
-      form.insertBefore(el, form.firstChild);
-    }
-    el.innerHTML = '';
-    const msg = document.createElement('span');
-    msg.textContent = text;
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'stillmotion-notice-close';
-    close.textContent = '✕';
-    close.setAttribute('aria-label', 'お知らせを閉じる');
-    close.addEventListener('click', function () { el.remove(); });
-    el.appendChild(msg);
-    el.appendChild(close);
-  }
-
-  // ログイン画面を出している間、受け取り待ちのキーを覚えておく(ログイン後の proceedToApp で再開する)
-  let stillmotionPendingKey = null;
-
-  async function importFromStillmotion() {
-    let key = stillmotionPendingKey;
-    stillmotionPendingKey = null;
-    if (key === null) {
-      const params = new URLSearchParams(location.search);
-      if (params.get('import') !== 'stillmotion') return;
-      key = params.get('key') || '';
-      // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
-      params.delete('import');
-      params.delete('key');
-      history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
-    }
-    if (!options.tabPost || !options.video) {
-      alert('いまは動画の投稿が無効になっているため、Stillmotion から受け取れません。管理者に確認してください。');
-      return;
-    }
-    if (!(await ensureStillmotionAuth())) {
-      // ログイン画面が有効なのに認証が確認できないとき(通常は起こらない)の保険。
-      // 本アプリのいつものログイン画面を出し、通ったら(submitLogin → proceedToApp)続きから受け取る。
-      stillmotionPendingKey = key;
-      document.getElementById('loginGate').classList.remove('hidden');
-      showLoginGate({ message: 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
-      return;
-    }
-    let record = null;
-    try {
-      record = await stillmotionStoreDo('readonly', function (st) { return st.get(key); });
-    } catch (e) { console.error('Stillmotion データの読み込みに失敗:', e); }
-    switchTab('post');
-    if (!record || !record.blob) {
-      showStillmotionNotice('Stillmotion から受け取る動画が見つかりませんでした。もう一度 Stillmotion の「Prompt Reel に投稿」を押してください。');
-      return;
-    }
-    if (isEditingImagePost()) await cancelAdminEdit(false);
-    resetImageForm();
-    setPostMode('video');
-    const file = new File([record.blob], record.name || 'stillmotion.mp4', { type: record.mime || 'video/mp4' });
-    try {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      imageInput.files = dt.files;
-      imageInput.dispatchEvent(new Event('change'));
-    } catch (e) { console.error(e); }
-    if (record.meta) applyStillmotionMeta(record.meta);
-    stillmotionImportKey = key;
-    const baseNotice = 'Stillmotion から動画を受け取りました。タイトル・タグ・「動画の元になった画像作品」などを確認して「投稿する」を押してください。';
-    showStillmotionNotice(baseNotice);
-    cleanupStillmotionRecords(key);
-    const sourceNote = await autoSelectStillmotionSource(record.meta);
-    if (sourceNote && stillmotionImportKey === key) showStillmotionNotice(baseNotice + ' ' + sourceNote);
-  }
-
-  // 投稿が済んだら受け取ったデータを消す(submit の成功時に呼ぶ)
-  function finishStillmotionImport() {
-    const notice = document.getElementById('stillmotionNotice');
-    if (notice) notice.remove();
-    if (!stillmotionImportKey) return;
-    const key = stillmotionImportKey;
-    stillmotionImportKey = '';
-    stillmotionStoreDo('readwrite', function (st) { return st.delete(key); }).catch(function (e) { console.error(e); });
-  }
-
-  // 受け取られないまま古くなったデータを掃除する(いま取り込んだものは残す)
-  function cleanupStillmotionRecords(keep) {
-    stillmotionStoreDo('readwrite', function (st) {
-      const req = st.openCursor();
-      req.onsuccess = function () {
-        const cur = req.result;
-        if (!cur) return;
-        if (cur.key !== keep && (!cur.value || Date.now() - (cur.value.createdAt || 0) > STILLMOTION_MAX_AGE_MS)) cur.delete();
-        cur.continue();
-      };
-      return null;
-    }).catch(function (e) { console.error(e); });
   }
 
   /* MP4のボックス構造をたどって映像トラックの情報を取り出す。外部ライブラリは使わない。
@@ -8032,7 +7785,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // ログイン認証トークン(loginAuth成功時に受け取る)。データ取得GETに付けてサーバ認証を通す。
   // これが無い/不正だとサーバは何も返さない(URL直打ちでは中身が見えない)。
   let siteAuthToken = '';
-  let siteLoginEnabled = true; // ログイン画面(閲覧前ログイン)が有効か。startApp で設定値に合わせる
   function authParam() { return siteAuthToken ? ('&token=' + encodeURIComponent(siteAuthToken)) : ''; }
 
   // stage: 'parents' | 'rest'。GAS側のdoGetが対応するstageパラメータ付きで取得する。
@@ -8576,8 +8328,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     const isMulti = /(^|_)loras$/.test(input.id || '');
     let menu = null;
-    let items = [];
+    let items = [];          // 上下キー/Tabで選べる行。{ kind: 'free'|'cand', value }
     let activeIndex = -1;
+    let tidying = false;     // tidy() が起こした input イベントで再描画しないための目印
+    const freeAdded = new Set();   // この欄で手入力して確定した名前(候補一覧には無い)
 
     function positionMenu() {
       if (!menu) return;
@@ -8587,8 +8341,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const spaceAbove = r.top;
       const up = spaceBelow < menuH && spaceAbove > spaceBelow;
       menu.classList.toggle('dl-menu-up', up);
-      menu.style.left = r.left + 'px';
       menu.style.width = r.width + 'px';
+      // 複数入力の補助を出す欄には min-width が効くので、入力欄より広くなることがある。
+      // 画面の右端からはみ出さないよう、実際の幅を測ってから左位置を決める。
+      let left = r.left;
+      const w = menu.offsetWidth;
+      if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - w);
+      menu.style.left = left + 'px';
       if (up) { menu.style.top = ''; menu.style.bottom = (window.innerHeight - r.top + 4) + 'px'; }
       else { menu.style.bottom = ''; menu.style.top = (r.bottom + 4) + 'px'; }
     }
@@ -8609,17 +8368,52 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     function pickedValues() {
       return isMulti ? input.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [input.value];
     }
+    /* いま打ちかけの部分(最後のカンマより後ろ)。候補の絞り込みと、
+       「打った文字をそのまま追加」の対象になる。 */
+    function fragment() {
+      return isMulti ? input.value.split(',').pop().trim() : '';
+    }
+    /* 候補一覧 + この欄で手入力して確定した名前。手入力した名前は候補一覧(過去の投稿から
+       作られる)には無いため、これを覚えておかないと「打ちかけの断片」と誤判定してしまう。 */
+    function knownValues() {
+      return currentValues().concat(Array.from(freeAdded));
+    }
+    /* 打ちかけの断片を除いた「確定済みの値」。
+       値が区切り(カンマ)で終わっていれば全部確定。そうでなければ、末尾の語が
+       既知の名前でないときだけ打ちかけとみなす(既存投稿の値をそのまま開いた場合に
+       消えてしまわないようにするため)。 */
+    function committedValues() {
+      const cur = pickedValues();
+      if (!cur.length) return cur;
+      if (/,\s*$/.test(input.value)) return cur;
+      if (knownValues().indexOf(cur[cur.length - 1]) === -1) cur.pop();
+      return cur;
+    }
+    /* 値を入力欄へ書き戻す。追加直後は末尾に ", " を足しておき、
+       利用者が区切りを打たずに次の名前をそのまま打ち始められるようにする。 */
+    function writeValues(list, trailing) {
+      input.value = list.join(', ') + (trailing && list.length ? ', ' : '');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    /* 入力欄の表記をならす(末尾の余った区切りを落とす、前後の空白を詰める)。
+       打ちかけの断片は1件として残す — 打ってから欄外をクリックした場合も
+       その名前を拾ってほしいため。 */
+    function tidy() {
+      if (!isMulti || tidying) return;
+      const cleaned = pickedValues().join(', ');
+      if (cleaned === input.value) return;
+      tidying = true;
+      input.value = cleaned;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      tidying = false;
+    }
 
     function commit(val) {
       if (isMulti) {
-        const all = currentValues();
-        const cur = pickedValues();
-        // 末尾が入力途中の断片(候補に無い語)なら、それを選んだ候補で置き換える
-        if (cur.length && all.indexOf(cur[cur.length - 1]) === -1) cur.pop();
+        const cur = committedValues();
         const at = cur.indexOf(val);
-        if (at === -1) cur.push(val); else cur.splice(at, 1);   // もう一度選ぶと外れる
-        input.value = cur.join(', ');
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        if (at === -1) { cur.push(val); writeValues(cur, true); }
+        else { cur.splice(at, 1); writeValues(cur, true); }   // もう一度選ぶと外れる
         buildMenu();   // 選んだ/外した状態を反映して開いたまま
       } else {
         input.value = val;
@@ -8627,16 +8421,41 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         closeMenu();
       }
     }
+    /* 候補に無い名前を、打った文字のまま1件として追加する */
+    function commitFree(text) {
+      const val = String(text || '').trim();
+      if (!val) return;
+      const cur = committedValues();
+      if (cur.indexOf(val) === -1) cur.push(val);
+      freeAdded.add(val);
+      writeValues(cur, true);
+      buildMenu();
+    }
+    function removeValueAt(i) {
+      const cur = committedValues();
+      const frag = fragment();
+      if (i < 0 || i >= cur.length) return;
+      cur.splice(i, 1);
+      // 打ちかけの文字は消さずに残す
+      input.value = cur.concat(frag ? [frag] : []).join(', ') + (!frag && cur.length ? ', ' : '');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      buildMenu();
+    }
+    function clearAllValues() {
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      buildMenu();
+    }
 
     function buildMenu() {
       const all = currentValues();
       // 複数選択の欄は「選んだ値のカンマ区切り」が入っているので、全体を検索語にすると
       // 1つ選んだ時点で他の候補が絞り込まれて消えてしまう。いま入力中の部分
       // (最後のカンマより後ろ)だけを検索語にし、それが選択済みの値そのものなら絞り込まない。
+      const frag = isMulti ? fragment() : '';
       let q;
       if (isMulti) {
-        const last = input.value.split(',').pop().trim();
-        q = (all.indexOf(last) !== -1) ? '' : last.toLowerCase();
+        q = (knownValues().indexOf(frag) !== -1) ? '' : frag.toLowerCase();
       } else {
         q = input.value.trim().toLowerCase();
       }
@@ -8644,29 +8463,77 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       // 絞り込まず全候補を見せる(タグの予測変換と違い、既存値をクリックで
       // 開いたときにも一覧を見渡せるようにするため)。複数選択は常に絞り込む。
       const cands = q ? all.filter(function (v) { return v.toLowerCase().indexOf(q) !== -1; }) : all;
-      if (!cands.length) { closeMenu(); return; }
+      const picked = isMulti ? committedValues() : pickedValues();
+      // 候補に無い名前を打っているときは「そのまま追加」の行を出す。
+      // これがあるので、候補が0件でも複数入力の欄は閉じない(閉じると補助機能に手が届かない)。
+      const canFree = isMulti && !!frag && knownValues().indexOf(frag) === -1 && picked.indexOf(frag) === -1;
+      if (!cands.length && !canFree && !(isMulti && picked.length)) { closeMenu(); return; }
 
       if (!menu) {
         menu = document.createElement('div');
-        menu.className = 'dl-menu dl-menu-detached';
+        menu.className = 'dl-menu dl-menu-detached' + (isMulti ? ' dl-menu-multi' : '');
         document.body.appendChild(menu);
         window.addEventListener('scroll', onViewportChange, true);
         window.addEventListener('resize', onViewportChange);
       }
-      items = cands;
+      items = [];
+      if (canFree) items.push({ kind: 'free', value: frag });
+      cands.forEach(function (v) { items.push({ kind: 'cand', value: v }); });
       activeIndex = -1;
-      const picked = pickedValues();
-      const hint = isMulti ? '<div class="dl-item dl-item-hint">クリックで追加/解除(複数選択できます)</div>' : '';
-      menu.innerHTML = hint + cands.map(function (v, i) {
-        return '<div class="dl-item' + (picked.indexOf(v) !== -1 ? ' picked' : '') + '" data-i="' + i + '">' + escapeHtml(v) + '</div>';
+
+      let html = '';
+      if (isMulti) {
+        // 選択中の値をチップで並べ、×で1件ずつ外せるようにする(入力欄の文字列を
+        // 手で編集しなくても出し入れできるようにするのが狙い)
+        html += '<div class="dl-multi-head">'
+          + '<div class="dl-multi-top"><span>選択中 ' + picked.length + ' 件</span>'
+          + (picked.length ? '<span class="dl-multi-clear">すべて解除</span>' : '')
+          + '</div>'
+          + (picked.length
+            ? '<div class="dl-chips">' + picked.map(function (v, i) {
+                return '<span class="dl-chip">' + escapeHtml(v)
+                  + '<span class="dl-chip-x" data-ci="' + i + '" title="外す">×</span></span>';
+              }).join('') + '</div>'
+            : '')
+          + '</div>';
+      }
+      let idx = 0;
+      if (canFree) {
+        html += '<div class="dl-item dl-free" data-i="' + (idx++) + '">＋ 「' + escapeHtml(frag)
+          + '」を追加<span class="dl-free-key">Enter</span></div>';
+      }
+      if (isMulti) {
+        html += '<div class="dl-item dl-item-hint">クリックで追加/解除。打ってEnterでそのまま追加(区切りは自動)</div>';
+      }
+      html += cands.map(function (v) {
+        return '<div class="dl-item' + (picked.indexOf(v) !== -1 ? ' picked' : '') + '" data-i="' + (idx++) + '">'
+          + escapeHtml(v) + '</div>';
       }).join('');
+      menu.innerHTML = html;
+
       menu.querySelectorAll('.dl-item:not(.dl-item-hint)').forEach(function (el) {
         el.addEventListener('mousedown', function (ev) {
           ev.preventDefault();
-          commit(items[parseInt(el.dataset.i, 10)]);
+          commitItem(items[parseInt(el.dataset.i, 10)]);
         });
       });
+      menu.querySelectorAll('.dl-chip-x').forEach(function (el) {
+        el.addEventListener('mousedown', function (ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          removeValueAt(parseInt(el.dataset.ci, 10));
+        });
+      });
+      const clearEl = menu.querySelector('.dl-multi-clear');
+      if (clearEl) clearEl.addEventListener('mousedown', function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        clearAllValues();
+      });
       positionMenu();
+    }
+
+    function commitItem(it) {
+      if (!it) return;
+      if (it.kind === 'free') commitFree(it.value); else commit(it.value);
     }
 
     function setActive(i) {
@@ -8682,11 +8549,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      if (menu) { closeMenu(); return; }
+      if (menu) { tidy(); closeMenu(); return; }
       buildMenu();
       input.focus();
     });
-    input.addEventListener('input', buildMenu);
+    input.addEventListener('input', function () { if (!tidying) buildMenu(); });
     input.addEventListener('keydown', function (e) {
       if (e.isComposing || e.keyCode === 229) return;
       if (e.key === 'ArrowDown') {
@@ -8698,13 +8565,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       } else if (e.key === 'Tab') {
         if (menu && items.length) { setActive(activeIndex + 1); e.preventDefault(); }
       } else if (e.key === 'Enter') {
-        if (menu && activeIndex >= 0) { e.preventDefault(); commit(items[activeIndex]); }
-        else closeMenu();
+        if (menu && activeIndex >= 0) { e.preventDefault(); commitItem(items[activeIndex]); }
+        else if (isMulti && fragment()) {
+          // 候補を選んでいない状態のEnterは「いま打った名前をそのまま1件追加」。
+          // これで利用者は「名前→Enter→名前→Enter」だけで複数入れられる(区切り不要)。
+          e.preventDefault();
+          commitFree(fragment());
+          if (!menu) buildMenu();
+        } else { tidy(); closeMenu(); }
       } else if (e.key === 'Escape') {
-        if (menu) { closeMenu(); e.preventDefault(); }
+        if (menu) { tidy(); closeMenu(); e.preventDefault(); }
       }
     });
-    input.addEventListener('blur', function () { setTimeout(closeMenu, 120); });
+    input.addEventListener('blur', function () { setTimeout(function () { tidy(); closeMenu(); }, 120); });
   }
 
   function attachDatalistDropdowns(root) {
@@ -9579,7 +9452,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       statusText.textContent = editing ? '保存しました' : '投稿しました';
       const targetId = editing ? adminEditingPost.id : result.id;
-      if (editing) cancelAdminEdit(false); else { resetImageForm(); finishStillmotionImport(); }
+      if (editing) cancelAdminEdit(false); else resetImageForm();
 
       await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
@@ -12623,7 +12496,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // 画面に出ていない項目は拾わない(サービス切替で消えた欄の値を残さない)
     promptServiceFields().forEach(function (f) {
       const el = document.getElementById('pset_' + f.key);
-      if (el && el.value !== '') r[f.key] = el.value;
+      if (!el) return;
+      const v = normalizeSettingValue(f.key, el.value);
+      if (v !== '') r[f.key] = v;
     });
     charPairsToSettings('pChar', r);
     return r;
@@ -16032,7 +15907,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function proceedToApp() {
     showLoading('読み込み中...');
     document.getElementById('loginGate').classList.add('hidden');
-    loadPosts().then(function () { openSharedFromUrl(); tryAutoAdminLogin(); importFromStillmotion(); });
+    loadPosts().then(function () { openSharedFromUrl(); tryAutoAdminLogin(); });
   }
 
   async function startApp() {
@@ -16052,7 +15927,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (checkingText) checkingText.textContent = '認証中...';
       }
     }
-    siteLoginEnabled = !!(cfg && cfg.enabled);
     if (cfg && cfg.enabled) {
       // 「認証中...」の間にオプション(タブ表示など)を先に確定させておく。
       // これで「読み込み中...」へ切り替わった瞬間から、オンのタブだけが
