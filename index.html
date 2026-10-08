@@ -40,6 +40,11 @@
     --content-pad: 20px;
   }
   *{ box-sizing: border-box; }
+  /* Stillmotion から動画を受け取ったときのお知らせ(投稿フォームの先頭) */
+  .stillmotion-notice{ display:flex; align-items:flex-start; gap:10px; margin:0 0 14px; padding:10px 12px; border:1px solid var(--accent); border-radius:8px; background: var(--accent-dim); color: var(--ink); font-size:13px; line-height:1.6; }
+  .stillmotion-notice span{ flex:1; }
+  .stillmotion-notice-close{ flex:none; background:none; border:none; color: var(--ink-dim); cursor:pointer; font-size:14px; padding:0 2px; }
+  .stillmotion-notice-close:hover{ color: var(--ink); }
   html,body{ margin:0; padding:0; }
   /* 表示テキスト・画像など編集不可の場所に出る点滅キャレット(縦線)を消す。
      入力欄(input/textarea)のカーソルは残す。選択(ドラッグ)とコピーには影響しない。 */
@@ -6911,6 +6916,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!info || !info.width) await videoElementSize(file, setIfEmpty);
     const st = document.getElementById('statusText');
     if (st && !st.textContent) st.textContent = '動画から解像度などを読み込みました';
+    // Stillmotion で作った MP4 なら、埋め込まれた生成情報(プロンプト・モデル・LoRA など)も入れる
+    try {
+      const sm = await readStillmotionMetadata(file);
+      if (sm && applyStillmotionMeta(sm) && st) st.textContent = '動画から Stillmotion の生成情報を読み込みました';
+      if (sm) {
+        const note = await autoSelectStillmotionSource(sm);
+        if (note && st) st.textContent = '動画から Stillmotion の生成情報を読み込みました。' + note;
+      }
+    } catch (e) { console.error(e); }
   }
 
   // MP4以外(webm等)や解析に失敗したとき用のフォールバック
@@ -6929,6 +6943,287 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       v.onerror = function () { URL.revokeObjectURL(url); resolve(); };
       v.src = url;
     });
+  }
+
+
+  /* ===== Stillmotion 連携(動画の受け取り・メタデータの自動入力) =====
+     Stillmotion(同じオリジン https://bighipadventure.github.io の別アプリ)で生成した動画を、
+     ・「Prompt Reel に投稿」ボタン → IndexedDB 経由で受け取り、動画投稿フォームへ流し込む(importFromStillmotion)
+     ・Stillmotion で保存した MP4 をドロップ → MP4 に埋め込まれた生成情報で自動入力(readVideoMetadata から呼ぶ)
+     のどちらでも、同じ applyStillmotionMeta で入力欄を埋める。
+     受け取りは proceedToApp(=ログイン認証が済んだ後)からだけ呼ぶので、認証前に動画や情報が出ることはない。
+     Stillmotion 側ではパスワードを聞かない。初回のログインも本アプリのいつものログイン画面で行う。 */
+  const STILLMOTION_DB = 'stillmotion-handoff';
+  const STILLMOTION_STORE = 'videos';
+  const STILLMOTION_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 受け取られずに残ったデータは3日で掃除
+  let stillmotionImportKey = '';
+
+  function stillmotionDb() {
+    return new Promise(function (resolve, reject) {
+      const req = indexedDB.open(STILLMOTION_DB, 1);
+      req.onupgradeneeded = function () {
+        if (!req.result.objectStoreNames.contains(STILLMOTION_STORE)) req.result.createObjectStore(STILLMOTION_STORE);
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  async function stillmotionStoreDo(mode, fn) {
+    const db = await stillmotionDb();
+    try {
+      return await new Promise(function (resolve, reject) {
+        const tx = db.transaction(STILLMOTION_STORE, mode);
+        const req = fn(tx.objectStore(STILLMOTION_STORE));
+        tx.oncomplete = function () { resolve(req ? req.result : undefined); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    } finally { db.close(); }
+  }
+
+  // MP4 の moov/udta/meta/ilst/©cmt に入っている Stillmotion の生成情報(JSON)を読む。無ければ null。
+  async function readStillmotionMetadata(file) {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    const view = new DataView(buf);
+    function boxes(start, end) {
+      const list = [];
+      let p = start;
+      while (p + 8 <= end) {
+        let size = view.getUint32(p);
+        let header = 8;
+        if (size === 1) { size = Number(view.getBigUint64(p + 8)); header = 16; }
+        else if (size === 0) { size = end - p; }
+        if (size < header || p + size > end) break;
+        list.push({ type: String.fromCharCode(bytes[p + 4], bytes[p + 5], bytes[p + 6], bytes[p + 7]), start: p, end: p + size, header: header });
+        p += size;
+      }
+      return list;
+    }
+    function find(box, type, skip) {
+      return box && boxes(box.start + box.header + (skip || 0), box.end).find(function (b) { return b.type === type; });
+    }
+    const moov = boxes(0, bytes.length).find(function (b) { return b.type === 'moov'; });
+    const meta = find(find(moov, 'udta'), 'meta');
+    if (!meta) return null;
+    const first = String.fromCharCode.apply(null, bytes.subarray(meta.start + meta.header + 4, meta.start + meta.header + 8));
+    const data = find(find(find(meta, 'ilst', first === 'hdlr' ? 0 : 4), '©cmt'), 'data');
+    if (!data) return null;
+    try {
+      const json = JSON.parse(new TextDecoder().decode(bytes.subarray(data.start + data.header + 8, data.end)));
+      return json && json.format === 'stillmotion-metadata' ? json : null;
+    } catch (e) { return null; }
+  }
+
+  // Stillmotion の生成情報 → 動画投稿フォーム(プロンプト・ネガ・動画の生成設定・メモ)
+  function stillmotionToVideoSettings(meta) {
+    const s = meta.sampling || {};
+    const v = meta.video || {};
+    const models = meta.models || [];
+    const pick = function (type) { return models.filter(function (m) { return m.type === type; }).map(function (m) { return m.name; }); };
+    const loras = (meta.loras || []).map(function (l) { return l.strength === null || l.strength === undefined ? l.name : l.name + ':' + l.strength; });
+    const fps = s.fps || '';
+    const frames = v.frames || (v.duration && fps ? Math.round(v.duration * fps) : '');
+    return {
+      wanModel: pick('unet_name').concat(pick('ckpt_name')).join(', '),
+      wanVariant: (meta.options && meta.options.mode) || '',
+      loras: loras.join(', '),
+      vae: pick('vae_name').join(', '),
+      clip: pick('clip_name').concat(pick('clip_name1'), pick('clip_name2')).join(', '),
+      sampler: s.sampler || '', scheduler: s.scheduler || '',
+      steps: s.steps, cfg: s.cfg, shift: s.shift, denoise: s.denoise,
+      width: v.width, height: v.height, length: frames, fps: fps,
+      seed: v.seed === null || v.seed === undefined ? '' : String(v.seed)
+    };
+  }
+
+  function applyStillmotionMeta(meta) {
+    const promptEl = document.getElementById('promptInput');
+    const negEl = document.getElementById('negativeInput');
+    const prompt = (meta.prompt && meta.prompt.en) || '';
+    if (prompt) { promptEl.value = prompt; autoGrow(promptEl); }
+    if (meta.negative) { negEl.value = meta.negative; autoGrow(negEl); }
+    const settings = stillmotionToVideoSettings(meta);
+    Object.keys(settings).forEach(function (key) {
+      const val = settings[key];
+      const el = document.getElementById('vset_' + key);
+      if (el && val !== '' && val !== null && val !== undefined) el.value = String(val);
+    });
+    // 備考(メモ)欄には何も入れない(投稿者が自由に書く欄のため)
+    return !!prompt;
+  }
+
+  /* 動画の元になった画像(Stillmotion に入れた PNG の SD プロンプトとシード)と同じ画像投稿を探す。
+     画像投稿本体と差分(variants)を対象にし、子作品で一致したらその親を選ぶ(選べるのは親の画像投稿だけのため)。
+     プロンプト+シードが両方一致するものを採用する。シードが違う作品は別の画像なので選ばない。
+     作品側にシードが記録されていない場合だけ、プロンプトの一致(1件のときに限る)で採用する(loose)。 */
+  function normalizeSourcePrompt(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+  function findStillmotionSourcePost(src, allowLoose) {
+    const prompt = normalizeSourcePrompt(src && src.prompt);
+    if (!prompt) return { post: null, count: 0 };
+    const seed = src.seed === null || src.seed === undefined ? '' : String(src.seed).trim();
+    const collect = function (loose) {
+      const hits = [];
+      imagePosts.forEach(function (p) {
+        const slots = [{ prompt: p.prompt, settings: p.settings }].concat(p.variants || []);
+        const ok = slots.some(function (sl) {
+          if (normalizeSourcePrompt(sl.prompt) !== prompt) return false;
+          const postSeed = String(((sl.settings || {}).seed) ?? '').trim();
+          return loose ? (!postSeed || !seed) : (!!seed && postSeed === seed);
+        });
+        if (!ok) return;
+        const parent = p.parentId ? imagePosts.find(function (x) { return String(x.id) === String(p.parentId); }) : p;
+        if (parent && !parent.parentId && hits.indexOf(parent) === -1) hits.push(parent);
+      });
+      hits.sort(function (a, b) { return String(b.timestamp).localeCompare(String(a.timestamp)); });
+      return hits;
+    };
+    let hits = collect(false);
+    if (!hits.length && allowLoose) { hits = collect(true); if (hits.length !== 1) hits = []; }
+    return { post: hits[0] || null, count: hits.length };
+  }
+
+  // 見つかった画像作品を「元になった画像作品」に選ぶ(ピッカーで選んだときと同じく、タグと空のタイトルも引き継ぐ)
+  function selectStillmotionSource(post) {
+    selectedVideoSourceId = post.id;
+    (post.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+    renderChips();
+    const titleEl = document.getElementById('titleInput');
+    if (titleEl && !titleEl.value.trim()) titleEl.value = post.title || '';
+    renderVideoSourceDisplay();
+  }
+
+  // 子作品は段階読み込みの後半(stage=rest)で届くため、見つからなければ読み込み完了を待ってもう一度探す
+  async function autoSelectStillmotionSource(meta) {
+    const src = meta && meta.source_image && meta.source_image.metadata;
+    if (!src || selectedVideoSourceId) return '';
+    // 完全一致(プロンプト+シード)が見つかるまで、全投稿の読み込み完了を待つ。ゆるい一致は全件そろってからだけ使う
+    let found = findStillmotionSourcePost(src, restStageLoaded);
+    for (let i = 0; !found.post && !restStageLoaded && i < 120; i++) {
+      await new Promise(function (r) { setTimeout(r, 500); });
+      found = findStillmotionSourcePost(src, restStageLoaded);
+    }
+    if (!found.post || selectedVideoSourceId || currentPostMode() !== 'video') return '';
+    selectStillmotionSource(found.post);
+    const title = found.post.title || '(無題)';
+    return found.count > 1
+      ? '元になった画像作品は、同じプロンプトとシードの作品が ' + found.count + ' 件あったため、いちばん新しい「' + title + '」を選びました。'
+      : '元になった画像作品「' + title + '」を自動で選びました。';
+  }
+
+  // 受け取りはアプリ本体と同じ条件で行う。ログイン画面が有効ならログイン済みのときだけ取り込み、
+  // 管理者がログイン画面をオフにしているときは、アプリ本体と同じくログインなしで取り込む。
+  async function ensureStillmotionAuth() {
+    if (!siteLoginEnabled || siteAuthToken) return true;
+    const stored = localStorage.getItem('pr_login_pw');
+    if (!stored) return false;
+    try {
+      const r = await postAction({ action: 'loginAuth', password: stored });
+      if (r && r.success) { siteAuthToken = r.token || ''; return true; }
+    } catch (e) { console.error(e); }
+    return false;
+  }
+
+  function showStillmotionNotice(text) {
+    let el = document.getElementById('stillmotionNotice');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'stillmotionNotice';
+      el.className = 'stillmotion-notice';
+      el.setAttribute('role', 'status');
+      const form = document.getElementById('imagePostForm');
+      form.insertBefore(el, form.firstChild);
+    }
+    el.innerHTML = '';
+    const msg = document.createElement('span');
+    msg.textContent = text;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'stillmotion-notice-close';
+    close.textContent = '✕';
+    close.setAttribute('aria-label', 'お知らせを閉じる');
+    close.addEventListener('click', function () { el.remove(); });
+    el.appendChild(msg);
+    el.appendChild(close);
+  }
+
+  // ログイン画面を出している間、受け取り待ちのキーを覚えておく(ログイン後の proceedToApp で再開する)
+  let stillmotionPendingKey = null;
+
+  async function importFromStillmotion() {
+    let key = stillmotionPendingKey;
+    stillmotionPendingKey = null;
+    if (key === null) {
+      const params = new URLSearchParams(location.search);
+      if (params.get('import') !== 'stillmotion') return;
+      key = params.get('key') || '';
+      // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
+      params.delete('import');
+      params.delete('key');
+      history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
+    }
+    if (!options.tabPost || !options.video) {
+      alert('いまは動画の投稿が無効になっているため、Stillmotion から受け取れません。管理者に確認してください。');
+      return;
+    }
+    if (!(await ensureStillmotionAuth())) {
+      // ログイン画面が有効なのに認証が確認できないとき(通常は起こらない)の保険。
+      // 本アプリのいつものログイン画面を出し、通ったら(submitLogin → proceedToApp)続きから受け取る。
+      stillmotionPendingKey = key;
+      document.getElementById('loginGate').classList.remove('hidden');
+      showLoginGate({ message: 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
+      return;
+    }
+    let record = null;
+    try {
+      record = await stillmotionStoreDo('readonly', function (st) { return st.get(key); });
+    } catch (e) { console.error('Stillmotion データの読み込みに失敗:', e); }
+    switchTab('post');
+    if (!record || !record.blob) {
+      showStillmotionNotice('Stillmotion から受け取る動画が見つかりませんでした。もう一度 Stillmotion の「Prompt Reel に投稿」を押してください。');
+      return;
+    }
+    if (isEditingImagePost()) await cancelAdminEdit(false);
+    resetImageForm();
+    setPostMode('video');
+    const file = new File([record.blob], record.name || 'stillmotion.mp4', { type: record.mime || 'video/mp4' });
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      imageInput.files = dt.files;
+      imageInput.dispatchEvent(new Event('change'));
+    } catch (e) { console.error(e); }
+    if (record.meta) applyStillmotionMeta(record.meta);
+    stillmotionImportKey = key;
+    const baseNotice = 'Stillmotion から動画を受け取りました。タイトル・タグ・「動画の元になった画像作品」などを確認して「投稿する」を押してください。';
+    showStillmotionNotice(baseNotice);
+    cleanupStillmotionRecords(key);
+    const sourceNote = await autoSelectStillmotionSource(record.meta);
+    if (sourceNote && stillmotionImportKey === key) showStillmotionNotice(baseNotice + ' ' + sourceNote);
+  }
+
+  // 投稿が済んだら受け取ったデータを消す(submit の成功時に呼ぶ)
+  function finishStillmotionImport() {
+    const notice = document.getElementById('stillmotionNotice');
+    if (notice) notice.remove();
+    if (!stillmotionImportKey) return;
+    const key = stillmotionImportKey;
+    stillmotionImportKey = '';
+    stillmotionStoreDo('readwrite', function (st) { return st.delete(key); }).catch(function (e) { console.error(e); });
+  }
+
+  // 受け取られないまま古くなったデータを掃除する(いま取り込んだものは残す)
+  function cleanupStillmotionRecords(keep) {
+    stillmotionStoreDo('readwrite', function (st) {
+      const req = st.openCursor();
+      req.onsuccess = function () {
+        const cur = req.result;
+        if (!cur) return;
+        if (cur.key !== keep && (!cur.value || Date.now() - (cur.value.createdAt || 0) > STILLMOTION_MAX_AGE_MS)) cur.delete();
+        cur.continue();
+      };
+      return null;
+    }).catch(function (e) { console.error(e); });
   }
 
   /* MP4のボックス構造をたどって映像トラックの情報を取り出す。外部ライブラリは使わない。
@@ -7785,6 +8080,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // ログイン認証トークン(loginAuth成功時に受け取る)。データ取得GETに付けてサーバ認証を通す。
   // これが無い/不正だとサーバは何も返さない(URL直打ちでは中身が見えない)。
   let siteAuthToken = '';
+  let siteLoginEnabled = true; // ログイン画面(閲覧前ログイン)が有効か。startApp で設定値に合わせる
   function authParam() { return siteAuthToken ? ('&token=' + encodeURIComponent(siteAuthToken)) : ''; }
 
   // stage: 'parents' | 'rest'。GAS側のdoGetが対応するstageパラメータ付きで取得する。
@@ -9452,7 +9748,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       statusText.textContent = editing ? '保存しました' : '投稿しました';
       const targetId = editing ? adminEditingPost.id : result.id;
-      if (editing) cancelAdminEdit(false); else resetImageForm();
+      if (editing) cancelAdminEdit(false); else { resetImageForm(); finishStillmotionImport(); }
 
       await reloadAllPosts();
       const posted = posts.find(function (p) { return String(p.id) === String(targetId); });
@@ -15907,7 +16203,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function proceedToApp() {
     showLoading('読み込み中...');
     document.getElementById('loginGate').classList.add('hidden');
-    loadPosts().then(function () { openSharedFromUrl(); tryAutoAdminLogin(); });
+    loadPosts().then(function () { openSharedFromUrl(); tryAutoAdminLogin(); importFromStillmotion(); });
   }
 
   async function startApp() {
@@ -15927,6 +16223,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (checkingText) checkingText.textContent = '認証中...';
       }
     }
+    siteLoginEnabled = !!(cfg && cfg.enabled);
     if (cfg && cfg.enabled) {
       // 「認証中...」の間にオプション(タブ表示など)を先に確定させておく。
       // これで「読み込み中...」へ切り替わった瞬間から、オンのタブだけが
