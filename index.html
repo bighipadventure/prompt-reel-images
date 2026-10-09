@@ -7149,20 +7149,27 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // ログイン画面を出している間、受け取り待ちのキーを覚えておく(ログイン後の proceedToApp で再開する)
   let stillmotionPendingKey = null;
+  let stillmotionPendingKind = 'stillmotion';
 
   async function importFromStillmotion() {
     let key = stillmotionPendingKey;
+    let kind = stillmotionPendingKind;
     stillmotionPendingKey = null;
     if (key === null) {
       const params = new URLSearchParams(location.search);
-      if (params.get('import') !== 'stillmotion') return;
+      kind = params.get('import');
+      if (kind !== 'stillmotion' && kind !== 'stillmange') return;
       key = params.get('key') || '';
       // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
       params.delete('import');
       params.delete('key');
       history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
     }
-    if (!options.tabPost || !options.video) {
+    if (kind === 'stillmange' && !options.tabPost) {
+      alert('いまは投稿が無効になっているため、Stillmange から受け取れません。管理者に確認してください。');
+      return;
+    }
+    if (kind !== 'stillmange' && (!options.tabPost || !options.video)) {
       alert('いまは動画の投稿が無効になっているため、Stillmotion から受け取れません。管理者に確認してください。');
       return;
     }
@@ -7170,8 +7177,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       // ログイン画面が有効なのに認証が確認できないとき(通常は起こらない)の保険。
       // 本アプリのいつものログイン画面を出し、通ったら(submitLogin → proceedToApp)続きから受け取る。
       stillmotionPendingKey = key;
+      stillmotionPendingKind = kind;
       document.getElementById('loginGate').classList.remove('hidden');
-      showLoginGate({ message: 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
+      showLoginGate({ message: kind === 'stillmange' ? 'Stillmange から受け取った漫画を投稿するには、ログインが必要です。' : 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
       return;
     }
     let record = null;
@@ -7179,6 +7187,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       record = await stillmotionStoreDo('readonly', function (st) { return st.get(key); });
     } catch (e) { console.error('Stillmotion データの読み込みに失敗:', e); }
     switchTab('post');
+    if (kind === 'stillmange') { await importStillmangeRecord(record, key); return; }
     if (!record || !record.blob) {
       showStillmotionNotice('Stillmotion から受け取る動画が見つかりませんでした。もう一度 Stillmotion の「Prompt Reel に投稿」を押してください。');
       return;
@@ -7200,6 +7209,38 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     cleanupStillmotionRecords(key);
     const sourceNote = await autoSelectStillmotionSource(record.meta);
     if (sourceNote && stillmotionImportKey === key) showStillmotionNotice(baseNotice + ' ' + sourceNote);
+  }
+
+  /* Stillmange(同じオリジンの漫画1ページ生成アプリ)から受け取る。
+     record.images の1枚目(漫画1ページ)を □1、2枚目以降(各コマの生成画像)を差分 □2〜 にする。
+     複数枚をまとめてドロップしたときと同じ流れ(メイン画像の入力 → 差分モード → addVariantFiles)を使うので、
+     各画像の生成情報(PNG の parameters)も手動のドロップと同じく自動で読み取られる。 */
+  async function importStillmangeRecord(record, key) {
+    const images = ((record && record.images) || []).filter(function (x) { return x && x.blob; });
+    if (!images.length) {
+      showStillmotionNotice('Stillmange から受け取る画像が見つかりませんでした。もう一度 Stillmange の「Prompt Reel に投稿」を押してください。');
+      return;
+    }
+    if (isEditingImagePost()) await cancelAdminEdit(false);
+    resetImageForm();
+    setPostMode('image');
+    const files = images.map(function (x, i) {
+      return new File([x.blob], x.name || ('stillmange_' + (i + 1) + '.png'), { type: x.mime || x.blob.type || 'image/png' });
+    });
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(files[0]);
+      imageInput.files = dt.files;
+      imageInput.dispatchEvent(new Event('change'));
+    } catch (e) { console.error(e); }
+    if (files.length > 1) {
+      if (!variantMode) setVariantMode(true);
+      await addVariantFiles(files.slice(1));
+    }
+    stillmotionImportKey = key;
+    showStillmotionNotice('Stillmange から漫画ページ(□1)と、コマの画像 ' + (files.length - 1) + ' 枚(□2〜)を受け取りました。'
+      + '各画像の生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。');
+    cleanupStillmotionRecords(key);
   }
 
   // 投稿が済んだら受け取ったデータを消す(submit の成功時に呼ぶ)
