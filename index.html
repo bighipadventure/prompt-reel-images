@@ -788,6 +788,7 @@
     font-family:'Noto Sans JP',sans-serif; font-size: 13px; color: var(--ink);
   }
   .loading-overlay.open{ display:flex; }
+  #importLock{ z-index: 300; }
   .spinner{
     width: 36px; height: 36px; border-radius: 50%;
     border: 3px solid var(--line); border-top-color: var(--accent);
@@ -7147,6 +7148,66 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     el.appendChild(close);
   }
 
+  /* 受け取り中の操作ロック。読み込み中表示(loadingOverlay)は他の処理でも出し入れされるため、
+     受け取りと紐づけが終わるまで確実に操作を止められるよう、専用の覆いを使う。 */
+  function blockImportKeys(e) { e.preventDefault(); e.stopPropagation(); }
+  function lockForImport(text) {
+    let el = document.getElementById('importLock');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'importLock';
+      el.className = 'loading-overlay';
+      el.setAttribute('role', 'alert');
+      el.setAttribute('aria-busy', 'true');
+      el.innerHTML = '<div class="spinner"></div><span></span>';
+      document.body.appendChild(el);
+    }
+    el.querySelector('span').textContent = text;
+    el.classList.add('open');
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    window.addEventListener('keydown', blockImportKeys, true);
+  }
+  function unlockImport() {
+    const el = document.getElementById('importLock');
+    if (el) el.classList.remove('open');
+    window.removeEventListener('keydown', blockImportKeys, true);
+  }
+
+  /* Stillmange の漫画の元になった画像(ベース画像)と同じ投稿を探し、「参考にした投稿作品」に選ぶ。
+     探し方は Stillmotion の「元になった画像作品」と同じ(プロンプト+シードの一致。差分・子作品も対象で、選ぶのは親の作品)。
+     ベース画像の生成情報(parameters)は、この画面で画像を投稿したときと同じ parseGenerationInfo で読む。 */
+  function selectStillmangeReference(post) {
+    selectedReferenceId = post.id;
+    renderReferenceDisplay();
+    (post.tags || []).forEach(function (t) { if (!selectedTags.includes(t)) selectedTags.push(t); });
+    renderChips();
+    const titleEl = document.getElementById('titleInput');
+    if (titleEl && !titleEl.value.trim()) titleEl.value = post.title || '';
+  }
+
+  async function autoSelectStillmangeReference(base) {
+    if (!base || selectedReferenceId) return '';
+    let src = null;
+    if (base.raw) {
+      const info = parseGenerationInfo(base.raw);
+      src = { prompt: info.prompt, seed: info.params ? info.params['Seed'] : '' };
+    } else if (base.prompt) {
+      src = { prompt: base.prompt, seed: base.seed };
+    }
+    if (!src || !normalizeSourcePrompt(src.prompt)) return '';
+    let found = findStillmotionSourcePost(src, restStageLoaded);
+    for (let i = 0; !found.post && !restStageLoaded && i < 120; i++) {
+      await new Promise(function (r) { setTimeout(r, 500); });
+      found = findStillmotionSourcePost(src, restStageLoaded);
+    }
+    if (!found.post || selectedReferenceId || currentPostMode() !== 'image') return '';
+    selectStillmangeReference(found.post);
+    const title = found.post.title || '(無題)';
+    return found.count > 1
+      ? '参考にした投稿作品は、同じプロンプトとシードの作品が ' + found.count + ' 件あったため、いちばん新しい「' + title + '」を選びました。'
+      : '元になった画像の作品「' + title + '」を、参考にした投稿作品に自動で選びました。';
+  }
+
   // ログイン画面を出している間、受け取り待ちのキーを覚えておく(ログイン後の proceedToApp で再開する)
   let stillmotionPendingKey = null;
   let stillmotionPendingKind = 'stillmotion';
@@ -7182,6 +7243,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       showLoginGate({ message: kind === 'stillmange' ? 'Stillmange から受け取った漫画を投稿するには、ログインが必要です。' : 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
       return;
     }
+    lockForImport(kind === 'stillmange'
+      ? 'Stillmange から受け取った漫画を読み込み、元になった作品を探しています…'
+      : 'Stillmotion から受け取った動画を読み込み、元になった画像作品を探しています…');
+    try {
+      await receiveImport(kind, key);
+    } finally {
+      unlockImport();
+    }
+  }
+
+  async function receiveImport(kind, key) {
     let record = null;
     try {
       record = await stillmotionStoreDo('readonly', function (st) { return st.get(key); });
@@ -7238,9 +7310,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       await addVariantFiles(files.slice(1));
     }
     stillmotionImportKey = key;
-    showStillmotionNotice('Stillmange から漫画ページ(□1)と、コマの画像 ' + (files.length - 1) + ' 枚(□2〜)を受け取りました。'
-      + '各画像の生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。');
+    const baseNotice = 'Stillmange から漫画ページ(□1)と、コマの画像 ' + (files.length - 1) + ' 枚(□2〜)を受け取りました。'
+      + '各画像の生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。';
+    showStillmotionNotice(baseNotice);
     cleanupStillmotionRecords(key);
+    const refNote = await autoSelectStillmangeReference(record.meta && record.meta.base);
+    if (refNote && stillmotionImportKey === key) showStillmotionNotice(baseNotice + ' ' + refNote);
   }
 
   // 投稿が済んだら受け取ったデータを消す(submit の成功時に呼ぶ)
