@@ -8366,6 +8366,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ブラウザ上で1つのファイルに組み立ててから再生する。
      ブラウザから直接Driveを fetch できないため(CORS)、GASを中継にしている。 */
   const VIDEO_HQ_PARALLEL = 3;          // 同時に取りに行くチャンク数
+  const VIDEO_HQ_CHUNK = 4 * 1024 * 1024;   // 1回に要求する量。Code.gs の VIDEO_CHUNK_BYTES と合わせる
   let hqObjectUrl = '';                 // いま再生中のblob URL(閉じるときに解放する)
   let hqAbort = null;                   // 取得中の中止フラグ
 
@@ -8375,8 +8376,37 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (hqObjectUrl) { try { URL.revokeObjectURL(hqObjectUrl); } catch (e) {} hqObjectUrl = ''; }
   }
 
-  async function fetchVideoChunk(fileId, offset) {
-    const r = await postAction({ action: 'videoChunk', fileId: fileId, offset: offset });
+  /* チャンクを1つ取り寄せる。onBytes を渡すと、応答が届いている途中でも
+     受信済みのバイト数を逐次知らせる。これが無いと、割合はチャンクが1つ
+     届くたびにしか動かず、1チャンクで収まる動画では一度も動かないまま終わる。
+     応答を細切れに読めない環境では、まとめて読む従来のやり方に自動で下がる。 */
+  async function fetchVideoChunk(fileId, offset, length, onBytes) {
+    const payload = { action: 'videoChunk', fileId: fileId, offset: offset };
+    if (length) payload.length = length;
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    let r;
+    if (onBytes && res.body && res.body.getReader) {
+      const reader = res.body.getReader();
+      const chunks = [];
+      let total = 0;
+      for (;;) {
+        const step = await reader.read();
+        if (step.done) break;
+        chunks.push(step.value);
+        total += step.value.length;
+        onBytes(step.value.length);
+      }
+      const all = new Uint8Array(total);
+      let at = 0;
+      chunks.forEach(function (c) { all.set(c, at); at += c.length; });
+      r = JSON.parse(new TextDecoder().decode(all));
+    } else {
+      r = await res.json();
+    }
     if (!r || !r.success) throw new Error((r && r.error) || '動画を読み出せませんでした');
     return r;
   }
@@ -8403,40 +8433,87 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const setLabel = function (t) { if (label) label.textContent = t; };
 
     try {
-      // 1回目で総サイズが分かるので、残りは位置を決めて並行して取りに行く
-      const first = await fetchVideoChunk(fileId, 0);
+      /* 割合の出し方:
+         got    = 受け取り終えたチャンクの合計バイト数(確定値)
+         flying = まだ届いている途中の応答の受信量(base64なので 3/4 を掛けて元のバイト数に直す)
+         この2つを足して出すので、チャンクが1つしか無い動画でも割合が動く。
+         総サイズが分かる前に呼ばれることがあるので、その間は何も出さない。
+         ※ これらは下の取得開始より先に宣言しておくこと。取得の進捗通知は
+            すぐに動き出すため、後ろで宣言すると参照できずに落ちる。 */
+      let size = 0;
+      let got = 0;
+      let flying = 0;
+      let painted = -1;
+      const setPct = function () {
+        if (!size) return;
+        const pct = Math.max(0, Math.min(100, Math.floor((got + flying * 0.75) / size * 100)));
+        if (pct === painted) return;     // 同じ値での書き換えを省く
+        painted = pct;
+        setLabel('読み込み中... ' + pct + '%');
+      };
+      const onBytes = function (n) { flying += n; setPct(); };
+
+      /* 総サイズを「1バイトだけ要求する軽い問い合わせ」で先に確かめる。
+         1つ目のチャンクが返るまで待つと、それまで総量が分からず割合を出せないため、
+         待ち時間の前半がずっと「読み込み中...」のままになってしまう
+         (1チャンクで収まる動画に至っては、割合が一度も表示されないまま終わっていた)。
+         本体の1つ目と同時に投げるので、この問い合わせで待ち時間は増えない。 */
+      let firstFlew = 0;
+      const firstReq = fetchVideoChunk(fileId, 0, VIDEO_HQ_CHUNK,
+        function (n) { firstFlew += n; onBytes(n); });
+      firstReq.catch(function () {});   // 下で await するまでの未処理拒否を抑える
+      const info = await fetchVideoChunk(fileId, 0, 1);
       if (token.cancelled) return;
-      const size = Number(first.size) || 0;
-      const step = Number(first.length) || 0;
-      if (!size || !step) throw new Error('動画のサイズを取得できませんでした');
+      size = Number(info.size) || 0;
+      if (!size) throw new Error('動画のサイズを取得できませんでした');
+      const mime = info.mime || 'video/mp4';
+      setPct();   // 総量が分かった時点で 0% を出しておく
 
-      const parts = [{ offset: 0, bytes: base64ToBytes(first.base64) }];
-      let got = step;
-      setLabel('読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
-
+      const parts = [];
       const offsets = [];
-      for (let o = step; o < size; o += step) offsets.push(o);
+      for (let o = VIDEO_HQ_CHUNK; o < size; o += VIDEO_HQ_CHUNK) offsets.push(o);
 
       let cursor = 0;
       async function worker() {
         while (cursor < offsets.length && !token.cancelled) {
           const mine = offsets[cursor++];
-          const r = await fetchVideoChunk(fileId, mine);
+          let mineFlew = 0;
+          const r = await fetchVideoChunk(fileId, mine, VIDEO_HQ_CHUNK,
+            function (n) { mineFlew += n; onBytes(n); });
           if (token.cancelled) return;
           parts.push({ offset: mine, bytes: base64ToBytes(r.base64) });
+          // 受信中として数えた分を取り下げ、確定値へ移す(二重に数えないため)
+          flying -= mineFlew;
           got += Number(r.length) || 0;
-          setLabel('読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
+          setPct();
         }
       }
       const workers = [];
       for (let i = 0; i < Math.min(VIDEO_HQ_PARALLEL, offsets.length); i++) workers.push(worker());
+
+      const first = await firstReq;
+      if (token.cancelled) return;
+      parts.push({ offset: 0, bytes: base64ToBytes(first.base64) });
+      flying -= firstFlew;
+      got += Number(first.length) || 0;
+      setPct();
+
       await Promise.all(workers);
       if (token.cancelled) return;
 
       // 並行取得なので到着順はばらばら。位置順に並べ直してから1つにまとめる。
       parts.sort(function (a, b) { return a.offset - b.offset; });
-      const blob = new Blob(parts.map(function (p) { return p.bytes; }),
-        { type: first.mime || 'video/mp4' });
+      /* 1回に返る量はサーバー側の上限で決まるので、こちらの VIDEO_HQ_CHUNK と
+         食い違うと歯抜けのまま繋いでしまい、壊れた動画を再生することになる。
+         隙間・重なり・総量を検算し、合わないときは組み立てずに従来の再生へ逃がす。 */
+      let pos = 0;
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i].offset !== pos) throw new Error('動画のデータが揃いませんでした');
+        pos += parts[i].bytes.length;
+      }
+      if (pos !== size) throw new Error('動画のデータが揃いませんでした');
+
+      const blob = new Blob(parts.map(function (p) { return p.bytes; }), { type: mime });
 
       if (hqObjectUrl) { try { URL.revokeObjectURL(hqObjectUrl); } catch (e) {} }
       hqObjectUrl = URL.createObjectURL(blob);
