@@ -8355,7 +8355,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const id = driveFileIdFromUrl(url);
     if (!id) return '<div class="value">(動画を表示できません)</div>';
     const inner = options.videoHighQuality
-      ? '<div class="video-loading"><div class="spinner"></div><span>読み込み中...</span></div>'
+      ? '<div class="video-loading"><div class="spinner"></div><span>準備中...</span></div>'
       : videoStreamHtml(id);
     return '<div class="video-frame" data-fileid="' + escapeHtml(id) + '">' + inner + '</div>';
   }
@@ -8367,13 +8367,45 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ブラウザから直接Driveを fetch できないため(CORS)、GASを中継にしている。 */
   const VIDEO_HQ_PARALLEL = 3;          // 同時に取りに行くチャンク数
   const VIDEO_HQ_CHUNK = 4 * 1024 * 1024;   // 1回に要求する量。Code.gs の VIDEO_CHUNK_BYTES と合わせる
-  let hqObjectUrl = '';                 // いま再生中のblob URL(閉じるときに解放する)
-  let hqAbort = null;                   // 取得中の中止フラグ
+  /* いま扱っている1本の状態。モーダルは開いたまま描き直されることがある
+     (コメント等を背後で取得し終えたとき backfillDetail が openModal をもう一度呼ぶ)。
+     描き直しのたびに取得をやり直すと、待ち時間が0%から振り出しに戻るうえ、
+     前の取得が裏で走り続けて、終わった側が再生中のblob URLを解放してしまう。
+     そこで同じ動画なら、取得中は続きを待ち、取得済みならそのblobをそのまま使う。
+       fileId   … 対象の動画ファイルID
+       token    … { cancelled } 取得を止めるための目印
+       url      … 組み立て済みのblob URL(未完了なら '')
+       failed   … 高画質を諦めて従来の再生にしたか
+       lastText … 最後に出した表示(描き直した枠にすぐ同じ表示を出すため) */
+  let hq = null;
 
   function releaseHqVideo() {
-    if (hqAbort) hqAbort.cancelled = true;
-    hqAbort = null;
-    if (hqObjectUrl) { try { URL.revokeObjectURL(hqObjectUrl); } catch (e) {} hqObjectUrl = ''; }
+    if (!hq) return;
+    hq.token.cancelled = true;
+    if (hq.url) { try { URL.revokeObjectURL(hq.url); } catch (e) {} }
+    hq = null;
+  }
+
+  /* 表示中の枠を毎回探し直す。描き直しで枠が別物に入れ替わっても、
+     取得の続きや結果が新しい枠に届くようにするため。 */
+  function hqFrameFor(fileId) {
+    const frames = modalBody.querySelectorAll('.video-frame');
+    for (let i = 0; i < frames.length; i++) {
+      if (frames[i].dataset.fileid === fileId) return frames[i];
+    }
+    return null;
+  }
+
+  function mountHqVideo(frame, url) {
+    frame.innerHTML = '';
+    const v = document.createElement('video');
+    v.className = 'video-native';
+    v.src = url;
+    v.loop = true; v.muted = true; v.controls = true; v.playsInline = true;
+    v.setAttribute('playsinline', '');
+    frame.appendChild(v);
+    const rp = v.play();
+    if (rp && rp.catch) rp.catch(function () {});
   }
 
   /* チャンクを1つ取り寄せる。onBytes を渡すと、応答が届いている途中でも
@@ -8383,6 +8415,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   async function fetchVideoChunk(fileId, offset, length, onBytes) {
     const payload = { action: 'videoChunk', fileId: fileId, offset: offset };
     if (length) payload.length = length;
+    // 一覧の取得と同じく、ログイン画面が有効なときは認証済みでないと読み出せない
+    if (siteAuthToken) payload.token = siteAuthToken;
     const res = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -8426,18 +8460,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     wireNativeVideo(frame);
   }
 
-  async function playVideoInHighQuality(frame, fileId) {
+  async function playVideoInHighQuality(fileId) {
     const token = { cancelled: false };
-    hqAbort = token;
-    const label = frame.querySelector('.video-loading span');
-    const setLabel = function (t) { if (label) label.textContent = t; };
+    const me = { fileId: fileId, token: token, url: '', failed: false, lastText: '準備中...' };
+    hq = me;
+    const setLabel = function (t) {
+      me.lastText = t;
+      const f = hqFrameFor(fileId);
+      const label = f && f.querySelector('.video-loading span');
+      if (label) label.textContent = t;
+    };
 
     try {
       /* 割合の出し方:
          got    = 受け取り終えたチャンクの合計バイト数(確定値)
          flying = まだ届いている途中の応答の受信量(base64なので 3/4 を掛けて元のバイト数に直す)
          この2つを足して出すので、チャンクが1つしか無い動画でも割合が動く。
-         総サイズが分かる前に呼ばれることがあるので、その間は何も出さない。
+         総サイズが分かるまでは「準備中...」のまま(GASの起動とファイルの確認を待っている段階で、
+         動画の中身はまだ数えられないため)。
          ※ これらは下の取得開始より先に宣言しておくこと。取得の進捗通知は
             すぐに動き出すため、後ろで宣言すると参照できずに落ちる。 */
       let size = 0;
@@ -8445,7 +8485,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       let flying = 0;
       let painted = -1;
       const setPct = function () {
-        if (!size) return;
+        if (!size || token.cancelled) return;
         const pct = Math.max(0, Math.min(100, Math.floor((got + flying * 0.75) / size * 100)));
         if (pct === painted) return;     // 同じ値での書き換えを省く
         painted = pct;
@@ -8454,9 +8494,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const onBytes = function (n) { flying += n; setPct(); };
 
       /* 総サイズを「1バイトだけ要求する軽い問い合わせ」で先に確かめる。
-         1つ目のチャンクが返るまで待つと、それまで総量が分からず割合を出せないため、
-         待ち時間の前半がずっと「読み込み中...」のままになってしまう
-         (1チャンクで収まる動画に至っては、割合が一度も表示されないまま終わっていた)。
+         1つ目のチャンクが返るまで待つと、それまで総量が分からず割合を出せないため。
          本体の1つ目と同時に投げるので、この問い合わせで待ち時間は増えない。 */
       let firstFlew = 0;
       const firstReq = fetchVideoChunk(fileId, 0, VIDEO_HQ_CHUNK,
@@ -8489,7 +8527,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         }
       }
       const workers = [];
-      for (let i = 0; i < Math.min(VIDEO_HQ_PARALLEL, offsets.length); i++) workers.push(worker());
+      for (let i = 0; i < Math.min(VIDEO_HQ_PARALLEL, offsets.length); i++) {
+        const w = worker();
+        w.catch(function () {});   // 1つ目を待っている間に失敗しても未処理拒否にしない(下の Promise.all で拾う)
+        workers.push(w);
+      }
 
       const first = await firstReq;
       if (token.cancelled) return;
@@ -8513,28 +8555,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       }
       if (pos !== size) throw new Error('動画のデータが揃いませんでした');
 
-      const blob = new Blob(parts.map(function (p) { return p.bytes; }), { type: mime });
-
-      if (hqObjectUrl) { try { URL.revokeObjectURL(hqObjectUrl); } catch (e) {} }
-      hqObjectUrl = URL.createObjectURL(blob);
-
-      frame.innerHTML = '';
-      const v = document.createElement('video');
-      v.className = 'video-native';
-      v.src = hqObjectUrl;
-      v.loop = true; v.muted = true; v.controls = true; v.playsInline = true;
-      v.setAttribute('playsinline', '');
-      frame.appendChild(v);
-      const rp = v.play();
-      if (rp && rp.catch) rp.catch(function () {});
+      me.url = URL.createObjectURL(new Blob(parts.map(function (p) { return p.bytes; }), { type: mime }));
+      const f = hqFrameFor(fileId);
+      if (f) mountHqVideo(f, me.url);
     } catch (err) {
-      // 取得できなかった場合は黙って従来の再生に切り替える(見られないより低画質のほうがよい)
-      if (!token.cancelled) {
+      const byUser = token.cancelled;
+      // 失敗したら残りのチャンク取得も止める(裏で動画の残りを取り続けないように)
+      token.cancelled = true;
+      if (!byUser) {
+        // 取得できなかった場合は黙って従来の再生に切り替える(見られないより低画質のほうがよい)
         console.warn('高画質再生に失敗したため従来の再生に切り替えます:', err);
-        fallbackToStreamingVideo(frame, fileId);
+        me.failed = true;
+        const f = hqFrameFor(fileId);
+        if (f) fallbackToStreamingVideo(f, fileId);
       }
-    } finally {
-      if (hqAbort === token) hqAbort = null;
     }
   }
 
@@ -8571,12 +8605,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      高画質(実体を取り寄せ)か、従来のDrive直接再生かを選ぶ。 */
   function startVideoPlayback(root) {
     const frame = root.querySelector('.video-frame');
-    if (!frame) return;
-    if (frame.querySelector('.video-loading')) {
-      playVideoInHighQuality(frame, frame.dataset.fileid || '');
-    } else {
-      wireNativeVideo(frame);
+    // 動画ではない投稿に切り替わったら、前の動画の取得は止めて解放する
+    if (!frame) { releaseHqVideo(); return; }
+    const fileId = frame.dataset.fileid || '';
+    if (!frame.querySelector('.video-loading')) { releaseHqVideo(); wireNativeVideo(frame); return; }
+
+    // 同じ動画の描き直し: やり直さずに、いまの状態を新しい枠へ引き継ぐ
+    if (hq && hq.fileId === fileId) {
+      if (hq.url) { mountHqVideo(frame, hq.url); return; }
+      if (hq.failed) { fallbackToStreamingVideo(frame, fileId); return; }
+      if (!hq.token.cancelled) {
+        const label = frame.querySelector('.video-loading span');
+        if (label) label.textContent = hq.lastText;
+        return;   // 取得中の処理が、終わったときにこの枠を見つけて再生する
+      }
     }
+    releaseHqVideo();
+    playVideoInHighQuality(fileId);
   }
 
   function openImageDetail(idOrShareId) {
@@ -10102,12 +10147,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         payload.variants = variantList;
       }
 
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-      const result = await res.json();
+      const result = await postAction(payload);
       if (!result.success) {
         throw new Error(result.error || '不明なエラー');
       }
@@ -11329,13 +11369,37 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (ov && ov.classList.contains('open')) layoutPanelGridFor(document.getElementById('variantPanelList'));
   });
 
+  /* GASへの送信はすべてここを通す(直接 fetch しない)。
+     ログイン画面が有効なときサーバーは、ログイン操作以外の送信に認証トークンを求めるため、
+     ログイン済みなら毎回トークンを付ける。呼び出し元の payload は書き換えない。
+     サーバーが 'login' を返したら(管理者が途中でサイトのパスワードを変えた等で
+     トークンが無効になった)、分かる言葉に置き換えて返し、ログイン画面を出し直す。 */
   async function postAction(payload) {
+    const body = siteAuthToken ? Object.assign({}, payload, { token: siteAuthToken }) : payload;
     const res = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(body)
     });
-    return res.json();
+    const r = await res.json();
+    if (r && r.success === false && r.error === 'login') {
+      r.error = 'ログインの有効期限が切れました。ログインし直してから、もう一度お試しください。';
+      requestRelogin();
+    }
+    return r;
+  }
+
+  /* 使っている途中でトークンが無効になったときのログインし直し。
+     ログイン画面は画面全体を覆うだけで、下の画面(書きかけの投稿フォーム等)はそのまま残る。
+     起動時と違って一覧の読み込み(proceedToApp)はやり直さず、トークンを差し替えて閉じるだけにする。 */
+  let reloginPending = false;
+  function requestRelogin() {
+    if (reloginPending) return;
+    reloginPending = true;
+    siteAuthToken = '';
+    try { localStorage.removeItem('pr_login_pw'); } catch (e) {}
+    document.getElementById('loginGate').classList.remove('hidden');
+    showLoginGate({ message: 'ログインの有効期限が切れました。もう一度ログインしてください(入力中の内容はそのまま残ります)。' });
   }
 
   /* ===== 大きい画像/動画の分割アップロード =====
@@ -13270,12 +13334,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       } else if (options.ownerEdit) {
         payload.editPassword = document.getElementById('pEditPwInput').value;
       }
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-      const result = await res.json();
+      const result = await postAction(payload);
       if (!result.success) throw new Error(result.error || '不明なエラー');
 
       pStatus.textContent = editing ? '保存しました' : '投稿しました';
@@ -13778,12 +13837,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (options.ownerEdit) payload.editPassword = document.getElementById('rEditPwInput').value;
       }
 
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-      const result = await res.json();
+      const result = await postAction(payload);
       if (!result.success) throw new Error(result.error || '不明なエラー');
 
       rStatus.textContent = editing ? '保存しました' : '投稿しました';
@@ -16622,6 +16676,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (r && r.success) {
         siteAuthToken = r.token || '';
         localStorage.setItem('pr_login_pw', pw);
+        if (reloginPending) {
+          // 使っている途中のログインし直し: 画面はそのままで、ログイン画面を閉じるだけ
+          reloginPending = false;
+          input.value = '';
+          checking.style.display = 'none';
+          card.style.display = '';
+          document.getElementById('loginGate').classList.add('hidden');
+          if (stillmotionPendingKey !== null) importFromStillmotion();
+          return;
+        }
         proceedToApp();
       } else {
         checking.style.display = 'none';
