@@ -1483,15 +1483,15 @@
   .modal-image .video-frame{ position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; }
   .modal-image .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
   .modal-image .video-frame video{ position:absolute; inset:0; width:100%; height:100%; border:0; background:#000; object-fit:contain; }
-  /* 高画質再生のボタン行。動画のすぐ下に置き、状態(進捗・結果)は右隣に短く出す。 */
-  .modal-image .video-hq-bar{
-    display:flex; align-items:center; justify-content:center; gap:10px;
-    margin-top:8px; flex-wrap:wrap; text-align:left;
+  /* 高画質再生の読み込み中表示。プレビュー枠(黒地)の中央に、他の画面と同じ
+     グルグル(.spinner)とテキストを重ねる。枠自体は 16/9 で確保済みなので、
+     読み込み中にモーダルの高さが変わることはない。 */
+  .modal-image .video-frame .video-loading{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:12px;
+    color:#e8e8e8; font-size:13px; text-align:center; padding:12px;
   }
-  .modal-image .video-hq-btn{ font-weight:700; }
-  .modal-image .video-hq-btn.is-loading{ color: var(--accent); border-color: var(--accent); }
-  .modal-image .video-hq-btn:disabled{ opacity:.55; cursor:default; }
-  .modal-image .video-hq-note{ font-size:12px; color: var(--ink-dim); overflow-wrap:anywhere; }
+  .modal-image .video-frame .video-loading .spinner{ border-color: rgba(255,255,255,.28); border-top-color: var(--accent); }
   /* ---- ノベルゲーム: 種別表示 ---- */
   body.opt-no-novel .novel-only{ display:none !important; }
 
@@ -6295,7 +6295,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
-  const DEFAULT_OPTIONS = { notifyBrowse: true, notifyVideo: true, notifyNovel: true, notifyPrompt: true, notifyRequest: true, notifyFix: true, notifyBoard: true, like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, research: true, dislikeThreshold: 10 };
+  const DEFAULT_OPTIONS = { notifyBrowse: true, notifyVideo: true, notifyNovel: true, notifyPrompt: true, notifyRequest: true, notifyFix: true, notifyBoard: true, like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, research: true, videoHighQuality: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
   let selectedCategory = ''; // 投稿フォーム用: 作品の属性(版権/オリジナル/その他)
@@ -8341,22 +8341,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       ' data-fileid="' + escapeHtml(id) + '" data-size="w1000" data-retry="0">';
   }
 
+  /* 動画の枠。オプション「動画の高画質再生」がオンのときは、まず読み込み中の表示だけを
+     出しておき(実体の取得はモーダルを開いたあとで始める)、オフのときは従来どおり
+     Driveから直接ストリーミング再生する。
+     高画質側が失敗したときは、この従来の再生へ切り替える(videoStreamHtml を使い回す)。 */
+  function videoStreamHtml(id) {
+    const srcs = videoStreamUrls(id);
+    const preview = 'https://drive.google.com/file/d/' + id + '/preview';
+    return '<video class="video-native" src="' + escapeHtml(srcs[0]) + '" data-fileid="' + escapeHtml(id) + '" data-srcidx="0" data-fallback="' + escapeHtml(preview) + '" loop muted autoplay controls playsinline preload="auto"></video>';
+  }
+
   function videoPlayerHtml(url) {
     const id = driveFileIdFromUrl(url);
     if (!id) return '<div class="value">(動画を表示できません)</div>';
-    const srcs = videoStreamUrls(id);
-    const preview = 'https://drive.google.com/file/d/' + id + '/preview';
-    /* 通常はこれまでどおりDriveから直接ストリーミング再生する。
-       大きい動画はDriveが低画質版に落としてしまうため、その場で原寸を取り直せる
-       「高画質再生」ボタンを添える(押したときだけ時間をかけて取得する)。 */
-    return '<div class="video-frame" data-fileid="' + escapeHtml(id) + '">' +
-      '<video class="video-native" src="' + escapeHtml(srcs[0]) + '" data-fileid="' + escapeHtml(id) + '" data-srcidx="0" data-fallback="' + escapeHtml(preview) + '" loop muted autoplay controls playsinline preload="auto"></video>' +
-      '</div>' +
-      '<div class="video-hq-bar">' +
-      '<button type="button" class="btn-ghost video-hq-btn" data-fileid="' + escapeHtml(id) + '"' +
-      ' title="一時的にダウンロードして高画質版で再生します(サイズによっては時間がかかります)">高画質再生</button>' +
-      '<span class="video-hq-note" aria-live="polite"></span>' +
-      '</div>';
+    const inner = options.videoHighQuality
+      ? '<div class="video-loading"><div class="spinner"></div><span>高画質で読み込み中...</span></div>'
+      : videoStreamHtml(id);
+    return '<div class="video-frame" data-fileid="' + escapeHtml(id) + '">' + inner + '</div>';
   }
 
   /* ===== 高画質再生(動画の実体を取り寄せてから再生する) =====
@@ -8387,13 +8388,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return out;
   }
 
-  async function playVideoInHighQuality(frame, btn, note, fileId) {
+  /* 高画質側が使えないときに、従来のDrive直接再生へ切り替える。
+     オプションがオフのときと同じ状態にするだけなので、その後のフォールバック
+     (直リンク候補を順に試し、最後は /preview iframe)は既存の仕組みがそのまま働く。 */
+  function fallbackToStreamingVideo(frame, fileId) {
+    frame.innerHTML = videoStreamHtml(fileId);
+    wireNativeVideo(frame);
+  }
+
+  async function playVideoInHighQuality(frame, fileId) {
     const token = { cancelled: false };
     hqAbort = token;
-    const setNote = function (t) { if (note) note.textContent = t; };
-    btn.textContent = '中止';
-    btn.classList.add('is-loading');
-    setNote('動画を取得しています…');
+    const label = frame.querySelector('.video-loading span');
+    const setLabel = function (t) { if (label) label.textContent = t; };
 
     try {
       // 1回目で総サイズが分かるので、残りは位置を決めて並行して取りに行く
@@ -8405,7 +8412,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       const parts = [{ offset: 0, bytes: base64ToBytes(first.base64) }];
       let got = step;
-      setNote(Math.floor(got / size * 100) + '%');
+      setLabel('高画質で読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
 
       const offsets = [];
       for (let o = step; o < size; o += step) offsets.push(o);
@@ -8418,7 +8425,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           if (token.cancelled) return;
           parts.push({ offset: mine, bytes: base64ToBytes(r.base64) });
           got += Number(r.length) || 0;
-          setNote(Math.min(100, Math.floor(got / size * 100)) + '%');
+          setLabel('高画質で読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
         }
       }
       const workers = [];
@@ -8434,7 +8441,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (hqObjectUrl) { try { URL.revokeObjectURL(hqObjectUrl); } catch (e) {} }
       hqObjectUrl = URL.createObjectURL(blob);
 
-      // iframeに落ちている場合もあるので、中身ごと作り直す
       frame.innerHTML = '';
       const v = document.createElement('video');
       v.className = 'video-native';
@@ -8444,38 +8450,56 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       frame.appendChild(v);
       const rp = v.play();
       if (rp && rp.catch) rp.catch(function () {});
-
-      setNote('高画質で再生中');
-      btn.textContent = '高画質再生';
-      btn.classList.remove('is-loading');
-      btn.disabled = true;
     } catch (err) {
+      // 取得できなかった場合は黙って従来の再生に切り替える(見られないより低画質のほうがよい)
       if (!token.cancelled) {
-        setNote('取得できませんでした: ' + (err && err.message ? err.message : err));
-        btn.textContent = '高画質再生';
-        btn.classList.remove('is-loading');
+        console.warn('高画質再生に失敗したため従来の再生に切り替えます:', err);
+        fallbackToStreamingVideo(frame, fileId);
       }
     } finally {
       if (hqAbort === token) hqAbort = null;
     }
   }
 
-  function wireHighQualityVideo(root) {
-    const btn = root.querySelector('.video-hq-btn');
-    const frame = root.querySelector('.video-frame');
-    if (!btn || !frame) return;
-    const note = root.querySelector('.video-hq-note');
-    btn.addEventListener('click', function () {
-      if (hqAbort) {   // 取得中にもう一度押したら中止
-        hqAbort.cancelled = true;
-        hqAbort = null;
-        btn.textContent = '高画質再生';
-        btn.classList.remove('is-loading');
-        if (note) note.textContent = '中止しました';
+  /* Drive直接再生の <video> に、候補を順に試すフォールバックとループの保険を付ける。
+     最初の描画でも、高画質から切り替わったときでも同じ処理を使う。 */
+  function wireNativeVideo(root) {
+    const nativeVideo = root.querySelector('.video-native');
+    if (!nativeVideo) return;
+    nativeVideo.addEventListener('error', function () {
+      const srcs = videoStreamUrls(nativeVideo.dataset.fileid || '');
+      let idx = Number(nativeVideo.dataset.srcidx || '0');
+      if (idx + 1 < srcs.length) {
+        idx += 1;
+        nativeVideo.dataset.srcidx = String(idx);
+        nativeVideo.src = srcs[idx];
+        nativeVideo.load();
+        const rp = nativeVideo.play();
+        if (rp && rp.catch) rp.catch(function () {});
         return;
       }
-      playVideoInHighQuality(frame, btn, note, btn.dataset.fileid || '');
+      const fb = nativeVideo.dataset.fallback;
+      const frame = nativeVideo.closest('.video-frame');
+      if (frame && fb) frame.innerHTML = '<iframe src="' + fb + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>';
     });
+    // loop属性が効かない配信でも確実に繰り返すための保険
+    nativeVideo.addEventListener('ended', function () {
+      try { nativeVideo.currentTime = 0; const rp = nativeVideo.play(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {}
+    });
+    const tryPlay = nativeVideo.play();
+    if (tryPlay && tryPlay.catch) tryPlay.catch(function () {});
+  }
+
+  /* モーダルを開いたあとの動画の立ち上げ。オプションに応じて、
+     高画質(実体を取り寄せ)か、従来のDrive直接再生かを選ぶ。 */
+  function startVideoPlayback(root) {
+    const frame = root.querySelector('.video-frame');
+    if (!frame) return;
+    if (frame.querySelector('.video-loading')) {
+      playVideoInHighQuality(frame, frame.dataset.fileid || '');
+    } else {
+      wireNativeVideo(frame);
+    }
   }
 
   function openImageDetail(idOrShareId) {
@@ -10842,36 +10866,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
-    const nativeVideo = modalBody.querySelector('.video-native');
-    if (nativeVideo) {
-      nativeVideo.addEventListener('error', function () {
-        const srcs = videoStreamUrls(nativeVideo.dataset.fileid || '');
-        let idx = Number(nativeVideo.dataset.srcidx || '0');
-        if (idx + 1 < srcs.length) {
-          idx += 1;
-          nativeVideo.dataset.srcidx = String(idx);
-          nativeVideo.src = srcs[idx];
-          nativeVideo.load();
-          const rp = nativeVideo.play();
-          if (rp && rp.catch) rp.catch(function () {});
-          return;
-        }
-        const fb = nativeVideo.dataset.fallback;
-        const frame = nativeVideo.closest('.video-frame');
-        if (frame && fb) frame.innerHTML = '<iframe src="' + fb + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>';
-        // ここに落ちた＝Driveが変換した低画質版を流している状態。黙って劣化させず、
-        // 高画質で見直せることを伝える(この経路ではループもしない)。
-        const note = modalBody.querySelector('.video-hq-note');
-        if (note && !note.textContent) note.textContent = '低画質版で再生中です。「高画質再生」で原寸を読み込めます。';
-      });
-      // loop属性が効かない配信でも確実に繰り返すための保険
-      nativeVideo.addEventListener('ended', function () {
-        try { nativeVideo.currentTime = 0; const rp = nativeVideo.play(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {}
-      });
-      const tryPlay = nativeVideo.play();
-      if (tryPlay && tryPlay.catch) tryPlay.catch(function () {});
-    }
-    wireHighQualityVideo(modalBody);
+    startVideoPlayback(modalBody);
 
     // ベースにしたプロンプト例(カード一覧)。行の種類が prompt 固定なので直接 openPromptModal を使う。
     const baseWorks = document.getElementById('baseWorks');
@@ -15432,6 +15427,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     { key: 'fixRequest', group: 'post', label: '修正依頼機能', desc: 'オフにすると修正依頼タブ・投稿モード・紐づけ・「修正依頼作品も表示」を非表示にします(利用者からは機能の存在が見えません)' },
     { key: 'ownerEdit', group: 'post', label: '投稿者による編集', desc: 'オンにすると、投稿フォームに「編集用パスワード」欄が表示され、詳細画面には常に「編集」ボタンが表示されます(表示の統一のため)。「編集」ボタンを押すとパスワード入力画面が出て、投稿時に設定したパスワードを入力した人だけが編集できます。パスワードを設定していない投稿はボタンは出ますが、どの値を入力しても編集できません(オフのときは欄もボタンも表示されません)' },
     { key: 'inpaint', group: 'post', label: '修正後画像モード', desc: 'オンにすると、画像投稿フォームの右上に「修正後画像モード」トグルが表示されます。トグルを押すと、元画像からプロンプト・生成設定だけを読み取り、実際に投稿する画像には修正後(inpaint など)の画像を選べます(オフのときはトグルごと表示されません)' },
+    { key: 'videoHighQuality', group: 'site', label: '動画の高画質再生', desc: 'オンにすると、動画を開いたときに実体を読み込んでから再生します。Driveは大きい動画を低画質に変換して配信するため、オンのほうが元の画質で見られますが、読み込みが終わるまで数十秒かかることがあります。オフにすると従来どおりDriveから直接再生します(すぐ始まりますが、大きい動画は低画質になります)。オンでも読み込みに失敗した場合は自動で従来の再生に切り替わります' },
     { key: 'loginEnabled', group: 'site', label: 'ログイン画面', desc: 'オンにすると、サイトを開いたときにパスワード入力画面を表示します(変更は次回読み込みから反映)。パスワードや表示メッセージ・画像はadminシートで管理します' }
   ];
   const adminOptionsOverlay = document.getElementById('adminOptionsOverlay');
