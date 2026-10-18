@@ -1483,6 +1483,15 @@
   .modal-image .video-frame{ position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; }
   .modal-image .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
   .modal-image .video-frame video{ position:absolute; inset:0; width:100%; height:100%; border:0; background:#000; object-fit:contain; }
+  /* 高画質再生のボタン行。動画のすぐ下に置き、状態(進捗・結果)は右隣に短く出す。 */
+  .modal-image .video-hq-bar{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top:8px; flex-wrap:wrap; text-align:left;
+  }
+  .modal-image .video-hq-btn{ font-weight:700; }
+  .modal-image .video-hq-btn.is-loading{ color: var(--accent); border-color: var(--accent); }
+  .modal-image .video-hq-btn:disabled{ opacity:.55; cursor:default; }
+  .modal-image .video-hq-note{ font-size:12px; color: var(--ink-dim); overflow-wrap:anywhere; }
   /* ---- ノベルゲーム: 種別表示 ---- */
   body.opt-no-novel .novel-only{ display:none !important; }
 
@@ -8297,9 +8306,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 一覧から詳細を開く共通処理。ローカルに本文がある投稿はスピナー無しで即表示し、
   // rest未完了でコメント・関連がまだ無い場合だけ背後で補完してモーダルを更新する。
   function driveFileIdFromUrl(url) { const m = String(url || '').match(/[?&]id=([^&]+)/); return m ? m[1] : ''; }
+  /* 動画の再生元(優先順)。
+     Drive は一定サイズを超えるファイルに対し、バイトの代わりに
+     「ウイルススキャンできません」の確認ページ(HTML)を返す。<video> はそれを
+     読めずに error となり、最終的に /preview の iframe へ落ちていた。
+     iframe は Google が変換した低画質版を流すため、これが「大きい動画だけ
+     画質が著しく落ちる」原因になっていた。
+     `confirm=t` を付けると確認ページを飛ばして実体を返すので、これを先に試す。
+     付けない版も候補として残し、仕様変更で confirm が効かなくなっても
+     従来どおり再生できるようにしてある(小さいファイルは元々確認ページが出ない)。 */
   function videoStreamUrls(id) {
     return [
+      'https://drive.usercontent.google.com/download?id=' + id + '&export=download&confirm=t',
       'https://drive.usercontent.google.com/download?id=' + id + '&export=download',
+      'https://drive.google.com/uc?export=download&confirm=t&id=' + id,
       'https://drive.google.com/uc?export=download&id=' + id
     ];
   }
@@ -8326,7 +8346,136 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!id) return '<div class="value">(動画を表示できません)</div>';
     const srcs = videoStreamUrls(id);
     const preview = 'https://drive.google.com/file/d/' + id + '/preview';
-    return '<div class="video-frame"><video class="video-native" src="' + escapeHtml(srcs[0]) + '" data-fileid="' + escapeHtml(id) + '" data-srcidx="0" data-fallback="' + escapeHtml(preview) + '" loop muted autoplay controls playsinline preload="auto"></video></div>';
+    /* 通常はこれまでどおりDriveから直接ストリーミング再生する。
+       大きい動画はDriveが低画質版に落としてしまうため、その場で原寸を取り直せる
+       「高画質再生」ボタンを添える(押したときだけ時間をかけて取得する)。 */
+    return '<div class="video-frame" data-fileid="' + escapeHtml(id) + '">' +
+      '<video class="video-native" src="' + escapeHtml(srcs[0]) + '" data-fileid="' + escapeHtml(id) + '" data-srcidx="0" data-fallback="' + escapeHtml(preview) + '" loop muted autoplay controls playsinline preload="auto"></video>' +
+      '</div>' +
+      '<div class="video-hq-bar">' +
+      '<button type="button" class="btn-ghost video-hq-btn" data-fileid="' + escapeHtml(id) + '"' +
+      ' title="一時的にダウンロードして高画質版で再生します(サイズによっては時間がかかります)">高画質再生</button>' +
+      '<span class="video-hq-note" aria-live="polite"></span>' +
+      '</div>';
+  }
+
+  /* ===== 高画質再生(動画の実体を取り寄せてから再生する) =====
+     Driveの直リンクは、大きいファイルだと確認ページが返ってきて <video> が再生できず、
+     低画質の /preview iframe に落ちる。ここでは動画の実体をGAS経由で少しずつ受け取り、
+     ブラウザ上で1つのファイルに組み立ててから再生する。
+     ブラウザから直接Driveを fetch できないため(CORS)、GASを中継にしている。 */
+  const VIDEO_HQ_PARALLEL = 3;          // 同時に取りに行くチャンク数
+  let hqObjectUrl = '';                 // いま再生中のblob URL(閉じるときに解放する)
+  let hqAbort = null;                   // 取得中の中止フラグ
+
+  function releaseHqVideo() {
+    if (hqAbort) hqAbort.cancelled = true;
+    hqAbort = null;
+    if (hqObjectUrl) { try { URL.revokeObjectURL(hqObjectUrl); } catch (e) {} hqObjectUrl = ''; }
+  }
+
+  async function fetchVideoChunk(fileId, offset) {
+    const r = await postAction({ action: 'videoChunk', fileId: fileId, offset: offset });
+    if (!r || !r.success) throw new Error((r && r.error) || '動画を読み出せませんでした');
+    return r;
+  }
+
+  function base64ToBytes(b64) {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  async function playVideoInHighQuality(frame, btn, note, fileId) {
+    const token = { cancelled: false };
+    hqAbort = token;
+    const setNote = function (t) { if (note) note.textContent = t; };
+    btn.textContent = '中止';
+    btn.classList.add('is-loading');
+    setNote('動画を取得しています…');
+
+    try {
+      // 1回目で総サイズが分かるので、残りは位置を決めて並行して取りに行く
+      const first = await fetchVideoChunk(fileId, 0);
+      if (token.cancelled) return;
+      const size = Number(first.size) || 0;
+      const step = Number(first.length) || 0;
+      if (!size || !step) throw new Error('動画のサイズを取得できませんでした');
+
+      const parts = [{ offset: 0, bytes: base64ToBytes(first.base64) }];
+      let got = step;
+      setNote(Math.floor(got / size * 100) + '%');
+
+      const offsets = [];
+      for (let o = step; o < size; o += step) offsets.push(o);
+
+      let cursor = 0;
+      async function worker() {
+        while (cursor < offsets.length && !token.cancelled) {
+          const mine = offsets[cursor++];
+          const r = await fetchVideoChunk(fileId, mine);
+          if (token.cancelled) return;
+          parts.push({ offset: mine, bytes: base64ToBytes(r.base64) });
+          got += Number(r.length) || 0;
+          setNote(Math.min(100, Math.floor(got / size * 100)) + '%');
+        }
+      }
+      const workers = [];
+      for (let i = 0; i < Math.min(VIDEO_HQ_PARALLEL, offsets.length); i++) workers.push(worker());
+      await Promise.all(workers);
+      if (token.cancelled) return;
+
+      // 並行取得なので到着順はばらばら。位置順に並べ直してから1つにまとめる。
+      parts.sort(function (a, b) { return a.offset - b.offset; });
+      const blob = new Blob(parts.map(function (p) { return p.bytes; }),
+        { type: first.mime || 'video/mp4' });
+
+      if (hqObjectUrl) { try { URL.revokeObjectURL(hqObjectUrl); } catch (e) {} }
+      hqObjectUrl = URL.createObjectURL(blob);
+
+      // iframeに落ちている場合もあるので、中身ごと作り直す
+      frame.innerHTML = '';
+      const v = document.createElement('video');
+      v.className = 'video-native';
+      v.src = hqObjectUrl;
+      v.loop = true; v.muted = true; v.controls = true; v.playsInline = true;
+      v.setAttribute('playsinline', '');
+      frame.appendChild(v);
+      const rp = v.play();
+      if (rp && rp.catch) rp.catch(function () {});
+
+      setNote('高画質で再生中');
+      btn.textContent = '高画質再生';
+      btn.classList.remove('is-loading');
+      btn.disabled = true;
+    } catch (err) {
+      if (!token.cancelled) {
+        setNote('取得できませんでした: ' + (err && err.message ? err.message : err));
+        btn.textContent = '高画質再生';
+        btn.classList.remove('is-loading');
+      }
+    } finally {
+      if (hqAbort === token) hqAbort = null;
+    }
+  }
+
+  function wireHighQualityVideo(root) {
+    const btn = root.querySelector('.video-hq-btn');
+    const frame = root.querySelector('.video-frame');
+    if (!btn || !frame) return;
+    const note = root.querySelector('.video-hq-note');
+    btn.addEventListener('click', function () {
+      if (hqAbort) {   // 取得中にもう一度押したら中止
+        hqAbort.cancelled = true;
+        hqAbort = null;
+        btn.textContent = '高画質再生';
+        btn.classList.remove('is-loading');
+        if (note) note.textContent = '中止しました';
+        return;
+      }
+      playVideoInHighQuality(frame, btn, note, btn.dataset.fileid || '');
+    });
   }
 
   function openImageDetail(idOrShareId) {
@@ -10710,6 +10859,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const fb = nativeVideo.dataset.fallback;
         const frame = nativeVideo.closest('.video-frame');
         if (frame && fb) frame.innerHTML = '<iframe src="' + fb + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>';
+        // ここに落ちた＝Driveが変換した低画質版を流している状態。黙って劣化させず、
+        // 高画質で見直せることを伝える(この経路ではループもしない)。
+        const note = modalBody.querySelector('.video-hq-note');
+        if (note && !note.textContent) note.textContent = '低画質版で再生中です。「高画質再生」で原寸を読み込めます。';
       });
       // loop属性が効かない配信でも確実に繰り返すための保険
       nativeVideo.addEventListener('ended', function () {
@@ -10718,6 +10871,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const tryPlay = nativeVideo.play();
       if (tryPlay && tryPlay.catch) tryPlay.catch(function () {});
     }
+    wireHighQualityVideo(modalBody);
 
     // ベースにしたプロンプト例(カード一覧)。行の種類が prompt 固定なので直接 openPromptModal を使う。
     const baseWorks = document.getElementById('baseWorks');
@@ -10780,6 +10934,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function closeModal() {
     openDetailPostId = null;
     destroyActiveNovelPlayer();
+    releaseHqVideo();   // 高画質再生で確保した動画データを解放する(閉じたまま抱え込まない)
     modalOverlay.classList.remove('open');
     modalOverlay.classList.remove('has-post-nav');
     hideModalNav();
@@ -12232,7 +12387,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       console.error('CORS制限等により直接フェッチできなかったため、フォールバックダウンロードを実行します:', err);
       if (id) {
         const a = document.createElement('a');
-        a.href = 'https://drive.google.com/uc?export=download&id=' + id;
+        // confirm=t は、大きいファイルでDriveが挟む「ウイルススキャンできません」の
+        // 確認ページを飛ばすため。小さいファイルでは単に無視される。
+        a.href = 'https://drive.google.com/uc?export=download&confirm=t&id=' + id;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         a.download = filename;
