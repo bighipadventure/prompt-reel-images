@@ -8355,7 +8355,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const id = driveFileIdFromUrl(url);
     if (!id) return '<div class="value">(動画を表示できません)</div>';
     const inner = options.videoHighQuality
-      ? '<div class="video-loading"><div class="spinner"></div><span>高画質で読み込み中...</span></div>'
+      ? '<div class="video-loading"><div class="spinner"></div><span>読み込み中...</span></div>'
       : videoStreamHtml(id);
     return '<div class="video-frame" data-fileid="' + escapeHtml(id) + '">' + inner + '</div>';
   }
@@ -8412,7 +8412,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       const parts = [{ offset: 0, bytes: base64ToBytes(first.base64) }];
       let got = step;
-      setLabel('高画質で読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
+      setLabel('読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
 
       const offsets = [];
       for (let o = step; o < size; o += step) offsets.push(o);
@@ -8425,7 +8425,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           if (token.cancelled) return;
           parts.push({ offset: mine, bytes: base64ToBytes(r.base64) });
           got += Number(r.length) || 0;
-          setLabel('高画質で読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
+          setLabel('読み込み中... ' + Math.min(100, Math.floor(got / size * 100)) + '%');
         }
       }
       const workers = [];
