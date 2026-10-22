@@ -214,7 +214,7 @@
   }
   .preview-clear:hover{ color: var(--danger); border-color: var(--danger); }
   .dropzone .preview img{
-    max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line); cursor: zoom-in;
+    max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--line);
   }
 
   /* 入力欄の面は詳細モーダルの本文(.value)と同じ黒に揃える */
@@ -809,6 +809,11 @@
   .row-thumb .img-loader .spinner{ width:24px; height:24px; border-width:2px; }
   .modal-image img.img-pending{ display:none; }
   .modal-image .img-loader{ padding:80px 0; font-size:13px; gap:12px; }
+  .full-image-wrap img.img-pending + .img-loader{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
+    color: var(--ink-dim); font-family:'Noto Sans JP',sans-serif; font-size:13px; pointer-events:none;
+  }
+  .full-image-wrap img.img-pending{ display:none; }
 
   textarea.autogrow{ resize: none; }
   /* 自動で伸びるのでスクロールバーは不要。出力欄(data-no-autogrow)はそのまま */
@@ -6081,6 +6086,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // ===== IMAGE LOADER SETTINGS =====
   const IMAGE_LOADING_TEXT = '読み込み中...';
   const IMAGE_FINAL_RETRY = 3;
+  const DETAIL_HEIGHT_LOCK_MAX_MS = 8000;
 
   // Stable Diffusion 設定項目の定義 (フォーム生成・詳細表示の両方で使用)
   const SETTINGS_FIELDS = [
@@ -6311,6 +6317,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let restStageLoading = false;
   const detailFetchedIds = {}; // rest完了前に個別取得済みの投稿id(二重取得防止)
   let openDetailPostId = null; // 現在詳細モーダルで開いている投稿id(背後補完後の更新判定用)
+  let detailOpenSeq = 0;
   const DEFAULT_OPTIONS = { notifyBrowse: true, notifyVideo: true, notifyNovel: true, notifyPrompt: true, notifyRequest: true, notifyFix: true, notifyBoard: true, like: true, likeCount: true, downloadCount: true, comment: true, author: true, board: true, boardVote: true, video: true, tabNovel: true, fixRequest: false, dislike: false, dislikeCount: true, ownerEdit: false, inpaint: false, loginEnabled: true, tabPost: true, tabBrowse: true, tabPrompt: true, tabRequest: true, tabDatabank: true, tabUsage: true, tabGuide: true, tabLink: true, linkBasePrompt: true, linkParent: true, linkReference: true, linkRequest: true, research: true, videoHighQuality: true, dislikeThreshold: 10 };
   let options = Object.assign({}, DEFAULT_OPTIONS);
   let selectedTags = []; // 投稿フォーム用
@@ -6864,10 +6871,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   document.getElementById('clearImageBtn').addEventListener('click', function (e) {
     e.stopPropagation();
     clearSelectedImage();
-  });
-  previewImg.addEventListener('click', function (e) {
-    e.stopPropagation();
-    if (previewImg.src) openRefLightbox(previewImg.src);
   });
 
   dropzone.addEventListener('click', function () { if (variantLocked()) return; imageInput.click(); });
@@ -8641,6 +8644,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function openImageDetail(idOrShareId) {
+    const openSeq = ++detailOpenSeq;
     const local = findLocalPost(idOrShareId);
     if (local) {
       openModal(local);
@@ -8648,13 +8652,50 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       return;
     }
     // ローカルに無い(未読み込みの子・共有URL等)のみ、取得してから開く
-    ensurePostLoaded(idOrShareId).then(function (post) { if (post) openModal(post); });
+    ensurePostLoaded(idOrShareId).then(function (post) { if (post && openSeq === detailOpenSeq) openModal(post); });
+  }
+
+  // DETAIL BACKFILL
+  function detailDataChanged(data) {
+    const incoming = [data.post].concat(data.related || []);
+    const postChanged = incoming.some(function (ip) {
+      const local = findLocalPost(ip.id);
+      return !local || JSON.stringify(local) !== JSON.stringify(ip);
+    });
+    const commentAdded = (data.comments || []).some(function (c) {
+      return !allComments.some(function (x) { return String(x.id) === String(c.id); });
+    });
+    return postChanged || commentAdded;
+  }
+
+  function isDetailVideoPlaying() {
+    return Array.prototype.some.call(modalBody.querySelectorAll('video'), function (v) { return !v.paused && !v.ended; });
+  }
+
+  function rerenderOpenDetail(post) {
+    const scrollTop = modalOverlay.scrollTop;
+    const lockedHeight = modalBody.offsetHeight;
+    const activeVar = modalBody.querySelector('.variant-switch-btn.active');
+    const varIdx = activeVar ? activeVar.dataset.varIdx : '0';
+    openModal(post);
+    modalBody.style.minHeight = lockedHeight + 'px';
+    if (varIdx !== '0') {
+      const varBtn = modalBody.querySelector('.variant-switch-btn[data-var-idx="' + varIdx + '"]');
+      if (varBtn) varBtn.click();
+    }
+    modalOverlay.scrollTop = scrollTop;
+    const releaseLock = function () { modalBody.style.minHeight = ''; };
+    const mainImg = modalBody.querySelector('#detailImageWrap img.img-pending');
+    if (mainImg) mainImg.addEventListener('load', releaseLock, { once: true });
+    else releaseLock();
+    setTimeout(releaseLock, DETAIL_HEIGHT_LOCK_MAX_MS);
   }
 
   async function backfillDetail(idOrShareId, postId) {
     try {
       const data = await fetchPostDetail(idOrShareId); // 背後取得(全画面スピナーは出さない)
       if (!data || !data.post) return;
+      const changed = detailDataChanged(data);
       mergePostIntoLocalState(data.post);
       (data.related || []).forEach(mergePostIntoLocalState);
       (data.comments || []).forEach(function (c) {
@@ -8663,10 +8704,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       rebuildDerivedArraysFromPosts();
       detailFetchedIds[data.post.id] = true;
       // まだ同じ投稿を開いていれば、コメント・関連を反映して描き直す(スクロール位置は保持)
-      if (openDetailPostId === postId && modalOverlay.classList.contains('open')) {
-        const st = modalOverlay.scrollTop;
-        openModal(findLocalPost(postId) || data.post);
-        modalOverlay.scrollTop = st;
+      if (changed && openDetailPostId === postId && modalOverlay.classList.contains('open') && !isDetailVideoPlaying()) {
+        rerenderOpenDetail(findLocalPost(postId) || data.post);
       }
     } catch (err) {
       console.error('詳細の背後補完に失敗:', err);
@@ -10765,6 +10804,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function openModal(p) {
     clearNotifyForActiveTab();
     openDetailPostId = p.id;
+    modalBody.style.minHeight = '';
 
     // 差分ごとの画像情報はそれぞれ独立しているものとして扱う(共通処理)
     const imageSet = variantImageSetOf(p);
@@ -11061,6 +11101,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function closeModal() {
     openDetailPostId = null;
+    detailOpenSeq++;
+    modalBody.style.minHeight = '';
     destroyActiveNovelPlayer();
     releaseHqVideo();   // 高画質再生で確保した動画データを解放する(閉じたまま抱え込まない)
     modalOverlay.classList.remove('open');
@@ -11152,6 +11194,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   /* ---------- フルスクリーン画像モーダル(パネル表示用) ---------- */
   const fullImageOverlay = document.getElementById('fullImageOverlay');
   const fullImageImg = document.getElementById('fullImageImg');
+  fullImageImg.insertAdjacentHTML('afterend', imageLoaderHtml());
+  fullImageImg.addEventListener('error', handleImageError);
   const fullImageVariants = document.getElementById('fullImageVariants');
   // いま拡大表示している差分の番号(0=1枚目)と、実際に表示している画像URLの並び。
   // ダウンロードは必ずこの並びから取るので、表示とダウンロードがずれない。
@@ -11194,7 +11238,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const idx = Number(btn.dataset.fivIdx);
         fullImageCurIdx = idx;
         fullImageImg.src = '';
-        fullImageImg.src = imageSrcFor(imgs[idx], 'w1000');
+        setLightboxImageSrc(fullImageImg, imgs[idx], 'w1000');
         fullImageVariants.querySelectorAll('.fiv-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
       });
     });
@@ -11216,7 +11260,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     fullImageUrls = imgs;
     fullImageCurIdx = idx;   // 別の作品を開いたときに前の番号を引き継がない
     fullImageImg.src = '';
-    fullImageImg.src = imageSrcFor(imgs[idx], 'w1000');
+    setLightboxImageSrc(fullImageImg, imgs[idx], 'w1000');
     renderFullImageVariants(imgs, idx);
     openOverlay(fullImageOverlay);
   }
@@ -11231,6 +11275,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   document.getElementById('fullImageCloseBtn').addEventListener('click', closeFullImageModal);
   fullImageOverlay.addEventListener('click', function (e) {
+    if (isLightboxImagePending(fullImageImg)) return;
     if (e.target === fullImageOverlay || e.target.classList.contains('full-image-inner') || e.target.classList.contains('full-image-wrap')) {
       closeFullImageModal();
     }
@@ -12566,7 +12611,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function driveFileId(url) {
-    if (!url) return '';
+    if (!url || /^(data|blob):/i.test(String(url))) return '';
     let m = String(url).match(/[?&]id=([^&]+)/);
     if (m) return m[1];
     m = String(url).match(/\/d\/([^/=?&]+)/);
@@ -12597,6 +12642,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // IMAGE LOADER
   function imageLoaderHtml() {
     return '<span class="img-loader"><span class="spinner"></span><span>' + IMAGE_LOADING_TEXT + '</span></span>';
+  }
+
+  function setLightboxImageSrc(img, url, size) {
+    img.classList.add('img-pending');
+    img.classList.remove('img-failed');
+    img.dataset.fileid = driveFileId(url);
+    img.dataset.size = size;
+    img.dataset.retry = '0';
+    img.src = imageSrcFor(url, size);
+  }
+
+  function isLightboxImagePending(img) {
+    return img.classList.contains('img-pending');
   }
 
   function clearImagePending(img) {
@@ -14231,13 +14289,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // 参考資料ライトボックス
   const refLightboxOverlay = document.getElementById('refLightboxOverlay');
+  const refLightboxImg = document.getElementById('refLightboxImg');
+  refLightboxImg.insertAdjacentHTML('afterend', imageLoaderHtml());
+  refLightboxImg.addEventListener('error', handleImageError);
   function openRefLightbox(url) {
-    document.getElementById('refLightboxImg').src = imageSrcFor(url, 'w1000');
+    setLightboxImageSrc(refLightboxImg, url, 'w1000');
     openOverlay(refLightboxOverlay);
   }
   function closeRefLightbox() { refLightboxOverlay.classList.remove('open'); }
   document.getElementById('refLightboxCloseBtn').addEventListener('click', closeRefLightbox);
   refLightboxOverlay.addEventListener('click', function (e) {
+    if (isLightboxImagePending(refLightboxImg)) return;
     if (e.target === refLightboxOverlay || e.target.classList.contains('full-image-inner') || e.target.classList.contains('full-image-wrap')) {
       closeRefLightbox();
     }
