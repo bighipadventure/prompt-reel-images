@@ -797,6 +797,18 @@
   .spinner.red{ border-top-color: var(--danger); }
   @keyframes spin{ to{ transform: rotate(360deg); } }
   .list-loading{ display:flex; flex-direction:column; align-items:center; gap:12px; padding:36px 0; color: var(--ink-dim); font-size:13px; }
+  /* ---- 画像の読み込み中表示 ---- */
+  .img-loader{ display:none; }
+  .row-thumb img.img-pending + .img-loader,
+  .modal-image img.img-pending + .img-loader{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    color: var(--ink-dim); font-family:'Noto Sans JP',sans-serif; font-size:11px; pointer-events:none;
+  }
+  .row-thumb img.img-pending{ opacity:0; }
+  .row-thumb .img-loader{ position:absolute; inset:0; }
+  .row-thumb .img-loader .spinner{ width:24px; height:24px; border-width:2px; }
+  .modal-image img.img-pending{ display:none; }
+  .modal-image .img-loader{ padding:80px 0; font-size:13px; gap:12px; }
 
   textarea.autogrow{ resize: none; }
   /* 自動で伸びるのでスクロールバーは不要。出力欄(data-no-autogrow)はそのまま */
@@ -6066,6 +6078,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbxNsk0jrPHQLQE9akiT5OiM7iKG-VohCAUPErea_dd3JFLjBj4xBXi_lKkVRaEFyQQn/exec';
   // ▲▲▲ ───────────────────────────────────── ▲▲▲
 
+  // ===== IMAGE LOADER SETTINGS =====
+  const IMAGE_LOADING_TEXT = '読み込み中...';
+  const IMAGE_FINAL_RETRY = 3;
+
   // Stable Diffusion 設定項目の定義 (フォーム生成・詳細表示の両方で使用)
   const SETTINGS_FIELDS = [
     { key: 'uiPreset',          label: 'UI Preset',           type: 'text' },
@@ -8337,8 +8353,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // (download?export=download はダウンロード用でimg srcとしては読み込めない)
     // 読み込みに失敗したら handleImageError が thumbnail 等へ順にフォールバックする。
     return '<img src="https://lh3.googleusercontent.com/d/' + escapeHtml(id) + '=s0"' +
-      ' alt="生成画像" decoding="async"' +
-      ' data-fileid="' + escapeHtml(id) + '" data-size="w1000" data-retry="0">';
+      ' class="img-pending" alt="生成画像" decoding="async"' +
+      ' data-fileid="' + escapeHtml(id) + '" data-size="w1000" data-retry="0">' + imageLoaderHtml();
   }
 
   /* 動画の枠。オプション「動画の高画質再生」がオンのときは、まず読み込み中の表示だけを
@@ -12569,14 +12585,40 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const size = opts.size || 'w1000';
     const src = imageSrcFor(url, size);
     return '<img src="' + escapeHtml(src) + '"' +
-      (opts.className ? ' class="' + opts.className + '"' : '') +
+      ' class="img-pending' + (opts.className ? ' ' + opts.className : '') + '"' +
       (opts.lazy ? ' loading="lazy"' : '') +
       ' decoding="async"' +
       ' alt="' + escapeHtml(opts.alt || '') + '"' +
       ' data-fileid="' + escapeHtml(id) + '"' +
       ' data-size="' + escapeHtml(size) + '"' +
-      ' data-retry="0">';
+      ' data-retry="0">' + imageLoaderHtml();
   }
+
+  // IMAGE LOADER
+  function imageLoaderHtml() {
+    return '<span class="img-loader"><span class="spinner"></span><span>' + IMAGE_LOADING_TEXT + '</span></span>';
+  }
+
+  function clearImagePending(img) {
+    if (img && img.tagName === 'IMG') img.classList.remove('img-pending');
+  }
+
+  document.addEventListener('load', function (e) {
+    clearImagePending(e.target);
+  }, true);
+
+  document.addEventListener('error', function (e) {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || !img.classList.contains('img-pending')) return;
+    const retryBefore = img.dataset.retry;
+    if (!img.dataset.fileid || Number(retryBefore || '0') >= IMAGE_FINAL_RETRY) {
+      clearImagePending(img);
+      return;
+    }
+    setTimeout(function () {
+      if (img.dataset.retry === retryBefore) clearImagePending(img);
+    }, 0);
+  }, true);
 
   function handleImageError(e) {
     const img = e.target;
