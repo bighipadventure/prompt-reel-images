@@ -6099,6 +6099,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const THUMB_HOVER_SETTINGS = {
     selector: '.row-thumb img, .variant-thumb img, .attach-thumb img, .ref-thumb img',
     exclude: '.list.panel-mode',
+    narrowQuery: '(max-width: 680px)',
+    narrowExclude: '#list',
     maxSide: 320,
     offset: 16,
     margin: 8
@@ -17475,6 +17477,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   class ThumbHoverPreview {
     constructor(settings) {
       this.settings = settings;
+      this.narrow = window.matchMedia(settings.narrowQuery);
       this.target = null;
       this.point = null;
       this.controller = new AbortController();
@@ -17495,7 +17498,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     match(el) {
       const img = el && el.closest ? el.closest(this.settings.selector) : null;
-      return img && !img.closest(this.settings.exclude) ? img : null;
+      if (!img || img.closest(this.settings.exclude)) return null;
+      if (this.narrow.matches && img.closest(this.settings.narrowExclude)) return null;
+      return img;
     }
 
     onMove(e) {
