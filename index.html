@@ -921,6 +921,12 @@
   }
   .dl-free-key{ color: var(--ink-dim); font-size: 11px; margin-left: 4px; }
   /* 長い候補の全文表示は、候補モーダル(検索できる一覧)に統合したため廃止した */
+  /* サムネイルのホバー表示(元の縦横比) */
+  .thumb-hover{
+    position: fixed; left: 0; top: 0; z-index: 700; pointer-events: none; padding: 3px;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.45);
+  }
+  .thumb-hover img{ display: block; border-radius: 6px; }
   /* プロンプト表示エリアの単語ホバーツールチップ */
   .word-tip{
     position: fixed; z-index: 700; display: none; pointer-events: none;
@@ -6082,6 +6088,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // ▼▼▼ ここをデプロイしたウェブアプリのURLに書き換えてください ▼▼▼
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbxNsk0jrPHQLQE9akiT5OiM7iKG-VohCAUPErea_dd3JFLjBj4xBXi_lKkVRaEFyQQn/exec';
   // ▲▲▲ ───────────────────────────────────── ▲▲▲
+
+  // ===== THUMBNAIL HOVER SETTINGS =====
+  const THUMB_HOVER_SETTINGS = {
+    selector: '.row-thumb img, .variant-thumb img, .attach-thumb img, .ref-thumb img',
+    maxSide: 320,
+    offset: 16,
+    margin: 8
+  };
 
   // ===== IMAGE LOADER SETTINGS =====
   const IMAGE_LOADING_TEXT = '読み込み中...';
@@ -17384,7 +17398,84 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
+  // ===== THUMBNAIL HOVER =====
+  class ThumbHoverPreview {
+    constructor(settings) {
+      this.settings = settings;
+      this.target = null;
+      this.point = null;
+      this.controller = new AbortController();
+      const signal = this.controller.signal;
+      this.box = document.createElement('div');
+      this.box.className = 'thumb-hover';
+      this.box.setAttribute('aria-hidden', 'true');
+      this.box.hidden = true;
+      this.img = document.createElement('img');
+      this.img.alt = '';
+      this.box.appendChild(this.img);
+      document.body.appendChild(this.box);
+      this.img.addEventListener('load', () => { this.fit(); this.place(); }, { signal });
+      document.addEventListener('pointermove', (e) => this.onMove(e), { signal, passive: true });
+      document.addEventListener('pointerout', (e) => { if (!e.relatedTarget || this.match(e.relatedTarget) !== this.target) this.hide(); }, { signal, passive: true });
+      document.addEventListener('scroll', () => this.hide(), { signal, passive: true, capture: true });
+    }
+
+    match(el) {
+      return el && el.closest ? el.closest(this.settings.selector) : null;
+    }
+
+    onMove(e) {
+      if (e.pointerType !== 'mouse') return;
+      const img = this.match(e.target);
+      if (!img) { if (this.target) this.hide(); return; }
+      if (img !== this.target) this.show(img);
+      this.place(e);
+    }
+
+    show(img) {
+      if (!img.complete || !img.naturalWidth || img.classList.contains('img-pending')) { this.hide(); return; }
+      this.target = img;
+      const src = img.currentSrc || img.src;
+      if (this.img.getAttribute('src') !== src) this.img.src = src;
+      else this.fit();
+      this.box.hidden = false;
+    }
+
+    fit() {
+      const w = this.img.naturalWidth;
+      const h = this.img.naturalHeight;
+      if (!w || !h) return;
+      const scale = this.settings.maxSide / Math.max(w, h);
+      this.img.width = Math.round(w * scale);
+      this.img.height = Math.round(h * scale);
+    }
+
+    place(e) {
+      if (e) this.point = { x: e.clientX, y: e.clientY };
+      if (!this.point || this.box.hidden) return;
+      const cfg = this.settings;
+      const w = this.box.offsetWidth;
+      const h = this.box.offsetHeight;
+      let x = this.point.x + cfg.offset;
+      let y = this.point.y + cfg.offset;
+      if (x + w + cfg.margin > window.innerWidth) x = this.point.x - cfg.offset - w;
+      if (y + h + cfg.margin > window.innerHeight) y = this.point.y - cfg.offset - h;
+      this.box.style.transform = 'translate(' + Math.max(cfg.margin, x) + 'px, ' + Math.max(cfg.margin, y) + 'px)';
+    }
+
+    hide() {
+      this.target = null;
+      this.box.hidden = true;
+    }
+
+    destroy() {
+      this.controller.abort();
+      this.box.remove();
+    }
+  }
+
   /* ===== INIT ===== */
+  const thumbHoverPreview = new ThumbHoverPreview(THUMB_HOVER_SETTINGS);
   guardPasswordManager();
   initEditPwTooltip();
   renderPromptServiceToggle();
