@@ -8762,6 +8762,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      localStorage には「前回の訪問時刻」と「その時点でオンだった通知設定」だけを持つ。
      件数は読み込み時に1回だけ数えてメモリに置くので、保存領域はほとんど使わない。 */
   const NOTIFY_KEY = 'pr_notify';
+  const NOTIFY_MINE_KEY = 'pr_notify_mine';
   const BOARD_READ_KEY = 'pr_board_read';
   const BOARD_UNREAD_PREFIX = '未読 ＋';
   const NOTIFY_TABS = [
@@ -8789,8 +8790,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     NOTIFY_TABS.forEach(function (n) { if (options[n.opt]) on[n.tab] = 1; });
     try { localStorage.setItem(NOTIFY_KEY, JSON.stringify({ t: Date.now(), o: on })); } catch (e) {}
   }
+  function readOwnPosts() {
+    try { return JSON.parse(localStorage.getItem(NOTIFY_MINE_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function rememberOwnPost(id) {
+    if (!id) return;
+    const mine = readOwnPosts();
+    mine[String(id)] = 1;
+    try { localStorage.setItem(NOTIFY_MINE_KEY, JSON.stringify(mine)); } catch (e) {}
+  }
   function computeNotifyCounts() {
     const prev = readNotifyState();
+    const mine = readOwnPosts();
     loadBoardRead(prev && prev.t);
     notifyCounts = {};
     // 初回訪問(記録なし)のときは何も出さない
@@ -8804,6 +8815,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const arr = n.list() || [];
         let cnt = 0;
         for (let i = 0; i < arr.length; i++) {
+          if (arr[i] && mine[String(arr[i].id)]) continue;
           const t = Date.parse(arr[i] && arr[i].timestamp);
           if (t && t > since) cnt++;
         }
@@ -8811,6 +8823,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       });
     }
     writeNotifyState();
+    try { localStorage.removeItem(NOTIFY_MINE_KEY); } catch (e) {}
     renderNotifyBadges();
   }
   function renderNotifyBadges() {
@@ -11513,6 +11526,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       body: JSON.stringify(body)
     });
     const r = await res.json();
+    if (r && r.success && (!payload.action || payload.action === 'board')) rememberOwnPost(r.message ? r.message.id : r.id);
     if (r && r.success === false && r.error === 'login') {
       r.error = 'ログインの有効期限が切れました。ログインし直してから、もう一度お試しください。';
       requestRelogin();
