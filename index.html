@@ -2200,6 +2200,12 @@
     border-radius:999px; padding:1px 10px;
   }
   .board-latest-reply{ font-size:11px; color: var(--ink-dim); }
+  /* 掲示板: 未読のスレッド(タブの新着バッジと同じ色) */
+  .board-thread.is-unread{ border-color: rgba(255, 64, 96, .8); }
+  .board-unread{
+    background:rgba(255, 64, 96, .8); color:#fff; font-size:11px; font-weight:700; line-height:1;
+    border-radius:999px; padding:3px 8px;
+  }
   .board-op-body{
     font-size:13.5px; line-height:1.8; white-space:pre-wrap; word-break:break-word; color: var(--ink);
     background: var(--bg); border:1px solid var(--line); border-radius:8px;
@@ -6092,6 +6098,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // ===== THUMBNAIL HOVER SETTINGS =====
   const THUMB_HOVER_SETTINGS = {
     selector: '.row-thumb img, .variant-thumb img, .attach-thumb img, .ref-thumb img',
+    exclude: '.list.panel-mode',
     maxSide: 320,
     offset: 16,
     margin: 8
@@ -8755,6 +8762,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      localStorage には「前回の訪問時刻」と「その時点でオンだった通知設定」だけを持つ。
      件数は読み込み時に1回だけ数えてメモリに置くので、保存領域はほとんど使わない。 */
   const NOTIFY_KEY = 'pr_notify';
+  const BOARD_READ_KEY = 'pr_board_read';
+  const BOARD_UNREAD_PREFIX = '未読 ＋';
   const NOTIFY_TABS = [
     { tab: 'browse',        opt: 'notifyBrowse',  list: function () { return imagePosts; } },
     { tab: 'videoBrowse',   opt: 'notifyVideo',   list: function () { return videoPosts; } },
@@ -8782,6 +8791,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function computeNotifyCounts() {
     const prev = readNotifyState();
+    loadBoardRead(prev && prev.t);
     notifyCounts = {};
     // 初回訪問(記録なし)のときは何も出さない
     if (prev) {
@@ -8820,6 +8830,52 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!notifyCounts[tabName]) return;
     delete notifyCounts[tabName];
     renderNotifyBadges();
+  }
+
+  /* ===== 掲示板の未読(スレッドごと) ===== */
+  let boardRead = null;
+  function loadBoardRead(since) {
+    if (boardRead) return boardRead;
+    try { boardRead = JSON.parse(localStorage.getItem(BOARD_READ_KEY) || 'null'); } catch (e) { boardRead = null; }
+    if (!boardRead || !Number(boardRead.base)) {
+      const prev = readNotifyState();
+      boardRead = { base: Number(since) || (prev && Number(prev.t)) || Date.now(), t: {} };
+      saveBoardRead();
+    }
+    boardRead.t = boardRead.t || {};
+    return boardRead;
+  }
+  function saveBoardRead() {
+    if (!boardRead) return;
+    if (allBoard.length) {
+      const ids = {};
+      allBoard.forEach(function (m) { if (!m.parentId) ids[String(m.id)] = 1; });
+      Object.keys(boardRead.t).forEach(function (id) { if (!ids[id]) delete boardRead.t[id]; });
+    }
+    try { localStorage.setItem(BOARD_READ_KEY, JSON.stringify(boardRead)); } catch (e) {}
+  }
+  function boardThreadMessages(id) {
+    return allBoard.filter(function (m) { return String(m.id) === String(id) || String(m.parentId || '') === String(id); });
+  }
+  function boardUnreadCount(t, replies) {
+    if (!options.notifyBoard) return 0;
+    const r = loadBoardRead();
+    const since = Math.max(Number(r.base) || 0, Number(r.t[String(t.id)]) || 0);
+    return [t].concat(replies || []).filter(function (m) {
+      const ts = Date.parse(m && m.timestamp);
+      return ts && ts > since;
+    }).length;
+  }
+  function markBoardThreadRead(id) {
+    const r = loadBoardRead();
+    const latest = boardThreadMessages(id).reduce(function (max, m) { return Math.max(max, Date.parse(m.timestamp) || 0); }, 0);
+    r.t[String(id)] = Math.max(Date.now(), latest);
+    saveBoardRead();
+    const card = boardList.querySelector('.board-thread[data-thread="' + CSS.escape(String(id)) + '"]');
+    if (!card) return;
+    card.classList.remove('is-unread');
+    const badge = card.querySelector('.board-unread');
+    if (badge) badge.remove();
   }
 
   function applyRestData(data) {
@@ -14649,11 +14705,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // タイトルがある時だけスレタイ見出しを表示。無い時は通常の投稿(名前+日時→本文)として表示する。
     const subjectBlock = title ? '<div class="board-subject">' + escapeHtml(title) + '</div>' : '';
     const opBody = t.body ? '<div class="board-op-body">' + boardBodyHtml(t.body) + '</div>' : '';
+    const unread = boardUnreadCount(t, replies);
     // 一覧では本文の要約までを見せ、返信は開いたモーダルで読む
-    return '<div class="comment-item board-thread' + (title ? '' : ' board-thread-notitle') + '" data-thread="' + escapeHtml(String(t.id)) + '">' +
+    return '<div class="comment-item board-thread' + (title ? '' : ' board-thread-notitle') + (unread ? ' is-unread' : '') + '" data-thread="' + escapeHtml(String(t.id)) + '">' +
       '<div class="board-thread-head">' +
         subjectBlock +
         '<div class="board-op-meta">' +
+          (unread ? '<span class="board-unread">' + BOARD_UNREAD_PREFIX + unread + '</span>' : '') +
           '<span class="board-name">' + name + '</span>' +
           '<span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
           '<span class="board-reply-count">💬 ' + replies.length + '</span>' +
@@ -14712,6 +14770,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const t = allBoard.find(function (x) { return String(x.id) === String(id) && !x.parentId; });
     if (!t) return;
     openBoardThreadId = String(id);
+    markBoardThreadRead(id);
     const body = document.getElementById('boardThreadBody');
     body.innerHTML = boardThreadDetailHtml(t);
     // スレッドの編集・削除は「閉じる」の左に置く(作品の詳細モーダルと同じ位置)
@@ -14984,7 +15043,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         images: boardRefs.map(function (r) { return r.dataUrl; })
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
-      if (result.message) allBoard.push(result.message);
+      if (result.message) { allBoard.push(result.message); markBoardThreadRead(result.message.id); }
       document.getElementById('boardTitleInput').value = '';
       document.getElementById('boardBodyInput').value = '';
       resetAutogrow();
@@ -17421,7 +17480,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     match(el) {
-      return el && el.closest ? el.closest(this.settings.selector) : null;
+      const img = el && el.closest ? el.closest(this.settings.selector) : null;
+      return img && !img.closest(this.settings.exclude) ? img : null;
     }
 
     onMove(e) {
