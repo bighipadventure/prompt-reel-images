@@ -14711,11 +14711,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="board-thread-head">' +
         subjectBlock +
         '<div class="board-op-meta">' +
-          (unread ? '<span class="board-unread">' + BOARD_UNREAD_PREFIX + unread + '</span>' : '') +
           '<span class="board-name">' + name + '</span>' +
           '<span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
           '<span class="board-reply-count">💬 ' + replies.length + '</span>' +
           (replies.length ? '<span class="board-latest-reply">最新の返信 ' + formatDateTime(latestReplyTs) + '</span>' : '') +
+          (unread ? '<span class="board-unread">' + BOARD_UNREAD_PREFIX + unread + '</span>' : '') +
         '</div>' +
       '</div>' +
       boardBodyBlock(t, 'board-op-body') +
