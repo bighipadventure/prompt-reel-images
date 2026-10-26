@@ -938,15 +938,6 @@
   /* プロンプト単語: クリックでカートに追加できることを示す下線。
      カートに入っている単語だけ、タグと同じ配色(青の20%塗り)で強調する。 */
   .prompt-word{ cursor: pointer; border-radius: 3px; }
-  .moss-layout{ white-space: normal; display: flex; flex-direction: column; gap: 6px; }
-  .moss-layout .moss-head{ font-size: 12px; font-weight: 700; opacity: .8; }
-  .moss-layout .moss-loras{ font-size: 12px; opacity: .8; word-break: break-all; }
-  .moss-layout .moss-caption{ white-space: pre-wrap; line-height: 1.6; }
-  .moss-layout .moss-texts{ margin: 0; padding-left: 1.6em; }
-  .moss-layout .moss-texts li{ margin: 2px 0; }
-  .moss-layout .moss-bbox{ margin-left: 8px; font-size: 11px; opacity: .6; font-family: ui-monospace, Consolas, monospace; }
-  .moss-layout .moss-json summary{ cursor: pointer; font-size: 12px; opacity: .8; }
-  .moss-layout .moss-json pre{ margin: 6px 0 0; max-height: 360px; overflow: auto; font-size: 11px; white-space: pre; }
   .prompt-word:hover{ background: rgba(0, 150, 250, .18); }
   .prompt-word.in-cart{ background: rgba(0, 150, 250, .28); box-shadow: 0 0 0 1px rgba(0, 150, 250, .5); }
   /* タグをクリックしてコピーしたときの一瞬のフィードバック */
@@ -16341,22 +16332,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       return null;
     }
   }
-  function mossLayoutHtml(text, layout) {
-    const loras = (String(text || '').match(/<lora:[^>]*>/gi) || []).join(' ');
-    const items = Array.isArray(layout.items) ? layout.items : [];
-    const texts = items.filter(function (it) { return it && it.label === 'text' && it.text; });
-    const others = items.length - texts.length;
-    const caption = layout.summary && layout.summary.caption ? String(layout.summary.caption) : '';
-    return '<div class="moss-layout">' +
-      '<div class="moss-head">MOSS-Image レイアウト(JSON) ・ 文字 ' + texts.length + ' 件' + (others ? ' ・ そのほかの枠 ' + others + ' 件' : '') + '</div>' +
-      (loras ? '<div class="moss-loras">' + escapeHtml(loras) + '</div>' : '') +
-      (caption ? '<div class="moss-caption">' + escapeHtml(caption) + '</div>' : '') +
-      (texts.length ? '<ol class="moss-texts">' + texts.map(function (it) {
-        return '<li><span class="moss-text">' + escapeHtml(it.text) + '</span>' + (Array.isArray(it.bbox) ? '<span class="moss-bbox">[' + it.bbox.join(', ') + ']</span>' : '') + '</li>';
-      }).join('') + '</ol>' : '') +
-      '<details class="moss-json"><summary>JSON 全体を見る</summary><pre>' + escapeHtml(JSON.stringify(layout, null, 2)) + '</pre></details>' +
-      '</div>';
-  }
   function splitPromptTokens(text) {
     if (mossLayoutOf(text)) return [];
     // 改行でも区切る(NovelAIのキャラクタープロンプトは1行1キャラなので、
@@ -16373,8 +16348,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      (メモや設定表などは対象外)。 */
   function promptWordsHtml(text) {
     if (!text) return '';
-    const mossLayout = mossLayoutOf(text);
-    if (mossLayout) return mossLayoutHtml(text, mossLayout);
     return String(text).split('\n').map(function (line) {
       const parts = line.split(',');
       return parts.map(function (part, i) {
