@@ -938,6 +938,15 @@
   /* プロンプト単語: クリックでカートに追加できることを示す下線。
      カートに入っている単語だけ、タグと同じ配色(青の20%塗り)で強調する。 */
   .prompt-word{ cursor: pointer; border-radius: 3px; }
+  .moss-layout{ white-space: normal; display: flex; flex-direction: column; gap: 6px; }
+  .moss-layout .moss-head{ font-size: 12px; font-weight: 700; opacity: .8; }
+  .moss-layout .moss-loras{ font-size: 12px; opacity: .8; word-break: break-all; }
+  .moss-layout .moss-caption{ white-space: pre-wrap; line-height: 1.6; }
+  .moss-layout .moss-texts{ margin: 0; padding-left: 1.6em; }
+  .moss-layout .moss-texts li{ margin: 2px 0; }
+  .moss-layout .moss-bbox{ margin-left: 8px; font-size: 11px; opacity: .6; font-family: ui-monospace, Consolas, monospace; }
+  .moss-layout .moss-json summary{ cursor: pointer; font-size: 12px; opacity: .8; }
+  .moss-layout .moss-json pre{ margin: 6px 0 0; max-height: 360px; overflow: auto; font-size: 11px; white-space: pre; }
   .prompt-word:hover{ background: rgba(0, 150, 250, .18); }
   .prompt-word.in-cart{ background: rgba(0, 150, 250, .28); box-shadow: 0 0 0 1px rgba(0, 150, 250, .5); }
   /* タグをクリックしてコピーしたときの一瞬のフィードバック */
@@ -6228,6 +6237,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // (anima / wan / pid)をフォールバックとして置いている(例: animagineXL や rapidXL は先に xl が
   // 当たり xl になる)。判定結果を変えたいときは、この配列の値や並び順を編集するだけでよい。
   const UI_PRESET_RULES = [
+    { match: 'moss',         preset: 'moss' },
     { match: 'novelai',      preset: 'NovelAI' },
     { match: 'illustrious',  preset: 'illustrious' },
     { match: 'illust',       preset: 'illustrious' },
@@ -7361,8 +7371,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       await addVariantFiles(files.slice(1));
     }
     stillmotionImportKey = key;
-    const baseNotice = 'Stillmange から漫画ページ(□1)と、コマの画像 ' + (files.length - 1) + ' 枚(□2〜)を受け取りました。'
-      + '各画像の生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。';
+    const isMoss = record.meta && record.meta.mode === 'moss';
+    const baseNotice = isMoss
+      ? 'Stillmange から MOSS-Image で生成した漫画ページ(□1)' + (files.length > 1 ? 'と、文字を重ねる前の画像(□2)' : '') + 'を受け取りました。'
+        + 'プロンプト(レイアウトJSON)と生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。'
+      : 'Stillmange から漫画ページ(□1)と、コマの画像 ' + (files.length - 1) + ' 枚(□2〜)を受け取りました。'
+        + '各画像の生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。';
     showStillmotionNotice(baseNotice);
     cleanupStillmotionRecords(key);
     const refNote = await autoSelectStillmangeReference(record.meta && record.meta.base);
@@ -16316,7 +16330,35 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     t = t.replace(/\s+/g, ' ').trim();
     return t;
   }
+  // ===== MOSS-Image レイアウトJSON =====
+  function mossLayoutOf(text) {
+    const s = String(text || '').replace(/<lora:[^>]*>/gi, '').trim().replace(/,\s*$/, '');
+    if (s.charAt(0) !== '{' || s.charAt(s.length - 1) !== '}') return null;
+    try {
+      const o = JSON.parse(s);
+      return o && typeof o === 'object' && (Array.isArray(o.items) || (o.summary && typeof o.summary === 'object')) ? o : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function mossLayoutHtml(text, layout) {
+    const loras = (String(text || '').match(/<lora:[^>]*>/gi) || []).join(' ');
+    const items = Array.isArray(layout.items) ? layout.items : [];
+    const texts = items.filter(function (it) { return it && it.label === 'text' && it.text; });
+    const others = items.length - texts.length;
+    const caption = layout.summary && layout.summary.caption ? String(layout.summary.caption) : '';
+    return '<div class="moss-layout">' +
+      '<div class="moss-head">MOSS-Image レイアウト(JSON) ・ 文字 ' + texts.length + ' 件' + (others ? ' ・ そのほかの枠 ' + others + ' 件' : '') + '</div>' +
+      (loras ? '<div class="moss-loras">' + escapeHtml(loras) + '</div>' : '') +
+      (caption ? '<div class="moss-caption">' + escapeHtml(caption) + '</div>' : '') +
+      (texts.length ? '<ol class="moss-texts">' + texts.map(function (it) {
+        return '<li><span class="moss-text">' + escapeHtml(it.text) + '</span>' + (Array.isArray(it.bbox) ? '<span class="moss-bbox">[' + it.bbox.join(', ') + ']</span>' : '') + '</li>';
+      }).join('') + '</ol>' : '') +
+      '<details class="moss-json"><summary>JSON 全体を見る</summary><pre>' + escapeHtml(JSON.stringify(layout, null, 2)) + '</pre></details>' +
+      '</div>';
+  }
   function splitPromptTokens(text) {
+    if (mossLayoutOf(text)) return [];
     // 改行でも区切る(NovelAIのキャラクタープロンプトは1行1キャラなので、
     // 行末の語が次のキャラの語と1つのトークンに混ざらないようにする)
     return String(text || '').split(/[,\n]/).map(cleanPromptToken).filter(Boolean);
@@ -16331,6 +16373,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      (メモや設定表などは対象外)。 */
   function promptWordsHtml(text) {
     if (!text) return '';
+    const mossLayout = mossLayoutOf(text);
+    if (mossLayout) return mossLayoutHtml(text, mossLayout);
     return String(text).split('\n').map(function (line) {
       const parts = line.split(',');
       return parts.map(function (part, i) {
