@@ -16410,6 +16410,47 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return text.slice(start, end);
   }
 
+  /* 語の前後に付いた記号(引用符・ピリオド・コロンなど)を外して辞書を引く。
+     MOSS-Image の JSON のように '"Strictly' 'pixels.' と記号が付いたままの語でも訳が見つかるようにする */
+  function wordCore(word) {
+    const m = String(word).match(/^([^0-9A-Za-z\u00C0-\uFFFF]*)(.*?)([^0-9A-Za-z\u00C0-\uFFFF]*)$/);
+    return m ? { head: m[1], core: m[2], tail: m[3] } : { head: '', core: String(word), tail: '' };
+  }
+  function lookupWordJa(word) {
+    const core = wordCore(word).core;
+    const cleaned = core ? cleanPromptToken(core) : '';
+    return cleaned ? lookupJa(databankKey(cleaned)) : null;
+  }
+  /* まとまり全体の訳が無いとき、辞書にある語句(長い語句を優先、最大4語)ごとに訳して差し替える。
+     ホバーで訳が出る語は、ここでも必ず訳される。1語も訳が無ければ null */
+  function jaByWords(text) {
+    const parts = String(text).split(/(\s+)/);
+    let hit = false;
+    let out = '';
+    let i = 0;
+    while (i < parts.length) {
+      const w = parts[i];
+      if (!w || /^\s+$/.test(w)) { out += w; i++; continue; }
+      let done = false;
+      for (let n = 4; n >= 1 && !done; n--) {
+        const end = i + (n - 1) * 2;
+        if (end >= parts.length) continue;
+        const words = [];
+        for (let k = i; k <= end; k += 2) words.push(parts[k]);
+        const first = wordCore(words[0]), last = wordCore(words[words.length - 1]);
+        if (n > 1 && (first.tail || last.head || words.slice(1, -1).some(function (x) { const c = wordCore(x); return c.head || c.tail; }))) continue;
+        const phrase = n === 1 ? first.core : [first.core].concat(words.slice(1, -1), [last.core]).join(' ');
+        const ja = lookupWordJa(phrase);
+        if (!ja) continue;
+        out += first.head + ja + last.tail;
+        i = end + 1;
+        hit = done = true;
+      }
+      if (!done) { out += w; i++; }
+    }
+    return hit ? out : null;
+  }
+
   document.addEventListener('mousemove', function (e) {
     const el = e.target.closest && e.target.closest('.prompt-word');
     if (!el) { hideWordTip(); return; }
@@ -16424,8 +16465,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     let ja = lookupJa(el.dataset.key);
     if (!ja) {
       const word = wordUnderPoint(el, e.clientX, e.clientY);
-      const cleaned = word ? cleanPromptToken(word) : '';
-      if (cleaned) ja = lookupJa(databankKey(cleaned));
+      if (word) ja = lookupWordJa(word);
     }
     if (!ja) { hideWordTip(); return; }
     showWordTip(ja, e.clientX, e.clientY);
@@ -16459,8 +16499,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (w.dataset.orig === undefined) w.dataset.orig = w.textContent;
       if (on) {
         const ja = lookupJa(w.dataset.key);
-        w.textContent = ja ? w.dataset.orig.replace(w.dataset.token, ja) : w.dataset.orig;
-        w.classList.toggle('is-ja', !!ja);
+        // 括弧を外した整形後の語(data-token)が原文にそのまま含まれないとき("(1) panel" など)も、
+        // まとまり全体の訳があれば、前後の空白だけ残して丸ごと差し替える(ホバーと同じ訳になる)
+        const orig = w.dataset.orig;
+        const whole = ja ? (orig.indexOf(w.dataset.token) >= 0 ? orig.replace(w.dataset.token, ja) : orig.match(/^\s*/)[0] + ja + orig.match(/\s*$/)[0]) : null;
+        const text = whole || jaByWords(orig);
+        w.textContent = text || w.dataset.orig;
+        w.classList.toggle('is-ja', !!text);
       } else {
         w.textContent = w.dataset.orig;
         w.classList.remove('is-ja');
