@@ -11525,7 +11525,26 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ログイン済みなら毎回トークンを付ける。呼び出し元の payload は書き換えない。
      サーバーが 'login' を返したら(管理者が途中でサイトのパスワードを変えた等で
      トークンが無効になった)、分かる言葉に置き換えて返し、ログイン画面を出し直す。 */
+  /* グッド/バッドの連打対策用の端末ID(乱数)。サーバー側で「同じ端末が同じ投稿に何度も押す」のを止めるために送る。
+     個人を特定する情報は含まない。 */
+  const VOTE_ACTIONS = { like: 1, dislike: 1, boardVote: 1 };
+  function getVoterId() {
+    try {
+      let v = localStorage.getItem('pr_voter_id');
+      if (!v || !/^[a-zA-Z0-9_-]{16,64}$/.test(v)) {
+        const bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        v = Array.from(bytes, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+        localStorage.setItem('pr_voter_id', v);
+      }
+      return v;
+    } catch (e) {
+      return '';
+    }
+  }
+
   async function postAction(payload) {
+    if (VOTE_ACTIONS[payload.action]) payload = Object.assign({}, payload, { voterId: getVoterId() });
     const body = siteAuthToken ? Object.assign({}, payload, { token: siteAuthToken }) : payload;
     const res = await fetch(GAS_URL, {
       method: 'POST',
@@ -11630,7 +11649,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     try {
       const result = await postAction({ action: 'like', id: id, delta: delta });
-      if (result && result.success && typeof result.likeCount === 'number') {
+      // 連打などで受け付けられなかったときも、サーバーの正しい件数が返るので表示を合わせる
+      if (result && typeof result.likeCount === 'number') {
         p.likeCount = result.likeCount;
         updateCountUI(id);
       }
@@ -11652,7 +11672,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     try {
       const result = await postAction({ action: 'dislike', id: id, delta: delta });
-      if (result && result.success && typeof result.dislikeCount === 'number') {
+      if (result && typeof result.dislikeCount === 'number') {
         p.dislikeCount = result.dislikeCount;
         updateCountUI(id);
       }
