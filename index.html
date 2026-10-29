@@ -11525,8 +11525,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ログイン済みなら毎回トークンを付ける。呼び出し元の payload は書き換えない。
      サーバーが 'login' を返したら(管理者が途中でサイトのパスワードを変えた等で
      トークンが無効になった)、分かる言葉に置き換えて返し、ログイン画面を出し直す。 */
-  /* グッド/バッドの連打対策用の端末ID(乱数)。サーバー側で「同じ端末が同じ投稿に何度も押す」のを止めるために送る。
-     個人を特定する情報は含まない。 */
   const VOTE_ACTIONS = { like: 1, dislike: 1, boardVote: 1 };
   function getVoterId() {
     try {
@@ -11649,7 +11647,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     try {
       const result = await postAction({ action: 'like', id: id, delta: delta });
-      // 連打などで受け付けられなかったときも、サーバーの正しい件数が返るので表示を合わせる
       if (result && typeof result.likeCount === 'number') {
         p.likeCount = result.likeCount;
         updateCountUI(id);
