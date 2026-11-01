@@ -565,6 +565,7 @@
   .row-link-badge.lb-fix{ color:#c4373a; border-color: rgba(196,55,58,.45); background: rgba(196,55,58,.13); }
   .row-link-badge.lb-parent{ color:#c89edf; border-color: rgba(200,158,223,.45); background: rgba(200,158,223,.13); }
   .row-link-badge.lb-video{ color:#3ac846; border-color: rgba(58,200,70,.45); background: rgba(58,200,70,.13); }
+  .row-link-badge.lb-used{ color:#3fb6c8; border-color: rgba(63,182,200,.45); background: rgba(63,182,200,.13); }
   .row-link-badge.lb-novel{ color:#c74bc1; border-color: rgba(199,75,193,.45); background: rgba(199,75,193,.13); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
   .detail-image{ flex: 0 0 260px; }
@@ -1535,10 +1536,6 @@
   body.opt-no-model .model-only{ display:none !important; }
   body.post-mode-novel .link-field[data-link="model"],
   body.post-mode-fix .link-field[data-link="model"]{ display:none !important; }
-  .model-kind-chip{
-    display:inline-flex; align-items:center; padding:1px 8px; border-radius:999px;
-    font-size:11px; font-weight:700; background:var(--accent-dim); color:var(--accent);
-  }
   .model-file-card{
     display:flex; align-items:center; gap:14px; flex-wrap:wrap;
     padding:14px 16px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2);
@@ -15835,6 +15832,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const kind = modelKindOf(p);
     const base = modelBaseOf(p);
     const size = p.modelFile ? formatBytes(p.modelFile.size) : '';
+    const weight = (p.settings && p.settings.weight) || '';
+    const commentCount = options.comment ? commentsFor(p.id).length : 0;
     const tags = (p.tags && p.tags.length)
       ? '<div class="row-tags">' + sortJa(p.tags.slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>'
       : '';
@@ -15843,12 +15842,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="row-main">' + thumbHtml + '<div class="row-body">' +
       '<div class="row-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</div>' +
       '<div class="row-meta">' +
-        (kind ? '<span class="model-kind-chip">' + escapeHtml(kind) + '</span>' : '') +
         '<span>' + formatDateTime(p.timestamp) + '</span>' +
         '<span class="meta-author">投稿者: ' + authorHtml(p) + '</span>' +
-        (base ? '<span>' + escapeHtml(base) + '</span>' : '') +
-        (size ? '<span>' + escapeHtml(size) + '</span>' : '') +
-        '<span class="row-derived">使用作品 ' + used.length + '件</span>' +
+        (kind ? '<span>種類: ' + escapeHtml(kind) + '</span>' : '') +
+        (base ? '<span>ベースモデル: ' + escapeHtml(base) + '</span>' : '') +
+        (weight ? '<span>推奨の強さ: ' + escapeHtml(weight) + '</span>' : '') +
+        (size ? '<span>ファイルサイズ: ' + escapeHtml(size) + '</span>' : '') +
+        (used.length ? '<span class="row-link-badge lb-used">使用作品 ' + used.length + '件</span>' : '') +
+        (commentCount ? '<span class="row-link-badge lb-comment">コメント ' + commentCount + '件</span>' : '') +
+        (hasText(p.memo) ? '<span class="row-link-badge lb-memo">説明あり</span>' : '') +
       '</div>' +
       tags +
       '</div></div></div>';
