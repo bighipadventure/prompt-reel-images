@@ -1544,6 +1544,9 @@
   .model-file-card .model-file-info{ flex:1 1 220px; min-width:0; }
   .model-file-card .model-file-name{ font-weight:700; word-break:break-all; }
   .model-file-card .model-file-sub{ font-size:12px; color:var(--ink-dim); margin-top:3px; }
+  .model-file-card .model-upload-progress{ background:var(--bg); }
+  .model-direct-note{ margin-top:6px; font-size:11.5px; color:var(--ink-dim); }
+  .model-direct-dl{ background:none; border:0; padding:0; font:inherit; color:var(--accent); text-decoration:underline; cursor:pointer; }
   .model-upload-progress{ margin-top:8px; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; display:none; }
   .model-upload-progress.on{ display:block; }
   .model-upload-progress > div{ height:100%; width:0; background:var(--accent); transition:width .2s ease; }
@@ -15785,6 +15788,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const MODEL_UPLOAD_RETRY = 5;
   const MODEL_UPLOAD_RETRY_WAIT_MS = 3000;
   const MODEL_DOWNLOAD_BASE = 'https://drive.usercontent.google.com/download?export=download&confirm=t&id=';
+  const MODEL_RELAY_CHUNK = 4 * 1024 * 1024;
+  const MODEL_RELAY_PARALLEL = 3;
+  const MODEL_MEMORY_DOWNLOAD_MAX = 2 * 1024 * 1024 * 1024;
+  const modelDownloads = {};
   const MODEL_SORT_OPTIONS = [
     { label: '新しい順',           field: 'date',          dir: 'desc' },
     { label: '古い順',             field: 'date',          dir: 'asc' },
@@ -15971,16 +15978,28 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   renderModelKindFilter();
 
   // MODEL SHARE: 詳細
-  async function downloadModelFile(p) {
-    const id = modelFileIdOf(p);
-    if (!id) return;
-    const a = document.createElement('a');
-    a.href = MODEL_DOWNLOAD_BASE + encodeURIComponent(id);
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  function modelDownloadName(p) {
+    const orig = String((p.modelFile && p.modelFile.name) || '').replace(/^pr_[A-Za-z0-9_-]{10,}__/, '');
+    const m = /\.[A-Za-z0-9]+$/.exec(orig);
+    const ext = m ? m[0] : '';
+    const title = String(p.title || '').replace(/[\\/:*?"<>|\r\n\t]+/g, '_').trim();
+    if (!title) return orig || ('model_' + p.id + ext);
+    return (ext && title.toLowerCase().slice(-ext.length) === ext.toLowerCase()) ? title : title + ext;
+  }
+
+  function renderModelDownloadState(p) {
+    const btn = document.getElementById('modelDownloadBtn');
+    const bar = document.getElementById('modelDownloadProgress');
+    if (!btn || !bar || btn.dataset.modelId !== String(p.id)) return;
+    const st = modelDownloads[p.id];
+    const pct = st && st.total ? Math.min(100, Math.floor(st.done / st.total * 100)) : 0;
+    btn.disabled = !!st;
+    btn.textContent = st ? 'ダウンロード中 ' + pct + '%' : 'ダウンロード';
+    bar.classList.toggle('on', !!st);
+    bar.firstElementChild.style.width = pct + '%';
+  }
+
+  async function countModelDownload(p) {
     p.downloadCount = (Number(p.downloadCount) || 0) + 1;
     updateCountUI(p.id);
     try {
@@ -15992,6 +16011,121 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     } catch (err) {
       console.error(err);
     }
+  }
+
+  function openModelDirectDownload(p) {
+    const id = modelFileIdOf(p);
+    if (!id) return;
+    const a = document.createElement('a');
+    a.href = MODEL_DOWNLOAD_BASE + encodeURIComponent(id);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    countModelDownload(p);
+  }
+
+  async function fetchModelChunk(fileId, offset, length) {
+    let lastErr = null;
+    for (let i = 0; i < MODEL_UPLOAD_RETRY; i++) {
+      try {
+        const r = await fetchVideoChunk(fileId, offset, length);
+        const bytes = base64ToBytes(r.base64 || '');
+        if (bytes.length !== length) throw new Error('受け取ったデータの大きさが合いません');
+        return bytes;
+      } catch (err) {
+        lastErr = err;
+        if (/^(auth|login)$/.test(String(err && err.message))) break;
+        await new Promise(function (res) { setTimeout(res, MODEL_UPLOAD_RETRY_WAIT_MS); });
+      }
+    }
+    throw lastErr;
+  }
+
+  function saveBlobAs(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  }
+
+  async function downloadModelFile(p) {
+    const id = modelFileIdOf(p);
+    const size = Number(p.modelFile && p.modelFile.size) || 0;
+    if (!id || modelDownloads[p.id]) return;
+    if (!size) { openModelDirectDownload(p); return; }
+    const name = modelDownloadName(p);
+    let writable = null;
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName: name });
+        writable = await handle.createWritable();
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        console.error(err);
+      }
+    }
+    if (!writable && size > MODEL_MEMORY_DOWNLOAD_MAX) {
+      if (window.confirm('このブラウザでは、大きいファイルを投稿タイトルの名前で保存できません。\nDriveから直接ダウンロードしますか？(ファイル名は管理用の名前になります)')) openModelDirectDownload(p);
+      return;
+    }
+    modelDownloads[p.id] = { done: 0, total: size };
+    renderModelDownloadState(p);
+    const n = Math.ceil(size / MODEL_RELAY_CHUNK);
+    const got = {};
+    const parts = [];
+    let next = 0;
+    let flushed = 0;
+    let failed = false;
+    let writeChain = Promise.resolve();
+    function flush() {
+      while (got[flushed]) {
+        const bytes = got[flushed];
+        delete got[flushed];
+        flushed++;
+        if (writable) writeChain = writeChain.then(function () { return writable.write(bytes); });
+        else parts.push(bytes);
+      }
+    }
+    async function worker() {
+      try {
+        while (next < n && !failed) {
+          const i = next++;
+          const offset = i * MODEL_RELAY_CHUNK;
+          got[i] = await fetchModelChunk(id, offset, Math.min(MODEL_RELAY_CHUNK, size - offset));
+          modelDownloads[p.id].done += got[i].length;
+          renderModelDownloadState(p);
+          flush();
+          await writeChain;
+        }
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
+    }
+    try {
+      const workers = [];
+      for (let w = 0; w < Math.min(MODEL_RELAY_PARALLEL, n); w++) workers.push(worker());
+      await Promise.all(workers);
+      await writeChain;
+      if (writable) await writable.close();
+      else saveBlobAs(new Blob(parts, { type: 'application/octet-stream' }), name);
+    } catch (err) {
+      if (writable) { try { await writable.abort(); } catch (e) {} }
+      delete modelDownloads[p.id];
+      renderModelDownloadState(p);
+      window.alert('ダウンロードに失敗しました。時間をおいてもう一度お試しください(' + (err.message || err) + ')');
+      console.error(err);
+      return;
+    }
+    delete modelDownloads[p.id];
+    renderModelDownloadState(p);
+    countModelDownload(p);
   }
 
   function modelTextBlockHtml(label, text) {
@@ -16014,8 +16148,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const fileBlock = mf
       ? '<div class="detail-block"><div class="model-file-card">' +
           '<div class="model-file-info"><div class="model-file-name">' + escapeHtml(mf.name || '(ファイル名なし)') + '</div>' +
-          '<div class="model-file-sub">' + escapeHtml(formatBytes(mf.size)) + '</div></div>' +
-          '<button class="btn-submit" type="button" id="modelDownloadBtn">ダウンロード</button>' +
+          '<div class="model-file-sub">' + escapeHtml(formatBytes(mf.size)) + '</div>' +
+          '<div class="model-upload-progress" id="modelDownloadProgress"><div></div></div>' +
+          '<div class="model-direct-note">大きいファイルは <button type="button" class="model-direct-dl" id="modelDirectDownloadBtn">Driveから直接ダウンロード</button>(速いが、ファイル名は管理用の名前になります)</div></div>' +
+          '<button class="btn-submit" type="button" id="modelDownloadBtn" data-model-id="' + escapeHtml(String(p.id)) + '">ダウンロード</button>' +
         '</div></div>'
       : '<div class="detail-block"><div class="value">(ファイルがありません)</div></div>';
 
@@ -16050,7 +16186,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       });
     });
     const dlBtn = document.getElementById('modelDownloadBtn');
-    if (dlBtn) dlBtn.addEventListener('click', function () { downloadModelFile(p); });
+    if (dlBtn) {
+      dlBtn.addEventListener('click', function () { downloadModelFile(p); });
+      document.getElementById('modelDirectDownloadBtn').addEventListener('click', function () { openModelDirectDownload(p); });
+      renderModelDownloadState(p);
+    }
     wireModalLikeButton();
     wireCommentToggle(p);
     wireAdminActionButtons(p);
