@@ -1550,6 +1550,21 @@
   .model-upload-progress.on{ display:block; }
   .model-upload-progress > div{ height:100%; width:0; background:var(--accent); transition:width .2s ease; }
   #mKindToggle{ display:inline-flex; flex-wrap:wrap; }
+  .inpaint-src.model-dropzone{ flex-direction:column; justify-content:center; text-align:center; gap:12px; min-height:190px; padding:28px 20px; border:2px dashed var(--line); background:var(--bg); }
+  .inpaint-src.model-dropzone:hover{ border-color:var(--accent); background:rgba(0,150,250,.05); }
+  .inpaint-src.model-dropzone.drag-over{ border-color:var(--accent); background:rgba(0,150,250,.14); }
+  .inpaint-src.model-dropzone.loaded{ border-style:solid; border-color:var(--accent); background:var(--accent-dim); }
+  .model-dropzone .inpaint-src-icon{ width:60px; height:60px; border-radius:16px; }
+  .model-dropzone .inpaint-src-icon svg{ width:32px; height:32px; }
+  .model-dropzone .inpaint-src-text{ flex:none; }
+  .model-dropzone .inpaint-src-title{ font-size:15px; }
+  .model-dropzone .inpaint-src-sub{ font-size:12px; margin-top:6px; }
+  .weight-stepper{ display:flex; align-items:stretch; }
+  .weight-stepper input{ flex:1 1 auto; min-width:0; text-align:center; font-variant-numeric:tabular-nums; border-radius:0 !important; }
+  .weight-stepper button{ flex:0 0 42px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:18px; line-height:1; cursor:pointer; padding:0; transition:color .15s ease, background .15s ease; }
+  .weight-stepper button:first-child{ border-radius:8px 0 0 8px; border-right:0; }
+  .weight-stepper button:last-child{ border-radius:0 8px 8px 0; border-left:0; }
+  .weight-stepper button:hover{ color:var(--accent); background:var(--accent-dim); }
 
   /* 新着通知バッジ(タブ右上の赤い「＋N」) */
   .tab-btn{ position: relative; }
@@ -1914,7 +1929,7 @@
   #promptField, #negativeField, #charPromptField, #settingsField, #novelEditorField,
   #rTitleField, #rRefField,
   #pTitleField, #pNegativeField, #pMemoField, #pSettingsField, #pCharPromptField,
-  #mSpecField, #mPromptField, #mMemoField{
+  #mSpecField, #mPromptField, #mRecPromptField, #mNegativeField, #mMemoField{
     background: var(--surface-2);
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -1932,7 +1947,8 @@
   #rTitleField > .field-label, #rRefField > .field-label,
   #pTitleField > .field-label, #pNegativeField > .field-label, #pMemoField > .field-label,
   #pSettingsField > .field-label, #pCharPromptField > .field-label,
-  #mSpecField > .field-label, #mPromptField > .field-label, #mMemoField > .field-label{
+  #mSpecField > .field-label, #mPromptField > .field-label, #mRecPromptField > .field-label,
+  #mNegativeField > .field-label, #mMemoField > .field-label{
     margin: 0 -12px 12px;
     padding: 8px 12px;
     background: var(--surface);
@@ -2967,7 +2983,7 @@
 
       <div class="req-field" id="mFileField">
         <label class="field-label">モデルファイル</label>
-        <div class="inpaint-src" id="mFileDropzone" tabindex="0">
+        <div class="inpaint-src model-dropzone" id="mFileDropzone" tabindex="0">
           <div class="inpaint-src-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -2975,7 +2991,7 @@
             </svg>
           </div>
           <div class="inpaint-src-text">
-            <div class="inpaint-src-title" id="mFileLabel">ファイルをドラッグ&ドロップ / <span class="dz-browse">クリックして選択</span></div>
+            <div class="inpaint-src-title" id="mFileLabel">ここにモデルファイルをドラッグ&ドロップ / <span class="dz-browse">クリックして選択</span></div>
             <div class="inpaint-src-sub" id="mFileSub">.safetensors / .gguf / .ckpt / .pt / .pth / .bin / .sft / .zip(10GBまで)。大きいファイルは送信に時間がかかります</div>
           </div>
           <button type="button" class="inpaint-src-clear" id="mFileClear" style="display:none;">クリア</button>
@@ -2993,16 +3009,31 @@
       <label class="field-label">モデル情報(任意)</label>
       <div class="settings-grid open">
         <div class="field"><label>ベースモデル</label>
-          <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="mBaseModelInput" list="dl_model_base" placeholder="例: SDXL / Illustrious / Flux.1 / Wan2.2"></div>
-        <div class="field"><label>推奨の強さ(Weight)</label>
-          <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="mWeightInput" placeholder="例: 0.6〜0.8"></div>
+          <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="mBaseModelInput" list="dl_model_base_form" placeholder="▼から選択(手入力も可)"></div>
+        <div class="field" id="mWeightField"><label>推奨の強さ(Weight)</label>
+          <div class="weight-stepper">
+            <button type="button" id="mWeightDown" aria-label="弱くする">−</button>
+            <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="mWeightInput" inputmode="decimal" value="0.8">
+            <button type="button" id="mWeightUp" aria-label="強くする">＋</button>
+          </div></div>
       </div>
       </div>
       <datalist id="dl_model_base"></datalist>
+      <datalist id="dl_model_base_form"></datalist>
 
       <div id="mPromptField">
-      <label class="field-label">トリガーワード・推奨プロンプト</label>
-      <textarea id="mPromptInput" class="autogrow" placeholder="例: wcstyle, watercolor"></textarea>
+      <label class="field-label">トリガーワード</label>
+      <textarea id="mPromptInput" class="autogrow" placeholder="例: wcstyle"></textarea>
+      </div>
+
+      <div id="mRecPromptField">
+      <label class="field-label">推奨プロンプト(任意)</label>
+      <textarea id="mRecPromptInput" class="autogrow" placeholder="例: masterpiece, best quality, wcstyle, watercolor, 1girl"></textarea>
+      </div>
+
+      <div id="mNegativeField">
+      <label class="field-label">ネガティブプロンプト(任意)</label>
+      <textarea id="mNegativeInput" class="autogrow" placeholder="例: lowres, bad anatomy"></textarea>
       </div>
 
       <div id="mMemoField">
@@ -15747,6 +15778,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // ===== MODEL SHARE =====
   const MODEL_KINDS = ['LoRA', 'Checkpoint', 'GGUF', 'VAE', 'Embedding', 'その他'];
+  const MODEL_BASE_PRESETS = ['SD 1.5', 'SDXL', 'Pony', 'Illustrious', 'NoobAI', 'Anima', 'SD 3.5', 'Flux.1', 'Flux.1 Kontext', 'Flux.2', 'Chroma', 'HiDream', 'Qwen-Image', 'Z-Image', 'Moss', 'Wan2.1', 'Wan2.2', 'HunyuanVideo', 'LTX-Video'];
+  const MODEL_WEIGHT_DEFAULT = '0.8';
+  const MODEL_WEIGHT_STEP = 0.05;
+  const MODEL_WEIGHT_KINDS = ['', 'LoRA', 'Embedding', 'その他'];
   const MODEL_EXTENSIONS = ['safetensors', 'gguf', 'ckpt', 'pt', 'pth', 'bin', 'sft', 'zip'];
   const MODEL_MAX_BYTES = 10 * 1024 * 1024 * 1024;
   const MODEL_UPLOAD_RETRY = 5;
@@ -15776,7 +15811,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return imagePosts.concat(videoPosts).filter(function (ip) { return modelIdsOf(ip).indexOf(String(p.id)) !== -1; });
   }
   function modelHaystack(p) {
-    return (postKeywordHaystack(p) + ' ' + String((p.modelFile && p.modelFile.name) || '') + ' ' + modelBaseOf(p) + ' ' + modelKindOf(p)).toLowerCase();
+    return (postKeywordHaystack(p) + ' ' + String((p.settings && p.settings.recommendedPrompt) || '') + ' ' + String((p.modelFile && p.modelFile.name) || '') + ' ' + modelBaseOf(p) + ' ' + modelKindOf(p)).toLowerCase();
   }
   function modelTagPool() { return tagsOfPosts(modelPosts); }
   function modelFileExtOk(name) {
@@ -15837,6 +15872,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (dl) {
       const bases = sortJa(Array.from(new Set(modelPosts.map(modelBaseOf).filter(Boolean))));
       dl.innerHTML = bases.map(function (b) { return '<option value="' + escapeHtml(b) + '"></option>'; }).join('');
+      fillDatalist('dl_model_base_form', MODEL_BASE_PRESETS.concat(bases.filter(function (b) { return MODEL_BASE_PRESETS.indexOf(b) === -1; })));
     }
   }
 
@@ -15955,6 +15991,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
+  function modelTextBlockHtml(label, text) {
+    if (!hasText(text)) return '';
+    return '<div class="detail-block"><div class="block-head"><div class="label">' + escapeHtml(label) + '</div><button class="btn-copy" type="button" data-model-copy="1">コピー</button></div><div class="value">' + escapeHtml(text) + '</div></div>';
+  }
+
   function openModelModal(p) {
     clearNotifyForActiveTab();
     openDetailPostId = p.id;
@@ -15989,17 +16030,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-counts">' + modelCountsHtml(p) + '</div>' +
       fileBlock +
       (specs ? '<div class="detail-block"><div class="label">モデル情報</div><div class="settings-table">' + specs + '</div></div>' : '') +
-      (hasText(p.prompt) ? '<div class="detail-block"><div class="block-head"><div class="label">トリガーワード・推奨プロンプト</div><button class="btn-copy" type="button" id="modelCopyPromptBtn">コピー</button></div><div class="value">' + escapeHtml(p.prompt) + '</div></div>' : '') +
+      modelTextBlockHtml('トリガーワード', p.prompt) +
+      modelTextBlockHtml('推奨プロンプト', s.recommendedPrompt) +
+      modelTextBlockHtml('ネガティブプロンプト', p.negativePrompt) +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">説明</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
       commentToggleHtml(p) +
       '<div class="linked-works-head">このモデルを使った投稿作品 (' + used.length + '件)</div>' +
       '<div class="list" id="modelUsedWorks">' + usedHtml + '</div>';
 
-    const copyBtn = document.getElementById('modelCopyPromptBtn');
-    if (copyBtn) copyBtn.addEventListener('click', function () {
-      navigator.clipboard.writeText(p.prompt || '').then(function () {
-        copyBtn.textContent = 'コピーしました';
-        setTimeout(function () { copyBtn.textContent = 'コピー'; }, 1500);
+    modalBody.querySelectorAll('[data-model-copy]').forEach(function (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText(copyBtn.closest('.detail-block').querySelector('.value').textContent).then(function () {
+          copyBtn.textContent = 'コピーしました';
+          setTimeout(function () { copyBtn.textContent = 'コピー'; }, 1500);
+        });
       });
     });
     const dlBtn = document.getElementById('modelDownloadBtn');
@@ -16024,6 +16068,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       btn.addEventListener('click', function () {
         mSelectedKind = btn.dataset.kind;
         renderModelKindToggle();
+        updateModelWeightField();
         document.getElementById('mKindField').classList.remove('required-missing');
       });
     });
@@ -16074,7 +16119,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     } else if (editingFile) {
       label.innerHTML = '現在のファイル: ' + escapeHtml(editingFile.name || '') + '(' + escapeHtml(formatBytes(editingFile.size)) + ') / <span class="dz-browse">差し替える場合はクリック</span>';
     } else {
-      label.innerHTML = 'ファイルをドラッグ&ドロップ / <span class="dz-browse">クリックして選択</span>';
+      label.innerHTML = 'ここにモデルファイルをドラッグ&ドロップ / <span class="dz-browse">クリックして選択</span>';
     }
   }
 
@@ -16128,25 +16173,44 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     bar.firstElementChild.style.width = total > 0 ? Math.min(100, Math.round(done / total * 100)) + '%' : '0';
   }
 
+  function modelKindUsesWeight(kind) { return MODEL_WEIGHT_KINDS.indexOf(kind || '') !== -1; }
+
+  function updateModelWeightField() {
+    document.getElementById('mWeightField').style.display = modelKindUsesWeight(mSelectedKind) ? '' : 'none';
+  }
+
+  function stepModelWeight(dir) {
+    const input = document.getElementById('mWeightInput');
+    const cur = parseFloat(input.value);
+    const next = Math.round(((isNaN(cur) ? Number(MODEL_WEIGHT_DEFAULT) : cur) + dir * MODEL_WEIGHT_STEP) * 100) / 100;
+    input.value = String(next === 0 ? 0 : next);
+  }
+  document.getElementById('mWeightDown').addEventListener('click', function () { stepModelWeight(-1); });
+  document.getElementById('mWeightUp').addEventListener('click', function () { stepModelWeight(1); });
+
   function collectModelSettings() {
     const out = {};
     if (mSelectedKind) out.modelKind = mSelectedKind;
     const base = document.getElementById('mBaseModelInput').value.trim();
     const weight = document.getElementById('mWeightInput').value.trim();
+    const rec = document.getElementById('mRecPromptInput').value.trim();
     if (base) out.baseModel = base;
-    if (weight) out.weight = weight;
+    if (weight && modelKindUsesWeight(mSelectedKind)) out.weight = weight;
+    if (rec) out.recommendedPrompt = rec;
     return out;
   }
 
   function resetModelForm() {
-    ['mTitleInput', 'mAuthorInput', 'mPromptInput', 'mMemoInput', 'mBaseModelInput', 'mWeightInput', 'mEditPwInput'].forEach(function (id) {
+    ['mTitleInput', 'mAuthorInput', 'mPromptInput', 'mRecPromptInput', 'mNegativeInput', 'mMemoInput', 'mBaseModelInput', 'mWeightInput', 'mEditPwInput'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
+    document.getElementById('mWeightInput').value = MODEL_WEIGHT_DEFAULT;
     resetAutogrow();
     mSelectedFile = null;
     mSelectedKind = '';
     mSelectedTags = [];
     renderModelKindToggle();
+    updateModelWeightField();
     renderModelFormTags();
     renderModelFileDisplay();
     setModelProgress(0, 0);
@@ -16157,6 +16221,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('mTitleInput').value = p.title || '';
     document.getElementById('mAuthorInput').value = p.author || '';
     document.getElementById('mPromptInput').value = p.prompt || '';
+    document.getElementById('mRecPromptInput').value = s.recommendedPrompt || '';
+    document.getElementById('mNegativeInput').value = p.negativePrompt || '';
     document.getElementById('mMemoInput').value = p.memo || '';
     document.getElementById('mBaseModelInput').value = s.baseModel || '';
     document.getElementById('mWeightInput').value = s.weight || '';
@@ -16164,6 +16230,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     mSelectedTags = (p.tags || []).slice();
     mSelectedFile = null;
     renderModelKindToggle();
+    updateModelWeightField();
     renderModelFormTags();
     renderModelFileDisplay();
   }
@@ -16243,7 +16310,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         title: document.getElementById('mTitleInput').value,
         author: document.getElementById('mAuthorInput').value,
         prompt: document.getElementById('mPromptInput').value,
-        negativePrompt: '',
+        negativePrompt: document.getElementById('mNegativeInput').value,
         memo: document.getElementById('mMemoInput').value,
         settings: collectModelSettings(),
         tags: mSelectedTags
@@ -17168,7 +17235,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }, resetRequestForm, 'rStatusText');
 
   wireClearFormBtn('mClearFormBtn', function () {
-    return anyValue(['mTitleInput', 'mPromptInput', 'mMemoInput', 'mBaseModelInput', 'mWeightInput']) || mSelectedTags.length > 0 || !!mSelectedFile;
+    return anyValue(['mTitleInput', 'mPromptInput', 'mRecPromptInput', 'mNegativeInput', 'mMemoInput', 'mBaseModelInput']) || document.getElementById('mWeightInput').value.trim() !== MODEL_WEIGHT_DEFAULT || mSelectedTags.length > 0 || !!mSelectedFile;
   }, resetModelForm, 'mStatusText');
 
 
