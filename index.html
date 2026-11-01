@@ -615,6 +615,7 @@
      広がろうとするため、併せて指定する。 */
   .settings-table > div{ min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
   .settings-table div span{ color: var(--ink-dim); display:block; font-size:10.5px; }
+  .settings-table.model-spec-table{ display:flex; flex-wrap:wrap; gap:8px 36px; }
 
   .empty{
     text-align:center; color: var(--ink-dim);
@@ -11220,7 +11221,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       : null;
     const referenceSourceBlock = reference
       ? '<div class="linked-works-head">参考にした投稿作品</div>' +
-        '<div class="list" id="referenceSourceWorks">' + imageRowHtml(reference, 'w320') + '</div>'
+        '<div class="list" id="referenceSourceWorks">' + imageRowHtml(reference, 'w320', { counts: false }) + '</div>'
       : '';
 
     const videoSource = (p.type === 'video' && p.videoSourceId)
@@ -11228,7 +11229,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       : null;
     const videoSourceBlock = videoSource
       ? '<div class="linked-works-head">動画の元になった画像作品</div>' +
-        '<div class="list" id="videoSourceWorks">' + imageRowHtml(videoSource, 'w320') + '</div>'
+        '<div class="list" id="videoSourceWorks">' + imageRowHtml(videoSource, 'w320', { counts: false }) + '</div>'
       : '';
 
     const request = p.requestId
@@ -11243,14 +11244,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     children.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const childrenBlock = children.length
       ? '<div class="linked-works-head">この作品のバリエーション(' + children.length + '件)</div>' +
-        '<div class="list" id="childWorks">' + children.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
+        '<div class="list" id="childWorks">' + children.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('') + '</div>'
       : '';
 
     const sourceVideos = videoPosts.filter(function (v) { return String(v.videoSourceId) === String(p.id); });
     sourceVideos.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const sourceVideosBlock = (options.video && sourceVideos.length)
       ? '<div class="linked-works-head">この画像を元にした動画(' + sourceVideos.length + '件)</div>' +
-        '<div class="list" id="sourceVideoWorks">' + sourceVideos.map(function (v) { return imageRowHtml(v, 'w320'); }).join('') + '</div>'
+        '<div class="list" id="sourceVideoWorks">' + sourceVideos.map(function (v) { return imageRowHtml(v, 'w320', { counts: false }); }).join('') + '</div>'
       : '';
 
     // この作品を参考にして作られたノベルゲーム
@@ -11258,14 +11259,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     linkedNovels.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const linkedNovelsBlock = (options.tabNovel && linkedNovels.length)
       ? '<div class="linked-works-head">この作品を使ったノベルゲーム(' + linkedNovels.length + '件)</div>' +
-        '<div class="list" id="linkedNovelWorks">' + linkedNovels.map(function (nv) { return imageRowHtml(nv, 'w320'); }).join('') + '</div>'
+        '<div class="list" id="linkedNovelWorks">' + linkedNovels.map(function (nv) { return imageRowHtml(nv, 'w320', { counts: false }); }).join('') + '</div>'
       : '';
 
     const referencedBy = imagePosts.filter(function (ip) { return String(ip.refId) === String(p.id); });
     referencedBy.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const referencedByBlock = referencedBy.length
       ? '<div class="linked-works-head">この作品を参考にした投稿(' + referencedBy.length + '件)</div>' +
-        '<div class="list" id="referencedByWorks">' + referencedBy.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
+        '<div class="list" id="referencedByWorks">' + referencedBy.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('') + '</div>'
       : '';
 
     // この画像が対応している修正依頼(画像投稿)へのリンク
@@ -11287,7 +11288,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       answers.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
       fixAnswersBlock = '<div class="linked-works-head">この修正依頼に対応して投稿された作品(' + answers.length + '件)</div>' +
         (answers.length
-          ? '<div class="list" id="fixAnswerWorks">' + answers.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('') + '</div>'
+          ? '<div class="list" id="fixAnswerWorks">' + answers.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('') + '</div>'
           : '<div class="linked-empty">まだこの修正依頼に対応した投稿はありません。</div>');
     }
 
@@ -14665,7 +14666,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const answers = imagePosts.filter(function (ip) { return String(ip.requestId) === String(p.id) && !ip.parentId; });
     answers.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const answersHtml = answers.length
-      ? answers.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('')
+      ? answers.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('')
       : '<div class="linked-empty">まだこのリクエストに応えた投稿はありません。</div>';
 
     modalBody.innerHTML = '' +
@@ -15732,7 +15733,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const linked = imagePosts.filter(function (ip) { return basePromptIdsOf(ip).indexOf(String(p.id)) !== -1; });
     linked.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const linkedHtml = linked.length
-      ? linked.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('')
+      ? linked.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('')
       : '<div class="linked-empty">まだこのプロンプト例をベースにした投稿はありません。</div>';
 
     modalBody.innerHTML = '' +
@@ -16003,7 +16004,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     openDetailPostId = p.id;
     const used = modelUsedBy(p).sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
     const usedHtml = used.length
-      ? used.map(function (ip) { return imageRowHtml(ip, 'w320'); }).join('')
+      ? used.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('')
       : '<div class="linked-empty">まだこのモデルを使った投稿はありません。</div>';
     const mf = p.modelFile;
     const s = p.settings || {};
@@ -16027,11 +16028,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button>' +
         '</div>' +
       '</div>' +
-      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>モデル</span></div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="modal-counts">' + modelCountsHtml(p) + '</div>' +
       fileBlock +
-      (specs ? '<div class="detail-block"><div class="label">モデル情報</div><div class="settings-table">' + specs + '</div></div>' : '') +
+      (specs ? '<div class="detail-block"><div class="label">モデル情報</div><div class="settings-table model-spec-table">' + specs + '</div></div>' : '') +
       modelTextBlockHtml('トリガーワード', p.prompt) +
       modelTextBlockHtml('推奨プロンプト', s.recommendedPrompt) +
       modelTextBlockHtml('ネガティブプロンプト', p.negativePrompt) +
