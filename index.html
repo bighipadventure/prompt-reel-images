@@ -1482,11 +1482,18 @@
   .link-card .link-url:hover{ text-decoration:underline; }
   .link-card .link-admin-actions{ display:flex; gap:8px; flex-shrink:0; }
   .link-card .link-admin-actions button{ padding:4px 10px; font-size:12px; }
-  .link-drag-handle{ display:inline-block; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; color:var(--ink-dim); font-size:15px; line-height:1; padding:2px 6px 2px 0; margin-right:2px; vertical-align:1px; }
-  .link-drag-handle:hover{ color:var(--accent); }
-  .link-dragging{ opacity:.4; }
-  .link-drop-before{ box-shadow:0 -3px 0 0 var(--accent); }
-  .link-drop-after{ box-shadow:0 3px 0 0 var(--accent); }
+  .links-list{ position:relative; }
+  .link-sortable{ position:relative; }
+  .link-card.link-sortable{ padding-left:46px; }
+  .link-genre-head.link-sortable{ padding-left:40px; }
+  .link-grip{ position:absolute; left:0; top:0; bottom:0; width:32px; display:flex; align-items:center; justify-content:center; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; color:var(--ink-dim); font-size:16px; background:rgba(255,255,255,.035); border-right:1px solid var(--line); border-radius:10px 0 0 10px; transition:background .15s ease, color .15s ease; }
+  .link-genre-head .link-grip{ bottom:4px; border-right:none; border-radius:6px; }
+  .link-grip:hover{ color:var(--accent); background:rgba(0,150,250,.12); }
+  .links-list.link-sorting > [data-genre]{ transition:transform .22s cubic-bezier(.2,.8,.3,1), box-shadow .2s ease; }
+  .links-list.link-sorting > .link-lifted{ z-index:5; transition:box-shadow .2s ease; box-shadow:0 14px 32px rgba(0,0,0,.55); }
+  .link-card.link-lifted{ border-color:var(--accent); }
+  .link-genre-head.link-lifted{ background:var(--surface); border-radius:6px 6px 0 0; }
+  .link-lifted .link-grip{ color:var(--accent); background:rgba(0,150,250,.18); }
   body.link-drag-active, body.link-drag-active *{ cursor:grabbing !important; user-select:none !important; -webkit-user-select:none !important; }
   /* 動画機能オフ(opt-no-video)で、動画タブ・動画投稿モードボタン・使い方の動画説明を隠す */
   body.opt-no-video .video-only{ display:none !important; }
@@ -18288,6 +18295,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   /* ===== LINKS(リンク集) ===== */
   const linksListEl = document.getElementById('linksList');
+  let linkDragging = false;
   const linksEmptyEl = document.getElementById('linksEmpty');
   let editingLinkId = null;
 
@@ -18311,10 +18319,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<button class="btn-ghost" type="button" data-del-link="' + escapeHtml(String(l.id)) + '">削除</button>' +
         '</div>'
       : '';
-    const handle = adminMode ? '<span class="link-drag-handle" title="ドラッグで並べ替え">⠿</span>' : '';
-    return '<div class="link-card" data-link-id="' + escapeHtml(String(l.id)) + '" data-genre="' + escapeHtml(String(l.genre || '').trim()) + '">' +
+    const grip = adminMode ? '<div class="link-grip" title="ドラッグで並べ替え">⠿</div>' : '';
+    return '<div class="link-card' + (adminMode ? ' link-sortable' : '') + '" data-link-id="' + escapeHtml(String(l.id)) + '" data-genre="' + escapeHtml(String(l.genre || '').trim()) + '">' +
+      grip +
       '<div class="link-card-head">' +
-        '<div class="link-title">' + handle + escapeHtml(l.title || '(無題)') + '</div>' +
+        '<div class="link-title">' + escapeHtml(l.title || '(無題)') + '</div>' +
         adminActions +
       '</div>' +
       (l.description ? '<div class="link-desc">' + escapeHtml(l.description) + '</div>' : '') +
@@ -18323,6 +18332,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function renderLinksList() {
+    if (linkDragging) return;
     // ジャンル別プルダウン候補(スプレッドシートで指定されたジャンル)
     fillDatalist('dl_link_genre', sortJa(Array.from(new Set(allLinks.map(function (l) { return String(l.genre || '').trim(); }).filter(Boolean)))));
 
@@ -18338,12 +18348,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     let genreIdx = 0;
     linksListEl.innerHTML = linkGroups().map(function (grp) {
       const g = grp.genre;
-      const handle = adminMode ? '<span class="link-drag-handle" title="ドラッグでジャンルごと並べ替え">⠿</span>' : '';
-      const head = g ? '<div class="link-genre-head lg-c' + (genreIdx++ % 7) + '" data-genre-head="1" data-genre="' + escapeHtml(g) + '">' + handle + escapeHtml(g) + '</div>' : '';
+      const grip = adminMode ? '<div class="link-grip" title="ドラッグでジャンルごと並べ替え">⠿</div>' : '';
+      const head = g ? '<div class="link-genre-head lg-c' + (genreIdx++ % 7) + (adminMode ? ' link-sortable' : '') + '" data-genre-head="1" data-genre="' + escapeHtml(g) + '">' + grip + escapeHtml(g) + '</div>' : '';
       return head + grp.items.map(linkCardHtml).join('');
     }).join('');
 
-    linksListEl.querySelectorAll('.link-drag-handle').forEach(function (h) {
+    linksListEl.querySelectorAll('.link-grip').forEach(function (h) {
       h.addEventListener('pointerdown', function (e) { startLinkDrag(e, h); });
     });
 
@@ -18435,26 +18445,77 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return order.map(function (g) { return { genre: g, items: groups[g] }; });
   }
 
-  function linkGenreEls(genre) {
-    return Array.prototype.filter.call(linksListEl.querySelectorAll('[data-genre]'), function (el) { return el.dataset.genre === genre; });
+  function linkUnits(isGenre, genre) {
+    const els = Array.prototype.filter.call(linksListEl.children, function (el) { return el.hasAttribute('data-genre'); });
+    if (!isGenre) return els.filter(function (el) { return el.dataset.linkId && el.dataset.genre === genre; }).map(function (el) { return [el]; });
+    const units = [];
+    let cur = null;
+    els.forEach(function (el) {
+      if (!cur || cur.genre !== el.dataset.genre) { cur = { genre: el.dataset.genre, els: [] }; units.push(cur); }
+      cur.els.push(el);
+    });
+    return units.map(function (u) { return u.els; });
   }
 
-  function startLinkDrag(e, handle) {
-    if (!adminMode || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    const src = handle.closest('[data-genre]');
-    if (!src) return;
+  function linkUnitTop(u) { return u[0].offsetTop; }
+  function linkUnitBottom(u) { const last = u[u.length - 1]; return last.offsetTop + last.offsetHeight; }
+
+  function startLinkDrag(e, grip) {
+    if (!adminMode || linkDragging || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const srcEl = grip.closest('[data-genre]');
+    if (!srcEl) return;
     e.preventDefault();
-    const isGenre = src.dataset.genreHead === '1';
-    const srcGenre = src.dataset.genre;
-    const srcEls = isGenre ? linkGenreEls(srcGenre) : [src];
-    srcEls.forEach(function (el) { el.classList.add('link-dragging'); });
-    document.body.classList.add('link-drag-active');
-    let marked = null;
-    let drop = null;
-    let lastX = e.clientX;
+    const isGenre = srcEl.dataset.genreHead === '1';
+    const genre = srcEl.dataset.genre;
+    const src = linkUnits(isGenre, genre).find(function (u) { return u.indexOf(srcEl) !== -1; });
+    if (!src) return;
+    linkDragging = true;
+    const prev = allLinks.slice();
+    const grabOffset = e.clientY - src[0].getBoundingClientRect().top;
     let lastY = e.clientY;
     let raf = 0;
-    function unmark() { if (marked) marked.classList.remove('link-drop-before', 'link-drop-after'); marked = null; }
+    linksListEl.classList.add('link-sorting');
+    document.body.classList.add('link-drag-active');
+    src.forEach(function (el) { el.classList.add('link-lifted'); });
+
+    function pointerInList() { return lastY - linksListEl.getBoundingClientRect().top; }
+    function srcIndex(units) { return units.findIndex(function (u) { return u[0] === src[0]; }); }
+
+    function reorder() {
+      const units = linkUnits(isGenre, genre);
+      const others = units.filter(function (u) { return u[0] !== src[0]; });
+      if (!others.length) return;
+      const p = pointerInList();
+      let idx = 0;
+      others.forEach(function (u) { if ((linkUnitTop(u) + linkUnitBottom(u)) / 2 < p) idx++; });
+      if (idx === srcIndex(units)) return;
+      const listTop = linksListEl.getBoundingClientRect().top;
+      const moving = Array.prototype.filter.call(linksListEl.children, function (el) { return src.indexOf(el) === -1; });
+      const visual = moving.map(function (el) { return el.getBoundingClientRect().top - listTop; });
+      const lastOther = others[others.length - 1];
+      const ref = idx < others.length ? others[idx][0] : lastOther[lastOther.length - 1].nextSibling;
+      src.forEach(function (el) { linksListEl.insertBefore(el, ref); });
+      moving.forEach(function (el, i) {
+        const d = visual[i] - el.offsetTop;
+        el.style.transition = 'none';
+        el.style.transform = d ? 'translateY(' + d + 'px)' : '';
+      });
+      linksListEl.getBoundingClientRect();
+      moving.forEach(function (el) { el.style.transition = ''; el.style.transform = ''; });
+    }
+
+    function place() {
+      const units = linkUnits(isGenre, genre);
+      const top = linkUnitTop(src);
+      const h = linkUnitBottom(src) - top;
+      const lo = linkUnitTop(units[0]);
+      const hi = linkUnitBottom(units[units.length - 1]) - h;
+      const want = Math.max(lo, Math.min(hi, pointerInList() - grabOffset));
+      src.forEach(function (el) { el.style.transform = 'translateY(' + (want - top) + 'px)'; });
+    }
+
+    function update() { reorder(); place(); }
+
     function tick() {
       raf = 0;
       const edge = 60;
@@ -18466,46 +18527,38 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       update();
       raf = requestAnimationFrame(tick);
     }
+
     function onMove(ev) {
-      lastX = ev.clientX;
       lastY = ev.clientY;
       update();
       if (!raf) raf = requestAnimationFrame(tick);
     }
-    function update() {
-      const ev = { clientX: lastX, clientY: lastY };
-      unmark();
-      drop = null;
-      const hit = document.elementFromPoint(ev.clientX, ev.clientY);
-      const cand = hit && hit.closest('[data-genre]');
-      if (!cand || !linksListEl.contains(cand)) return;
-      if (isGenre) {
-        const g = cand.dataset.genre;
-        if (g === srcGenre) return;
-        const els = linkGenreEls(g);
-        const top = els[0].getBoundingClientRect().top;
-        const bottom = els[els.length - 1].getBoundingClientRect().bottom;
-        const after = ev.clientY > (top + bottom) / 2;
-        marked = after ? els[els.length - 1] : els[0];
-        drop = { key: g, after: after };
-      } else {
-        if (cand === src || cand.dataset.genreHead === '1' || cand.dataset.genre !== srcGenre) return;
-        const r = cand.getBoundingClientRect();
-        const after = ev.clientY > r.top + r.height / 2;
-        marked = cand;
-        drop = { key: cand.dataset.linkId, after: after };
-      }
-      marked.classList.add(drop.after ? 'link-drop-after' : 'link-drop-before');
-    }
+
     function finish(apply) {
       if (raf) cancelAnimationFrame(raf);
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       document.removeEventListener('pointercancel', onCancel);
       document.body.classList.remove('link-drag-active');
-      srcEls.forEach(function (el) { el.classList.remove('link-dragging'); });
-      unmark();
-      if (apply && drop) applyLinkReorder(isGenre, isGenre ? srcGenre : src.dataset.linkId, drop.key, drop.after);
+      src.forEach(function (el) { el.classList.remove('link-lifted'); el.style.transform = ''; });
+      setTimeout(function () {
+        linksListEl.classList.remove('link-sorting');
+        linkDragging = false;
+        if (!apply) { renderLinksList(); return; }
+        const byId = {};
+        allLinks.forEach(function (l) { byId[String(l.id)] = l; });
+        const next = [];
+        linksListEl.querySelectorAll('[data-link-id]').forEach(function (el) {
+          const l = byId[el.dataset.linkId];
+          if (l) { next.push(l); delete byId[el.dataset.linkId]; }
+        });
+        allLinks.forEach(function (l) { if (byId[String(l.id)]) next.push(l); });
+        const ids = next.map(function (l) { return String(l.id); });
+        const changed = ids.join('\n') !== prev.map(function (l) { return String(l.id); }).join('\n');
+        allLinks = next;
+        renderLinksList();
+        if (changed) saveLinkOrder(ids, prev);
+      }, 230);
     }
     function onUp() { finish(true); }
     function onCancel() { finish(false); }
@@ -18514,29 +18567,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.addEventListener('pointercancel', onCancel);
   }
 
-  function applyLinkReorder(isGenre, srcKey, targetKey, after) {
-    const prev = allLinks.slice();
-    const groups = linkGroups();
-    if (isGenre) {
-      const from = groups.findIndex(function (g) { return g.genre === srcKey; });
-      if (from === -1) return;
-      const moved = groups.splice(from, 1)[0];
-      let to = groups.findIndex(function (g) { return g.genre === targetKey; });
-      if (to === -1) return;
-      groups.splice(to + (after ? 1 : 0), 0, moved);
-    } else {
-      const grp = groups.find(function (g) { return g.items.some(function (l) { return String(l.id) === srcKey; }); });
-      if (!grp) return;
-      const moved = grp.items.splice(grp.items.findIndex(function (l) { return String(l.id) === srcKey; }), 1)[0];
-      const to = grp.items.findIndex(function (l) { return String(l.id) === targetKey; });
-      if (to === -1) return;
-      grp.items.splice(to + (after ? 1 : 0), 0, moved);
-    }
-    const next = [].concat.apply([], groups.map(function (g) { return g.items; }));
-    const ids = next.map(function (l) { return String(l.id); });
-    if (ids.join('\n') === prev.map(function (l) { return String(l.id); }).join('\n')) return;
-    allLinks = next;
-    renderLinksList();
+  function saveLinkOrder(ids, prev) {
     linkReorderChain = linkReorderChain.then(async function () {
       try {
         const result = await postAction({ action: 'linkReorder', password: adminPassword, ids: ids });
