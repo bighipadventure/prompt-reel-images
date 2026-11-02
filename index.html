@@ -565,9 +565,14 @@
   .row-link-badge.lb-fix{ color:#c4373a; border-color: rgba(196,55,58,.45); background: rgba(196,55,58,.13); }
   .row-link-badge.lb-parent{ color:#c89edf; border-color: rgba(200,158,223,.45); background: rgba(200,158,223,.13); }
   .row-link-badge.lb-video{ color:#3ac846; border-color: rgba(58,200,70,.45); background: rgba(58,200,70,.13); }
-  .model-kind-badge{ display:inline-block; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:700; line-height:1.4; white-space:nowrap; background:var(--accent-dim); color:var(--accent); border:1px solid rgba(0,150,250,.35); }
+  .model-kind-badge{ --mk:150,150,150; display:inline-block; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:700; line-height:1.4; white-space:nowrap; color:rgb(var(--mk)); background:rgba(var(--mk),.14); border:1px solid rgba(var(--mk),.5); }
+  .model-kind-badge.mk-lora{ --mk:111,199,128; }
+  .model-kind-badge.mk-checkpoint{ --mk:77,171,247; }
+  .model-kind-badge.mk-gguf{ --mk:180,140,255; }
+  .model-kind-badge.mk-vae{ --mk:236,166,72; }
+  .model-kind-badge.mk-embedding{ --mk:240,112,170; }
   #mList .model-kind-badge{ cursor:pointer; transition:background .15s ease, color .15s ease; }
-  #mList .model-kind-badge:hover, #mList .model-kind-badge.is-active{ background:var(--accent); color:#fff; }
+  #mList .model-kind-badge:hover, #mList .model-kind-badge.is-active{ background:rgb(var(--mk)); color:#111; }
   .row-link-badge.lb-used{ color:#3fb6c8; border-color: rgba(63,182,200,.45); background: rgba(63,182,200,.13); }
   .row-link-badge.lb-novel{ color:#c74bc1; border-color: rgba(199,75,193,.45); background: rgba(199,75,193,.13); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
@@ -15917,7 +15922,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function modelKindBadgeHtml(kind) {
     if (!kind) return '';
-    return '<span class="model-kind-badge' + (mKindFilter === kind ? ' is-active' : '') + '" data-kind-badge="' + escapeHtml(kind) + '" title="この種類で絞り込む">' + escapeHtml(kind) + '</span>';
+    const slug = { 'LoRA': 'lora', 'Checkpoint': 'checkpoint', 'GGUF': 'gguf', 'VAE': 'vae', 'Embedding': 'embedding' }[kind] || 'other';
+    return '<span class="model-kind-badge mk-' + slug + (mKindFilter === kind ? ' is-active' : '') + '" data-kind-badge="' + escapeHtml(kind) + '" title="この種類で絞り込む">' + escapeHtml(kind) + '</span>';
   }
 
   function modelRowHtml(p, opts) {
