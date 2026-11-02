@@ -1015,6 +1015,20 @@
   /* ダウンロード等の通常ボタンと高さを揃えるため、同じ行に並ぶときはアイコンも少し控えめに */
   .image-actions-row .modal-counts .btn-icon{ width: 14px; height: 14px; }
   .modal-counts .count-badge{ font-size: 15px; }
+  .modal-tags-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+  .modal .modal-tags-row .row-tags{ flex:1 1 auto; min-width:0; margin-bottom:0; }
+  .modal-tags-row .modal-counts{ flex:0 0 auto; margin:0 0 0 auto; }
+  .modal-tags-row .modal-counts .like-btn,
+  .modal-tags-row .modal-counts .dislike-btn{ padding: 6px 14px 6px 11px; font-size: 12px; }
+  .modal-tags-row .modal-counts .btn-icon{ width: 14px; height: 14px; }
+  .modal-tags-row .modal-counts .count-badge{ font-size: 12px; }
+  .civitai-body{ display:flex; flex-direction:column; gap:6px; padding:10px 12px; font-size:13px; }
+  .civitai-name{ font-weight:700; color:var(--ink); }
+  .civitai-version{ font-weight:400; color:var(--ink-dim); margin-left:6px; }
+  .civitai-note{ font-size:12px; color:var(--ink-dim); }
+  .civitai-words span{ display:block; font-size:10.5px; color:var(--ink-dim); }
+  .civitai-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:2px; }
+  .civitai-actions a{ text-decoration:none; display:inline-block; }
 
   /* ---- はじめてガイド ---- */
   .guide-step{ display:flex; gap:14px; margin-bottom:18px; }
@@ -1558,8 +1572,6 @@
   .model-upload-progress.on{ display:block; }
   .model-upload-progress > div{ height:100%; width:0; background:var(--accent); transition:width .2s ease; }
   #mKindToggle{ display:inline-flex; flex-wrap:wrap; }
-  #tab-modelBrowse.m-used .m-posted-only,
-  #tab-modelBrowse.m-used .dl-wrap:has(> .m-posted-only){ display:none !important; }
   .inpaint-src.model-dropzone{ flex-direction:column; justify-content:center; text-align:center; gap:12px; min-height:190px; padding:28px 20px; border:2px dashed var(--line); background:var(--bg); }
   .inpaint-src.model-dropzone:hover{ border-color:var(--accent); background:rgba(0,150,250,.05); }
   .inpaint-src.model-dropzone.drag-over{ border-color:var(--accent); background:rgba(0,150,250,.14); }
@@ -3391,8 +3403,8 @@
       </div>
       <div class="search-row filter-row">
         <span class="label">絞り込み</span>
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter m-posted-only" id="mFilterAuthor" list="dl_author" placeholder="投稿者">
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input m-posted-only" id="mFilterBaseModel" list="dl_model_base" placeholder="ベースモデル">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="mFilterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="mFilterBaseModel" list="dl_model_base" placeholder="ベースモデル">
         <div class="mode-toggle-row">
           <div class="mode-toggle" id="mKeywordModeToggle">
             <button type="button" data-kwmode="AND" class="active">AND</button>
@@ -3406,7 +3418,7 @@
         <span class="label" style="margin-left:0;">キーワード検索</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="mFilterKeyword" placeholder="モデル名・トリガーワード・説明・ファイル名を検索（スペース区切り）">
       </div>
-      <div class="search-row tag-filter-row m-posted-only">
+      <div class="search-row tag-filter-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
         <div class="tag-cloud" id="mBrowseTagCloud"></div>
         <div class="mode-toggle-row">
@@ -15622,7 +15634,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // PROMPT DETAIL MODAL
   // キャラクタープロンプトは設定表ではなく専用ブロックで見せるので、ここでは除外する
-  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt', 'characterNegative', 'loraHashes'];
+  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt', 'characterNegative'];
   /* ===== キャラクター設定エディタ =====
      保存形式は従来どおり characterPrompt / characterNegative の改行区切りで、
      N行目どうしが同じキャラに対応する。画面上ではその対を1枚のカードにまとめて出す。
@@ -15790,8 +15802,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span><span>プロンプト例</span></div>' +
-      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div>' +
+      '<div class="modal-tags-row"><div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="modal-counts">' + countBadgesHtml(p, { likeOnly: true }) + '</div></div>' +
       '<div class="detail-block"><div class="block-head"><div class="label">プロンプト</div><button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button><button class="btn-copy" type="button" data-copy="prompt">コピー</button></div><div class="value">' + (p.prompt ? promptWordsHtml(p.prompt) : '(入力なし)') + '</div></div>' +
       (p.negativePrompt ? '<div class="detail-block"><div class="block-head"><div class="label">ネガティブプロンプト</div><button class="btn-ja" type="button" title="日本語訳の登録がある単語を日本語で表示します(コピーは元の表記のまま)">日本語訳</button><button class="btn-copy" type="button" data-copy="negativePrompt">コピー</button></div><div class="value">' + promptWordsHtml(p.negativePrompt) + '</div></div>' : '') +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
@@ -15950,7 +15962,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function renderModelBrowseTags() {
     const cloud = document.getElementById('mBrowseTagCloud');
-    const tags = modelTagPool();
+    const dlTags = mSource === 'posted' ? [] : [].concat.apply([], dlModelEntries().map(function (e) { return e.tags; }));
+    const tags = sortJa(Array.from(new Set((mSource === 'dl' ? [] : modelTagPool()).concat(dlTags))));
     Object.keys(mTagStates).forEach(function (t) { if (tags.indexOf(t) === -1) delete mTagStates[t]; });
     cloud.innerHTML = tags.map(function (t) {
       return '<span class="tag-pill' + (mTagStates[t] ? ' state-include' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
@@ -16000,8 +16013,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function renderModelList() {
-    document.getElementById('tab-modelBrowse').classList.toggle('m-used', mSource === 'dl');
     renderModelSourceToggle();
+    renderModelBrowseTags();
+    fillDatalist('dl_model_base', sortJa(Array.from(new Set(modelPosts.map(modelBaseOf).concat(dlModelEntries().map(function (e) { return e.baseModel; })).filter(Boolean)))));
     renderPickerSortChips(document.getElementById('mSortChips'), MODEL_LIST_SORT_OPTIONS, mSortKeys, renderModelList);
     document.getElementById('mFilterKeyword').placeholder = mSource === 'dl'
       ? 'モデル名・LoRA名・ベースモデルを検索（スペース区切り）'
@@ -16024,9 +16038,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (mSource !== 'posted') {
       dlModelEntries().forEach(function (e) {
         if (mKindFilter !== 'all' && e.kind !== mKindFilter) return;
-        if (fAuthor && mSource === 'all') return;
+        if (fAuthor && !e.authors.some(function (a) { return a.toLowerCase().indexOf(fAuthor) !== -1; })) return;
         if (fBase && e.baseModel.toLowerCase().indexOf(fBase) === -1) return;
-        if (mSource === 'all' && !passesModelTagFilter({ tags: [] })) return;
+        if (!passesModelTagFilter({ tags: e.tags })) return;
         if (!matchKeywords((e.name + ' ' + e.kind + ' ' + e.baseModel).toLowerCase(), keywords, mKeywordMode)) return;
         items.push({ post: e.post, dl: e });
       });
@@ -16114,18 +16128,40 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return p;
   }
 
-  function dlModelEntries() {
+  function loraPairsOf(text) {
+    const out = {};
+    String(text || '').split(',').forEach(function (part) {
+      const i = part.indexOf(':');
+      if (i <= 0) return;
+      const name = part.slice(0, i).trim().toLowerCase();
+      const val = part.slice(i + 1).trim();
+      if (name && val) out[name] = val;
+    });
+    return out;
+  }
+
+  function promptLoraWeights(prompt) {
+    const out = {};
+    const re = /<lora:([^:>]+):\s*(-?[\d.]+)[^>]*>/gi;
+    let m;
+    while ((m = re.exec(String(prompt || ''))) !== null) out[m[1].trim().toLowerCase()] = m[2];
+    return out;
+  }
+
+  function modelUsageEntries() {
     const map = {};
-    function add(kind, name, p, preset) {
+    function add(kind, name, p, preset, hash, weight) {
       const n = String(name || '').trim();
-      if (!n || postedModelFor(n)) return;
+      if (!n) return;
       const key = kind + '|' + usedModelKey(n);
       const t = new Date(p.timestamp).getTime() || 0;
-      const e = map[key] || (map[key] = { id: dlModelId(kind, usedModelKey(n)), kind: kind, name: n, posts: [], firstUsed: t, lastUsed: t, presets: {} });
+      const e = map[key] || (map[key] = { id: dlModelId(kind, usedModelKey(n)), kind: kind, name: n, posts: [], firstUsed: t, lastUsed: t, presets: {}, hashes: {}, weights: {} });
       if (e.posts.indexOf(p) === -1) e.posts.push(p);
       e.firstUsed = Math.min(e.firstUsed, t);
       e.lastUsed = Math.max(e.lastUsed, t);
       if (preset) e.presets[preset] = (e.presets[preset] || 0) + 1;
+      if (hash) e.hashes[hash] = (e.hashes[hash] || 0) + 1;
+      if (weight) e.weights[weight] = (e.weights[weight] || 0) + 1;
     }
     visiblePosts(imagePosts.concat(videoPosts)).forEach(function (p) {
       postContentHolders(p).forEach(function (h) {
@@ -16134,19 +16170,107 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const models = p.type === 'video'
           ? String(st.wanModel || '').split(',')
           : [String(st.checkpoint || '').replace(/\s+[0-9A-Fa-f]{6,}\s*$/, '')];
+        const modelHash = p.type === 'video' ? '' : String(st.modelHash || '').trim();
         models.forEach(function (m) {
           m = m.trim();
-          if (m) add(/\.gguf$/i.test(m) ? 'GGUF' : 'Checkpoint', m, p, preset);
+          if (m) add(/\.gguf$/i.test(m) ? 'GGUF' : 'Checkpoint', m, p, preset, modelHash, '');
         });
-        loraNamesOf(st).forEach(function (n) { add('LoRA', n, p, preset); });
+        const hashes = loraPairsOf(st.loraHashes);
+        const weights = Object.assign(loraPairsOf(st.loras), promptLoraWeights(h.prompt));
+        loraNamesOf(st).forEach(function (n) {
+          const k = n.toLowerCase();
+          const w = /^-?[\d.]+$/.test(weights[k] || '') ? String(Number(weights[k])) : '';
+          add('LoRA', n, p, preset, hashes[k] || '', w);
+        });
       });
     });
     return Object.keys(map).map(function (k) {
       const e = map[k];
       e.baseModel = Object.keys(e.presets).sort(function (a, b) { return e.presets[b] - e.presets[a]; })[0] || '';
-      e.post = dlModelPost(e);
+      e.authors = Array.from(new Set(e.posts.map(function (p) { return String(p.author || ''); }).filter(Boolean)));
+      e.tags = Array.from(new Set([].concat.apply([], e.posts.map(function (p) { return p.tags || []; }))));
       return e;
     });
+  }
+
+  function dlModelEntries() {
+    return modelUsageEntries().filter(function (e) {
+      if (postedModelFor(e.name)) return false;
+      e.post = dlModelPost(e);
+      return true;
+    });
+  }
+
+  function countedText(map) {
+    const keys = Object.keys(map).sort(function (a, b) { return map[b] - map[a]; });
+    return keys.map(function (k) { return keys.length > 1 ? k + '(' + map[k] + '件)' : k; }).join(' / ');
+  }
+
+  function modelUsageSpecsHtml(e, withKind) {
+    const rows = [];
+    if (withKind) rows.push(['種類', e.kind]);
+    if (e.baseModel) rows.push(['ベースモデル(作品のUI Preset)', e.baseModel]);
+    if (Object.keys(e.hashes).length) rows.push([e.kind === 'LoRA' ? 'ハッシュ(AutoV3)' : 'ハッシュ(AutoV2)', countedText(e.hashes)]);
+    if (Object.keys(e.weights).length) rows.push(['作品で使われた強さ', countedText(e.weights)]);
+    rows.push(['使用作品', e.posts.length + '件']);
+    return rows.map(function (r) { return '<div><span>' + escapeHtml(r[0]) + '</span>' + escapeHtml(r[1]) + '</div>'; }).join('');
+  }
+
+  const civitaiCache = {};
+  function civitaiLookup(hash) {
+    const key = String(hash || '').toLowerCase();
+    if (!civitaiCache[key]) {
+      civitaiCache[key] = (async function () {
+        const ctrl = new AbortController();
+        const timer = setTimeout(function () { ctrl.abort(); }, 8000);
+        try {
+          const res = await fetch('https://civitai.com/api/v1/model-versions/by-hash/' + encodeURIComponent(key), { signal: ctrl.signal });
+          if (!res.ok) return null;
+          return await res.json();
+        } catch (err) {
+          return null;
+        } finally {
+          clearTimeout(timer);
+        }
+      })();
+    }
+    return civitaiCache[key];
+  }
+
+  function civitaiSearchUrl(name) {
+    return 'https://civitai.com/search/models?query=' + encodeURIComponent(String(name || '').replace(/\.(safetensors|ckpt|pt|pth|bin|sft|gguf)$/i, ''));
+  }
+
+  function civitaiBlockHtml(e) {
+    return '<div class="detail-block" id="civitaiBlock"><div class="label">ダウンロード先(CivitAI)</div><div class="civitai-body" id="civitaiBody">' +
+      (Object.keys(e.hashes).length ? 'ハッシュからCivitAIのモデルを確認しています...' : civitaiFallbackHtml(e, 'ハッシュの記録が無いため、名前で検索してください。')) +
+      '</div></div>';
+  }
+
+  function civitaiFallbackHtml(e, note) {
+    return '<div class="civitai-note">' + escapeHtml(note) + '</div>' +
+      '<div class="civitai-actions"><a class="btn-ghost" href="' + escapeHtml(civitaiSearchUrl(e.name)) + '" target="_blank" rel="noopener noreferrer">CivitAIで「' + escapeHtml(usedModelKey(e.name)) + '」を検索 ↗</a></div>';
+  }
+
+  async function fillCivitaiBlock(e) {
+    const hashes = Object.keys(e.hashes).sort(function (a, b) { return e.hashes[b] - e.hashes[a]; });
+    if (!hashes.length) return;
+    let v = null;
+    for (let i = 0; i < hashes.length && !v; i++) v = await civitaiLookup(hashes[i]);
+    const body = document.getElementById('civitaiBody');
+    if (!body || body.dataset.entryId !== e.id) return;
+    if (!v || !v.modelId) {
+      body.innerHTML = civitaiFallbackHtml(e, 'ハッシュからは見つかりませんでした(CivitAIに無いモデルか、通信できませんでした)。名前で検索してください。');
+      return;
+    }
+    const page = 'https://civitai.com/models/' + encodeURIComponent(v.modelId) + '?modelVersionId=' + encodeURIComponent(v.id);
+    const words = Array.isArray(v.trainedWords) ? v.trainedWords.filter(Boolean).join(', ') : '';
+    const model = v.model || {};
+    body.innerHTML =
+      '<div class="civitai-name">' + escapeHtml(model.name || '') + (v.name ? ' <span class="civitai-version">' + escapeHtml(v.name) + '</span>' : '') + '</div>' +
+      '<div class="civitai-note">' + [model.type ? '種類: ' + model.type : '', v.baseModel ? 'ベースモデル: ' + v.baseModel : ''].filter(Boolean).map(escapeHtml).join(' / ') + '</div>' +
+      (words ? '<div class="civitai-words"><span>トリガーワード</span>' + escapeHtml(words) + '</div>' : '') +
+      '<div class="civitai-actions"><a class="btn-submit" href="' + escapeHtml(page) + '" target="_blank" rel="noopener noreferrer">CivitAIのページを開く ↗</a></div>';
   }
 
   function newestFirst(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); }
@@ -16180,15 +16304,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<h3 class="modal-title">' + escapeHtml(e.name) + '</h3>' +
         '<div class="modal-top-actions"><button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button></div>' +
       '</div>' +
-      '<div class="modal-meta"><span>' + formatDateTime(e.post.timestamp) + '</span><span>種類: ' + escapeHtml(e.kind) + '</span>' +
-        (e.baseModel ? '<span>ベースモデル: ' + escapeHtml(e.baseModel) + '</span>' : '') + '</div>' +
-      '<div class="modal-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>' +
+      '<div class="modal-meta"><span>追加日: ' + formatDateTime(e.post.timestamp) + '</span><span>最終使用: ' + formatDateTime(works[0].timestamp) + '</span></div>' +
+      '<div class="modal-tags-row"><div class="row-tags">' + modelKindBadgeHtml(e.kind) + '</div><div class="modal-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div></div>' +
+      '<div class="detail-block"><div class="label">モデル情報</div><div class="settings-table model-spec-table">' + modelUsageSpecsHtml(e, true) + '</div></div>' +
+      civitaiBlockHtml(e) +
       '<div class="linked-works-head">このモデルを使った投稿作品 (' + works.length + '件)</div>' +
       '<div class="list" id="dlModelWorksList">' + works.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('') + '</div>';
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('civitaiBody').dataset.entryId = e.id;
     wireModalLikeButton();
     wireImageRows(document.getElementById('dlModelWorksList'), { detailOnly: true });
     openOverlay(modalOverlay);
+    fillCivitaiBlock(e);
   }
 
   function renderModelSourceToggle() {
@@ -16375,6 +16502,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       : '<div class="linked-empty">まだこのモデルを使った投稿はありません。</div>';
     const mf = p.modelFile;
     const s = p.settings || {};
+    const usageKeys = [usedModelKey(mf && mf.name), usedModelKey(p.title)];
+    const usage = modelUsageEntries().find(function (e) { return usageKeys.indexOf(usedModelKey(e.name)) !== -1; }) || null;
     const specs = [['種類', s.modelKind], ['ベースモデル', s.baseModel], ['推奨の強さ', s.weight]]
       .filter(function (r) { return hasText(r[1]); })
       .map(function (r) { return '<div><span>' + escapeHtml(r[0]) + '</span>' + escapeHtml(r[1]) + '</div>'; }).join('');
@@ -16398,10 +16527,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
-      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-counts">' + modelCountsHtml(p) + '</div>' +
+      '<div class="modal-tags-row"><div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      '<div class="modal-counts">' + modelCountsHtml(p) + '</div></div>' +
       fileBlock +
       (specs ? '<div class="detail-block"><div class="label">モデル情報</div><div class="settings-table model-spec-table">' + specs + '</div></div>' : '') +
+      (usage ? '<div class="detail-block"><div class="label">作品での使われ方(生成設定から)</div><div class="settings-table model-spec-table">' + modelUsageSpecsHtml(usage, false) + '</div></div>' : '') +
       modelTextBlockHtml('トリガーワード', p.prompt) +
       modelTextBlockHtml('推奨プロンプト', s.recommendedPrompt) +
       modelTextBlockHtml('ネガティブプロンプト', p.negativePrompt) +
