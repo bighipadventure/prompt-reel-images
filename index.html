@@ -565,6 +565,9 @@
   .row-link-badge.lb-fix{ color:#c4373a; border-color: rgba(196,55,58,.45); background: rgba(196,55,58,.13); }
   .row-link-badge.lb-parent{ color:#c89edf; border-color: rgba(200,158,223,.45); background: rgba(200,158,223,.13); }
   .row-link-badge.lb-video{ color:#3ac846; border-color: rgba(58,200,70,.45); background: rgba(58,200,70,.13); }
+  .model-kind-badge{ display:inline-block; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:700; line-height:1.4; white-space:nowrap; background:var(--accent-dim); color:var(--accent); border:1px solid rgba(0,150,250,.35); }
+  #mList .model-kind-badge{ cursor:pointer; transition:background .15s ease, color .15s ease; }
+  #mList .model-kind-badge:hover, #mList .model-kind-badge.is-active{ background:var(--accent); color:#fff; }
   .row-link-badge.lb-used{ color:#3fb6c8; border-color: rgba(63,182,200,.45); background: rgba(63,182,200,.13); }
   .row-link-badge.lb-novel{ color:#c74bc1; border-color: rgba(199,75,193,.45); background: rgba(199,75,193,.13); }
   .detail-grid{ display:flex; gap: 22px; flex-wrap: wrap; }
@@ -947,6 +950,10 @@
   .row-tags .tag.tag-copied{ background: rgba(0, 150, 250, .35); border-color: var(--accent); color: var(--accent); }
   .dl-item-empty:hover{ background: none; color: var(--ink-dim); }
   .search-row .dl-wrap{ flex: 1 1 150px; width: auto; }
+  @media (min-width: 681px){
+    body:not(.top-compact) #browseSearchPanel .filter-row > .dl-wrap{ flex-basis: 120px; min-width: 0; }
+    body:not(.top-compact) #browseSearchPanel .filter-row > .dl-wrap input{ min-width: 0; }
+  }
   .tag-row .dl-wrap{ flex: 1 1 160px; width: auto; }
   .tag-ac-wrap{ position: relative; flex: 1 1 160px; display: flex; min-width: 0; }
   .tag-ac-wrap > input[type="text"]{ flex: 1 1 auto; min-width: 0; }
@@ -1551,6 +1558,8 @@
   .model-upload-progress.on{ display:block; }
   .model-upload-progress > div{ height:100%; width:0; background:var(--accent); transition:width .2s ease; }
   #mKindToggle{ display:inline-flex; flex-wrap:wrap; }
+  #tab-modelBrowse.m-used .m-posted-only,
+  #tab-modelBrowse.m-used .dl-wrap:has(> .m-posted-only){ display:none !important; }
   .inpaint-src.model-dropzone{ flex-direction:column; justify-content:center; text-align:center; gap:12px; min-height:190px; padding:28px 20px; border:2px dashed var(--line); background:var(--bg); }
   .inpaint-src.model-dropzone:hover{ border-color:var(--accent); background:rgba(0,150,250,.05); }
   .inpaint-src.model-dropzone.drag-over{ border-color:var(--accent); background:rgba(0,150,250,.14); }
@@ -3134,6 +3143,7 @@
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="filterAuthor" list="dl_author" placeholder="投稿者">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterUiPreset" list="dl_set_uiPreset" placeholder="UI Preset">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterCheckpoint" list="dl_set_checkpoint" placeholder="Checkpoint">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="filterLora" list="dl_set_loras" placeholder="LoRA">
         <div class="mode-toggle-row">
           <div class="mode-toggle" id="keywordModeToggle">
             <button type="button" data-kwmode="AND" class="active">AND</button>
@@ -3381,8 +3391,8 @@
       </div>
       <div class="search-row filter-row">
         <span class="label">絞り込み</span>
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter" id="mFilterAuthor" list="dl_author" placeholder="投稿者">
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="mFilterBaseModel" list="dl_model_base" placeholder="ベースモデル">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input author-filter m-posted-only" id="mFilterAuthor" list="dl_author" placeholder="投稿者">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input m-posted-only" id="mFilterBaseModel" list="dl_model_base" placeholder="ベースモデル">
         <div class="mode-toggle-row">
           <div class="mode-toggle" id="mKeywordModeToggle">
             <button type="button" data-kwmode="AND" class="active">AND</button>
@@ -3396,7 +3406,7 @@
         <span class="label" style="margin-left:0;">キーワード検索</span>
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" class="filter-input" id="mFilterKeyword" placeholder="モデル名・トリガーワード・説明・ファイル名を検索（スペース区切り）">
       </div>
-      <div class="search-row tag-filter-row">
+      <div class="search-row tag-filter-row m-posted-only">
         <span class="label" style="margin-left:0;">タグで絞込</span>
         <div class="tag-cloud" id="mBrowseTagCloud"></div>
         <div class="mode-toggle-row">
@@ -3411,7 +3421,7 @@
     </div>
 
     <div class="toolbar">
-      <span class="count" id="mPostCount"></span>
+      <div class="mode-toggle seg-filter" id="mSourceToggle"></div>
     </div>
 
     <div class="list" id="mList"></div>
@@ -6629,6 +6639,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let mKeywordMode = 'AND';
   let mKindFilter = 'all';
   let mSortKeys = [{ field: 'date', dir: 'desc' }];
+  const MODEL_LIST_SORT_OPTIONS = [
+    { label: '追加された順',       field: 'date',          dir: 'desc' },
+    { label: '古い順',             field: 'date',          dir: 'asc' },
+    { label: 'グッドが多い順',      field: 'likeCount',     dir: 'desc' },
+    { label: '使用作品が多い順',    field: 'useCount',      dir: 'desc' },
+    { label: 'ダウンロードが多い順', field: 'downloadCount', dir: 'desc' },
+    { label: '名前順',             field: 'name',          dir: 'asc' },
+    { label: '投稿者名順',          field: 'author',        dir: 'asc' },
+    { label: 'ベースモデル順',      field: 'baseModel',     dir: 'asc' }
+  ];
+  let mSource = 'all';
+  let mDlShown = [];
+  let modelVotes = {};
+  let dlModelPosts = {};
   let modelPickerSortKeys = [{ field: 'date', dir: 'desc' }];
   let modelUploading = false;
   let requestRefs = [];
@@ -8574,7 +8598,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // rest完了後にタブを開けば(あるいは既に開いていれば自動で)通常表示にすぐ戻る。
   function setListCountAndEmpty(countEl, emptyEl, count, unit, emptyText) {
     const pending = !restStageLoaded && count === 0;
-    countEl.textContent = pending ? '' : (count + ' ' + unit);
+    if (countEl) countEl.textContent = pending ? '' : (count + ' ' + unit);
     if (pending) {
       emptyEl.innerHTML = '<div class="list-loading"><div class="spinner"></div><span>読み込み中...</span></div>';
       emptyEl.style.display = 'block';
@@ -9022,6 +9046,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
     if (data.links) { allLinks = data.links; renderLinksListIfActive(); }
+    if (data.modelVotes) { modelVotes = data.modelVotes; dlModelPosts = {}; }
     applyOptionsToUi();
     rebuildDerivedArraysFromPosts();
     collectDynamicKeysFromPosts();
@@ -9181,6 +9206,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     allBoard = data.board || [];
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
     if (data.links) { allLinks = data.links; renderLinksListIfActive(); }
+    if (data.modelVotes) { modelVotes = data.modelVotes; dlModelPosts = {}; }
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     buildInternalDict(data.dictionary);
     tagYomiMap = (data.tagYomi && typeof data.tagYomi === 'object') ? data.tagYomi : {};
@@ -9576,14 +9602,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       buildMenu();
     }
 
-    function buildMenu() {
+    function buildMenu(showAll) {
       const all = currentValues();
       // 複数選択の欄は「選んだ値のカンマ区切り」が入っているので、全体を検索語にすると
       // 1つ選んだ時点で他の候補が絞り込まれて消えてしまう。いま入力中の部分
       // (最後のカンマより後ろ)だけを検索語にし、それが選択済みの値そのものなら絞り込まない。
       const frag = isMulti ? fragment() : '';
       let q;
-      if (isMulti) {
+      if (showAll) {
+        q = '';
+      } else if (isMulti) {
         q = (knownValues().indexOf(frag) !== -1) ? '' : frag.toLowerCase();
       } else {
         q = input.value.trim().toLowerCase();
@@ -9679,7 +9707,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       e.preventDefault();
       e.stopPropagation();
       if (menu) { tidy(); closeMenu(); return; }
-      buildMenu();
+      buildMenu(true);
       input.focus();
     });
     input.addEventListener('input', function () { if (!tidying) buildMenu(); });
@@ -10083,7 +10111,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
-  ['filterAuthor', 'filterUiPreset', 'filterCheckpoint', 'filterKeyword'].forEach(function (id) {
+  ['filterAuthor', 'filterUiPreset', 'filterCheckpoint', 'filterLora', 'filterKeyword'].forEach(function (id) {
     document.getElementById(id).addEventListener('input', renderList);
   });
   document.querySelectorAll('#keywordModeToggle button').forEach(function (btn) {
@@ -10096,7 +10124,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   });
   document.getElementById('clearFiltersBtn').addEventListener('click', function () {
-    ['filterAuthor', 'filterUiPreset', 'filterCheckpoint', 'filterKeyword'].forEach(function (id) {
+    ['filterAuthor', 'filterUiPreset', 'filterCheckpoint', 'filterLora', 'filterKeyword'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
     renderList();
@@ -10861,11 +10889,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const fAuthor = document.getElementById('filterAuthor').value.trim().toLowerCase();
     const fUiPreset = document.getElementById('filterUiPreset').value.trim().toLowerCase();
     const fCheckpoint = document.getElementById('filterCheckpoint').value.trim().toLowerCase();
+    const fLora = document.getElementById('filterLora').value.trim().toLowerCase();
     const keywords = parseKeywords(document.getElementById('filterKeyword').value);
     filtered = filtered.filter(function (p) {
       if (!matchesTextFilter(p, fAuthor, function (x) { return x.author; })) return false;
       if (!matchesTextFilter(p, fUiPreset, function (x) { return x.settings && x.settings.uiPreset; })) return false;
       if (!matchesTextFilter(p, fCheckpoint, function (x) { return x.settings && x.settings.checkpoint; })) return false;
+      if (!matchesTextFilter(p, fLora, function (x) { return loraNamesOf(x.settings).join('\n'); })) return false;
       if (!matchKeywords(postKeywordHaystack(p), keywords, keywordMode)) return false;
       return true;
     });
@@ -11908,8 +11938,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return { imageUploadId: uploadId, imageUploadChunks: total };
   }
 
+  function countTargetOf(id) {
+    return dlModelPosts[id] || posts.find(function (x) { return String(x.id) === String(id); });
+  }
+
   function updateCountUI(id) {
-    const p = posts.find(function (x) { return String(x.id) === String(id); });
+    const p = countTargetOf(id);
     if (!p) return;
     const liked = !!likedPosts[id];
     document.querySelectorAll('[data-like-count="' + id + '"]').forEach(function (el) {
@@ -11935,7 +11969,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   async function toggleLike(id) {
-    const p = posts.find(function (x) { return String(x.id) === String(id); });
+    const p = countTargetOf(id);
     if (!p) return;
     const currentlyLiked = !!likedPosts[id];
     const delta = currentlyLiked ? -1 : 1;
@@ -11951,13 +11985,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         p.likeCount = result.likeCount;
         updateCountUI(id);
       }
+      if (p.type === 'dlmodel') modelVotes[id] = { likeCount: p.likeCount, dislikeCount: p.dislikeCount };
     } catch (err) {
       console.error(err);
     }
   }
 
   async function toggleDislike(id) {
-    const p = posts.find(function (x) { return String(x.id) === String(id); });
+    const p = countTargetOf(id);
     if (!p) return;
     const currentlyDisliked = !!dislikedPosts[id];
     const delta = currentlyDisliked ? -1 : 1;
@@ -11973,12 +12008,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         p.dislikeCount = result.dislikeCount;
         updateCountUI(id);
       }
+      if (p.type === 'dlmodel') modelVotes[id] = { likeCount: p.likeCount, dislikeCount: p.dislikeCount };
     } catch (err) {
       console.error(err);
     }
 
     // しきい値に到達したら一覧・詳細から消える(非管理者)。表示を更新する。
-    if (isHiddenByDislike(p)) {
+    if (p.type !== 'dlmodel' && isHiddenByDislike(p)) {
       closeModal();
       rerenderActiveList();
     }
@@ -15586,7 +15622,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // PROMPT DETAIL MODAL
   // キャラクタープロンプトは設定表ではなく専用ブロックで見せるので、ここでは除外する
-  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt', 'characterNegative'];
+  const SETTINGS_TABLE_EXCLUDE = ['characterPrompt', 'characterNegative', 'loraHashes'];
   /* ===== キャラクター設定エディタ =====
      保存形式は従来どおり characterPrompt / characterNegative の改行区切りで、
      N行目どうしが同じキャラに対応する。画面上ではその対を1枚のカードにまとめて出す。
@@ -15719,12 +15755,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     '</div>';
   }
 
+  function settingsTableValue(settings, key) {
+    if (key === 'loras' && !hasText(settings.loras)) return loraNamesOf(settings).join(', ');
+    return settings[key];
+  }
+
   function settingsEntriesHtml(p) {
     const fields = settingsFieldsFor(p);
     const knownKeys = fields.map(function (f) { return f.key; }).concat(SETTINGS_TABLE_EXCLUDE);
     return fields
-      .filter(function (f) { return p.settings && p.settings[f.key] && SETTINGS_TABLE_EXCLUDE.indexOf(f.key) === -1; })
-      .map(function (f) { return '<div><span>' + escapeHtml(f.label) + '</span>' + escapeHtml(p.settings[f.key]) + '</div>'; }).join('') +
+      .filter(function (f) { return p.settings && settingsTableValue(p.settings, f.key) && SETTINGS_TABLE_EXCLUDE.indexOf(f.key) === -1; })
+      .map(function (f) { return '<div><span>' + escapeHtml(f.label) + '</span>' + escapeHtml(settingsTableValue(p.settings, f.key)) + '</div>'; }).join('') +
       (p.settings ? Object.keys(p.settings) : [])
         .filter(function (k) { return knownKeys.indexOf(k) === -1 && String(p.settings[k]) !== ''; })
         .map(function (k) { return '<div><span>' + escapeHtml(k) + '</span>' + escapeHtml(p.settings[k]) + '</div>'; }).join('');
@@ -15830,6 +15871,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return countBadgesHtml(p, { likeOnly: true }) + dl;
   }
 
+  function modelKindBadgeHtml(kind) {
+    if (!kind) return '';
+    return '<span class="model-kind-badge' + (mKindFilter === kind ? ' is-active' : '') + '" data-kind-badge="' + escapeHtml(kind) + '" title="この種類で絞り込む">' + escapeHtml(kind) + '</span>';
+  }
+
   function modelRowHtml(p, opts) {
     opts = opts || {};
     const used = modelUsedBy(p).sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
@@ -15850,9 +15896,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="row-main">' + thumbHtml + '<div class="row-body">' +
       '<div class="row-title">' + (p.title ? escapeHtml(p.title) : '(無題)') + '</div>' +
       '<div class="row-meta">' +
-        '<span>' + formatDateTime(p.timestamp) + '</span>' +
+        modelKindBadgeHtml(kind) +
+        '<span>追加日: ' + formatDateTime(p.timestamp) + '</span>' +
+        (used.length ? '<span>最終使用: ' + formatDateTime(used[used.length - 1].timestamp) + '</span>' : '') +
         '<span class="meta-author">投稿者: ' + authorHtml(p) + '</span>' +
-        (kind ? '<span>種類: ' + escapeHtml(kind) + '</span>' : '') +
         (base ? '<span>ベースモデル: ' + escapeHtml(base) + '</span>' : '') +
         (weight ? '<span>推奨の強さ: ' + escapeHtml(weight) + '</span>' : '') +
         (size ? '<span>ファイルサイズ: ' + escapeHtml(size) + '</span>' : '') +
@@ -15866,7 +15913,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function wireModelRows(container) {
     wireCountButtons(container);
-    container.querySelectorAll('.row').forEach(function (row) {
+    container.querySelectorAll('.row[data-id]').forEach(function (row) {
       row.addEventListener('click', async function () {
         const post = await ensurePostLoaded(row.dataset.id);
         if (post) openModelModal(post);
@@ -15928,22 +15975,82 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       : selected.some(function (t) { return tags.includes(t); });
   }
 
+  function modelItemValue(it, field) {
+    const p = it.post;
+    if (field === 'date') return new Date(p.timestamp).getTime() || 0;
+    if (field === 'likeCount') return Number(p.likeCount) || 0;
+    if (field === 'downloadCount') return Number(p.downloadCount) || 0;
+    if (field === 'useCount') return it.dl ? it.dl.posts.length : modelUsedBy(p).length;
+    if (field === 'name') return it.dl ? it.dl.name : String(p.title || '');
+    if (field === 'author') return it.dl ? '' : String(p.author || '');
+    if (field === 'baseModel') return it.dl ? it.dl.baseModel : modelBaseOf(p);
+    return '';
+  }
+
+  function compareModelItems(a, b) {
+    const k = mSortKeys[0] || MODEL_LIST_SORT_OPTIONS[0];
+    const va = modelItemValue(a, k.field);
+    const vb = modelItemValue(b, k.field);
+    let c;
+    if (typeof va === 'number') c = va - vb;
+    else if (!va || !vb) return (!va && !vb) ? 0 : (va ? -1 : 1);
+    else c = String(va).localeCompare(String(vb), 'ja', { numeric: true });
+    if (k.dir === 'desc') c = -c;
+    return c || (modelItemValue(b, 'date') - modelItemValue(a, 'date'));
+  }
+
   function renderModelList() {
+    document.getElementById('tab-modelBrowse').classList.toggle('m-used', mSource === 'dl');
+    renderModelSourceToggle();
+    renderPickerSortChips(document.getElementById('mSortChips'), MODEL_LIST_SORT_OPTIONS, mSortKeys, renderModelList);
+    document.getElementById('mFilterKeyword').placeholder = mSource === 'dl'
+      ? 'モデル名・LoRA名・ベースモデルを検索（スペース区切り）'
+      : 'モデル名・トリガーワード・説明・ファイル名を検索（スペース区切り）';
     const listEl = document.getElementById('mList');
     const fAuthor = document.getElementById('mFilterAuthor').value.trim().toLowerCase();
     const fBase = document.getElementById('mFilterBaseModel').value.trim().toLowerCase();
     const keywords = parseKeywords(document.getElementById('mFilterKeyword').value);
-    const filtered = visiblePosts(modelPosts).filter(function (p) {
-      if (mKindFilter !== 'all' && modelKindOf(p) !== mKindFilter) return false;
-      if (fAuthor && String(p.author || '').toLowerCase().indexOf(fAuthor) === -1) return false;
-      if (fBase && modelBaseOf(p).toLowerCase().indexOf(fBase) === -1) return false;
-      if (!passesModelTagFilter(p)) return false;
-      return matchKeywords(modelHaystack(p), keywords, mKeywordMode);
+    let items = [];
+    if (mSource !== 'dl') {
+      visiblePosts(modelPosts).forEach(function (p) {
+        if (mKindFilter !== 'all' && modelKindOf(p) !== mKindFilter) return;
+        if (fAuthor && String(p.author || '').toLowerCase().indexOf(fAuthor) === -1) return;
+        if (fBase && modelBaseOf(p).toLowerCase().indexOf(fBase) === -1) return;
+        if (!passesModelTagFilter(p)) return;
+        if (!matchKeywords(modelHaystack(p), keywords, mKeywordMode)) return;
+        items.push({ post: p });
+      });
+    }
+    if (mSource !== 'posted') {
+      dlModelEntries().forEach(function (e) {
+        if (mKindFilter !== 'all' && e.kind !== mKindFilter) return;
+        if (fAuthor && mSource === 'all') return;
+        if (fBase && e.baseModel.toLowerCase().indexOf(fBase) === -1) return;
+        if (mSource === 'all' && !passesModelTagFilter({ tags: [] })) return;
+        if (!matchKeywords((e.name + ' ' + e.kind + ' ' + e.baseModel).toLowerCase(), keywords, mKeywordMode)) return;
+        items.push({ post: e.post, dl: e });
+      });
+    }
+    items.sort(compareModelItems);
+    mDlShown = [];
+    setListCountAndEmpty(null, document.getElementById('mEmptyState'), items.length, '件', '条件に一致するモデルがありません。');
+    listEl.innerHTML = items.map(function (it) {
+      if (!it.dl) return modelRowHtml(it.post);
+      mDlShown.push(it.dl);
+      return dlModelRowHtml(it.dl, mDlShown.length - 1);
+    }).join('');
+    listEl.querySelectorAll('[data-kind-badge]').forEach(function (badge) {
+      badge.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        mKindFilter = mKindFilter === badge.dataset.kindBadge ? 'all' : badge.dataset.kindBadge;
+        renderModelKindFilter();
+        renderModelList();
+      });
     });
-    filtered.sort(function (a, b) { return compareWithKeys(a, b, mSortKeys); });
-    setListCountAndEmpty(document.getElementById('mPostCount'), document.getElementById('mEmptyState'), filtered.length, '件', '条件に一致するモデルがありません。');
-    listEl.innerHTML = filtered.map(function (p) { return modelRowHtml(p); }).join('');
     wireModelRows(listEl);
+    listEl.querySelectorAll('[data-dl-i]').forEach(function (row) {
+      row.addEventListener('click', function () { openDlModelModal(mDlShown[Number(row.dataset.dlI)]); });
+    });
   }
 
   ['mFilterAuthor', 'mFilterBaseModel', 'mFilterKeyword'].forEach(function (id) {
@@ -15974,7 +16081,133 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     renderModelBrowseTags();
     renderModelList();
   });
-  renderPickerSortChips(document.getElementById('mSortChips'), MODEL_SORT_OPTIONS, mSortKeys, renderModelList);
+  // ===== MODEL SHARE: DLモデル(作品の生成設定から集める) =====
+  function usedModelKey(name) {
+    return String(name || '').trim().toLowerCase().replace(/\.(safetensors|ckpt|pt|pth|bin|sft|gguf)$/, '');
+  }
+
+  function dlModelId(kind, key) {
+    let h = 0x811c9dc5;
+    const str = kind + '|' + key;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return 'dl_' + ('0000000' + h.toString(16)).slice(-8);
+  }
+
+  function postedModelFor(name) {
+    const key = usedModelKey(name);
+    return modelPosts.find(function (m) {
+      return usedModelKey(m.modelFile && m.modelFile.name) === key || usedModelKey(m.title) === key;
+    }) || null;
+  }
+
+  function dlModelPost(e) {
+    let p = dlModelPosts[e.id];
+    if (!p) {
+      const v = modelVotes[e.id] || {};
+      p = dlModelPosts[e.id] = { id: e.id, type: 'dlmodel', likeCount: Number(v.likeCount) || 0, dislikeCount: Number(v.dislikeCount) || 0 };
+    }
+    p.title = e.name;
+    p.timestamp = new Date(e.firstUsed).toISOString();
+    return p;
+  }
+
+  function dlModelEntries() {
+    const map = {};
+    function add(kind, name, p, preset) {
+      const n = String(name || '').trim();
+      if (!n || postedModelFor(n)) return;
+      const key = kind + '|' + usedModelKey(n);
+      const t = new Date(p.timestamp).getTime() || 0;
+      const e = map[key] || (map[key] = { id: dlModelId(kind, usedModelKey(n)), kind: kind, name: n, posts: [], firstUsed: t, lastUsed: t, presets: {} });
+      if (e.posts.indexOf(p) === -1) e.posts.push(p);
+      e.firstUsed = Math.min(e.firstUsed, t);
+      e.lastUsed = Math.max(e.lastUsed, t);
+      if (preset) e.presets[preset] = (e.presets[preset] || 0) + 1;
+    }
+    visiblePosts(imagePosts.concat(videoPosts)).forEach(function (p) {
+      postContentHolders(p).forEach(function (h) {
+        const st = h.settings || {};
+        const preset = String(st.uiPreset || (p.settings && p.settings.uiPreset) || '').trim();
+        const models = p.type === 'video'
+          ? String(st.wanModel || '').split(',')
+          : [String(st.checkpoint || '').replace(/\s+[0-9A-Fa-f]{6,}\s*$/, '')];
+        models.forEach(function (m) {
+          m = m.trim();
+          if (m) add(/\.gguf$/i.test(m) ? 'GGUF' : 'Checkpoint', m, p, preset);
+        });
+        loraNamesOf(st).forEach(function (n) { add('LoRA', n, p, preset); });
+      });
+    });
+    return Object.keys(map).map(function (k) {
+      const e = map[k];
+      e.baseModel = Object.keys(e.presets).sort(function (a, b) { return e.presets[b] - e.presets[a]; })[0] || '';
+      e.post = dlModelPost(e);
+      return e;
+    });
+  }
+
+  function newestFirst(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); }
+
+  function dlModelRowHtml(e, i) {
+    const recent = e.posts.slice().sort(newestFirst)[0];
+    return '<div class="row prompt-row model-row" data-dl-i="' + i + '">' +
+      '<div class="row-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>' +
+      '<div class="row-main">' +
+        '<div class="row-thumb' + ((recent.type === 'video' && !isImageMediaPost(recent)) ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(recent) || recent.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+        '<div class="row-body">' +
+          '<div class="row-title">' + escapeHtml(e.name) + '</div>' +
+          '<div class="row-meta">' +
+            modelKindBadgeHtml(e.kind) +
+            '<span>追加日: ' + formatDateTime(e.post.timestamp) + '</span>' +
+            '<span>最終使用: ' + formatDateTime(recent.timestamp) + '</span>' +
+            (e.baseModel ? '<span>ベースモデル: ' + escapeHtml(e.baseModel) + '</span>' : '') +
+            '<span class="row-link-badge lb-used">使用作品 ' + e.posts.length + '件</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function openDlModelModal(e) {
+    if (!e) return;
+    openDetailPostId = null;
+    const works = e.posts.slice().sort(newestFirst);
+    modalBody.innerHTML = '' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title">' + escapeHtml(e.name) + '</h3>' +
+        '<div class="modal-top-actions"><button class="modal-close" type="button" id="modalCloseBtn">✕ 閉じる</button></div>' +
+      '</div>' +
+      '<div class="modal-meta"><span>' + formatDateTime(e.post.timestamp) + '</span><span>種類: ' + escapeHtml(e.kind) + '</span>' +
+        (e.baseModel ? '<span>ベースモデル: ' + escapeHtml(e.baseModel) + '</span>' : '') + '</div>' +
+      '<div class="modal-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>' +
+      '<div class="linked-works-head">このモデルを使った投稿作品 (' + works.length + '件)</div>' +
+      '<div class="list" id="dlModelWorksList">' + works.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('') + '</div>';
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    wireModalLikeButton();
+    wireImageRows(document.getElementById('dlModelWorksList'), { detailOnly: true });
+    openOverlay(modalOverlay);
+  }
+
+  function renderModelSourceToggle() {
+    const wrap = document.getElementById('mSourceToggle');
+    const posted = visiblePosts(modelPosts).length;
+    const dl = dlModelEntries().length;
+    const counts = { all: posted + dl, dl: dl, posted: posted };
+    wrap.innerHTML = [['all', 'すべて'], ['dl', 'DLモデル'], ['posted', '投稿モデル']].map(function (o) {
+      return '<button type="button" data-msource="' + o[0] + '"' + (mSource === o[0] ? ' class="active"' : '') + '>' + o[1] + '<span class="seg-count">' + counts[o[0]] + '</span></button>';
+    }).join('');
+    wrap.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (mSource === btn.dataset.msource) return;
+        mSource = btn.dataset.msource;
+        renderModelList();
+      });
+    });
+  }
+
   renderModelKindFilter();
 
   // MODEL SHARE: 詳細
