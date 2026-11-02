@@ -1581,8 +1581,6 @@
   .model-file-card .model-file-name{ font-weight:700; word-break:break-all; }
   .model-file-card .model-file-sub{ font-size:12px; color:var(--ink-dim); margin-top:3px; }
   .model-file-card .model-upload-progress{ background:var(--bg); }
-  .model-direct-note{ margin-top:6px; font-size:11.5px; color:var(--ink-dim); }
-  .model-direct-dl{ background:none; border:0; padding:0; font:inherit; color:var(--accent); text-decoration:underline; cursor:pointer; }
   .model-upload-progress{ margin-top:8px; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; display:none; }
   .model-upload-progress.on{ display:block; }
   .model-upload-progress > div{ height:100%; width:0; background:var(--accent); transition:width .2s ease; }
@@ -13082,22 +13080,31 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         a.remove();
       }
     } else {
-    const originalUrl = id ? ('https://lh3.googleusercontent.com/d/' + id + '=s0') : p.imageUrl;
+    showLoading('画像を準備中...');
     try {
-      const res = await fetch(originalUrl);
-      if (!res.ok) throw new Error('status ' + res.status);
-      const blob = await res.blob();
-      const ext = blob.type === 'image/jpeg' ? '.jpg' : (blob.type === 'image/webp' ? '.webp' : (blob.type === 'image/png' ? '.png' : ''));
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename + ext;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      let blob;
+      if (id) {
+        const parts = [];
+        let offset = 0;
+        let mime = '';
+        for (;;) {
+          const r = await fetchRelayChunk(id, offset);
+          mime = r.mime || mime;
+          const bytes = base64ToBytes(r.base64 || '');
+          parts.push(bytes);
+          offset += bytes.length;
+          if (r.eof || !bytes.length) break;
+        }
+        blob = new Blob(parts, { type: mime || 'application/octet-stream' });
+      } else {
+        const res = await fetch(p.imageUrl);
+        if (!res.ok) throw new Error('status ' + res.status);
+        blob = await res.blob();
+      }
+      const ext = { 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/png': '.png', 'image/gif': '.gif' }[blob.type] || '';
+      saveBlobAs(blob, filename + ext);
     } catch (err) {
-      console.error('CORS制限等により直接フェッチできなかったため、フォールバックダウンロードを実行します:', err);
+      console.error('元ファイルを受け取れなかったため、Driveから直接ダウンロードします:', err);
       if (id) {
         const a = document.createElement('a');
         // confirm=t は、大きいファイルでDriveが挟む「ウイルススキャンできません」の
@@ -13111,6 +13118,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         a.remove();
       }
     }
+    hideLoading();
     }
 
     p.downloadCount = (Number(p.downloadCount) || 0) + 1;
@@ -13124,6 +13132,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     } catch (err) {
       console.error(err);
     }
+  }
+
+  async function fetchRelayChunk(fileId, offset) {
+    let lastErr = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        return await fetchVideoChunk(fileId, offset);
+      } catch (err) {
+        lastErr = err;
+        if (/^(auth|login)$/.test(String(err && err.message))) break;
+        await new Promise(function (res) { setTimeout(res, 1500); });
+      }
+    }
+    throw lastErr;
   }
 
   function driveFileId(url) {
@@ -16654,7 +16676,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<div class="model-file-info"><div class="model-file-name">' + escapeHtml(mf.name || '(ファイル名なし)') + '</div>' +
           '<div class="model-file-sub">' + escapeHtml(formatBytes(mf.size)) + '</div>' +
           '<div class="model-upload-progress" id="modelDownloadProgress"><div></div></div>' +
-          '<div class="model-direct-note">大きいファイルは <button type="button" class="model-direct-dl" id="modelDirectDownloadBtn">Driveから直接ダウンロード</button>(速いが、ファイル名は管理用の名前になります)</div></div>' +
+          '</div>' +
           '<button class="btn-submit" type="button" id="modelDownloadBtn" data-model-id="' + escapeHtml(String(p.id)) + '">ダウンロード</button>' +
         '</div></div>'
       : '<div class="detail-block"><div class="value">(ファイルがありません)</div></div>';
@@ -16693,7 +16715,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const dlBtn = document.getElementById('modelDownloadBtn');
     if (dlBtn) {
       dlBtn.addEventListener('click', function () { downloadModelFile(p); });
-      document.getElementById('modelDirectDownloadBtn').addEventListener('click', function () { openModelDirectDownload(p); });
       renderModelDownloadState(p);
     }
     wireModalLikeButton();
