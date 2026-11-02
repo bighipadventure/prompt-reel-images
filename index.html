@@ -11284,9 +11284,22 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const usedModels = modelIdsOf(p)
       .map(function (id) { return modelPosts.find(function (mp) { return String(mp.id) === String(id); }); })
       .filter(Boolean);
-    const usedModelBlock = (usedModels.length && options.model)
-      ? '<div class="linked-works-head">使用したモデル(' + usedModels.length + '件)</div>' +
-        '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) { return modelRowHtml(mp, { counts: false }); }).join('') + '</div>'
+    const usedDl = [];
+    if (options.model) {
+      modelUsageEntries().forEach(function (e) {
+        if (!e.posts.some(function (x) { return String(x.id) === String(p.id); })) return;
+        const posted = postedModelFor(e.name);
+        if (posted) { if (usedModels.indexOf(posted) === -1) usedModels.push(posted); return; }
+        e.post = dlModelPost(e);
+        usedDl.push(e);
+      });
+      usedDl.sort(function (a, b) { return (a.kind === 'LoRA') - (b.kind === 'LoRA') || a.name.localeCompare(b.name, 'ja', { numeric: true }); });
+    }
+    const usedModelCount = usedModels.length + usedDl.length;
+    const usedModelBlock = (usedModelCount && options.model)
+      ? '<div class="linked-works-head">使用したモデル(' + usedModelCount + '件)</div>' +
+        '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) { return modelRowHtml(mp, { counts: false }); }).join('') +
+          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false }); }).join('') + '</div>'
       : '';
 
     const parent = p.parentId
@@ -11518,7 +11531,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     const usedModelWorks = document.getElementById('usedModelWorks');
-    if (usedModelWorks) wireModelRows(usedModelWorks);
+    if (usedModelWorks) {
+      wireModelRows(usedModelWorks);
+      usedModelWorks.querySelectorAll('[data-dl-i]').forEach(function (row) {
+        row.addEventListener('click', function () { openDlModelModal(usedDl[Number(row.dataset.dlI)]); });
+      });
+    }
 
     const parentWorks = document.getElementById('parentWorks');
     if (parentWorks) wireImageRows(parentWorks, { detailOnly: true });
@@ -16399,10 +16417,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function newestFirst(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); }
 
-  function dlModelRowHtml(e, i) {
+  function dlModelRowHtml(e, i, opts) {
     const recent = e.posts.slice().sort(newestFirst)[0];
     return '<div class="row prompt-row model-row" data-dl-i="' + i + '">' +
-      '<div class="row-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>' +
+      ((opts && opts.counts === false) ? '' : '<div class="row-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>') +
       '<div class="row-main">' +
         '<div class="row-thumb' + ((recent.type === 'video' && !isImageMediaPost(recent)) ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(recent) || recent.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
         '<div class="row-body">' +
