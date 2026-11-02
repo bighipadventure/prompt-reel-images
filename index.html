@@ -1022,13 +1022,23 @@
   .modal-tags-row .modal-counts .dislike-btn{ padding: 6px 14px 6px 11px; font-size: 12px; }
   .modal-tags-row .modal-counts .btn-icon{ width: 14px; height: 14px; }
   .modal-tags-row .modal-counts .count-badge{ font-size: 12px; }
-  .civitai-body{ display:flex; flex-direction:column; gap:6px; padding:10px 12px; font-size:13px; }
-  .civitai-name{ font-weight:700; color:var(--ink); }
-  .civitai-version{ font-weight:400; color:var(--ink-dim); margin-left:6px; }
-  .civitai-note{ font-size:12px; color:var(--ink-dim); }
-  .civitai-words span{ display:block; font-size:10.5px; color:var(--ink-dim); }
-  .civitai-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:2px; }
-  .civitai-actions a{ text-decoration:none; display:inline-block; }
+  .kv-list{ display:grid; grid-template-columns: minmax(110px, 150px) minmax(0, 1fr); font-size:13px; }
+  .kv-key, .kv-val{ padding:9px 12px; border-bottom:1px solid var(--line); min-width:0; }
+  .kv-key{ color:var(--ink-dim); font-size:12px; background:rgba(255,255,255,.025); border-right:1px solid var(--line); display:flex; align-items:center; }
+  .kv-val{ color:var(--ink); overflow-wrap:anywhere; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .kv-list > :nth-last-child(-n+2){ border-bottom:0; }
+  .kv-strong{ font-weight:700; }
+  .civitai-version{ color:var(--ink-dim); font-size:12px; padding:1px 8px; border:1px solid var(--line); border-radius:999px; }
+  .kv-words{ flex:1 1 200px; }
+  .kv-dim{ color:var(--ink-dim); font-size:12px; }
+  .kv-link{ color:var(--accent); text-decoration:none; word-break:break-all; }
+  .kv-link:hover{ text-decoration:underline; }
+  @media (max-width: 680px){
+    .kv-list{ grid-template-columns: minmax(0, 1fr); }
+    .kv-key{ border-right:0; border-bottom:0; padding-bottom:0; background:none; }
+    .kv-val{ padding-top:3px; }
+    .kv-list > :nth-last-child(2){ border-bottom:0; }
+  }
 
   /* ---- はじめてガイド ---- */
   .guide-step{ display:flex; gap:14px; margin-bottom:18px; }
@@ -3420,7 +3430,8 @@
       </div>
       <div class="search-row tag-filter-row">
         <span class="label" style="margin-left:0;">タグで絞込</span>
-        <div class="tag-cloud" id="mBrowseTagCloud"></div>
+        <div class="tag-cloud-wrap"><div class="tag-cloud" id="mBrowseTagCloud"></div>
+        <button class="show-all-tags" type="button" id="mShowAllTagsBtn" style="display:none;">全て表示</button></div>
         <div class="mode-toggle-row">
           <div class="mode-toggle" id="mTagMatchModeToggle">
             <button type="button" data-tagmode="AND" class="active">AND</button>
@@ -5928,6 +5939,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   </div>
 </div>
 
+<div class="modal-overlay" id="mBrowseTagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="mBrowseTagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title">タグで絞込</h3>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <div class="mode-toggle" id="mBrowseTagModalMatchModeToggle">
+        <button type="button" data-tagmode="AND">AND</button>
+        <button type="button" data-tagmode="OR">OR</button>
+        <button type="button" data-tagmode="NOT">NOT</button>
+      </div>
+      <button class="clear-tags" type="button" id="mClearBrowseTagsModalBtn">タグ選択をクリア</button>
+    </div>
+    <p class="tag-modal-hint">クリックでON/OFF切替</p>
+    <div class="tag-cloud" id="mBrowseTagModalCloud"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="vBrowseTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="vBrowseTagModalCloseBtn">✕ 閉じる</button>
@@ -6664,6 +6692,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let mSource = 'all';
   let mDlShown = [];
   let modelVotes = {};
+  let modelInfoMap = {};
   let dlModelPosts = {};
   let modelPickerSortKeys = [{ field: 'date', dir: 'desc' }];
   let modelUploading = false;
@@ -9059,6 +9088,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
     if (data.links) { allLinks = data.links; renderLinksListIfActive(); }
     if (data.modelVotes) { modelVotes = data.modelVotes; dlModelPosts = {}; }
+    if (data.modelInfo) modelInfoMap = data.modelInfo;
     applyOptionsToUi();
     rebuildDerivedArraysFromPosts();
     collectDynamicKeysFromPosts();
@@ -9219,6 +9249,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (data.announce) { allAnnounce = data.announce; renderAnnounceBar(); }
     if (data.links) { allLinks = data.links; renderLinksListIfActive(); }
     if (data.modelVotes) { modelVotes = data.modelVotes; dlModelPosts = {}; }
+    if (data.modelInfo) modelInfoMap = data.modelInfo;
     options = Object.assign({}, DEFAULT_OPTIONS, data.options || {});
     buildInternalDict(data.dictionary);
     tagYomiMap = (data.tagYomi && typeof data.tagYomi === 'object') ? data.tagYomi : {};
@@ -11202,6 +11233,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       applyPromptFormTagClamp();
       applyPromptBrowseTagClamp();
       applyVideoTagClamp();
+      applyModelTagClamp();
     }, 150);
   });
 
@@ -15960,12 +15992,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
+  function modelBrowseTagPool() {
+    const dlTags = mSource === 'posted' ? [] : [].concat.apply([], dlModelEntries().map(function (e) { return e.tags; }));
+    return sortJa(Array.from(new Set((mSource === 'dl' ? [] : modelTagPool()).concat(dlTags))));
+  }
+
+  function applyModelTagClamp() { applyTagCloudClamp(document.getElementById('mBrowseTagCloud'), document.getElementById('mShowAllTagsBtn'), 2); }
+
   function renderModelBrowseTags() {
     const cloud = document.getElementById('mBrowseTagCloud');
-    const dlTags = mSource === 'posted' ? [] : [].concat.apply([], dlModelEntries().map(function (e) { return e.tags; }));
-    const tags = sortJa(Array.from(new Set((mSource === 'dl' ? [] : modelTagPool()).concat(dlTags))));
+    const tags = modelBrowseTagPool();
     Object.keys(mTagStates).forEach(function (t) { if (tags.indexOf(t) === -1) delete mTagStates[t]; });
-    cloud.innerHTML = tags.map(function (t) {
+    cloud.innerHTML = tagDisplayOrder('modelBrowse', tags, mTagStates).map(function (t) {
       return '<span class="tag-pill' + (mTagStates[t] ? ' state-include' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
     }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
     cloud.querySelectorAll('.tag-pill').forEach(function (pill) {
@@ -15976,6 +16014,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         renderModelList();
       });
     });
+    applyModelTagClamp();
+  }
+
+  function renderModelTagModalCloud() {
+    renderIndexedTagCloud(document.getElementById('mBrowseTagModalCloud'), modelBrowseTagPool(),
+      function (t) { return !!mTagStates[t]; },
+      function (t) {
+        if (mTagStates[t]) delete mTagStates[t]; else mTagStates[t] = true;
+        renderModelList();
+        renderModelTagModalCloud();
+      });
   }
 
   function passesModelTagFilter(p) {
@@ -16077,12 +16126,25 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       renderModelList();
     });
   });
-  document.querySelectorAll('#mTagMatchModeToggle button').forEach(function (btn) {
+  document.querySelectorAll('#mTagMatchModeToggle button, #mBrowseTagModalMatchModeToggle button').forEach(function (btn) {
     btn.addEventListener('click', function () {
       mTagMatchMode = btn.dataset.tagmode;
-      document.querySelectorAll('#mTagMatchModeToggle button').forEach(function (b) { b.classList.toggle('active', b.dataset.tagmode === mTagMatchMode); });
+      document.querySelectorAll('#mTagMatchModeToggle button, #mBrowseTagModalMatchModeToggle button').forEach(function (b) { b.classList.toggle('active', b.dataset.tagmode === mTagMatchMode); });
       renderModelList();
     });
+  });
+  const mBrowseTagModalOverlay = document.getElementById('mBrowseTagModalOverlay');
+  document.getElementById('mShowAllTagsBtn').addEventListener('click', function () {
+    document.querySelectorAll('#mBrowseTagModalMatchModeToggle button').forEach(function (b) { b.classList.toggle('active', b.dataset.tagmode === mTagMatchMode); });
+    renderModelTagModalCloud();
+    openOverlay(mBrowseTagModalOverlay);
+  });
+  document.getElementById('mBrowseTagModalCloseBtn').addEventListener('click', function () { mBrowseTagModalOverlay.classList.remove('open'); });
+  wireOverlayDismiss(mBrowseTagModalOverlay, function () { mBrowseTagModalOverlay.classList.remove('open'); });
+  document.getElementById('mClearBrowseTagsModalBtn').addEventListener('click', function () {
+    mTagStates = {};
+    renderModelList();
+    renderModelTagModalCloud();
   });
   document.getElementById('mClearFiltersBtn').addEventListener('click', function () {
     ['mFilterAuthor', 'mFilterBaseModel', 'mFilterKeyword'].forEach(function (id) { document.getElementById(id).value = ''; });
@@ -16242,35 +16304,91 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function civitaiBlockHtml(e) {
-    return '<div class="detail-block" id="civitaiBlock"><div class="label">ダウンロード先(CivitAI)</div><div class="civitai-body" id="civitaiBody">' +
-      (Object.keys(e.hashes).length ? 'ハッシュからCivitAIのモデルを確認しています...' : civitaiFallbackHtml(e, 'ハッシュの記録が無いため、名前で検索してください。')) +
+    return '<div class="detail-block" id="civitaiBlock"><div class="label">モデル詳細</div><div class="kv-list" id="civitaiBody">' +
+      (Object.keys(e.hashes).length ? kvRowHtml('', '<span class="kv-dim">配布元(CivitAI)の情報を確認しています...</span>') : civitaiFallbackHtml(e, 'ハッシュの記録が無いため、配布元を特定できません。')) +
       '</div></div>';
   }
 
+  function kvRowHtml(key, valHtml) {
+    return '<div class="kv-key">' + escapeHtml(key) + '</div><div class="kv-val">' + valHtml + '</div>';
+  }
+
   function civitaiFallbackHtml(e, note) {
-    return '<div class="civitai-note">' + escapeHtml(note) + '</div>' +
-      '<div class="civitai-actions"><a class="btn-ghost" href="' + escapeHtml(civitaiSearchUrl(e.name)) + '" target="_blank" rel="noopener noreferrer">CivitAIで「' + escapeHtml(usedModelKey(e.name)) + '」を検索 ↗</a></div>';
+    const url = civitaiSearchUrl(e.name);
+    return kvRowHtml('状態', '<span class="kv-dim">' + escapeHtml(note) + '</span>') +
+      kvRowHtml('検索', '<a class="kv-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(url) + ' ↗</a>');
+  }
+
+  function civitaiInfoFromApi(v) {
+    const model = v.model || {};
+    return {
+      source: 'civitai',
+      modelId: Number(v.modelId) || 0,
+      versionId: Number(v.id) || 0,
+      modelName: String(model.name || ''),
+      versionName: String(v.name || ''),
+      type: String(model.type || ''),
+      baseModel: String(v.baseModel || ''),
+      trainedWords: (Array.isArray(v.trainedWords) ? v.trainedWords : [])
+        .map(function (w) { return String(w || '').trim().replace(/^,+|,+$/g, '').trim(); }).filter(Boolean).join(', ')
+    };
+  }
+
+  function sameModelInfo(a, b) {
+    return !!a && !!b && ['modelId', 'versionId', 'modelName', 'versionName', 'type', 'baseModel', 'trainedWords']
+      .every(function (k) { return String(a[k] || '') === String(b[k] || ''); });
+  }
+
+  function civitaiInfoHtml(info, note) {
+    const page = 'https://civitai.com/models/' + encodeURIComponent(info.modelId) + '?modelVersionId=' + encodeURIComponent(info.versionId);
+    return kvRowHtml('モデル名', '<span class="kv-strong">' + escapeHtml(info.modelName || '(名前なし)') + '</span>' + (info.versionName ? '<span class="civitai-version">' + escapeHtml(info.versionName) + '</span>' : '')) +
+      (info.type ? kvRowHtml('種類', escapeHtml(info.type)) : '') +
+      (info.baseModel ? kvRowHtml('ベースモデル', escapeHtml(info.baseModel)) : '') +
+      (info.trainedWords ? kvRowHtml('トリガーワード', '<span class="kv-words">' + escapeHtml(info.trainedWords) + '</span><button class="btn-copy" type="button" id="civitaiWordsCopy">コピー</button>') : '') +
+      kvRowHtml('配布ページ', '<a class="kv-link" href="' + escapeHtml(page) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(page) + ' ↗</a>') +
+      (note ? kvRowHtml('', '<span class="kv-dim">' + escapeHtml(note) + '</span>') : '');
+  }
+
+  function renderCivitaiBody(body, info, note) {
+    body.innerHTML = civitaiInfoHtml(info, note);
+    const copy = document.getElementById('civitaiWordsCopy');
+    if (copy) copy.addEventListener('click', function () {
+      navigator.clipboard.writeText(info.trainedWords).then(function () {
+        copy.textContent = 'コピーしました';
+        setTimeout(function () { copy.textContent = 'コピー'; }, 1500);
+      });
+    });
   }
 
   async function fillCivitaiBlock(e) {
     const hashes = Object.keys(e.hashes).sort(function (a, b) { return e.hashes[b] - e.hashes[a]; });
     if (!hashes.length) return;
-    let v = null;
-    for (let i = 0; i < hashes.length && !v; i++) v = await civitaiLookup(hashes[i]);
+    const body0 = document.getElementById('civitaiBody');
+    const savedHash = hashes.find(function (h) { return modelInfoMap[h.toLowerCase()]; });
+    const saved = savedHash ? modelInfoMap[savedHash.toLowerCase()] : null;
+    if (saved && body0) renderCivitaiBody(body0, saved, '');
+    let live = null;
+    let liveHash = '';
+    const order = savedHash ? [savedHash].concat(hashes.filter(function (h) { return h !== savedHash; })) : hashes;
+    for (let i = 0; i < order.length && !live; i++) {
+      const v = await civitaiLookup(order[i]);
+      if (v && v.modelId && v.id) { live = civitaiInfoFromApi(v); liveHash = order[i].toLowerCase(); }
+    }
     const body = document.getElementById('civitaiBody');
     if (!body || body.dataset.entryId !== e.id) return;
-    if (!v || !v.modelId) {
+    if (live) {
+      renderCivitaiBody(body, live, '');
+      if (!sameModelInfo(modelInfoMap[liveHash], live)) {
+        modelInfoMap[liveHash] = live;
+        postAction({ action: 'modelInfoSave', hash: liveHash, info: live }).then(function (r) {
+          if (r && r.success && r.info) modelInfoMap[liveHash] = r.info;
+        }).catch(function (err) { console.error(err); });
+      }
+    } else if (saved) {
+      renderCivitaiBody(body, saved, '配布サイトから応答が無かったため、保存済みの情報を表示しています' + (saved.updatedAt ? '(' + formatDateTime(saved.updatedAt) + ' 時点)' : '') + '。');
+    } else {
       body.innerHTML = civitaiFallbackHtml(e, 'ハッシュからは見つかりませんでした(CivitAIに無いモデルか、通信できませんでした)。名前で検索してください。');
-      return;
     }
-    const page = 'https://civitai.com/models/' + encodeURIComponent(v.modelId) + '?modelVersionId=' + encodeURIComponent(v.id);
-    const words = Array.isArray(v.trainedWords) ? v.trainedWords.filter(Boolean).join(', ') : '';
-    const model = v.model || {};
-    body.innerHTML =
-      '<div class="civitai-name">' + escapeHtml(model.name || '') + (v.name ? ' <span class="civitai-version">' + escapeHtml(v.name) + '</span>' : '') + '</div>' +
-      '<div class="civitai-note">' + [model.type ? '種類: ' + model.type : '', v.baseModel ? 'ベースモデル: ' + v.baseModel : ''].filter(Boolean).map(escapeHtml).join(' / ') + '</div>' +
-      (words ? '<div class="civitai-words"><span>トリガーワード</span>' + escapeHtml(words) + '</div>' : '') +
-      '<div class="civitai-actions"><a class="btn-submit" href="' + escapeHtml(page) + '" target="_blank" rel="noopener noreferrer">CivitAIのページを開く ↗</a></div>';
   }
 
   function newestFirst(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); }
