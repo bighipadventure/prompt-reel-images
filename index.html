@@ -6716,6 +6716,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return String((post && post.basePromptId) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
   }
 
+  function autoLinkedModelIds(payload) {
+    const ids = String(payload.modelIds || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    const names = [];
+    [payload].concat(payload.variants || []).forEach(function (h) {
+      const st = (h && h.settings) || {};
+      names.push(String(st.checkpoint || '').replace(/\s+[0-9A-Fa-f]{6,}\s*$/, ''));
+      String(st.wanModel || '').split(',').forEach(function (m) { names.push(m); });
+      loraNamesOf(st).forEach(function (n) { names.push(n); });
+      Object.keys(promptLoraWeights(h && h.prompt)).forEach(function (n) { names.push(n); });
+    });
+    names.forEach(function (n) {
+      if (!String(n || '').trim()) return;
+      const m = postedModelFor(n);
+      if (m && ids.indexOf(String(m.id)) === -1) ids.push(String(m.id));
+    });
+    return ids;
+  }
+
   function modelIdsOf(post) {
     return String((post && post.modelIds) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
   }
@@ -10644,6 +10662,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           }
         }
         payload.variants = variantList;
+      }
+      if (!editing && !isFix && !isNovel && options.model) {
+        payload.modelIds = autoLinkedModelIds(payload).join(',');
       }
 
       const result = await postAction(payload);
