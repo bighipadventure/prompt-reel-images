@@ -11787,10 +11787,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
   document.getElementById('fullImageDetailBtn').addEventListener('click', async function () {
     const id = currentFullImagePost() && currentFullImagePost().id;
+    const varIdx = fullImageCurIdx;
     closeFullImageModal();
+    closeVariantPanelModal();
     if (!id) return;
     const post = await ensurePostLoaded(id);
-    if (post) openModal(post);
+    if (!post) return;
+    openModal(post);
+    if (varIdx > 0) {
+      const varBtn = modalBody.querySelector('.variant-switch-btn[data-var-idx="' + varIdx + '"]');
+      if (varBtn) varBtn.click();
+    }
   });
   document.getElementById('fullImageDownloadBtn').addEventListener('click', function () {
     const post = currentFullImagePost();
