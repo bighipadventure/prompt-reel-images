@@ -11315,10 +11315,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       usedDl.sort(function (a, b) { return (a.kind === 'LoRA') - (b.kind === 'LoRA') || a.name.localeCompare(b.name, 'ja', { numeric: true }); });
     }
     const usedModelCount = usedModels.length + usedDl.length;
+    const usedModelThumbUsed = new Set();
     const usedModelBlock = (usedModelCount && options.model)
       ? '<div class="linked-works-head">使用したモデル(' + usedModelCount + '件)</div>' +
-        '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) { return modelRowHtml(mp, { counts: false }); }).join('') +
-          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false }); }).join('') + '</div>'
+        '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) { return modelRowHtml(mp, { counts: false, usedThumbIds: usedModelThumbUsed }); }).join('') +
+          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false, usedThumbIds: usedModelThumbUsed }); }).join('') + '</div>'
       : '';
 
     const parent = p.parentId
@@ -11856,7 +11857,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const likedThumbUsed = new Set();
     listEl.innerHTML = arr.map(function (p) {
       return (p.type === 'prompt') ? promptRowHtml(p, { counts: false, usedThumbIds: likedThumbUsed })
-        : (p.type === 'model') ? modelRowHtml(p, { counts: false })
+        : (p.type === 'model') ? modelRowHtml(p, { counts: false, usedThumbIds: likedThumbUsed })
         : (p.type === 'request') ? requestRowHtml(p, { counts: false })
         : imageRowHtml(p, 'w320', { counts: false });
     }).join('');
@@ -15987,10 +15988,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return '<span class="model-kind-badge mk-' + slug + (mKindFilter === kind ? ' is-active' : '') + '" data-kind-badge="' + escapeHtml(kind) + '" title="この種類で絞り込む">' + escapeHtml(kind) + '</span>';
   }
 
+  function pickThumbWork(works, usedThumbIds) {
+    const oldest = works.slice().sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
+    let work = oldest[0];
+    if (usedThumbIds && oldest.length) work = oldest.find(function (w) { return !usedThumbIds.has(String(w.id)); }) || oldest[0];
+    if (work && usedThumbIds) usedThumbIds.add(String(work.id));
+    return work;
+  }
+
   function modelRowHtml(p, opts) {
     opts = opts || {};
     const used = modelUsedBy(p).sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
-    const thumbWork = used[0];
+    const thumbWork = pickThumbWork(used, opts.usedThumbIds);
     const thumbHtml = thumbWork
       ? '<div class="row-thumb' + (thumbWork.type === 'video' ? ' is-video' : '') + '">' + imageTag(thumbWork.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
       : noImageThumbHtml();
@@ -16164,10 +16173,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     items.sort(compareModelItems);
     mDlShown = [];
     setListCountAndEmpty(null, document.getElementById('mEmptyState'), items.length, '件', '条件に一致するモデルがありません。');
+    const modelListThumbUsed = new Set();
     listEl.innerHTML = items.map(function (it) {
-      if (!it.dl) return modelRowHtml(it.post);
+      if (!it.dl) return modelRowHtml(it.post, { usedThumbIds: modelListThumbUsed });
       mDlShown.push(it.dl);
-      return dlModelRowHtml(it.dl, mDlShown.length - 1);
+      return dlModelRowHtml(it.dl, mDlShown.length - 1, { usedThumbIds: modelListThumbUsed });
     }).join('');
     listEl.querySelectorAll('[data-kind-badge]').forEach(function (badge) {
       badge.addEventListener('click', function (ev) {
@@ -16461,11 +16471,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function newestFirst(a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); }
 
   function dlModelRowHtml(e, i, opts) {
+    opts = opts || {};
     const recent = e.posts.slice().sort(newestFirst)[0];
+    const thumb = pickThumbWork(e.posts, opts.usedThumbIds);
     return '<div class="row prompt-row model-row" data-dl-i="' + i + '">' +
-      ((opts && opts.counts === false) ? '' : '<div class="row-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>') +
+      (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>') +
       '<div class="row-main">' +
-        '<div class="row-thumb' + ((recent.type === 'video' && !isImageMediaPost(recent)) ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(recent) || recent.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+        '<div class="row-thumb' + ((thumb.type === 'video' && !isImageMediaPost(thumb)) ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(thumb) || thumb.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
         '<div class="row-body">' +
           '<div class="row-title">' + escapeHtml(e.name) + '</div>' +
           '<div class="row-meta">' +
@@ -17072,9 +17084,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       return !keywords.length || matchKeywords(modelHaystack(p) + ' ' + String(p.author || '').toLowerCase(), keywords, pickerKeywordMode('modelPicker'));
     });
     items.sort(function (a, b) { return compareWithKeys(a, b, modelPickerSortKeys); });
+    const pickerThumbUsed = new Set();
     listEl.innerHTML = items.map(function (p) {
       const selected = selectedModelIds.some(function (id) { return String(id) === String(p.id); });
-      return modelRowHtml(p, { selected: selected, counts: false });
+      return modelRowHtml(p, { selected: selected, counts: false, usedThumbIds: pickerThumbUsed });
     }).join('');
     wirePickerRows(listEl, function (id) {
       const idx = selectedModelIds.findIndex(function (x) { return String(x) === String(id); });
