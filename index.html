@@ -15988,6 +15988,37 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return '<span class="model-kind-badge mk-' + slug + (mKindFilter === kind ? ' is-active' : '') + '" data-kind-badge="' + escapeHtml(kind) + '" title="この種類で絞り込む">' + escapeHtml(kind) + '</span>';
   }
 
+  function holderModelKeys(h, isVideo) {
+    const st = (h && h.settings) || {};
+    const names = isVideo ? String(st.wanModel || '').split(',') : [String(st.checkpoint || '').replace(/\s+[0-9A-Fa-f]{6,}\s*$/, '')];
+    return names.concat(loraNamesOf(st), Object.keys(promptLoraWeights(h && h.prompt)))
+      .map(usedModelKey).filter(Boolean);
+  }
+
+  function thumbCandidates(works, thumbs) {
+    return works.map(function (w) {
+      const variantUrl = thumbs && thumbs[w.id];
+      return { id: variantUrl || novelThumbUrl(w) || w.imageUrl, timestamp: w.timestamp, post: w, variant: !!variantUrl };
+    });
+  }
+
+  function thumbHtmlOf(c) {
+    if (!c) return noImageThumbHtml();
+    const video = !c.variant && c.post.type === 'video' && !isImageMediaPost(c.post);
+    return '<div class="row-thumb' + (video ? ' is-video' : '') + '">' + imageTag(c.id, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>';
+  }
+
+  function postedModelThumbs(p, works) {
+    const keys = [usedModelKey(p.modelFile && p.modelFile.name), usedModelKey(p.title)].filter(Boolean);
+    const thumbs = {};
+    works.forEach(function (w) {
+      if (holderModelKeys(w, w.type === 'video').some(function (k) { return keys.indexOf(k) !== -1; })) return;
+      const v = (w.variants || []).find(function (h) { return holderModelKeys(h, false).some(function (k) { return keys.indexOf(k) !== -1; }); });
+      if (v && v.imageUrl) thumbs[w.id] = v.imageUrl;
+    });
+    return thumbs;
+  }
+
   function pickThumbWork(works, usedThumbIds) {
     const oldest = works.slice().sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
     let work = oldest[0];
@@ -15999,10 +16030,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function modelRowHtml(p, opts) {
     opts = opts || {};
     const used = modelUsedBy(p).sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
-    const thumbWork = pickThumbWork(used, opts.usedThumbIds);
-    const thumbHtml = thumbWork
-      ? '<div class="row-thumb' + (thumbWork.type === 'video' ? ' is-video' : '') + '">' + imageTag(thumbWork.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>'
-      : noImageThumbHtml();
+    const thumbHtml = thumbHtmlOf(pickThumbWork(thumbCandidates(used, postedModelThumbs(p, used)), opts.usedThumbIds));
     const kind = modelKindOf(p);
     const base = modelBaseOf(p);
     const size = p.modelFile ? formatBytes(p.modelFile.size) : '';
@@ -16289,13 +16317,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function modelUsageEntries() {
     const map = {};
+    let holderUrl = '';
     function add(kind, name, p, preset, hash, weight) {
       const n = String(name || '').trim();
       if (!n) return;
       const key = kind + '|' + usedModelKey(n);
       const t = new Date(p.timestamp).getTime() || 0;
-      const e = map[key] || (map[key] = { id: dlModelId(kind, usedModelKey(n)), kind: kind, name: n, posts: [], firstUsed: t, lastUsed: t, presets: {}, hashes: {}, weights: {} });
-      if (e.posts.indexOf(p) === -1) e.posts.push(p);
+      const e = map[key] || (map[key] = { id: dlModelId(kind, usedModelKey(n)), kind: kind, name: n, posts: [], firstUsed: t, lastUsed: t, presets: {}, hashes: {}, weights: {}, thumbs: {} });
+      if (e.posts.indexOf(p) === -1) { e.posts.push(p); e.thumbs[p.id] = holderUrl; }
       e.firstUsed = Math.min(e.firstUsed, t);
       e.lastUsed = Math.max(e.lastUsed, t);
       if (preset) e.presets[preset] = (e.presets[preset] || 0) + 1;
@@ -16304,6 +16333,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
     visiblePosts(imagePosts.concat(videoPosts)).forEach(function (p) {
       postContentHolders(p).forEach(function (h) {
+        holderUrl = h === p ? '' : String(h.imageUrl || '');
         const st = h.settings || {};
         const preset = String(st.uiPreset || (p.settings && p.settings.uiPreset) || '').trim();
         const models = p.type === 'video'
@@ -16473,11 +16503,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function dlModelRowHtml(e, i, opts) {
     opts = opts || {};
     const recent = e.posts.slice().sort(newestFirst)[0];
-    const thumb = pickThumbWork(e.posts, opts.usedThumbIds);
+    const thumbHtml = thumbHtmlOf(pickThumbWork(thumbCandidates(e.posts, e.thumbs), opts.usedThumbIds));
     return '<div class="row prompt-row model-row" data-dl-i="' + i + '">' +
       (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>') +
       '<div class="row-main">' +
-        '<div class="row-thumb' + ((thumb.type === 'video' && !isImageMediaPost(thumb)) ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(thumb) || thumb.imageUrl, { size: 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+        thumbHtml +
         '<div class="row-body">' +
           '<div class="row-title">' + escapeHtml(e.name) + '</div>' +
           '<div class="row-meta">' +
