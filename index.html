@@ -2896,7 +2896,7 @@
       <div class="tag-cloud-wrap" id="postTagWrap"><div class="tag-cloud" id="postTagCloud"></div>
       <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button></div>
       <div class="tag-row" style="margin-top:10px;">
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" placeholder="新しいタグを入力して追加(既存タグから予測変換)">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" data-pm-skip placeholder="新しいタグを入力して追加(既存タグから予測変換)">
         <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="selectedTags"></div>
@@ -2978,7 +2978,7 @@
       <div class="tag-cloud-wrap" id="pTagWrap"><div class="tag-cloud" id="pTagCloud"></div>
       <button class="show-all-tags" type="button" id="pShowAllTagsBtn" style="display:none;">全て表示</button></div>
       <div class="tag-row" style="margin-top:10px;">
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pNewTagInput" placeholder="新しいタグを入力して追加">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pNewTagInput" data-pm-skip placeholder="新しいタグを入力して追加">
         <button class="btn-ghost" id="pAddNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="pSelectedTags"></div>
@@ -3083,7 +3083,7 @@
       </div>
       <div class="tag-cloud" id="mTagCloud"></div>
       <div class="tag-row" style="margin-top:10px;">
-        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="mNewTagInput" placeholder="新しいタグを入力して追加">
+        <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="mNewTagInput" data-pm-skip placeholder="新しいタグを入力して追加">
         <button class="btn-ghost" id="mAddNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="mSelectedTags"></div>
@@ -9795,13 +9795,17 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       els[activeIndex].scrollIntoView({ block: 'nearest' });
     }
 
+    let blurTimer = 0;
+    btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
+      clearTimeout(blurTimer);
       if (menu) { tidy(); closeMenu(); return; }
       buildMenu(true);
       input.focus();
     });
+    input.addEventListener('focus', function () { clearTimeout(blurTimer); });
     input.addEventListener('input', function () { if (!tidying) buildMenu(); });
     input.addEventListener('keydown', function (e) {
       if (e.isComposing || e.keyCode === 229) return;
@@ -9826,7 +9830,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (menu) { tidy(); closeMenu(); e.preventDefault(); }
       }
     });
-    input.addEventListener('blur', function () { setTimeout(function () { tidy(); closeMenu(); }, 120); });
+    input.addEventListener('blur', function () {
+      clearTimeout(blurTimer);
+      blurTimer = setTimeout(function () { tidy(); closeMenu(); }, 120);
+    });
   }
 
   function attachDatalistDropdowns(root) {
