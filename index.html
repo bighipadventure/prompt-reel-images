@@ -819,6 +819,14 @@
   .row-thumb .img-loader .spinner{ width:24px; height:24px; border-width:2px; }
   .modal-image img.img-pending{ display:none; }
   .modal-image .img-loader{ padding:80px 0; font-size:13px; gap:12px; }
+  /* ---- 詳細モーダルの画像枠(縦横比で先に大きさを確定) ---- */
+  .detail-image-box{ position:relative; margin:0 auto; max-width:100%; }
+  .modal-image .detail-image-box img{
+    display:block; width:100%; height:100%; max-width:none; max-height:none;
+    box-sizing:border-box; object-fit:contain; transition: opacity .2s ease;
+  }
+  .modal-image .detail-image-box img.img-pending{ display:block; opacity:0; }
+  .modal-image .detail-image-box .img-loader{ position:absolute; inset:0; padding:0; }
   .full-image-wrap img.img-pending + .img-loader{
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
     color: var(--ink-dim); font-family:'Noto Sans JP',sans-serif; font-size:13px; pointer-events:none;
@@ -11464,7 +11472,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
       '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-      '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? (isImageMediaPost(p) ? gifPlayerHtml(imageSet[0].imageUrl) : videoPlayerHtml(imageSet[0].imageUrl)) : imageTag(imageSet[0].imageUrl, { size: 'w1000', alt: '生成画像' }))) + '</div>' +
+      '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? (isImageMediaPost(p) ? gifPlayerHtml(imageSet[0].imageUrl) : videoPlayerHtml(imageSet[0].imageUrl)) : detailImageHtml(imageSet[0]))) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
         (hasVariants
           ? '<div class="variant-switcher" id="variantSwitcher">' + imageSet.map(function (_, i) {
@@ -11552,7 +11560,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         btn.addEventListener('click', function () {
           curVar = Number(btn.dataset.varIdx);
           const cur = imageSet[curVar];
-          wrap.innerHTML = imageTag(cur.imageUrl, { size: 'w1000', alt: '生成画像' });
+          wrap.innerHTML = detailImageHtml(cur);
           promptValEl.innerHTML = cur.prompt ? promptWordsHtml(cur.prompt) : '(入力なし)';
           negValEl.innerHTML = promptWordsHtml(cur.negativePrompt || '');
           if (negBlockEl) negBlockEl.style.display = hasText(cur.negativePrompt) ? '' : 'none';
@@ -11570,6 +11578,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       imageSet.slice(1).forEach(function (v) {
         const pre = new Image();
         pre.decoding = 'async';
+        pre.onload = function () {
+          if (pre.naturalWidth > 0 && pre.naturalHeight > 0) IMAGE_ASPECTS[driveFileId(v.imageUrl)] = pre.naturalWidth / pre.naturalHeight;
+        };
         pre.src = imageSrcFor(v.imageUrl, 'w1000');
       });
     }
@@ -13271,8 +13282,30 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   document.addEventListener('load', function (e) {
+    rememberImageAspect(e.target);
     clearImagePending(e.target);
   }, true);
+
+  // IMAGE ASPECT
+  const IMAGE_ASPECTS = {};
+  function rememberImageAspect(img) {
+    if (!img || img.tagName !== 'IMG' || !img.dataset || !img.dataset.fileid) return;
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) IMAGE_ASPECTS[img.dataset.fileid] = img.naturalWidth / img.naturalHeight;
+  }
+  function holderImageAspect(h) {
+    if (!h) return 0;
+    const cached = IMAGE_ASPECTS[driveFileId(h.imageUrl)];
+    if (cached) return cached;
+    const st = h.settings || {};
+    const w = Number(st.width), ht = Number(st.height);
+    return (w > 0 && ht > 0) ? w / ht : 0;
+  }
+  function detailImageHtml(h) {
+    const tag = imageTag(h.imageUrl, { size: 'w1000', alt: '生成画像' });
+    const r = holderImageAspect(h);
+    if (!r) return tag;
+    return '<div class="detail-image-box" style="aspect-ratio:' + r + ';width:min(100%, calc(70vh * ' + r + '))">' + tag + '</div>';
+  }
 
   document.addEventListener('error', function (e) {
     const img = e.target;
