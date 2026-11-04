@@ -9063,6 +9063,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return i > 0 ? i : 0;
   }
 
+  function ownImageThumbHtml(p, keys) {
+    const idx = modelVariantIndex(p, keys);
+    const v = idx > 0 ? p.variants[idx - 1] : null;
+    return thumbHtmlOf({ id: v ? v.imageUrl : (novelThumbUrl(p) || p.imageUrl), post: p, variant: !!v });
+  }
+
   function modelVariantIndex(p, keys) {
     const holders = postContentHolders(p);
     const i = holders.findIndex(function (h) {
@@ -11353,11 +11359,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       usedDl.sort(function (a, b) { return (a.kind === 'LoRA') - (b.kind === 'LoRA') || a.name.localeCompare(b.name, 'ja', { numeric: true }); });
     }
     const usedModelCount = usedModels.length + usedDl.length;
-    const usedModelThumbUsed = new Set();
     const usedModelBlock = (usedModelCount && options.model)
       ? '<div class="linked-works-head">使用したモデル(' + usedModelCount + '件)</div>' +
-        '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) { return modelRowHtml(mp, { counts: false, usedThumbIds: usedModelThumbUsed }); }).join('') +
-          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false, usedThumbIds: usedModelThumbUsed }); }).join('') + '</div>'
+        '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) {
+            return modelRowHtml(mp, { counts: false, thumbHtml: ownImageThumbHtml(p, [usedModelKey(mp.modelFile && mp.modelFile.name), usedModelKey(mp.title)].filter(Boolean)) });
+          }).join('') +
+          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false, thumbHtml: ownImageThumbHtml(p, [usedModelKey(e.name)]) }); }).join('') + '</div>'
       : '';
 
     const parent = p.parentId
@@ -16072,7 +16079,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function modelRowHtml(p, opts) {
     opts = opts || {};
     const used = modelUsedBy(p).sort(function (a, b) { return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(); });
-    const thumbHtml = thumbHtmlOf(pickThumbWork(thumbCandidates(used, postedModelThumbs(p, used)), opts.usedThumbIds));
+    const thumbHtml = opts.thumbHtml || thumbHtmlOf(pickThumbWork(thumbCandidates(used, postedModelThumbs(p, used)), opts.usedThumbIds));
     const kind = modelKindOf(p);
     const base = modelBaseOf(p);
     const size = p.modelFile ? formatBytes(p.modelFile.size) : '';
@@ -16545,7 +16552,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function dlModelRowHtml(e, i, opts) {
     opts = opts || {};
     const recent = e.posts.slice().sort(newestFirst)[0];
-    const thumbHtml = thumbHtmlOf(pickThumbWork(thumbCandidates(e.posts, e.thumbs), opts.usedThumbIds));
+    const thumbHtml = opts.thumbHtml || thumbHtmlOf(pickThumbWork(thumbCandidates(e.posts, e.thumbs), opts.usedThumbIds));
     return '<div class="row prompt-row model-row" data-dl-i="' + i + '">' +
       (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(e.post, { likeOnly: true }) + '</div>') +
       '<div class="row-main">' +
