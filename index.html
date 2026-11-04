@@ -6695,6 +6695,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   let mSource = 'all';
   let mDlShown = [];
   let modelVotes = {};
+  let browseModelFilter = null;
   let modelInfoMap = {};
   let dlModelPosts = {};
   let modelPickerSortKeys = [{ field: 'date', dir: 'desc' }];
@@ -9031,16 +9032,43 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     playVideoInHighQuality(fileId);
   }
 
-  function openImageDetail(idOrShareId) {
+  function openImageDetail(idOrShareId, varIdx) {
     const openSeq = ++detailOpenSeq;
     const local = findLocalPost(idOrShareId);
     if (local) {
       openModal(local);
+      selectDetailVariant(varIdx);
       if (!restStageLoaded && !detailFetchedIds[local.id]) backfillDetail(idOrShareId, local.id);
       return;
     }
     // ローカルに無い(未読み込みの子・共有URL等)のみ、取得してから開く
-    ensurePostLoaded(idOrShareId).then(function (post) { if (post && openSeq === detailOpenSeq) openModal(post); });
+    ensurePostLoaded(idOrShareId).then(function (post) {
+      if (post && openSeq === detailOpenSeq) { openModal(post); selectDetailVariant(varIdx); }
+    });
+  }
+
+  function selectDetailVariant(varIdx) {
+    if (!(varIdx > 0)) return;
+    const btn = modalBody.querySelector('.variant-switch-btn[data-var-idx="' + varIdx + '"]');
+    if (btn) btn.click();
+  }
+
+  function filterVariantIndex(p, f) {
+    if (!f || (!f.checkpoint && !f.lora)) return 0;
+    const holders = postContentHolders(p);
+    const ck = function (h) { return !!f.checkpoint && String((h.settings && h.settings.checkpoint) || '').toLowerCase().indexOf(f.checkpoint) !== -1; };
+    const lo = function (h) { return !!f.lora && loraNamesOf(h.settings).some(function (n) { return n.toLowerCase().indexOf(f.lora) !== -1; }); };
+    let i = holders.findIndex(function (h) { return (!f.checkpoint || ck(h)) && (!f.lora || lo(h)); });
+    if (i < 0) i = holders.findIndex(function (h) { return ck(h) || lo(h); });
+    return i > 0 ? i : 0;
+  }
+
+  function modelVariantIndex(p, keys) {
+    const holders = postContentHolders(p);
+    const i = holders.findIndex(function (h) {
+      return holderModelKeys(h, h === p && p.type === 'video').some(function (k) { return keys.indexOf(k) !== -1; });
+    });
+    return i > 0 ? i : 0;
   }
 
   // DETAIL BACKFILL
@@ -10957,6 +10985,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const fUiPreset = document.getElementById('filterUiPreset').value.trim().toLowerCase();
     const fCheckpoint = document.getElementById('filterCheckpoint').value.trim().toLowerCase();
     const fLora = document.getElementById('filterLora').value.trim().toLowerCase();
+    browseModelFilter = { checkpoint: fCheckpoint, lora: fLora };
     const keywords = parseKeywords(document.getElementById('filterKeyword').value);
     filtered = filtered.filter(function (p) {
       if (!matchesTextFilter(p, fAuthor, function (x) { return x.author; })) return false;
@@ -11017,7 +11046,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const slice = browseFiltered.slice(browseShown, browseShown + BROWSE_PAGE);
     if (slice.length) {
       const temp = document.createElement('div');
-      temp.innerHTML = slice.map(function (p) { return imageRowHtml(p, browseThumbSize); }).join('');
+      temp.innerHTML = slice.map(function (p) { return imageRowHtml(p, browseThumbSize, { varIdx: filterVariantIndex(p, browseModelFilter) }); }).join('');
       wireImageRows(temp, { onTagClick: toggleBrowseTagFromCard, activeTags: tagStates });
       while (temp.firstChild) list.appendChild(temp.firstChild);
       browseShown += slice.length;
@@ -11079,6 +11108,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function imageRowHtml(p, thumbSize, opts) {
     opts = opts || {};
+    const varIdx = (opts.varIdx > 0 && p.variants && p.variants[opts.varIdx - 1] && p.variants[opts.varIdx - 1].imageUrl) ? opts.varIdx : 0;
     const title = p.title ? escapeHtml(p.title) : '(無題)';
     const author = authorHtml(p);
     const uiPreset = (p.settings && p.settings.uiPreset) || '';
@@ -11090,10 +11120,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // グッド/ダウンロード数だけで、作品の性質を示すバッジは残す。
     const linkBadges = (opts.badges === false) ? '' : linkBadgesHtml(p);
     return '' +
-      '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '">' +
+      '<div class="row' + (opts.selected ? ' picker-selected' : '') + '" data-id="' + p.id + '"' + (varIdx ? ' data-var-idx="' + varIdx + '"' : '') + '>' +
         (opts.counts === false ? '' : '<div class="row-counts">' + countBadgesHtml(p) + '</div>') +
         '<div class="row-main">' +
-          '<div class="row-thumb' + ((p.type === 'video' && !isImageMediaPost(p)) ? ' is-video' : '') + '">' + imageTag(novelThumbUrl(p) || p.imageUrl, { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
+          '<div class="row-thumb' + ((!varIdx && p.type === 'video' && !isImageMediaPost(p)) ? ' is-video' : '') + '">' + imageTag(varIdx ? p.variants[varIdx - 1].imageUrl : (novelThumbUrl(p) || p.imageUrl), { size: thumbSize || 'w320', lazy: true, alt: 'サムネイル' }) + '</div>' +
           '<div class="row-body">' +
             '<div class="row-title">' + title + '</div>' +
             '<div class="row-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + author + '</span>' +
@@ -11186,12 +11216,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       row.addEventListener('click', function () {
         // パネル表示のフルスクリーン画像は軽量なのでそのまま開き、
         // 詳細モーダルは本文がローカルにあれば即表示(スピナー無し)・不足分のみ背後補完。
+        const varIdx = Number(row.dataset.varIdx) || 0;
         if (!opts.detailOnly && viewMode === 'panel') {
           const quick = findLocalPost(row.dataset.id);
-          if (quick) openFullImageModal(quick);
+          if (quick) openFullImageModal(quick, varIdx);
           return;
         }
-        openImageDetail(row.dataset.id);
+        openImageDetail(row.dataset.id, varIdx);
       });
     });
   }
@@ -11794,10 +11825,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const post = await ensurePostLoaded(id);
     if (!post) return;
     openModal(post);
-    if (varIdx > 0) {
-      const varBtn = modalBody.querySelector('.variant-switch-btn[data-var-idx="' + varIdx + '"]');
-      if (varBtn) varBtn.click();
-    }
+    selectDetailVariant(varIdx);
   });
   document.getElementById('fullImageDownloadBtn').addEventListener('click', function () {
     const post = currentFullImagePost();
@@ -16543,7 +16571,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="detail-block"><div class="label">モデル情報</div><div class="settings-table model-spec-table">' + modelUsageSpecsHtml(e, true) + '</div></div>' +
       civitaiBlockHtml(e) +
       '<div class="linked-works-head">このモデルを使った投稿作品 (' + works.length + '件)</div>' +
-      '<div class="list" id="dlModelWorksList">' + works.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('') + '</div>';
+      '<div class="list" id="dlModelWorksList">' + works.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false, varIdx: modelVariantIndex(ip, [usedModelKey(e.name)]) }); }).join('') + '</div>';
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
     document.getElementById('civitaiBody').dataset.entryId = e.id;
     wireModalLikeButton();
@@ -16731,8 +16759,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     clearNotifyForActiveTab();
     openDetailPostId = p.id;
     const used = modelUsedBy(p).sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+    const modelKeys = [usedModelKey(p.modelFile && p.modelFile.name), usedModelKey(p.title)].filter(Boolean);
     const usedHtml = used.length
-      ? used.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false }); }).join('')
+      ? used.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false, varIdx: modelVariantIndex(ip, modelKeys) }); }).join('')
       : '<div class="linked-empty">まだこのモデルを使った投稿はありません。</div>';
     const mf = p.modelFile;
     const s = p.settings || {};
