@@ -555,6 +555,7 @@
      色褪せて見えない程度の鮮やかさは残している。色相だけでは見分けがつかなくなるため、
      「実際の見え方の差(ΔE)」が全12色どの組み合わせでも十分開くよう自動調整してある。 */
   .row-link-badge.lb-variant{ color:#af6f6f; border-color: rgba(175,111,111,.45); background: rgba(175,111,111,.13); }   /* よく出る */
+  .row-link-badge.lb-ckpt{ color:#4dabf7; border-color: rgba(77,171,247,.45); background: rgba(77,171,247,.13); }
   .row-link-badge.lb-lora{ color:#6fbb7c; border-color: rgba(111,187,124,.45); background: rgba(111,187,124,.13); }   /* よく出る */
   .row-link-badge.lb-memo{ color:#9cc1c8; border-color: rgba(156,193,200,.45); background: rgba(156,193,200,.13); }   /* よく出る */
   .row-link-badge.lb-base{ color:#b8a367; border-color: rgba(184,163,103,.45); background: rgba(184,163,103,.13); }   /* よく出る */
@@ -725,13 +726,17 @@
   .image-actions-btns{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   /* グッド/バッドはダウンロード・共有の左に、少し間を空けて置く */
   .image-actions-btns .modal-counts{ margin-bottom:0; margin-right:10px; }
-  .variant-switcher{ display:flex; flex-wrap:wrap; gap:6px; }
+  .image-actions-row.has-variants{ align-items:flex-start; flex-wrap:wrap; row-gap:8px; }
+  .variant-switcher{ display:flex; gap:6px; align-items:flex-start; min-width:0; }
+  /* 番号ボタンは10個で折り返す(34px×10 + 間隔6px×9) */
+  .variant-nums{ display:flex; flex-wrap:wrap; gap:6px; max-width:394px; min-width:0; }
+  .image-actions-row.has-variants .image-actions-btns{ justify-content:flex-end; margin-left:auto; }
   /* 差分の切替ボタンの右隣に置く「パネル表示」。番号ボタンとは役割が違うので少し離す */
   .variant-panel-btn{
     font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:700; cursor:pointer;
     background: var(--surface-2); color: var(--ink);
     border: 1px solid var(--line); border-radius: 6px;
-    padding: 0 12px; margin-left: 6px;
+    padding: 0 12px; margin-left: 6px; height:34px; white-space:nowrap; flex-shrink:0;
   }
   .variant-panel-btn:hover{ border-color: var(--accent); color: var(--accent); }
   /* パネル表示した差分の枚数バッジ */
@@ -11183,6 +11188,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
     // 動画側にも「元になった画像がある」ことを示すバッジを出す(従来は画像側だけだった)
     if (p.type === 'video' && p.videoSourceId) s += '<span class="row-link-badge lb-video">元画像あり</span>';
+    // Checkpointも差分ごとに違うことがある。本体+差分で2種類以上のときだけ出す(末尾のハッシュは除いて同じ名前は1件)
+    const ckptSet = new Set();
+    postContentHolders(p).forEach(function (h) {
+      const c = String((h.settings && h.settings.checkpoint) || '').replace(/\s+[0-9A-Fa-f]{6,}\s*$/, '').trim();
+      if (c) ckptSet.add(usedModelKey(c));
+    });
+    if (ckptSet.size > 1) s += '<span class="row-link-badge lb-ckpt">Checkpoint ' + ckptSet.size + '件</span>';
     // LoRAは差分ごとに違うものを使えるので、本体+差分をまとめて数える(同じ名前は1件)
     const loraSet = new Set();
     postContentHolders(p).forEach(function (h) {
@@ -11475,9 +11487,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? (isImageMediaPost(p) ? gifPlayerHtml(imageSet[0].imageUrl) : videoPlayerHtml(imageSet[0].imageUrl)) : detailImageHtml(imageSet[0]))) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
         (hasVariants
-          ? '<div class="variant-switcher" id="variantSwitcher">' + imageSet.map(function (_, i) {
+          ? '<div class="variant-switcher" id="variantSwitcher"><div class="variant-nums">' + imageSet.map(function (_, i) {
               return '<button class="variant-switch-btn' + (i === 0 ? ' active' : '') + '" type="button" data-var-idx="' + i + '" title="' + (i === 0 ? '最初に投稿した画像' : (i + 1) + '枚目') + '">' + (i + 1) + '</button>';
-            }).join('') +
+            }).join('') + '</div>' +
             '<button class="variant-panel-btn" type="button" id="variantPanelBtn" title="この作品の差分をパネル表示で並べて見る">パネル表示</button>' +
             '</div>'
           : '') +
