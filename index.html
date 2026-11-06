@@ -7644,18 +7644,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (key === null) {
       const params = new URLSearchParams(location.search);
       kind = params.get('import');
-      if (kind !== 'stillmotion' && kind !== 'stillmange') return;
+      if (kind !== 'stillmotion' && kind !== 'stillmange' && kind !== 'stillsheet') return;
       key = params.get('key') || '';
       // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
       params.delete('import');
       params.delete('key');
       history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
     }
-    if (kind === 'stillmange' && !options.tabPost) {
-      alert('いまは投稿が無効になっているため、Stillmange から受け取れません。管理者に確認してください。');
+    const imageKind = kind === 'stillmange' || kind === 'stillsheet';
+    const imageApp = kind === 'stillsheet' ? 'Stillsheet' : 'Stillmange';
+    if (imageKind && !options.tabPost) {
+      alert('いまは投稿が無効になっているため、' + imageApp + ' から受け取れません。管理者に確認してください。');
       return;
     }
-    if (kind !== 'stillmange' && (!options.tabPost || !options.video)) {
+    if (!imageKind && (!options.tabPost || !options.video)) {
       alert('いまは動画の投稿が無効になっているため、Stillmotion から受け取れません。管理者に確認してください。');
       return;
     }
@@ -7665,10 +7667,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       stillmotionPendingKey = key;
       stillmotionPendingKind = kind;
       document.getElementById('loginGate').classList.remove('hidden');
-      showLoginGate({ message: kind === 'stillmange' ? 'Stillmange から受け取った漫画を投稿するには、ログインが必要です。' : 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
+      showLoginGate({ message: kind === 'stillsheet' ? 'Stillsheet から受け取った画像を投稿するには、ログインが必要です。' : kind === 'stillmange' ? 'Stillmange から受け取った漫画を投稿するには、ログインが必要です。' : 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
       return;
     }
-    lockForImport(kind === 'stillmange'
+    lockForImport(kind === 'stillsheet'
+      ? 'Stillsheet から受け取った画像を読み込み、元になった作品を探しています…'
+      : kind === 'stillmange'
       ? 'Stillmange から受け取った漫画を読み込み、元になった作品を探しています…'
       : 'Stillmotion から受け取った動画を読み込み、元になった画像作品を探しています…');
     try {
@@ -7684,7 +7688,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       record = await stillmotionStoreDo('readonly', function (st) { return st.get(key); });
     } catch (e) { console.error('Stillmotion データの読み込みに失敗:', e); }
     switchTab('post');
-    if (kind === 'stillmange') { await importStillmangeRecord(record, key); return; }
+    if (kind === 'stillmange' || kind === 'stillsheet') { await importStillmangeRecord(record, key, kind); return; }
     if (!record || !record.blob) {
       showStillmotionNotice('Stillmotion から受け取る動画が見つかりませんでした。もう一度 Stillmotion の「Prompt Reel に投稿」を押してください。');
       return;
@@ -7712,10 +7716,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      record.images の1枚目(漫画1ページ)を □1、2枚目以降(各コマの生成画像)を差分 □2〜 にする。
      複数枚をまとめてドロップしたときと同じ流れ(メイン画像の入力 → 差分モード → addVariantFiles)を使うので、
      各画像の生成情報(PNG の parameters)も手動のドロップと同じく自動で読み取られる。 */
-  async function importStillmangeRecord(record, key) {
+  async function importStillmangeRecord(record, key, kind) {
+    const sheet = kind === 'stillsheet';
+    const appLabel = sheet ? 'Stillsheet' : 'Stillmange';
     const images = ((record && record.images) || []).filter(function (x) { return x && x.blob; });
     if (!images.length) {
-      showStillmotionNotice('Stillmange から受け取る画像が見つかりませんでした。もう一度 Stillmange の「Prompt Reel に投稿」を押してください。');
+      showStillmotionNotice(appLabel + ' から受け取る画像が見つかりませんでした。もう一度 ' + appLabel + ' の「Prompt Reel に投稿」を押してください。');
       return;
     }
     if (isEditingImagePost()) await cancelAdminEdit(false);
@@ -7735,8 +7741,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       await addVariantFiles(files.slice(1));
     }
     stillmotionImportKey = key;
+    if (sheet) fillStillsheetText(record.meta);
     const isMoss = record.meta && record.meta.mode === 'moss';
-    const baseNotice = isMoss
+    const baseNotice = sheet
+      ? 'Stillsheet から、シーンごとに選んだ画像 ' + files.length + ' 枚(□1〜)を受け取りました。'
+        + '各画像の生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。'
+      : isMoss
       ? 'Stillmange から MOSS-Image で生成した漫画ページ(□1)' + (files.length > 1 ? 'と、文字を重ねる前の画像(□2)' : '') + 'を受け取りました。'
         + 'プロンプト(レイアウトJSON)と生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。'
       : 'Stillmange から漫画ページ(□1)と、コマの画像 ' + (files.length - 1) + ' 枚(□2〜)を受け取りました。'
@@ -7745,6 +7755,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     cleanupStillmotionRecords(key);
     const refNote = await autoSelectStillmangeReference(record.meta && record.meta.base);
     if (refNote && stillmotionImportKey === key) showStillmotionNotice(baseNotice + ' ' + refNote);
+  }
+
+  function fillStillsheetText(meta) {
+    if (!meta) return;
+    const titleEl = document.getElementById('titleInput');
+    if (titleEl && !titleEl.value.trim() && meta.title) titleEl.value = meta.title;
+    const memoEl = document.getElementById('memoInput');
+    if (!memoEl || memoEl.value.trim()) return;
+    const lines = [meta.synopsis || ''].concat((meta.scenes || []).map(function (s, i) {
+      return (i + 1) + '. ' + (s.title || '') + (s.text ? '\n' + s.text : '');
+    })).filter(function (t) { return String(t).trim(); });
+    memoEl.value = lines.join('\n\n');
+    memoEl.dispatchEvent(new Event('input'));
   }
 
   // 投稿が済んだら受け取ったデータを消す(submit の成功時に呼ぶ)
