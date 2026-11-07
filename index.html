@@ -557,6 +557,7 @@
   .row-link-badge.lb-variant{ color:#af6f6f; border-color: rgba(175,111,111,.45); background: rgba(175,111,111,.13); }   /* よく出る */
   .row-link-badge.lb-ckpt{ color:#4dabf7; border-color: rgba(77,171,247,.45); background: rgba(77,171,247,.13); }
   .row-link-badge.lb-lora{ color:#6fbb7c; border-color: rgba(111,187,124,.45); background: rgba(111,187,124,.13); }   /* よく出る */
+  .row-link-badge.lb-attach{ color:#d6c08a; border-color: rgba(214,192,138,.45); background: rgba(214,192,138,.13); }
   .row-link-badge.lb-memo{ color:#9cc1c8; border-color: rgba(156,193,200,.45); background: rgba(156,193,200,.13); }   /* よく出る */
   .row-link-badge.lb-base{ color:#b8a367; border-color: rgba(184,163,103,.45); background: rgba(184,163,103,.13); }   /* よく出る */
   .row-link-badge.lb-child{ color:#6b74eb; border-color: rgba(107,116,235,.45); background: rgba(107,116,235,.13); }
@@ -1973,7 +1974,7 @@
      枠で囲み、見出しは枠内の帯に、中身は一段沈んだ面(入力欄が黒)に置く。 */
   .req-field,
   .author-field,
-  #titleField, #fixContentField, #memoField,
+  #titleField, #fixContentField, #memoField, #attachField,
   #promptField, #negativeField, #charPromptField, #settingsField, #novelEditorField,
   #rTitleField, #rRefField,
   #pTitleField, #pNegativeField, #pMemoField, #pSettingsField, #pCharPromptField,
@@ -1990,7 +1991,7 @@
   .req-field > .field-label,
   .author-field > .field-label,
   #titleField > .field-label, #fixContentField > .field-label,
-  #memoField > .field-label, #promptField > .field-label, #negativeField > .field-label,
+  #memoField > .field-label, #attachField > .field-label, #promptField > .field-label, #negativeField > .field-label,
   #charPromptField > .field-label, #settingsField > .field-label, #novelEditorField > .field-label,
   #rTitleField > .field-label, #rRefField > .field-label,
   #pTitleField > .field-label, #pNegativeField > .field-label, #pMemoField > .field-label,
@@ -2224,6 +2225,26 @@
   .attach-add-tile{ width:58px; height:58px; border-radius:8px; border:1.5px dashed var(--line); background:var(--bg); color:var(--ink-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; font-size:10px; font-family:'Noto Sans JP',sans-serif; transition:border-color .15s ease, color .15s ease; }
   .attach-add-tile:hover{ border-color:var(--accent); color:var(--accent); }
   .attach-add-tile .plus{ font-size:20px; line-height:1; }
+  /* 添付資料(テキストファイル): ファイル名のチップを並べる */
+  .doc-hint{ font-size:12px; color:var(--ink-dim); line-height:1.6; }
+  .doc-strip{ margin-top:8px; }
+  .doc-chip{ position:relative; display:flex; align-items:center; gap:6px; max-width:100%; min-width:0; height:34px; padding:0 26px 0 8px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-size:12px; color:var(--ink); }
+  .doc-chip .doc-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .doc-chip .doc-size{ flex:none; color:var(--ink-dim); font-size:11px; }
+  .doc-chip .attach-remove{ top:50%; right:5px; transform:translateY(-50%); }
+  .doc-ext{ flex:none; padding:1px 5px; border-radius:4px; background:var(--accent-dim); color:var(--accent); font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .doc-strip .attach-add-tile{ width:auto; height:34px; flex-direction:row; gap:4px; padding:0 12px; font-size:12px; }
+  .doc-strip .attach-add-tile .plus{ font-size:16px; }
+  .doc-list{ display:flex; flex-direction:column; gap:8px; }
+  .detail-block > .doc-list{ margin: 10px 12px; }
+  .doc-row{ display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap; }
+  .doc-row .doc-name{ flex:1 1 160px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+  .doc-row .doc-size{ flex:none; color:var(--ink-dim); font-size:11px; }
+  .doc-actions{ flex:none; display:flex; gap:6px; margin-left:auto; }
+  .doc-actions .btn-ghost{ height:26px; padding:0 12px; border-radius:999px; font-size:12px; font-family:inherit; line-height:1; text-decoration:none; display:inline-flex; align-items:center; }
+  .doc-preview-wrap{ margin-top:-2px; }
+  .doc-preview-wrap .block-head{ display:flex; justify-content:flex-end; margin-bottom:4px; }
+  .doc-preview{ margin:0; max-height:360px; overflow:auto; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg); font-family:ui-monospace, Consolas, monospace; font-size:12px; line-height:1.55; white-space:pre-wrap; word-break:break-word; color:var(--ink); }
   /* 差分ストリップは通常の添付より一回り大きく(サムネと同じ116px)。ドロップ領域も広く見せる */
   #variantStrip{ gap:12px; min-height:120px; align-content:flex-start; }
   /* 並べ替え: 掴んでいるサムネイルを薄く、落とす位置に縦線を出す */
@@ -2838,6 +2859,15 @@
       <div id="memoField">
       <label class="field-label">メモ(備考)</label>
       <textarea id="memoInput" class="autogrow" placeholder="補足・備考があれば"></textarea>
+      </div>
+
+      <div id="attachField">
+      <label class="field-label">添付資料(任意)</label>
+      <div class="doc-hint">JSON・Markdown などのテキストファイルを投稿と一緒に置いておけます(1ファイル 2MB まで・10個まで。json / md / txt / csv / tsv / yaml / toml / ini / xml / log)。閲覧する人は詳細画面で中身を見たり、ダウンロードしたりできます。</div>
+      <div class="attach-strip doc-strip" id="docStrip">
+        <div class="attach-add-tile" id="docAddTile" role="button" tabindex="0"><span class="plus">＋</span>ファイルを追加</div>
+        <input type="file" id="docInput" multiple style="display:none;">
+      </div>
       </div>
 
       <div id="settingsField">
@@ -3781,6 +3811,10 @@
       <div class="feature-item">
         <div class="feature-name">メモ(備考)</div>
         <div class="feature-desc">「この設定だと手が崩れやすい」「LoRAはこれを併用」など、プロンプト以外の補足を自由に書けます。</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-name">添付資料(テキストファイル)</div>
+        <div class="feature-desc">画像・動画・修正依頼・ノベルの投稿フォームの「添付資料」欄に、JSON・Markdown などのテキストファイル(json / md / txt / csv / tsv / yaml / toml / ini / xml / log)を一緒に添付できます。「＋ ファイルを追加」を押すか、欄へドラッグ&ドロップで追加し、✕ で外せます(1ファイル 2MB まで・10個まで)。詳細画面の「添付資料」欄で、閲覧する人が「中身を見る」で内容を確認したり(コピーもできます)、「ダウンロード」で保存したりできます。一覧のカードには「添付資料 N件」と出ます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">リクエストの参考資料</div>
@@ -8229,6 +8263,124 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
+  /* ---------- 添付資料(JSON / Markdown などのテキストファイル) ----------
+     投稿フォームでは postAttachments に { kind:'new', name, text, size } / { kind:'existing', url, name, size } を持つ。
+     送信時は新しいものは本文(text)ごと、既存のものは url だけ送る(外したものはサーバー側でゴミ箱へ)。 */
+  const ATTACH_EXTENSIONS = ['json', 'md', 'markdown', 'txt', 'csv', 'tsv', 'yaml', 'yml', 'toml', 'ini', 'xml', 'log'];
+  const ATTACH_MAX_FILES = 10;
+  const ATTACH_MAX_BYTES = 2 * 1024 * 1024;
+  let postAttachments = [];
+  const docStrip = document.getElementById('docStrip');
+  const docAddTile = document.getElementById('docAddTile');
+  const docInput = document.getElementById('docInput');
+  docInput.setAttribute('accept', ATTACH_EXTENSIONS.map(function (e) { return '.' + e; }).join(','));
+
+  function attachmentExt(name) {
+    const m = String(name || '').match(/\.([A-Za-z0-9]+)$/);
+    return m ? m[1].toLowerCase() : '';
+  }
+  function renderDocStrip() {
+    docStrip.querySelectorAll('.doc-chip').forEach(function (el) { el.remove(); });
+    postAttachments.forEach(function (a, i) {
+      const chip = document.createElement('div');
+      chip.className = 'doc-chip';
+      chip.title = a.name;
+      chip.innerHTML = '<span class="doc-ext">' + escapeHtml(attachmentExt(a.name) || 'file') + '</span>' +
+        '<span class="doc-name">' + escapeHtml(a.name) + '</span>' +
+        '<span class="doc-size">' + escapeHtml(formatBytes(a.size)) + '</span>' +
+        '<button type="button" class="attach-remove" title="外す" aria-label="' + escapeHtml(a.name) + ' を外す">✕</button>';
+      chip.querySelector('.attach-remove').addEventListener('click', function () {
+        postAttachments.splice(i, 1);
+        renderDocStrip();
+      });
+      docStrip.insertBefore(chip, docAddTile);
+    });
+  }
+  async function addDocFiles(fileList) {
+    const notes = [];
+    for (const file of Array.from(fileList || [])) {
+      if (postAttachments.length >= ATTACH_MAX_FILES) { notes.push('添付資料は ' + ATTACH_MAX_FILES + ' 個までです'); break; }
+      if (ATTACH_EXTENSIONS.indexOf(attachmentExt(file.name)) === -1) { notes.push(file.name + ' は添付できない形式です'); continue; }
+      if (file.size > ATTACH_MAX_BYTES) { notes.push(file.name + ' は 2MB を超えています'); continue; }
+      const text = await file.text();
+      const same = postAttachments.findIndex(function (a) { return a.kind === 'new' && a.name === file.name; });
+      const item = { kind: 'new', name: file.name, text: text, size: file.size };
+      if (same >= 0) postAttachments[same] = item; else postAttachments.push(item);
+    }
+    renderDocStrip();
+    statusText.textContent = notes.join(' / ');
+  }
+  docAddTile.addEventListener('click', function () { docInput.click(); });
+  docAddTile.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); docInput.click(); } });
+  docInput.addEventListener('change', function () { addDocFiles(docInput.files); docInput.value = ''; });
+  docStrip.addEventListener('dragover', function (e) { e.preventDefault(); e.stopPropagation(); docStrip.classList.add('drag-over'); });
+  docStrip.addEventListener('dragleave', function () { docStrip.classList.remove('drag-over'); });
+  docStrip.addEventListener('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    docStrip.classList.remove('drag-over');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addDocFiles(e.dataTransfer.files);
+  });
+
+  // 詳細画面の「添付資料」欄
+  function attachmentsBlockHtml(p) {
+    const list = (p && p.attachments) || [];
+    if (!list.length) return '';
+    return '<div class="detail-block" id="detailAttachBlock"><div class="label">添付資料</div><div class="doc-list">' +
+      list.map(function (a, i) {
+        return '<div class="doc-row"><span class="doc-ext">' + escapeHtml(attachmentExt(a.name) || 'file') + '</span>' +
+          '<span class="doc-name" title="' + escapeHtml(a.name) + '">' + escapeHtml(a.name) + '</span>' +
+          '<span class="doc-size">' + escapeHtml(formatBytes(a.size)) + '</span>' +
+          '<span class="doc-actions"><button type="button" class="btn-ghost doc-view" data-doc="' + i + '" aria-expanded="false">中身を見る</button>' +
+          '<a class="btn-ghost doc-download" href="' + escapeHtml(a.url) + '" target="_blank" rel="noopener">ダウンロード</a></span></div>' +
+          '<div class="doc-preview-wrap" data-doc-preview="' + i + '" hidden><div class="block-head"><button class="btn-copy" type="button">コピー</button></div><pre class="doc-preview"></pre></div>';
+      }).join('') + '</div></div>';
+  }
+  async function fetchAttachmentText(p, a) {
+    const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'attachment=' + encodeURIComponent(driveFileIdFromUrl(a.url)) +
+      '&postId=' + encodeURIComponent(p.id) + authParam();
+    const data = await jsonpRequest(url, 30000);
+    if (!data || data.locked) throw new Error('認証が必要です');
+    if (!data.success) throw new Error(data.error || '読み込めませんでした');
+    return String(data.text || '');
+  }
+  function prettyAttachmentText(name, text) {
+    if (attachmentExt(name) !== 'json') return text;
+    try { return JSON.stringify(JSON.parse(text), null, 2); } catch (e) { return text; }
+  }
+  function wireAttachmentsBlock(root, p) {
+    const list = (p && p.attachments) || [];
+    root.querySelectorAll('.doc-view').forEach(function (btn) {
+      const a = list[Number(btn.dataset.doc)];
+      const wrap = root.querySelector('[data-doc-preview="' + btn.dataset.doc + '"]');
+      if (!a || !wrap) return;
+      const pre = wrap.querySelector('pre');
+      let loaded = null;
+      btn.addEventListener('click', async function () {
+        if (!wrap.hidden) { wrap.hidden = true; btn.textContent = '中身を見る'; btn.setAttribute('aria-expanded', 'false'); return; }
+        wrap.hidden = false;
+        btn.textContent = '閉じる';
+        btn.setAttribute('aria-expanded', 'true');
+        if (loaded !== null) return;
+        pre.textContent = '読み込み中...';
+        try {
+          loaded = await fetchAttachmentText(p, a);
+          pre.textContent = prettyAttachmentText(a.name, loaded);
+        } catch (err) {
+          pre.textContent = '読み込めませんでした: ' + (err.message || err) + '\n「ダウンロード」から開いてください。';
+        }
+      });
+      wrap.querySelector('.btn-copy').addEventListener('click', function () {
+        const c = this;
+        if (loaded === null) return;
+        navigator.clipboard.writeText(loaded).then(function () {
+          c.textContent = 'コピーしました';
+          setTimeout(function () { c.textContent = 'コピー'; }, 1500);
+        });
+      });
+    });
+  }
+
   document.getElementById('variantModeBtn').addEventListener('click', function () { setVariantMode(!variantMode); });
   variantAddTile.addEventListener('click', function () { variantInput.click(); });
   variantInput.addEventListener('change', function () { addVariantFiles(variantInput.files); variantInput.value = ''; });
@@ -10584,6 +10736,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('promptInput').value = '';
     document.getElementById('negativeInput').value = '';
     document.getElementById('memoInput').value = '';
+    postAttachments = [];
+    renderDocStrip();
     resetAutogrow();
     clearSettingsForm();
     selectedTags = [];
@@ -10699,6 +10853,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         modelIds: (isFix || isNovel) ? '' : selectedModelIds.join(',')
       };
       if (isNovel) payload.novelImages = novelParts.novelImages;
+      payload.attachments = postAttachments.map(function (a) {
+        return a.kind === 'existing' ? { url: a.url } : { name: a.name, text: a.text };
+      });
       if (editing) {
         payload.action = ownerEditMode ? 'ownerUpdate' : 'adminUpdate';
         payload.password = ownerEditMode ? ownerEditPassword : adminPassword;
@@ -11226,6 +11383,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const loraCount = loraSet.size;
     if (loraCount) s += '<span class="row-link-badge lb-lora">LoRA ' + loraCount + '件</span>';
     if (hasText(p.memo)) s += '<span class="row-link-badge lb-memo">メモ(備考)</span>';
+    if ((p.attachments || []).length) s += '<span class="row-link-badge lb-attach">添付資料 ' + p.attachments.length + '件</span>';
     return s;
   }
 
@@ -11535,6 +11693,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       // キャラクタープロンプト(NovelAIのマルチキャラ設定)はネガティブの下に置く
       '<div id="detailCharBlocks">' + charDetailBlocksHtml(imageSet[0]) + '</div>') +
       (hasText(p.memo) ? '<div class="detail-block"><div class="label">メモ(備考)</div><div class="value">' + escapeHtml(p.memo) + '</div></div>' : '') +
+      attachmentsBlockHtml(p) +
       (anySettings ? '<div class="detail-block" id="detailSettingsBlock"' + (settingsEntries ? '' : ' style="display:none;"') + '><div class="label">設定関係</div><div class="settings-table" id="detailSettingsTable">' + settingsEntries + '</div></div>' : '') +
       commentToggleHtml(p) +
       fixAnswersBlock +
@@ -11555,6 +11714,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       activeNovelPlayer = createNovelPlayer(document.getElementById('novelDetailMount'), novelScenarioOf(p), { requireStart: true });
     }
 
+    wireAttachmentsBlock(modalBody, p);
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
         // data-copytext は本文をそのまま持つ(キャラクターごとのコピー用)。
@@ -17950,6 +18110,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       document.getElementById('promptInput').value = p.prompt || '';
       document.getElementById('negativeInput').value = p.negativePrompt || '';
       document.getElementById('memoInput').value = p.memo || '';
+      postAttachments = (p.attachments || []).map(function (a) { return { kind: 'existing', url: a.url, name: a.name, size: a.size }; });
+      renderDocStrip();
       // 生成設定は共通の読み込み処理を使う。これでサービス(Stable/NovelAI)の切替、
       // キャラクタープロンプト欄の復元、未知キーの動的欄追加もまとめて行われる。
       loadSettingsIntoForm(p.settings || {});
