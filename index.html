@@ -8332,7 +8332,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<span class="doc-name" title="' + escapeHtml(a.name) + '">' + escapeHtml(a.name) + '</span>' +
           '<span class="doc-size">' + escapeHtml(formatBytes(a.size)) + '</span>' +
           '<span class="doc-actions"><button type="button" class="btn-ghost doc-view" data-doc="' + i + '" aria-expanded="false">中身を見る</button>' +
-          '<a class="btn-ghost doc-download" href="' + escapeHtml(a.url) + '" target="_blank" rel="noopener">ダウンロード</a></span></div>' +
+          '<a class="btn-ghost doc-download" data-doc="' + i + '" href="' + escapeHtml(a.url) + '" download="' + escapeHtml(a.name) + '" target="_blank" rel="noopener">ダウンロード</a></span></div>' +
           '<div class="doc-preview-wrap" data-doc-preview="' + i + '" hidden><div class="block-head"><button class="btn-copy" type="button">コピー</button></div><pre class="doc-preview"></pre></div>';
       }).join('') + '</div></div>';
   }
@@ -8348,10 +8348,43 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (attachmentExt(name) !== 'json') return text;
     try { return JSON.stringify(JSON.parse(text), null, 2); } catch (e) { return text; }
   }
+  const ATTACH_MIME = { json: 'application/json', md: 'text/markdown', markdown: 'text/markdown', csv: 'text/csv', tsv: 'text/tab-separated-values', yaml: 'text/yaml', yml: 'text/yaml', xml: 'text/xml' };
   function wireAttachmentsBlock(root, p) {
     const list = (p && p.attachments) || [];
+    // 中身は1ファイルにつき1回だけ読み、「中身を見る」と「ダウンロード」で使い回す
+    const texts = {};
+    function textOf(i) {
+      if (!texts[i]) texts[i] = fetchAttachmentText(p, list[i]).catch(function (err) { delete texts[i]; throw err; });
+      return texts[i];
+    }
+    /* Drive のファイル名にはバックアップ復旧用の「pr_<id>__」が付いているため、Drive から直接落とすとその名前になる。
+       中身をアプリ経由で受け取り、投稿したときの名前で保存する。読めなかったときだけ Drive のリンクを開く。 */
+    root.querySelectorAll('.doc-download').forEach(function (link) {
+      const i = Number(link.dataset.doc);
+      const a = list[i];
+      if (!a) return;
+      link.addEventListener('click', async function (e) {
+        e.preventDefault();
+        if (link.dataset.busy) return;
+        link.dataset.busy = '1';
+        const label = link.textContent;
+        link.textContent = '準備中...';
+        try {
+          const text = await textOf(i);
+          const mime = (ATTACH_MIME[attachmentExt(a.name)] || 'text/plain') + ';charset=utf-8';
+          saveBlobAs(new Blob([text], { type: mime }), a.name);
+        } catch (err) {
+          console.error(err);
+          window.open(a.url, '_blank', 'noopener');
+        } finally {
+          link.textContent = label;
+          delete link.dataset.busy;
+        }
+      });
+    });
     root.querySelectorAll('.doc-view').forEach(function (btn) {
-      const a = list[Number(btn.dataset.doc)];
+      const idx = Number(btn.dataset.doc);
+      const a = list[idx];
       const wrap = root.querySelector('[data-doc-preview="' + btn.dataset.doc + '"]');
       if (!a || !wrap) return;
       const pre = wrap.querySelector('pre');
@@ -8364,7 +8397,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (loaded !== null) return;
         pre.textContent = '読み込み中...';
         try {
-          loaded = await fetchAttachmentText(p, a);
+          loaded = await textOf(idx);
           pre.textContent = prettyAttachmentText(a.name, loaded);
         } catch (err) {
           pre.textContent = '読み込めませんでした: ' + (err.message || err) + '\n「ダウンロード」から開いてください。';
