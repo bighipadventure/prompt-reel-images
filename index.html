@@ -2248,15 +2248,17 @@
   /* 差分ストリップは通常の添付より一回り大きく(サムネと同じ116px)。ドロップ領域も広く見せる */
   #variantStrip{ gap:12px; min-height:120px; align-content:flex-start; }
   /* 並べ替え: 掴んでいるサムネイルを薄く、落とす位置に縦線を出す */
-  #variantStrip .variant-thumb{ cursor: grab; }
-  #variantStrip .variant-thumb.dragging{ opacity:.4; cursor: grabbing; }
-  #variantStrip .variant-thumb.drop-before{ box-shadow: -3px 0 0 0 var(--accent); }
-  #variantStrip .variant-thumb.drop-after{ box-shadow: 3px 0 0 0 var(--accent); }
+  /* 差分の並べ替え: 掴んだサムネイルが指についてきて、ほかのサムネイルがその場で入れ替わる(リンクのカードと同じ動き) */
+  #variantStrip{ position: relative; }
+  #variantStrip .variant-thumb{ cursor: grab; touch-action: none; transition: transform .18s ease; }
+  #variantStrip .variant-thumb img{ -webkit-user-drag: none; user-select: none; }
+  #variantStrip .variant-thumb.lifted{ transition: none; z-index: 5; cursor: grabbing; box-shadow: 0 8px 22px rgba(0,0,0,.45); opacity: .95; }
+  #variantStrip.sorting{ user-select: none; }
   #variantStrip .attach-add-tile{ width:116px; height:116px; font-size:12px; }
   #variantStrip .attach-add-tile .plus{ font-size:30px; }
   .variant-remove{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
-  .dropzone.slot-locked{ cursor:not-allowed; }
-  .dropzone.slot-locked .dz-title, .dropzone.slot-locked .dz-sub{ opacity:.5; }
+  /* 差分([2]以降)を選んでいる間のドロップ欄: その差分の画像を差し替える */
+  .dropzone.slot-variant{ border-color: var(--accent); }
   .ref-thumb{
     position: relative; width: 110px; height: 110px;
   }
@@ -3826,7 +3828,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">差分を同時に投稿</div>
-        <div class="feature-desc">同じ設定でSeed違いを量産したときなど、複数枚の画像を1つの投稿にまとめてアップロードできます。投稿フォーム右上の「差分を同時に投稿」を押すと、画像欄の下に差分画像を追加する枠が出ます。最初にアップした画像が ［1］（メイン）、追加した画像が ［2］［3］… になります。サムネイル列には ［1］（メイン画像）も並ぶので、［1］［2］［3］を同じ感覚でクリックして切り替えられ、その画像の詳細設定（プロンプト・ネガティブ・生成設定）をフォームに呼び出して個別に確認・修正できます（各画像の生成情報は自動で読み取られます）。閲覧するときは、詳細画面の画像の下に出る 1・2… のボタンで切り替えられ、プロンプトや設定も画像ごとに切り替わります。似た作品で一覧があふれるのを避けたいときは、こちらか「親にする投稿作品」による親子紐づけのどちらかを使ってください。投稿後に編集するときも、差分をまとめた投稿なら［1］［2］［3］すべてのページのプロンプト・設定を編集できます（差分を追加・削除することもできます）。</div>
+        <div class="feature-desc">同じ設定でSeed違いを量産したときなど、複数枚の画像を1つの投稿にまとめてアップロードできます。投稿フォーム右上の「差分を同時に投稿」を押すと、画像欄の下に差分画像を追加する枠が出ます。最初にアップした画像が ［1］（メイン）、追加した画像が ［2］［3］… になります。サムネイル列には ［1］（メイン画像）も並ぶので、［1］［2］［3］を同じ感覚でクリックして切り替えられ、その画像の詳細設定（プロンプト・ネガティブ・生成設定）をフォームに呼び出して個別に確認・修正できます（各画像の生成情報は自動で読み取られます）。閲覧するときは、詳細画面の画像の下に出る 1・2… のボタンで切り替えられ、プロンプトや設定も画像ごとに切り替わります。似た作品で一覧があふれるのを避けたいときは、こちらか「親にする投稿作品」による親子紐づけのどちらかを使ってください。投稿後に編集するときも、差分をまとめた投稿なら［1］［2］［3］すべてのページのプロンプト・設定を編集できます（差分を追加・削除することもできます）。［2］以降を選んでいるときに上の画像欄へ画像をドロップ（またはクリックして選ぶ）と、その差分の画像を差し替えられます。サムネイルはドラッグで並べ替えられ、ドラッグ中にほかのサムネイルがその場で入れ替わります。</div>
       </div>
       <div class="feature-item inpaint-only">
         <div class="feature-name">修正後画像モード</div>
@@ -7304,13 +7306,28 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     clearSelectedImage();
   });
 
-  dropzone.addEventListener('click', function () { if (variantLocked()) return; imageInput.click(); });
+  // 差分([2]以降)を選んでいるときは、メイン画像ではなくその差分の画像を差し替える(メイン画像と同じくクリック/ドロップで)
+  const variantReplaceInput = document.createElement('input');
+  variantReplaceInput.type = 'file';
+  variantReplaceInput.accept = 'image/*';
+  variantReplaceInput.style.display = 'none';
+  document.body.appendChild(variantReplaceInput);
+  variantReplaceInput.addEventListener('change', function () {
+    const f = variantReplaceInput.files && variantReplaceInput.files[0];
+    variantReplaceInput.value = '';
+    if (f) replaceActiveVariant(f);
+  });
+  dropzone.addEventListener('click', function () { if (variantLocked()) { variantReplaceInput.click(); return; } imageInput.click(); });
   dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
   dropzone.addEventListener('drop', function (e) {
     e.preventDefault();
     dropzone.classList.remove('drag-over');
-    if (variantLocked()) return;
+    if (variantLocked()) {
+      const f = Array.from((e.dataTransfer && e.dataTransfer.files) || []).find(function (x) { return /^image\//.test(x.type); });
+      if (f) replaceActiveVariant(f);
+      return;
+    }
     const dropped = (e.dataTransfer && e.dataTransfer.files) ? Array.from(e.dataTransfer.files) : [];
     if (!dropped.length) return;
     // 画像を複数まとめて落としたときは、1枚目をメイン画像にして
@@ -7953,7 +7970,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 編集で開いた投稿のメイン画像URL(新しく選び直していないとき用)。
   // 並べ替え・削除で[1]が入れ替わったとき、どの画像が[1]なのかを見失わないために持つ。
   let mainExistingUrl = '';
-  let variantDragFrom = null;   // サムネイル並べ替えで掴んでいる番号
   const variantInput = document.getElementById('variantInput');
   const variantField = document.getElementById('variantField');
   const variantStrip = document.getElementById('variantStrip');
@@ -8033,10 +8049,41 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   function updateVariantEditUi() {
     const locked = variantLocked();
-    dropzone.classList.toggle('slot-locked', locked);
+    dropzone.classList.toggle('slot-variant', locked);
     document.getElementById('clearImageBtn').style.display = locked ? 'none' : '';
-    if (locked) { dropzoneLabel.textContent = 'メイン画像を変えるには［1］を選んでください'; }
+    if (locked) { dropzoneLabel.textContent = '［' + (activeSlot + 1) + '］の画像を差し替える(ドロップまたはクリック)'; }
     else { setDropzoneState(dropzone.classList.contains('has-image'), !!adminEditingPost); }
+  }
+
+  // いま選んでいる差分の画像を差し替える。画像に生成情報があれば、メイン画像と同じくプロンプトなども入れ直す
+  async function replaceActiveVariant(file) {
+    if (!file || !/^image\//.test(file.type) || activeSlot === 0) return;
+    const slot = activeSlot;
+    const v = variantImages[slot - 1];
+    if (!v) return;
+    showLoading('画像を処理中...');
+    try {
+      const dataUrl = await fileToBase64(file);
+      const meta = await extractVariantMeta(file);
+      if (activeSlot === slot) flushActiveSlot();
+      v.dataUrl = dataUrl;
+      v.mime = file.type;
+      v.name = file.name;
+      v.file = file;
+      v.imageUrl = '';
+      if (meta.prompt || meta.negativePrompt || Object.keys(meta.settings || {}).length) {
+        v.prompt = meta.prompt;
+        v.negativePrompt = meta.negativePrompt;
+        v.settings = meta.settings;
+      }
+      if (activeSlot === slot) loadSlot(slot);
+      renderVariantStrip();
+      statusText.textContent = '［' + (slot + 1) + '］の画像を差し替えました';
+    } catch (err) {
+      console.error(err);
+    } finally {
+      hideLoading();
+    }
   }
 
   // □1(メイン画像)の現在のプレビューsrc。差分編集中は退避したmainSlot側を使う
@@ -8152,6 +8199,93 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     await applySlotList(list);
   }
 
+  /* サムネイルの並べ替え(リンクのカードと同じく、掴んだものが指についてきて、ほかがその場で入れ替わる)。
+     少し動かすまではクリック扱い(その差分を編集)。離した位置で moveSlot して並べ直す */
+  let variantDragJustEnded = false;
+  function startVariantDrag(e, thumb, from) {
+    if (e.target.closest('.variant-remove')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const startX = e.clientX, startY = e.clientY;
+    let lifted = false;
+    let grabX = 0, grabY = 0, lastX = startX, lastY = startY;
+    const pointerId = e.pointerId;
+
+    function thumbs() { return Array.prototype.slice.call(variantStrip.querySelectorAll('.variant-thumb')); }
+    function local(x, y) {
+      const r = variantStrip.getBoundingClientRect();
+      return { x: x - r.left - variantStrip.clientLeft, y: y - r.top - variantStrip.clientTop };
+    }
+    // 指の位置より前(上の行、または同じ行で左)にあるサムネイルの数 = 入る位置
+    function targetIndex() {
+      const pt = local(lastX, lastY);
+      let n = 0;
+      thumbs().forEach(function (el) {
+        if (el === thumb) return;
+        const top = el.offsetTop, bottom = el.offsetTop + el.offsetHeight;
+        if (pt.y > bottom || (pt.y >= top && pt.x > el.offsetLeft + el.offsetWidth / 2)) n++;
+      });
+      return n;
+    }
+    function reorder() {
+      const others = thumbs().filter(function (el) { return el !== thumb; });
+      const to = targetIndex();
+      if (thumbs().indexOf(thumb) === to) return;
+      const before = others.map(function (el) { return { x: el.offsetLeft, y: el.offsetTop }; });
+      variantStrip.insertBefore(thumb, others[to] || variantAddTile);
+      others.forEach(function (el, i) {
+        const dx = before[i].x - el.offsetLeft, dy = before[i].y - el.offsetTop;
+        if (!dx && !dy) return;
+        el.style.transition = 'none';
+        el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      });
+      variantStrip.getBoundingClientRect();
+      others.forEach(function (el) { el.style.transition = ''; el.style.transform = ''; });
+    }
+    function place() {
+      const pt = local(lastX, lastY);
+      thumb.style.transform = 'translate(' + (pt.x - grabX - thumb.offsetLeft) + 'px,' + (pt.y - grabY - thumb.offsetTop) + 'px)';
+    }
+    function lift() {
+      lifted = true;
+      const pt = local(startX, startY);
+      grabX = pt.x - thumb.offsetLeft;
+      grabY = pt.y - thumb.offsetTop;
+      thumb.classList.add('lifted');
+      variantStrip.classList.add('sorting');
+      try { thumb.setPointerCapture(pointerId); } catch (err) {}
+    }
+    function onMove(ev) {
+      if (ev.pointerId !== pointerId) return;
+      lastX = ev.clientX; lastY = ev.clientY;
+      if (!lifted) {
+        if (Math.abs(lastX - startX) + Math.abs(lastY - startY) < 6) return;
+        lift();
+      }
+      ev.preventDefault();
+      reorder();
+      place();
+    }
+    function finish(apply) {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onCancel);
+      if (!lifted) return;
+      const to = thumbs().indexOf(thumb);
+      thumb.classList.remove('lifted');
+      thumb.style.transform = '';
+      variantStrip.classList.remove('sorting');
+      variantDragJustEnded = true;
+      setTimeout(function () { variantDragJustEnded = false; }, 0);
+      if (apply && to !== from) moveSlot(from, to);
+      else renderVariantStrip();
+    }
+    function onUp(ev) { if (ev.pointerId === pointerId) finish(true); }
+    function onCancel(ev) { if (ev.pointerId === pointerId) finish(false); }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
+  }
+
   function renderVariantStrip() {
     variantStrip.querySelectorAll('.variant-thumb').forEach(function (el) { el.remove(); });
     // [1]=メイン画像、[2]以降=差分。すべて同じ見た目のサムネイルとして並べ、
@@ -8164,54 +8298,22 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     srcs.forEach(function (s, idx) {
       const thumb = document.createElement('div');
       thumb.className = 'variant-thumb' + (activeSlot === idx ? ' active' : '');
-      thumb.draggable = true;
+      thumb.draggable = false;
       thumb.dataset.slotIdx = String(idx);
       thumb.innerHTML = '<img src="' + escapeHtml(s.src) + '" alt="' + s.alt + '" title="クリックでこの画像の設定を編集 / ドラッグで並べ替え">' +
         '<span class="variant-num">' + (idx + 1) + '</span>' +
         '<button class="variant-remove" type="button" title="削除">✕</button>';
-      thumb.querySelector('img').addEventListener('click', function () { setActiveSlot(idx); });
+      thumb.querySelector('img').draggable = false;
+      thumb.querySelector('img').addEventListener('click', function () {
+        if (variantDragJustEnded) return;   // 並べ替えの直後のクリックは無視する
+        setActiveSlot(idx);
+      });
       thumb.querySelector('.variant-remove').addEventListener('click', function (e) {
         e.stopPropagation();
         removeSlot(idx);
       });
       // ---- ドラッグで並べ替え ----
-      thumb.addEventListener('dragstart', function (e) {
-        variantDragFrom = idx;
-        thumb.classList.add('dragging');
-        try { e.dataTransfer.setData('text/plain', 'slot:' + idx); } catch (err) {}
-        e.dataTransfer.effectAllowed = 'move';
-      });
-      thumb.addEventListener('dragend', function () {
-        variantDragFrom = null;
-        variantStrip.querySelectorAll('.variant-thumb').forEach(function (el) {
-          el.classList.remove('dragging', 'drop-before', 'drop-after');
-        });
-      });
-      thumb.addEventListener('dragover', function (e) {
-        if (variantDragFrom === null) return;   // 外部ファイルのドロップはここでは扱わない
-        e.preventDefault();
-        e.stopPropagation();
-        const r = thumb.getBoundingClientRect();
-        const after = (e.clientX - r.left) > r.width / 2;
-        thumb.classList.toggle('drop-before', !after);
-        thumb.classList.toggle('drop-after', after);
-      });
-      thumb.addEventListener('dragleave', function () {
-        thumb.classList.remove('drop-before', 'drop-after');
-      });
-      thumb.addEventListener('drop', function (e) {
-        if (variantDragFrom === null) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const r = thumb.getBoundingClientRect();
-        const after = (e.clientX - r.left) > r.width / 2;
-        let to = idx + (after ? 1 : 0);
-        if (variantDragFrom < to) to -= 1;   // 自分を抜いた後の位置に合わせる
-        const from = variantDragFrom;
-        variantDragFrom = null;
-        thumb.classList.remove('drop-before', 'drop-after');
-        moveSlot(from, to);
-      });
+      thumb.addEventListener('pointerdown', function (e) { startVariantDrag(e, thumb, idx); });
       variantStrip.insertBefore(thumb, variantAddTile);
     });
   }
@@ -8422,8 +8524,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   variantStrip.addEventListener('drop', function (e) {
     e.preventDefault();
     variantStrip.classList.remove('drag-over');
-    // サムネイルの並べ替え中は、ファイル追加として扱わない
-    if (variantDragFrom !== null) return;
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addVariantFiles(e.dataTransfer.files);
   });
 
@@ -10824,6 +10924,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (activeSlot !== 0) setActiveSlot(0);
     const file = imageInput.files[0];
     const editing = isEditingImagePost();
+    // 念のため: プロンプトを間引いた一覧用の投稿のまま編集していたら保存しない(空のプロンプトで上書きしないため)
+    if (editing && adminEditingPost.partial === true) {
+      statusText.textContent = '投稿の内容を読み込めていないため保存できません。編集をやめて、もう一度「編集」から開き直してください。';
+      return;
+    }
 
     const mode = currentPostMode();
     const editingNovelPost = isEditingImagePost() && adminEditingPost && adminEditingPost.type === 'novel';
@@ -11585,7 +11690,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (options.model) {
       modelUsageEntries().forEach(function (e) {
         if (!e.posts.some(function (x) { return String(x.id) === String(p.id); })) return;
-        const posted = postedModelFor(e.name);
+        const posted = postedModelForEntry(e);
         if (posted) { if (usedModels.indexOf(posted) === -1) usedModels.push(posted); return; }
         e.post = dlModelPost(e);
         usedDl.push(e);
@@ -11598,7 +11703,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) {
             return modelRowHtml(mp, { counts: false, thumbHtml: ownImageThumbHtml(p, [usedModelKey(mp.modelFile && mp.modelFile.name), usedModelKey(mp.title)].filter(Boolean)) });
           }).join('') +
-          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false, thumbHtml: ownImageThumbHtml(p, [usedModelKey(e.name)]) }); }).join('') + '</div>'
+          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false, thumbHtml: ownImageThumbHtml(p, entryKeys(e)) }); }).join('') + '</div>'
       : '';
 
     const parent = p.parentId
@@ -16593,7 +16698,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (fAuthor && !e.authors.some(function (a) { return a.toLowerCase().indexOf(fAuthor) !== -1; })) return;
         if (fBase && e.baseModel.toLowerCase().indexOf(fBase) === -1) return;
         if (!passesModelTagFilter({ tags: e.tags })) return;
-        if (!matchKeywords((e.name + ' ' + e.kind + ' ' + e.baseModel).toLowerCase(), keywords, mKeywordMode)) return;
+        if (!matchKeywords(((e.names || [e.name]).join(' ') + ' ' + e.kind + ' ' + e.baseModel).toLowerCase(), keywords, mKeywordMode)) return;
         items.push({ post: e.post, dl: e });
       });
     }
@@ -16686,8 +16791,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function dlModelPost(e) {
     let p = dlModelPosts[e.id];
     if (!p) {
-      const v = modelVotes[e.id] || {};
-      p = dlModelPosts[e.id] = { id: e.id, type: 'dlmodel', likeCount: Number(v.likeCount) || 0, dislikeCount: Number(v.dislikeCount) || 0 };
+      // ハッシュでまとめた別名の分のグッド/バッドも足して見せる(押したグッドは見出しの id に付く)
+      const ids = [e.id].concat(e.aliasIds || []);
+      const sum = function (f) { return ids.reduce(function (n, id) { return n + (Number((modelVotes[id] || {})[f]) || 0); }, 0); };
+      p = dlModelPosts[e.id] = { id: e.id, type: 'dlmodel', likeCount: sum('likeCount'), dislikeCount: sum('dislikeCount') };
     }
     p.title = e.name;
     p.timestamp = new Date(e.firstUsed).toISOString();
@@ -16752,8 +16859,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         });
       });
     });
-    return Object.keys(map).map(function (k) {
-      const e = map[k];
+    return mergeSameHashModels(Object.keys(map).map(function (k) { return map[k]; })).map(function (e) {
       e.baseModel = Object.keys(e.presets).sort(function (a, b) { return e.presets[b] - e.presets[a]; })[0] || '';
       e.authors = Array.from(new Set(e.posts.map(function (p) { return String(p.author || ''); }).filter(Boolean)));
       e.tags = Array.from(new Set([].concat.apply([], e.posts.map(function (p) { return p.tags || []; }))));
@@ -16761,9 +16867,56 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
+  /* 同じ種類で同じハッシュのモデルは、名前(ファイル名)が違っても同じファイルなので1件にまとめる
+     (配布ページから落とした名前と、自分で付け直した名前が混ざると、名前ごとに別のモデルとして並んでいた)。
+     ハッシュでつながるものをまとめ(A と B、B と C が同じなら A・B・C を1件に)、見出しの名前と id は最初に使った名前のものにする
+     (グッド/バッドや共有リンクは id に付いているので、使う作品が増えても変わらない名前を選ぶ)。ほかの名前の id は aliasIds に残す */
+  function mergeSameHashModels(list) {
+    const parent = list.map(function (_, i) { return i; });
+    function root(i) { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; }
+    const byHash = {};
+    list.forEach(function (e, i) {
+      Object.keys(e.hashes).forEach(function (h) {
+        const k = e.kind + '|' + h.toLowerCase();
+        if (k in byHash) parent[root(i)] = root(byHash[k]); else byHash[k] = i;
+      });
+    });
+    const groups = {};
+    list.forEach(function (e, i) { (groups[root(i)] = groups[root(i)] || []).push(e); });
+    return Object.keys(groups).map(function (g) {
+      const members = groups[g].slice().sort(function (a, b) {
+        return a.firstUsed - b.firstUsed || b.posts.length - a.posts.length || a.name.localeCompare(b.name);
+      });
+      const e = members[0];
+      e.names = members.map(function (m) { return m.name; });
+      e.keys = members.map(function (m) { return usedModelKey(m.name); });
+      e.aliasIds = members.slice(1).map(function (m) { return m.id; });
+      members.slice(1).forEach(function (m) {
+        m.posts.forEach(function (p) { if (e.posts.indexOf(p) === -1) { e.posts.push(p); e.thumbs[p.id] = m.thumbs[p.id]; } });
+        e.firstUsed = Math.min(e.firstUsed, m.firstUsed);
+        e.lastUsed = Math.max(e.lastUsed, m.lastUsed);
+        ['presets', 'hashes', 'weights'].forEach(function (f) {
+          Object.keys(m[f]).forEach(function (k) { e[f][k] = (e[f][k] || 0) + m[f][k]; });
+        });
+      });
+      return e;
+    });
+  }
+
+  // まとめた名前のどれかが投稿モデル(自作)と一致すれば自作とみなす
+  function postedModelForEntry(e) {
+    const names = e.names || [e.name];
+    for (let i = 0; i < names.length; i++) {
+      const m = postedModelFor(names[i]);
+      if (m) return m;
+    }
+    return null;
+  }
+  function entryKeys(e) { return e.keys || [usedModelKey(e.name)]; }
+
   function dlModelEntries() {
     return modelUsageEntries().filter(function (e) {
-      if (postedModelFor(e.name)) return false;
+      if (postedModelForEntry(e)) return false;
       e.post = dlModelPost(e);
       return true;
     });
@@ -16777,6 +16930,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function modelUsageSpecsHtml(e, withKind) {
     const rows = [];
     if (withKind) rows.push(['種類', e.kind]);
+    if (e.names && e.names.length > 1) rows.push(['ほかの名前(同じハッシュ)', e.names.slice(1).join(' / ')]);
     if (e.baseModel) rows.push(['ベースモデル(作品のUI Preset)', e.baseModel]);
     if (Object.keys(e.hashes).length) rows.push([e.kind === 'LoRA' ? 'ハッシュ(AutoV3)' : 'ハッシュ(AutoV2)', countedText(e.hashes)]);
     if (Object.keys(e.weights).length) rows.push(['作品で使われた強さ', countedText(e.weights)]);
@@ -16935,7 +17089,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<div class="detail-block"><div class="label">モデル情報</div><div class="settings-table model-spec-table">' + modelUsageSpecsHtml(e, true) + '</div></div>' +
       civitaiBlockHtml(e) +
       '<div class="linked-works-head">このモデルを使った投稿作品 (' + works.length + '件)</div>' +
-      '<div class="list" id="dlModelWorksList">' + works.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false, varIdx: modelVariantIndex(ip, [usedModelKey(e.name)]) }); }).join('') + '</div>';
+      '<div class="list" id="dlModelWorksList">' + works.map(function (ip) { return imageRowHtml(ip, 'w320', { counts: false, varIdx: modelVariantIndex(ip, entryKeys(e)) }); }).join('') + '</div>';
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
     document.getElementById('civitaiBody').dataset.entryId = e.id;
     wireModalLikeButton();
@@ -17130,7 +17284,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const mf = p.modelFile;
     const s = p.settings || {};
     const usageKeys = [usedModelKey(mf && mf.name), usedModelKey(p.title)];
-    const usage = modelUsageEntries().find(function (e) { return usageKeys.indexOf(usedModelKey(e.name)) !== -1; }) || null;
+    const usage = modelUsageEntries().find(function (e) { return entryKeys(e).some(function (k) { return usageKeys.indexOf(k) !== -1; }); }) || null;
     const specs = [['種類', s.modelKind], ['ベースモデル', s.baseModel], ['推奨の強さ', s.weight]]
       .filter(function (r) { return hasText(r[1]); })
       .map(function (r) { return '<div><span>' + escapeHtml(r[0]) + '</span>' + escapeHtml(r[1]) + '</div>'; }).join('');
@@ -18209,13 +18363,51 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       : '';
   }
 
-  function openOwnerEdit(p, password) {
-    openAdminEdit(p);
+  async function openOwnerEdit(p, password) {
+    if (!(await openAdminEdit(p))) return;
     ownerEditPassword = password || '';
     ownerEditMode = true;
   }
 
-  function openAdminEdit(p) {
+  /* 編集は、プロンプトなどが全部そろった投稿で開く。一覧の投稿は軽くするためにプロンプトを空にしてあり(partial)、
+     詳細の読み込みが終わる前に「編集」を押すと、その空のプロンプトのまま保存されてしまっていた(差分が多く通信が重いときに起きやすい)。
+     そろっていなければ詳細を読み直し、読めなければ編集を開かない */
+  async function openAdminEdit(p) {
+    const full = await fullPostForEdit(p);
+    if (!full) return false;
+    openAdminEditNow(full);
+    return true;
+  }
+
+  async function fullPostForEdit(p) {
+    const local = findLocalPost(p.id);
+    if (local && local.partial !== true) return local;
+    if (!local && p.partial !== true) return p;
+    showLoading('編集のために投稿を読み込み中...');
+    try {
+      for (let i = 0; i < 3; i++) {
+        try {
+          const data = await fetchPostDetail(p.id);
+          if (data && data.post && data.post.partial !== true) {
+            mergePostIntoLocalState(data.post);
+            (data.related || []).forEach(mergePostIntoLocalState);
+            rebuildDerivedArraysFromPosts();
+            detailFetchedIds[data.post.id] = true;
+            return data.post;
+          }
+        } catch (err) {
+          console.error('編集用の読み込みに失敗(' + (i + 1) + '回目):', err);
+        }
+        await new Promise(function (res) { setTimeout(res, 1200); });
+      }
+    } finally {
+      hideLoading();
+    }
+    alert('投稿の内容(プロンプトなど)を読み込めなかったため、編集を開けませんでした。少し待ってから、もう一度「編集」を押してください。');
+    return null;
+  }
+
+  function openAdminEditNow(p) {
     editReturnScrollY = window.scrollY;
     ownerEditPassword = '';
     ownerEditMode = false;
