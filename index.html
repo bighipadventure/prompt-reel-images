@@ -3931,7 +3931,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">画像の切り替え(差分投稿)</div>
-        <div class="feature-desc">複数枚をまとめた投稿では、画像のすぐ下の左側に番号ボタン(1・2…)が四角で並びます。押すと表示する画像が切り替わり、プロンプト / ネガティブプロンプト / キャラクタープロンプト / 設定関係も画像ごとに切り替わります(1 が最初に投稿された画像です)。ダウンロードは、そのとき表示している画像が対象になります。</div>
+        <div class="feature-desc">複数枚をまとめた投稿では、画像のすぐ下の左側に番号ボタン(1・2…)が四角で並びます。押すと表示する画像が切り替わり、プロンプト / ネガティブプロンプト / キャラクタープロンプト / 設定関係も画像ごとに切り替わります(1 が最初に投稿された画像です)。ダウンロードは、そのとき表示している画像が対象になります(全部まとめて保存するときは「一括ダウンロード」)。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプトのコピー</div>
@@ -3951,7 +3951,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">ダウンロード</div>
-        <div class="feature-desc">画像を原寸で保存できます。</div>
+        <div class="feature-desc">画像を原寸で保存できます。差分のある作品では、ファイル名の最後に何枚目かを表す番号(_001 が最初に投稿した画像、_002 が2枚目…)が付きます。差分のある作品には「一括ダウンロード」も出て、差分を含めた全部の画像を1つの ZIP にまとめて保存できます(ZIP の中も同じ番号付きの名前です)。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">共有</div>
@@ -11710,6 +11710,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '<div class="image-actions-btns">' +
           '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
           (p.type === 'novel' ? '' : '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>') +
+          (hasVariants && p.type !== 'novel' && p.type !== 'video' ? '<button class="btn-ghost" type="button" id="bulkDownloadBtn" title="差分を含めた ' + imageSet.length + ' 枚を ZIP でまとめて保存します">一括ダウンロード</button>' : '') +
           '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
         '</div>' +
       '</div>' +
@@ -11816,7 +11817,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     wireCommentToggle(p);
     wireAdminActionButtons(p);
     const dlBtn = document.getElementById('downloadBtn');
-    if (dlBtn) dlBtn.addEventListener('click', function () { downloadImage({ imageUrl: imageSet[curVar].imageUrl, title: p.title, id: p.id, type: p.type }); });
+    if (dlBtn) dlBtn.addEventListener('click', function () { downloadImage({ imageUrl: imageSet[curVar].imageUrl, title: p.title, id: p.id, type: p.type, page: curVar + 1, pages: imageSet.length }); });
+    const bulkBtn = document.getElementById('bulkDownloadBtn');
+    if (bulkBtn) bulkBtn.addEventListener('click', function () { downloadAllImages(p, imageSet); });
     document.getElementById('shareBtn').addEventListener('click', function () { sharePost(p, this); });
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
@@ -12085,7 +12088,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (!post) return;
     // 1枚目固定ではなく、いま表示している差分の画像をダウンロードする
     const url = fullImageUrls[fullImageCurIdx] || post.imageUrl;
-    downloadImage({ imageUrl: url, title: post.title, id: post.id, type: post.type });
+    downloadImage({ imageUrl: url, title: post.title, id: post.id, type: post.type, page: fullImageCurIdx + 1, pages: fullImageUrls.length });
   });
 
   document.addEventListener('keydown', function (e) {
@@ -13372,10 +13375,125 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
+  /* 保存するファイル名(拡張子なし)。差分のある投稿では、何枚目か分かるように「_001」のようなページ番号を付ける
+     (1 が最初に投稿した画像)。page / pages が無ければ番号は付けない */
+  function downloadBaseName(p) {
+    const base = p.title || ((p.type === 'video' ? 'video_' : 'image_') + p.id);
+    return (p.pages > 1 && p.page) ? base + '_' + String(p.page).padStart(3, '0') : base;
+  }
+  function imageExtOf(blob) {
+    return { 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/png': '.png', 'image/gif': '.gif' }[blob.type] || '';
+  }
+
+  // 画像の元ファイルを受け取る(Drive の画像は GAS の中継で分割して受け取る。CORS で直接は読めないため)
+  async function fetchImageBlob(imageUrl) {
+    const id = driveFileId(imageUrl);
+    if (!id) {
+      const res = await fetch(imageUrl);
+      if (!res.ok) throw new Error('status ' + res.status);
+      return await res.blob();
+    }
+    const parts = [];
+    let offset = 0;
+    let mime = '';
+    for (;;) {
+      const r = await fetchRelayChunk(id, offset);
+      mime = r.mime || mime;
+      const bytes = base64ToBytes(r.base64 || '');
+      parts.push(bytes);
+      offset += bytes.length;
+      if (r.eof || !bytes.length) break;
+    }
+    return new Blob(parts, { type: mime || 'application/octet-stream' });
+  }
+
+  async function countDownload(p) {
+    p.downloadCount = (Number(p.downloadCount) || 0) + 1;
+    updateCountUI(p.id);
+    try {
+      const result = await postAction({ action: 'download', id: p.id });
+      if (result && result.success && typeof result.downloadCount === 'number') {
+        p.downloadCount = result.downloadCount;
+        updateCountUI(p.id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  /* 差分を含めた全画像を1つの ZIP にまとめて保存する(「一括ダウンロード」)。
+     中のファイル名は「タイトル_001.png」「タイトル_002.png」…(001 が最初に投稿した画像)。
+     受け取れなかった画像があっても、受け取れた分だけで ZIP を作り、何枚目が入らなかったかを知らせる */
+  async function downloadAllImages(post, imageSet) {
+    const n = imageSet.length;
+    const files = [];
+    const failed = [];
+    const used = {};
+    for (let i = 0; i < n; i++) {
+      showLoading('画像を準備中... (' + (i + 1) + '/' + n + ')');
+      try {
+        const blob = await fetchImageBlob(imageSet[i].imageUrl);
+        let name = safeFileName(downloadBaseName({ title: post.title, id: post.id, type: post.type, page: i + 1, pages: n })) + imageExtOf(blob);
+        if (used[name]) name = name.replace(/(\.[^.]*)?$/, '_' + i + '$1');
+        used[name] = true;
+        files.push({ name: name, data: new Uint8Array(await blob.arrayBuffer()) });
+      } catch (err) {
+        console.error(err);
+        failed.push(i + 1);
+      }
+    }
+    hideLoading();
+    if (!files.length) {
+      alert('画像を受け取れませんでした。時間をおいてもう一度お試しください。');
+      return;
+    }
+    saveBlobAs(buildStoredZip(files), safeFileName(post.title || ('image_' + post.id)) + '.zip');
+    if (failed.length) alert(failed.map(function (k) { return String(k).padStart(3, '0'); }).join('・') + ' 枚目は受け取れなかったため、ZIP に入っていません。');
+    countDownload(post);
+  }
+
+  function safeFileName(name) {
+    return String(name || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim() || 'image';
+  }
+
+  // 圧縮しない(格納のみの)ZIP を作る。画像はもともと圧縮されているので、縮めずにそのまま入れる
+  function buildStoredZip(files) {
+    const enc = new TextEncoder();
+    const table = buildStoredZip.table || (buildStoredZip.table = (function () {
+      const t = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; }
+      return t;
+    })());
+    const crc32 = function (d) { let c = 0xffffffff; for (let i = 0; i < d.length; i++) c = table[(c ^ d[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+    const now = new Date();
+    const time = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+    const date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+    const chunks = [], central = [];
+    let offset = 0;
+    files.forEach(function (f) {
+      const name = enc.encode(f.name);
+      const crc = crc32(f.data);
+      const local = new DataView(new ArrayBuffer(30));
+      [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [8, 0, 2], [10, time, 2], [12, date, 2], [14, crc, 4], [18, f.data.length, 4], [22, f.data.length, 4], [26, name.length, 2], [28, 0, 2]]
+        .forEach(function (x) { x[2] === 4 ? local.setUint32(x[0], x[1], true) : local.setUint16(x[0], x[1], true); });
+      chunks.push(new Uint8Array(local.buffer), name, f.data);
+      const cd = new DataView(new ArrayBuffer(46));
+      [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [10, 0, 2], [12, time, 2], [14, date, 2], [16, crc, 4], [20, f.data.length, 4], [24, f.data.length, 4], [28, name.length, 2], [30, 0, 2], [32, 0, 2], [34, 0, 2], [36, 0, 2], [38, 0, 4], [42, offset, 4]]
+        .forEach(function (x) { x[2] === 4 ? cd.setUint32(x[0], x[1], true) : cd.setUint16(x[0], x[1], true); });
+      central.push(new Uint8Array(cd.buffer), name);
+      offset += 30 + name.length + f.data.length;
+    });
+    const cdSize = central.reduce(function (a, c) { return a + c.length; }, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    [[0, 0x06054b50, 4], [4, 0, 2], [6, 0, 2], [8, files.length, 2], [10, files.length, 2], [12, cdSize, 4], [16, offset, 4], [20, 0, 2]]
+      .forEach(function (x) { x[2] === 4 ? end.setUint32(x[0], x[1], true) : end.setUint16(x[0], x[1], true); });
+    return new Blob(chunks.concat(central, [new Uint8Array(end.buffer)]), { type: 'application/zip' });
+  }
+
   async function downloadImage(p) {
     const id = driveFileId(p.imageUrl);
     const isVideo = p.type === 'video';
-    const filename = p.title || ((isVideo ? 'video_' : 'image_') + p.id);
+    const filename = downloadBaseName(p);
     if (isVideo) {
       // 動画は実ファイルをDriveのダウンロードURLから取得する(imageUrlはポスターJPEGなので使わない)。
       // 直リンクへのfetchはCORSで不可なため、アンカー遷移でDriveにダウンロードさせる。
@@ -13392,27 +13510,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     } else {
     showLoading('画像を準備中...');
     try {
-      let blob;
-      if (id) {
-        const parts = [];
-        let offset = 0;
-        let mime = '';
-        for (;;) {
-          const r = await fetchRelayChunk(id, offset);
-          mime = r.mime || mime;
-          const bytes = base64ToBytes(r.base64 || '');
-          parts.push(bytes);
-          offset += bytes.length;
-          if (r.eof || !bytes.length) break;
-        }
-        blob = new Blob(parts, { type: mime || 'application/octet-stream' });
-      } else {
-        const res = await fetch(p.imageUrl);
-        if (!res.ok) throw new Error('status ' + res.status);
-        blob = await res.blob();
-      }
-      const ext = { 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/png': '.png', 'image/gif': '.gif' }[blob.type] || '';
-      saveBlobAs(blob, filename + ext);
+      const blob = await fetchImageBlob(p.imageUrl);
+      saveBlobAs(blob, filename + imageExtOf(blob));
     } catch (err) {
       console.error('元ファイルを受け取れなかったため、Driveから直接ダウンロードします:', err);
       if (id) {
@@ -13431,17 +13530,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     hideLoading();
     }
 
-    p.downloadCount = (Number(p.downloadCount) || 0) + 1;
-    updateCountUI(p.id);
-    try {
-      const result = await postAction({ action: 'download', id: p.id });
-      if (result && result.success && typeof result.downloadCount === 'number') {
-        p.downloadCount = result.downloadCount;
-        updateCountUI(p.id);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    countDownload(p);
   }
 
   async function fetchRelayChunk(fileId, offset) {
