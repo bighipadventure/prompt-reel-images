@@ -24,6 +24,9 @@
   :root{
     --bg: #e3e3e3;
     --modal-bg: #e9e9e9;
+    --card: #f4f4f4;
+    --card-hover: #ffffff;
+    --card-hover-line: #8f8f8f;
     --surface: #ffffff;
     --surface-2: #f7f7f7;
     --field: #ffffff;
@@ -64,6 +67,9 @@
     :root{
       --bg: #121212;
       --modal-bg: #181818;
+      --card: #1b1b1b;
+      --card-hover: #2a2a2a;
+      --card-hover-line: #6e6e6e;
       --surface: #262626;
       --surface-2: #2e2e2e;
       --field: #1b1b1b;
@@ -2748,7 +2754,8 @@
   .panel, .search-panel{ border-radius: var(--radius-l); border-color: var(--line); }
   .modal{ border: none; border-radius: var(--radius-l); box-shadow: var(--shadow-high); }
   .row{ border-radius: var(--radius-s); }
-  .row:hover{ background: var(--surface); box-shadow: var(--shadow-low); }
+  .row{ background: var(--card); transition: background .12s ease, border-color .12s ease, box-shadow .12s ease; }
+  .row:hover{ background: var(--card-hover); border-color: var(--card-hover-line); box-shadow: inset 0 0 0 1px var(--card-hover-line); }
   .row.picker-selected{ background: var(--accent-dim); border-color: var(--accent); }
 
   input[type="text"], input[type="number"], input[type="password"], textarea, select,
@@ -2858,7 +2865,6 @@
   .links-list.link-sorting > .link-lifted{ box-shadow: none; outline: 2px solid var(--accent); outline-offset: -1px; }
   .link-lifted .link-grip{ color: var(--on-accent); background: var(--accent); }
   #variantStrip .variant-thumb.lifted{ box-shadow: none; outline: 2px solid var(--accent); outline-offset: 2px; }
-  .row:hover{ box-shadow: none; border-color: var(--line-strong); }
   .mode-toggle button.active{ box-shadow: none; outline: 1px solid var(--line-strong); }
 
   /* ===== DESIGN RULES 2 (LOADING COLOR / RED FILL / LINK CARD) ===== */
