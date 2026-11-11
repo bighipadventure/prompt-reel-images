@@ -2284,7 +2284,7 @@
   .attach-add-tile{ width:58px; height:58px; border-radius:8px; border:1.5px dashed var(--line); background:var(--bg); color:var(--ink-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; font-size:10px; font-family:var(--font); transition:border-color .15s ease, color .15s ease; }
   .attach-add-tile:hover{ border-color:var(--accent); color:var(--accent); }
   .attach-add-tile .plus{ font-size:20px; line-height:1; }
-  /* 添付資料(テキストファイル): ファイル名のチップを並べる */
+  /* 添付資料(どんな形式でも): ファイル名のチップを並べる */
   .doc-hint{ font-size:12px; color:var(--ink-dim); line-height:1.6; }
   .doc-strip{ margin-top:8px; }
   .doc-chip{ position:relative; display:flex; align-items:center; gap:6px; max-width:100%; min-width:0; height:34px; padding:0 26px 0 8px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-size:12px; color:var(--ink); }
@@ -2302,6 +2302,9 @@
   .doc-actions{ flex:none; display:flex; gap:6px; margin-left:auto; }
   .doc-actions .btn-ghost{ height:26px; padding:0 12px; border-radius:999px; font-size:12px; font-family:inherit; line-height:1; text-decoration:none; display:inline-flex; align-items:center; }
   .doc-preview-wrap{ margin-top:-2px; }
+  .doc-media-box{ display:flex; align-items:center; justify-content:center; min-height:60px; padding:10px; border:1px solid var(--line); background:var(--field); color:var(--ink-dim); font-size:12px; }
+  .doc-media-box img, .doc-media-box video{ display:block; max-width:100%; max-height:420px; }
+  .doc-media-box audio{ width:100%; }
   .doc-preview-wrap .block-head{ display:flex; justify-content:flex-end; margin-bottom:4px; }
   .doc-preview{ margin:0; max-height:360px; overflow:auto; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg); font-family:ui-monospace, Consolas, monospace; font-size:12px; line-height:1.55; white-space:pre-wrap; word-break:break-word; color:var(--ink); }
   /* 差分ストリップは通常の添付より一回り大きく(サムネと同じ116px)。ドロップ領域も広く見せる */
@@ -3067,7 +3070,7 @@
 
       <div id="attachField">
       <label class="field-label">添付資料</label>
-      <div class="doc-hint">JSON・Markdown などのテキストファイルを投稿と一緒に置いておけます(1ファイル 2MB まで・10個まで。json / md / txt / csv / tsv / yaml / toml / ini / xml / log)。閲覧する人は詳細画面で中身を見たり、ダウンロードしたりできます。</div>
+      <div class="doc-hint">どんな形式のファイルでも投稿と一緒に置いておけます(テキスト・画像・音声・動画・GGUF など。1ファイル 10GB まで・10個まで)。閲覧する人は詳細画面からダウンロードでき、テキスト・画像・音声・動画はその場で中身も見られます。大きいファイルは送るのに時間がかかります。</div>
       <div class="attach-strip doc-strip" id="docStrip">
         <div class="attach-add-tile" id="docAddTile" role="button" tabindex="0"><span class="plus">＋</span>ファイルを追加</div>
         <input type="file" id="docInput" multiple style="display:none;">
@@ -4017,8 +4020,8 @@
         <div class="feature-desc">「この設定だと手が崩れやすい」「LoRAはこれを併用」など、プロンプト以外の補足を自由に書けます。</div>
       </div>
       <div class="feature-item">
-        <div class="feature-name">添付資料(テキストファイル)</div>
-        <div class="feature-desc">画像・動画・修正依頼・ノベルの投稿フォームの「添付資料」欄に、JSON・Markdown などのテキストファイル(json / md / txt / csv / tsv / yaml / toml / ini / xml / log)を一緒に添付できます。「＋ ファイルを追加」を押すか、欄へドラッグ&ドロップで追加し、✕ で外せます(1ファイル 2MB まで・10個まで)。詳細画面の「添付資料」欄で、閲覧する人が「中身を見る」で内容を確認したり(コピーもできます)、「ダウンロード」で保存したりできます。一覧のカードには「添付資料 N件」と出ます。</div>
+        <div class="feature-name">添付資料</div>
+        <div class="feature-desc">画像・動画・修正依頼・ノベルの投稿フォームの「添付資料」欄に、どんな形式のファイルでも一緒に添付できます(テキスト・画像・音声・動画・GGUF などのモデルファイルも可)。「＋ ファイルを追加」を押すか、欄へドラッグ&ドロップで追加し、✕ で外せます(1ファイル 10GB まで・10個まで。大きいファイルは送るのに時間がかかります)。詳細画面の「添付資料」欄の「ダウンロード」で、投稿したときのファイル名のまま保存できます。テキスト・画像・音声・動画は「中身を見る」でその場で確認でき、テキストはコピーもできます。一覧のカードには「添付資料 N件」と出ます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">リクエストの参考資料</div>
@@ -8567,17 +8570,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
-  /* ---------- 添付資料(JSON / Markdown などのテキストファイル) ----------
-     投稿フォームでは postAttachments に { kind:'new', name, text, size } / { kind:'existing', url, name, size } を持つ。
-     送信時は新しいものは本文(text)ごと、既存のものは url だけ送る(外したものはサーバー側でゴミ箱へ)。 */
-  const ATTACH_EXTENSIONS = ['json', 'md', 'markdown', 'txt', 'csv', 'tsv', 'yaml', 'yml', 'toml', 'ini', 'xml', 'log'];
+  /* ---------- 添付資料(どんな形式のファイルでも) ----------
+     投稿フォームでは postAttachments に { kind:'new', name, size, file, uploadId } / { kind:'existing', url, name, size } を持つ。
+     送信時、新しいものはモデルと同じ分割アップロード(purpose:'attachment')で先に上げて uploadId を、既存のものは url だけ送る
+     (外したものはサーバー側でゴミ箱へ)。 */
   const ATTACH_MAX_FILES = 10;
-  const ATTACH_MAX_BYTES = 2 * 1024 * 1024;
+  const ATTACH_MAX_BYTES = 10 * 1024 * 1024 * 1024;
+  // 詳細画面の「中身を見る」: 種類ごとの拡張子と、中身を受け取ってよい大きさの上限
+  const ATTACH_PREVIEW = {
+    text: { max: 2 * 1024 * 1024, exts: ['json', 'md', 'markdown', 'txt', 'csv', 'tsv', 'yaml', 'yml', 'toml', 'ini', 'xml', 'log', 'srt', 'vtt', 'ass', 'js', 'ts', 'py', 'html', 'css', 'sh', 'bat', 'ps1', 'lua', 'cfg', 'conf', 'prompt'] },
+    image: { max: 30 * 1024 * 1024, exts: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'avif'] },
+    audio: { max: 60 * 1024 * 1024, exts: ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus', 'weba'] },
+    video: { max: 120 * 1024 * 1024, exts: ['mp4', 'webm', 'mov', 'm4v'] }
+  };
   let postAttachments = [];
   const docStrip = document.getElementById('docStrip');
   const docAddTile = document.getElementById('docAddTile');
   const docInput = document.getElementById('docInput');
-  docInput.setAttribute('accept', ATTACH_EXTENSIONS.map(function (e) { return '.' + e; }).join(','));
 
   function attachmentExt(name) {
     const m = String(name || '').match(/\.([A-Za-z0-9]+)$/);
@@ -8600,15 +8609,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       docStrip.insertBefore(chip, docAddTile);
     });
   }
+  function attachmentPreviewKind(a) {
+    const ext = attachmentExt(a && a.name);
+    const size = Number(a && a.size) || 0;
+    for (const kind in ATTACH_PREVIEW) {
+      const rule = ATTACH_PREVIEW[kind];
+      if (rule.exts.indexOf(ext) !== -1 && size > 0 && size <= rule.max) return kind;
+    }
+    return '';
+  }
   async function addDocFiles(fileList) {
     const notes = [];
     for (const file of Array.from(fileList || [])) {
-      if (postAttachments.length >= ATTACH_MAX_FILES) { notes.push('添付資料は ' + ATTACH_MAX_FILES + ' 個までです'); break; }
-      if (ATTACH_EXTENSIONS.indexOf(attachmentExt(file.name)) === -1) { notes.push(file.name + ' は添付できない形式です'); continue; }
-      if (file.size > ATTACH_MAX_BYTES) { notes.push(file.name + ' は 2MB を超えています'); continue; }
-      const text = await file.text();
       const same = postAttachments.findIndex(function (a) { return a.kind === 'new' && a.name === file.name; });
-      const item = { kind: 'new', name: file.name, text: text, size: file.size };
+      if (same < 0 && postAttachments.length >= ATTACH_MAX_FILES) { notes.push('添付資料は ' + ATTACH_MAX_FILES + ' 個までです'); break; }
+      if (!file.size) { notes.push(file.name + ' は空のファイルです'); continue; }
+      if (file.size > ATTACH_MAX_BYTES) { notes.push(file.name + ' は 10GB を超えています'); continue; }
+      const item = { kind: 'new', name: file.name, size: file.size, file: file, uploadId: '' };
       if (same >= 0) postAttachments[same] = item; else postAttachments.push(item);
     }
     renderDocStrip();
@@ -8626,18 +8643,43 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addDocFiles(e.dataTransfer.files);
   });
 
+  // 新しい添付資料を分割アップロードで上げ、送信用の一覧を返す(上げ終えたものは uploadId を覚えて、やり直しのときに上げ直さない)
+  async function uploadPostAttachments() {
+    const fresh = postAttachments.filter(function (a) { return a.kind === 'new'; });
+    const out = [];
+    let n = 0;
+    for (const a of postAttachments) {
+      if (a.kind === 'existing') { out.push({ url: a.url }); continue; }
+      n++;
+      if (!a.uploadId) {
+        modelUploading = true;
+        try {
+          a.uploadId = await uploadModelFile(a.file, function (done, total) {
+            showLoading('添付資料を送信中... (' + n + '/' + fresh.length + ') ' + (total ? Math.floor(done * 100 / total) : 0) + '%');
+          }, { purpose: 'attachment', mime: a.file.type });
+        } finally {
+          modelUploading = false;
+        }
+      }
+      out.push({ uploadId: a.uploadId, name: a.name });
+    }
+    return out;
+  }
+
   // 詳細画面の「添付資料」欄
   function attachmentsBlockHtml(p) {
     const list = (p && p.attachments) || [];
     if (!list.length) return '';
     return '<div class="detail-block" id="detailAttachBlock"><div class="label">添付資料</div><div class="doc-list">' +
       list.map(function (a, i) {
+        const kind = attachmentPreviewKind(a);
         return '<div class="doc-row"><span class="doc-ext">' + escapeHtml(attachmentExt(a.name) || 'file') + '</span>' +
           '<span class="doc-name" title="' + escapeHtml(a.name) + '">' + escapeHtml(a.name) + '</span>' +
           '<span class="doc-size">' + escapeHtml(formatBytes(a.size)) + '</span>' +
-          '<span class="doc-actions"><button type="button" class="btn-ghost doc-view" data-doc="' + i + '" aria-expanded="false">中身を見る</button>' +
+          '<span class="doc-actions">' + (kind ? '<button type="button" class="btn-ghost doc-view" data-doc="' + i + '" aria-expanded="false">中身を見る</button>' : '') +
           '<a class="btn-ghost doc-download" data-doc="' + i + '" href="' + escapeHtml(a.url) + '" download="' + escapeHtml(a.name) + '" target="_blank" rel="noopener">ダウンロード</a></span></div>' +
-          '<div class="doc-preview-wrap" data-doc-preview="' + i + '" hidden><div class="block-head"><button class="btn-copy" type="button">コピー</button></div><pre class="doc-preview"></pre></div>';
+          (kind === 'text' ? '<div class="doc-preview-wrap" data-doc-preview="' + i + '" hidden><div class="block-head"><button class="btn-copy" type="button">コピー</button></div><pre class="doc-preview"></pre></div>' : '') +
+          (kind && kind !== 'text' ? '<div class="doc-preview-wrap doc-media" data-doc-preview="' + i + '" data-kind="' + kind + '" hidden><div class="doc-media-box">読み込み中...</div></div>' : '');
       }).join('') + '</div></div>';
   }
   async function fetchAttachmentText(p, a) {
@@ -8652,17 +8694,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (attachmentExt(name) !== 'json') return text;
     try { return JSON.stringify(JSON.parse(text), null, 2); } catch (e) { return text; }
   }
-  const ATTACH_MIME = { json: 'application/json', md: 'text/markdown', markdown: 'text/markdown', csv: 'text/csv', tsv: 'text/tab-separated-values', yaml: 'text/yaml', yml: 'text/yaml', xml: 'text/xml' };
+  const ATTACH_MEDIA_MIME = {
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', avif: 'image/avif',
+    mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', flac: 'audio/flac', m4a: 'audio/mp4', aac: 'audio/aac', opus: 'audio/ogg', weba: 'audio/webm',
+    mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', m4v: 'video/mp4'
+  };
   function wireAttachmentsBlock(root, p) {
     const list = (p && p.attachments) || [];
-    // 中身は1ファイルにつき1回だけ読み、「中身を見る」と「ダウンロード」で使い回す
     const texts = {};
     function textOf(i) {
       if (!texts[i]) texts[i] = fetchAttachmentText(p, list[i]).catch(function (err) { delete texts[i]; throw err; });
       return texts[i];
     }
     /* Drive のファイル名にはバックアップ復旧用の「pr_<id>__」が付いているため、Drive から直接落とすとその名前になる。
-       中身をアプリ経由で受け取り、投稿したときの名前で保存する。読めなかったときだけ Drive のリンクを開く。 */
+       中身をアプリ経由(GAS の中継)で受け取り、投稿したときの名前で保存する。中継できないときだけ Drive のリンクを開く。 */
     root.querySelectorAll('.doc-download').forEach(function (link) {
       const i = Number(link.dataset.doc);
       const a = list[i];
@@ -8670,19 +8715,61 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       link.addEventListener('click', async function (e) {
         e.preventDefault();
         if (link.dataset.busy) return;
+        const id = driveFileIdFromUrl(a.url);
+        const size = Number(a.size) || 0;
+        if (!id || !size) { window.open(a.url, '_blank', 'noopener'); return; }
         link.dataset.busy = '1';
         const label = link.textContent;
-        link.textContent = '準備中...';
         try {
-          const text = await textOf(i);
-          const mime = (ATTACH_MIME[attachmentExt(a.name)] || 'text/plain') + ';charset=utf-8';
-          saveBlobAs(new Blob([text], { type: mime }), a.name);
+          const result = await relaySaveFile(id, size, a.name, {
+            onStart: function () { link.textContent = 'ダウンロード中 0%'; },
+            onProgress: function (done, total) { link.textContent = 'ダウンロード中 ' + Math.floor(done * 100 / total) + '%'; }
+          });
+          if (result === 'direct' && window.confirm('このブラウザでは、大きいファイルを投稿したときの名前で保存できません。\nDriveから直接ダウンロードしますか？(ファイル名は管理用の名前になります)')) {
+            window.open('https://drive.usercontent.google.com/download?export=download&confirm=t&id=' + encodeURIComponent(id), '_blank', 'noopener');
+          }
         } catch (err) {
           console.error(err);
-          window.open(a.url, '_blank', 'noopener');
+          window.alert('ダウンロードに失敗しました。時間をおいてもう一度お試しください(' + (err.message || err) + ')');
         } finally {
           link.textContent = label;
           delete link.dataset.busy;
+        }
+      });
+    });
+    root.querySelectorAll('.doc-media').forEach(function (wrap) {
+      const idx = Number(wrap.dataset.docPreview);
+      const a = list[idx];
+      const btn = root.querySelector('.doc-view[data-doc="' + idx + '"]');
+      if (!a || !btn) return;
+      const box = wrap.querySelector('.doc-media-box');
+      let url = '';
+      btn.addEventListener('click', async function () {
+        if (!wrap.hidden) {
+          wrap.hidden = true; btn.textContent = '中身を見る'; btn.setAttribute('aria-expanded', 'false');
+          const media = box.querySelector('audio, video');
+          if (media) media.pause();
+          return;
+        }
+        wrap.hidden = false;
+        btn.textContent = '閉じる';
+        btn.setAttribute('aria-expanded', 'true');
+        if (url) return;
+        const size = Number(a.size) || 0;
+        try {
+          const parts = [];
+          await relayRead(driveFileIdFromUrl(a.url), size, function (bytes) { parts.push(bytes); }, function (done) {
+            box.textContent = '読み込み中... ' + Math.floor(done * 100 / size) + '%';
+          });
+          url = URL.createObjectURL(new Blob(parts, { type: ATTACH_MEDIA_MIME[attachmentExt(a.name)] || 'application/octet-stream' }));
+          const kind = wrap.dataset.kind;
+          const el = document.createElement(kind === 'image' ? 'img' : kind);
+          el.src = url;
+          if (kind === 'image') el.alt = a.name; else el.controls = true;
+          box.replaceChildren(el);
+        } catch (err) {
+          console.error(err);
+          box.textContent = '読み込めませんでした: ' + (err.message || err) + '。「ダウンロード」から開いてください。';
         }
       });
     });
@@ -8690,7 +8777,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const idx = Number(btn.dataset.doc);
       const a = list[idx];
       const wrap = root.querySelector('[data-doc-preview="' + btn.dataset.doc + '"]');
-      if (!a || !wrap) return;
+      if (!a || !wrap || wrap.classList.contains('doc-media')) return;
       const pre = wrap.querySelector('pre');
       let loaded = null;
       btn.addEventListener('click', async function () {
@@ -11193,9 +11280,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         modelIds: (isFix || isNovel) ? '' : selectedModelIds.join(',')
       };
       if (isNovel) payload.novelImages = novelParts.novelImages;
-      payload.attachments = postAttachments.map(function (a) {
-        return a.kind === 'existing' ? { url: a.url } : { name: a.name, text: a.text };
-      });
+      payload.attachments = await uploadPostAttachments();
       if (editing) {
         payload.action = ownerEditMode ? 'ownerUpdate' : 'adminUpdate';
         payload.password = ownerEditMode ? ownerEditPassword : adminPassword;
@@ -17396,42 +17481,22 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
   }
 
-  async function downloadModelFile(p) {
-    const id = modelFileIdOf(p);
-    const size = Number(p.modelFile && p.modelFile.size) || 0;
-    if (!id || modelDownloads[p.id]) return;
-    if (!size) { openModelDirectDownload(p); return; }
-    const name = modelDownloadName(p);
-    let writable = null;
-    if (window.showSaveFilePicker) {
-      try {
-        const handle = await window.showSaveFilePicker({ suggestedName: name });
-        writable = await handle.createWritable();
-      } catch (err) {
-        if (err && err.name === 'AbortError') return;
-        console.error(err);
-      }
-    }
-    if (!writable && size > MODEL_MEMORY_DOWNLOAD_MAX) {
-      if (window.confirm('このブラウザでは、大きいファイルを投稿タイトルの名前で保存できません。\nDriveから直接ダウンロードしますか？(ファイル名は管理用の名前になります)')) openModelDirectDownload(p);
-      return;
-    }
-    modelDownloads[p.id] = { done: 0, total: size };
-    renderModelDownloadState(p);
+  /* GAS の中継(videoChunk)でファイルを 4MB ずつ並行して受け取り、順番どおりに sink へ渡す。
+     onProgress(受け取った量, 全体) */
+  async function relayRead(fileId, size, sink, onProgress) {
     const n = Math.ceil(size / MODEL_RELAY_CHUNK);
     const got = {};
-    const parts = [];
     let next = 0;
     let flushed = 0;
+    let done = 0;
     let failed = false;
-    let writeChain = Promise.resolve();
+    let chain = Promise.resolve();
     function flush() {
       while (got[flushed]) {
         const bytes = got[flushed];
         delete got[flushed];
         flushed++;
-        if (writable) writeChain = writeChain.then(function () { return writable.write(bytes); });
-        else parts.push(bytes);
+        chain = chain.then(function () { return sink(bytes); });
       }
     }
     async function worker() {
@@ -17439,32 +17504,77 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         while (next < n && !failed) {
           const i = next++;
           const offset = i * MODEL_RELAY_CHUNK;
-          got[i] = await fetchModelChunk(id, offset, Math.min(MODEL_RELAY_CHUNK, size - offset));
-          modelDownloads[p.id].done += got[i].length;
-          renderModelDownloadState(p);
+          got[i] = await fetchModelChunk(fileId, offset, Math.min(MODEL_RELAY_CHUNK, size - offset));
+          done += got[i].length;
+          if (onProgress) onProgress(done, size);
           flush();
-          await writeChain;
+          await chain;
         }
       } catch (err) {
         failed = true;
         throw err;
       }
     }
+    const workers = [];
+    for (let w = 0; w < Math.min(MODEL_RELAY_PARALLEL, n); w++) workers.push(worker());
+    await Promise.all(workers);
+    await chain;
+  }
+
+  /* 中継で受け取ったファイルを name の名前で保存する。「名前を付けて保存」が使えればディスクへ順に書き、
+     使えなければメモリに貯めて保存する(大きすぎるときは 'direct' を返す)。戻り値: 'done' / 'cancel' / 'direct' */
+  async function relaySaveFile(fileId, size, name, hooks) {
+    hooks = hooks || {};
+    let writable = null;
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName: name });
+        writable = await handle.createWritable();
+      } catch (err) {
+        if (err && err.name === 'AbortError') return 'cancel';
+        console.error(err);
+      }
+    }
+    if (!writable && size > MODEL_MEMORY_DOWNLOAD_MAX) return 'direct';
+    if (hooks.onStart) hooks.onStart();
+    const parts = [];
     try {
-      const workers = [];
-      for (let w = 0; w < Math.min(MODEL_RELAY_PARALLEL, n); w++) workers.push(worker());
-      await Promise.all(workers);
-      await writeChain;
+      await relayRead(fileId, size, function (bytes) {
+        if (writable) return writable.write(bytes);
+        parts.push(bytes);
+      }, hooks.onProgress);
       if (writable) await writable.close();
       else saveBlobAs(new Blob(parts, { type: 'application/octet-stream' }), name);
     } catch (err) {
       if (writable) { try { await writable.abort(); } catch (e) {} }
+      throw err;
+    }
+    return 'done';
+  }
+
+  async function downloadModelFile(p) {
+    const id = modelFileIdOf(p);
+    const size = Number(p.modelFile && p.modelFile.size) || 0;
+    if (!id || modelDownloads[p.id]) return;
+    if (!size) { openModelDirectDownload(p); return; }
+    let result;
+    try {
+      result = await relaySaveFile(id, size, modelDownloadName(p), {
+        onStart: function () { modelDownloads[p.id] = { done: 0, total: size }; renderModelDownloadState(p); },
+        onProgress: function (done) { modelDownloads[p.id].done = done; renderModelDownloadState(p); }
+      });
+    } catch (err) {
       delete modelDownloads[p.id];
       renderModelDownloadState(p);
       window.alert('ダウンロードに失敗しました。時間をおいてもう一度お試しください(' + (err.message || err) + ')');
       console.error(err);
       return;
     }
+    if (result === 'direct') {
+      if (window.confirm('このブラウザでは、大きいファイルを投稿タイトルの名前で保存できません。\nDriveから直接ダウンロードしますか？(ファイル名は管理用の名前になります)')) openModelDirectDownload(p);
+      return;
+    }
+    if (result !== 'done') return;
     delete modelDownloads[p.id];
     renderModelDownloadState(p);
     countModelDownload(p);
@@ -17733,8 +17843,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function waitMs(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
 
-  async function uploadModelFile(file, onProgress) {
-    const start = await postAction({ action: 'modelUploadStart', name: file.name, size: file.size });
+  async function uploadModelFile(file, onProgress, opts) {
+    const start = await postAction({ action: 'modelUploadStart', name: file.name, size: file.size, purpose: opts && opts.purpose, mime: opts && opts.mime });
     if (!start || !start.success) throw new Error((start && start.error) || 'アップロードを開始できませんでした');
     const chunkBytes = Number(start.chunkBytes);
     let offset = 0;
