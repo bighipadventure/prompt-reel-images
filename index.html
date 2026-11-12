@@ -2290,7 +2290,10 @@
   .doc-chip{ position:relative; display:flex; align-items:center; gap:6px; max-width:100%; min-width:0; height:34px; padding:0 26px 0 8px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-size:12px; color:var(--ink); }
   .doc-chip .doc-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .doc-chip .doc-size{ flex:none; color:var(--ink-dim); font-size:11px; }
-  .doc-chip .attach-remove{ top:50%; right:5px; transform:translateY(-50%); }
+  .doc-chip .attach-remove{ top:0; bottom:0; right:5px; margin:auto 0; }
+  /* ✕ は文字ではなく線で描く(フォントによって文字が下に寄るため。円の真ん中に来る) */
+  .attach-remove{ font-size:0; color:transparent; }
+  .attach-remove::before{ content:""; width:8px; height:8px; background:var(--on-danger); -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 1.5l7 7M8.5 1.5l-7 7' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 8px 8px no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 1.5l7 7M8.5 1.5l-7 7' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 8px 8px no-repeat; }
   .doc-ext{ flex:none; padding:1px 5px; border-radius:4px; background:var(--accent-dim); color:var(--accent); font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
   .doc-strip .attach-add-tile{ width:auto; height:34px; flex-direction:row; gap:4px; padding:0 12px; font-size:12px; }
   .doc-strip .attach-add-tile .plus{ font-size:16px; }
@@ -2791,7 +2794,8 @@
   .btn-ghost.btn-danger:hover{ background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
   .btn-submit{ background: var(--accent); color: var(--on-accent); border-radius: var(--radius-s); }
   .btn-submit:hover{ background: var(--accent-hover); opacity: 1; }
-  button:active:not(:disabled){ transform: scale(.98); }
+  /* 押したときの縮みは scale で付ける(transform だと translateY(-50%) で中央に置いたボタンが下へ跳ぶ) */
+  button:active:not(:disabled){ scale: .98; }
   .settings-toggle{ color: var(--ink); }
   .btn-copy{ background: var(--control); color: var(--ink); border-color: transparent; }
   .btn-copy:hover{ background: var(--control-hover); border-color: transparent; }
