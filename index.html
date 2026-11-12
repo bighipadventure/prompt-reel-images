@@ -2882,6 +2882,12 @@
   .link-card.has-url:hover .link-url{ text-decoration: underline; }
   .inline-icon{ width: 15px; height: 15px; vertical-align: -2px; filter: invert(1); }
   @media (prefers-color-scheme: dark){ .inline-icon{ filter: none; } }
+
+  /* ===== 掲示板の添付ファイル ===== */
+  .board-files{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+  .board-files .doc-row .doc-name{ font-size:12px; }
+  .board-files.is-alone{ margin-top:0; padding-top:0; border-top:0; }
+  .board-file-count{ font-size:11px; color:var(--ink-dim); }
 </style>
 </head>
 <body>
@@ -3831,6 +3837,10 @@
       <div class="attach-strip" id="boardStrip"></div>
       <input type="file" id="boardRefInput" accept="image/*" multiple style="display:none;">
 
+      <label class="field-label">ファイルを添付(任意)</label>
+      <div class="doc-hint">どんな形式でも添付できます(1ファイル 10GB・10個まで)。</div>
+      <div class="attach-strip doc-strip" id="boardFileStrip"></div>
+
       <div class="submit-row">
         <button class="btn-submit" id="boardSubmitBtn" type="button">投稿する</button>
         <span class="status" id="boardStatus"></span>
@@ -3973,7 +3983,7 @@
       </div>
       <div class="feature-item opt-only-board">
         <div class="feature-name">掲示板</div>
-        <div class="feature-desc">作品に紐づかない雑談・質問の場です。スレッドを立てて、各スレッドに返信していく形式で、並び順の切り替え(投稿順・最新の返信がある順・勢い順)や画像の添付もできます。</div>
+        <div class="feature-desc">作品に紐づかない雑談・質問の場です。スレッドを立てて、各スレッドに返信していく形式で、並び順の切り替え(投稿順・最新の返信がある順・勢い順)や、画像・ファイルの添付もできます。ファイルはどんな形式でも付けられ、スレッドを開くと中身の確認やダウンロードができます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">更新</div>
@@ -8592,22 +8602,68 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const m = String(name || '').match(/\.([A-Za-z0-9]+)$/);
     return m ? m[1].toLowerCase() : '';
   }
+  function fileChipHtml(a, i) {
+    return '<div class="doc-chip" title="' + escapeHtml(a.name) + '">' +
+      '<span class="doc-ext">' + escapeHtml(attachmentExt(a.name) || 'file') + '</span>' +
+      '<span class="doc-name">' + escapeHtml(a.name) + '</span>' +
+      '<span class="doc-size">' + escapeHtml(formatBytes(a.size)) + '</span>' +
+      '<button type="button" class="attach-remove" data-file-idx="' + i + '" title="外す" aria-label="' + escapeHtml(a.name) + ' を外す">✕</button></div>';
+  }
   function renderDocStrip() {
     docStrip.querySelectorAll('.doc-chip').forEach(function (el) { el.remove(); });
-    postAttachments.forEach(function (a, i) {
-      const chip = document.createElement('div');
-      chip.className = 'doc-chip';
-      chip.title = a.name;
-      chip.innerHTML = '<span class="doc-ext">' + escapeHtml(attachmentExt(a.name) || 'file') + '</span>' +
-        '<span class="doc-name">' + escapeHtml(a.name) + '</span>' +
-        '<span class="doc-size">' + escapeHtml(formatBytes(a.size)) + '</span>' +
-        '<button type="button" class="attach-remove" title="外す" aria-label="' + escapeHtml(a.name) + ' を外す">✕</button>';
-      chip.querySelector('.attach-remove').addEventListener('click', function () {
-        postAttachments.splice(i, 1);
+    docAddTile.insertAdjacentHTML('beforebegin', postAttachments.map(fileChipHtml).join(''));
+    docStrip.querySelectorAll('.doc-chip .attach-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        postAttachments.splice(Number(btn.dataset.fileIdx), 1);
         renderDocStrip();
       });
-      docStrip.insertBefore(chip, docAddTile);
     });
+  }
+  // 選んだファイルを一覧(list)に足す。同じ名前の新しいファイルは差し替える。注意書きの配列を返す
+  function addFilesToList(list, fileList) {
+    const notes = [];
+    for (const file of Array.from(fileList || [])) {
+      const same = list.findIndex(function (a) { return a.kind === 'new' && a.name === file.name; });
+      if (same < 0 && list.length >= ATTACH_MAX_FILES) { notes.push('添付ファイルは ' + ATTACH_MAX_FILES + ' 個までです'); break; }
+      if (!file.size) { notes.push(file.name + ' は空のファイルです'); continue; }
+      if (file.size > ATTACH_MAX_BYTES) { notes.push(file.name + ' は 10GB を超えています'); continue; }
+      const item = { kind: 'new', name: file.name, size: file.size, file: file, uploadId: '' };
+      if (same >= 0) list[same] = item; else list.push(item);
+    }
+    return notes;
+  }
+  /* 掲示板のフォームで使うファイル添付欄。フォームは描き直されるので、一覧は getList() で外から受け取る。
+     チップ・「ファイルを追加」・ファイル選択をまとめて描き、ドロップでも追加できる。 */
+  function mountFileStrip(strip, getList, statusEl) {
+    function render() {
+      const list = getList();
+      strip.innerHTML = list.map(fileChipHtml).join('') +
+        '<div class="attach-add-tile" role="button" tabindex="0" data-file-add="1"><span class="plus">＋</span>ファイルを追加</div>' +
+        '<input type="file" class="file-strip-input" multiple style="display:none;">';
+      strip.querySelectorAll('.doc-chip .attach-remove').forEach(function (btn) {
+        btn.addEventListener('click', function () { getList().splice(Number(btn.dataset.fileIdx), 1); render(); });
+      });
+      const tile = strip.querySelector('[data-file-add]');
+      const input = strip.querySelector('.file-strip-input');
+      tile.addEventListener('click', function () { input.click(); });
+      tile.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+      input.addEventListener('change', function () { add(input.files); input.value = ''; });
+    }
+    function add(files) {
+      const notes = addFilesToList(getList(), files);
+      render();
+      if (statusEl) statusEl.textContent = notes.join(' / ');
+    }
+    strip.addEventListener('dragover', function (e) { e.preventDefault(); e.stopPropagation(); strip.classList.add('drag-over'); });
+    strip.addEventListener('dragleave', function () { strip.classList.remove('drag-over'); });
+    strip.addEventListener('drop', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      strip.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) add(e.dataTransfer.files);
+    });
+    render();
+    return { render: render };
   }
   function attachmentPreviewKind(a) {
     const ext = attachmentExt(a && a.name);
@@ -8619,15 +8675,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return '';
   }
   async function addDocFiles(fileList) {
-    const notes = [];
-    for (const file of Array.from(fileList || [])) {
-      const same = postAttachments.findIndex(function (a) { return a.kind === 'new' && a.name === file.name; });
-      if (same < 0 && postAttachments.length >= ATTACH_MAX_FILES) { notes.push('添付資料は ' + ATTACH_MAX_FILES + ' 個までです'); break; }
-      if (!file.size) { notes.push(file.name + ' は空のファイルです'); continue; }
-      if (file.size > ATTACH_MAX_BYTES) { notes.push(file.name + ' は 10GB を超えています'); continue; }
-      const item = { kind: 'new', name: file.name, size: file.size, file: file, uploadId: '' };
-      if (same >= 0) postAttachments[same] = item; else postAttachments.push(item);
-    }
+    const notes = addFilesToList(postAttachments, fileList);
     renderDocStrip();
     statusText.textContent = notes.join(' / ');
   }
@@ -8644,18 +8692,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
 
   // 新しい添付資料を分割アップロードで上げ、送信用の一覧を返す(上げ終えたものは uploadId を覚えて、やり直しのときに上げ直さない)
-  async function uploadPostAttachments() {
-    const fresh = postAttachments.filter(function (a) { return a.kind === 'new'; });
+  function uploadPostAttachments() { return uploadAttachmentList(postAttachments); }
+  async function uploadAttachmentList(list) {
+    const fresh = list.filter(function (a) { return a.kind === 'new'; });
     const out = [];
     let n = 0;
-    for (const a of postAttachments) {
+    for (const a of list) {
       if (a.kind === 'existing') { out.push({ url: a.url }); continue; }
       n++;
       if (!a.uploadId) {
         modelUploading = true;
         try {
           a.uploadId = await uploadModelFile(a.file, function (done, total) {
-            showLoading('添付資料を送信中... (' + n + '/' + fresh.length + ') ' + (total ? Math.floor(done * 100 / total) : 0) + '%');
+            showLoading('添付ファイルを送信中... (' + n + '/' + fresh.length + ') ' + (total ? Math.floor(done * 100 / total) : 0) + '%');
           }, { purpose: 'attachment', mime: a.file.type });
         } finally {
           modelUploading = false;
@@ -8670,7 +8719,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function attachmentsBlockHtml(p) {
     const list = (p && p.attachments) || [];
     if (!list.length) return '';
-    return '<div class="detail-block" id="detailAttachBlock"><div class="label">添付資料</div><div class="doc-list">' +
+    return '<div class="detail-block" id="detailAttachBlock"><div class="label">添付資料</div>' + attachmentListHtml(list) + '</div>';
+  }
+  // 添付ファイルの行(拡張子・名前・大きさ・中身を見る・ダウンロード)。投稿の詳細と掲示板で共用
+  function attachmentListHtml(list) {
+    return '<div class="doc-list">' +
       list.map(function (a, i) {
         const kind = attachmentPreviewKind(a);
         return '<div class="doc-row"><span class="doc-ext">' + escapeHtml(attachmentExt(a.name) || 'file') + '</span>' +
@@ -8680,7 +8733,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<a class="btn-ghost doc-download" data-doc="' + i + '" href="' + escapeHtml(a.url) + '" download="' + escapeHtml(a.name) + '" target="_blank" rel="noopener">ダウンロード</a></span></div>' +
           (kind === 'text' ? '<div class="doc-preview-wrap" data-doc-preview="' + i + '" hidden><div class="block-head"><button class="btn-copy" type="button">コピー</button></div><pre class="doc-preview"></pre></div>' : '') +
           (kind && kind !== 'text' ? '<div class="doc-preview-wrap doc-media" data-doc-preview="' + i + '" data-kind="' + kind + '" hidden><div class="doc-media-box">読み込み中...</div></div>' : '');
-      }).join('') + '</div></div>';
+      }).join('') + '</div>';
   }
   async function fetchAttachmentText(p, a) {
     const url = GAS_URL + (GAS_URL.indexOf('?') === -1 ? '?' : '&') + 'attachment=' + encodeURIComponent(driveFileIdFromUrl(a.url)) +
@@ -15674,6 +15727,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   let boardRefs = [];
+  // スレッドを立てるフォームの添付ファイル(どんな形式でも)
+  const boardFiles = [];
+  const boardFileStrip = mountFileStrip(document.getElementById('boardFileStrip'), function () { return boardFiles; }, document.getElementById('boardStatus'));
   const boardStrip = document.getElementById('boardStrip');
   const boardRefInput = document.getElementById('boardRefInput');
   function boardSrcOf(r) { return r.dataUrl; }
@@ -15727,6 +15783,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      保存時に keepImages / newImages としてサーバーへ送る(残す/足す/差し替えのどれも表現できる)。
      複数の編集フォームが同時に存在しうるので、投稿IDごとに状態を持つ。 */
   const boardEditRefs = {};   // id -> { keep: [url,...], added: [{dataUrl},...] }
+  const boardEditFiles = {};  // id -> 添付ファイルの一覧(既存は kind:'existing'、足したものは kind:'new')
 
   function renderBoardEditStrip(id) {
     const state = boardEditRefs[id];
@@ -15779,6 +15836,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const msg = allBoard.find(function (m) { return String(m.id) === String(id); });
     boardEditRefs[id] = { keep: (msg && msg.images ? msg.images.slice() : []), added: [] };
     renderBoardEditStrip(id);
+    boardEditFiles[id] = ((msg && msg.attachments) || []).map(function (a) { return { kind: 'existing', url: a.url, name: a.name, size: a.size }; });
+    const fileStrip = form.querySelector('.board-edit-files');
+    if (fileStrip) {
+      if (fileStrip.fileStrip) fileStrip.fileStrip.render();
+      else fileStrip.fileStrip = mountFileStrip(fileStrip, function () { return boardEditFiles[id] || []; }, form.querySelector('.board-edit-status'));
+    }
     const strip = form.querySelector('.board-edit-strip');
     const fileInput = form.querySelector('.board-edit-file');
     if (strip && fileInput && !strip.dataset.dndWired) {
@@ -15809,11 +15872,19 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   /* 本文と添付画像を同じ黒い面の中に収める。
      本文が空でも画像だけで枠を出す(枠の外に画像がはみ出さないように)。 */
-  function boardBodyBlock(m, cls) {
+  function boardBodyBlock(m, cls, withFiles) {
     const body = hasText(m.body) ? boardBodyHtml(m.body) : '';
     const imgs = boardImagesHtml(m);
-    if (!body && !imgs) return '';
-    return '<div class="' + cls + '">' + body + imgs + '</div>';
+    const files = withFiles ? boardFilesHtml(m, !body && !imgs) : '';
+    if (!body && !imgs && !files) return '';
+    return '<div class="' + cls + '">' + body + imgs + files + '</div>';
+  }
+
+  // 添付ファイルの一覧(スレッドを開いたときだけ。一覧のカードでは件数だけ見せる)
+  function boardFilesHtml(m, alone) {
+    const list = m.attachments || [];
+    if (!list.length) return '';
+    return '<div class="board-files' + (alone ? ' is-alone' : '') + '" data-files-of="' + escapeHtml(String(m.id)) + '">' + attachmentListHtml(list) + '</div>';
   }
 
   function boardImagesHtml(m) {
@@ -15879,6 +15950,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // 返信フォームの添付画像(スレッドidごとに保持。フォームは再描画で作り直されるためDOM外で管理)
   const replyRefs = {};
+  const replyFiles = {};   // スレッドidごとの返信の添付ファイル
   function replySrcOf(r) { return r.dataUrl; }
   function renderReplyStrip(stripEl, threadId, fileInput) {
     stripEl.innerHTML = stripInnerHtml(replyRefs[threadId] || [], replySrcOf);
@@ -15952,6 +16024,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       '<label class="field-label">画像を添付(任意・複数可)</label>' +
       '<div class="attach-strip board-edit-strip" data-edit-strip="' + eid + '"></div>' +
       '<input type="file" class="board-edit-file" accept="image/*" multiple style="display:none;">' +
+      '<label class="field-label">ファイルを添付(任意)</label>' +
+      '<div class="attach-strip doc-strip board-edit-files"></div>' +
       '<div class="board-reply-form-row">' +
         '<button class="btn-submit board-edit-save" type="button" data-edit-board-save="' + eid + '">保存</button>' +
         '<button class="btn-ghost board-edit-cancel" type="button">キャンセル</button>' +
@@ -15970,7 +16044,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<span class="comment-date">' + formatDateTime(r.timestamp) + '</span>' +
           boardAdminCtrls(r.id) +
         '</div>' +
-        boardBodyBlock(r, 'board-reply-body') +
+        boardBodyBlock(r, 'board-reply-body', true) +
       '</div>' +
       boardEditForm(r.id, false) +
     '</div>';
@@ -15997,6 +16071,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<span class="board-name">' + name + '</span>' +
           '<span class="comment-date">' + formatDateTime(t.timestamp) + '</span>' +
           '<span class="board-reply-count">返信 ' + replies.length + '</span>' +
+          ((t.attachments || []).length ? '<span class="board-file-count">ファイル ' + t.attachments.length + '</span>' : '') +
           (replies.length ? '<span class="board-latest-reply">最新の返信 ' + formatDateTime(latestReplyTs) + '</span>' : '') +
           (unread ? '<span class="board-unread">' + BOARD_UNREAD_PREFIX + unread + '</span>' : '') +
         '</div>' +
@@ -16020,7 +16095,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       '<div class="board-thread board-thread-detail" data-thread="' + escapeHtml(String(t.id)) + '">' +
-        boardBodyBlock(t, 'board-op-body') +
+        boardBodyBlock(t, 'board-op-body', true) +
         boardEditForm(t.id, true) +
         boardVoteHtml(t) +
       '</div>' +
@@ -16040,6 +16115,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<label class="field-label">画像を添付(任意・複数可)</label>' +
           '<div class="attach-strip board-reply-strip"></div>' +
           '<input type="file" class="board-reply-file" accept="image/*" multiple style="display:none;">' +
+          '<label class="field-label">ファイルを添付(任意)</label>' +
+          '<div class="attach-strip doc-strip board-reply-files"></div>' +
           '<div class="board-reply-form-row">' +
             '<button class="btn-submit board-reply-submit" type="button" data-reply-submit="' + escapeHtml(String(t.id)) + '">返信する</button>' +
             '<span class="board-reply-status"></span>' +
@@ -16173,6 +16250,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         strip.addEventListener('drop', function (e) { e.preventDefault(); strip.classList.remove('drag-over'); if (e.dataTransfer && e.dataTransfer.files) addReplyFiles(threadId, e.dataTransfer.files, strip, file); });
       }
       if (file) file.addEventListener('change', function () { addReplyFiles(threadId, file.files, strip, file); file.value = ''; });
+      const fileStrip = form.querySelector('.board-reply-files');
+      if (fileStrip) mountFileStrip(fileStrip, function () { return (replyFiles[threadId] = replyFiles[threadId] || []); }, form.querySelector('.board-reply-status'));
+    });
+    // 添付ファイル(中身を見る・ダウンロード)はメッセージごとに配線する
+    root.querySelectorAll('.board-files').forEach(function (el) {
+      const msg = allBoard.find(function (m) { return String(m.id) === String(el.dataset.filesOf); });
+      if (msg) wireAttachmentsBlock(el, msg);
     });
     root.querySelectorAll('.board-reply-submit').forEach(function (btn) {
       btn.addEventListener('click', function () { submitBoardReply(btn.dataset.replySubmit, btn); });
@@ -16222,12 +16306,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const bodyVal = bodyEl.value.trim();
     const titleVal = titleEl ? titleEl.value.trim() : '';
     const imgState = boardEditRefs[id] || { keep: [], added: [] };
-    const hasImg = (imgState.keep.length + imgState.added.length) > 0;
+    const files = boardEditFiles[id] || [];
+    const hasImg = (imgState.keep.length + imgState.added.length + files.length) > 0;
     if (!bodyVal && !titleVal && !hasImg) { statusEl.textContent = '内容を入力してください'; return; }
     statusEl.textContent = '';
     btn.disabled = true;
     showLoading('保存中...');
     try {
+      const attachments = await uploadAttachmentList(files);
+      showLoading('保存中...');
       const result = await postAction({
         action: 'adminEditBoard',
         password: adminPassword,
@@ -16236,7 +16323,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         name: nameEl.value,
         body: bodyVal,
         keepImages: imgState.keep,
-        newImages: imgState.added.map(function (a) { return a.dataUrl; })
+        newImages: imgState.added.map(function (a) { return a.dataUrl; }),
+        attachments: attachments
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       const msg = allBoard.find(function (m) { return String(m.id) === String(id); });
@@ -16245,8 +16333,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         msg.name = (result.name != null ? result.name : nameEl.value.trim());
         if (titleEl) msg.title = (result.title != null ? result.title : titleEl.value.trim());
         if (result.images) msg.images = result.images;
+        if (result.attachments) msg.attachments = result.attachments;
       }
       delete boardEditRefs[id];
+      delete boardEditFiles[id];
       renderBoard();
       refreshBoardThreadModal();
     } catch (err) {
@@ -16272,22 +16362,27 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const bodyEl = form.querySelector('.board-reply-body');
     const statusEl = form.querySelector('.board-reply-status');
     const body = bodyEl.value.trim();
-    const hasImg = (replyRefs[threadId] || []).length > 0;
-    if (!body && !hasImg) { statusEl.textContent = '返信か画像を入力してください'; return; }
+    const files = replyFiles[threadId] || [];
+    const hasImg = (replyRefs[threadId] || []).length > 0 || files.length > 0;
+    if (!body && !hasImg) { statusEl.textContent = '返信・画像・ファイルのいずれかを入力してください'; return; }
     statusEl.textContent = '';
     btn.disabled = true;
     showLoading('送信中...');
     try {
+      const attachments = await uploadAttachmentList(files);
+      showLoading('送信中...');
       const result = await postAction({
         action: 'board',
         name: boardSubmitName(nameEl),
         body: body,
         parentId: threadId,
-        images: (replyRefs[threadId] || []).map(function (r) { return r.dataUrl; })
+        images: (replyRefs[threadId] || []).map(function (r) { return r.dataUrl; }),
+        attachments: attachments
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       if (result.message) allBoard.push(result.message);
       delete replyRefs[threadId];
+      delete replyFiles[threadId];
       renderBoard();
       refreshBoardThreadModal();
       // 投稿した返信が見えるよう、そのスレッドの返信を開いた状態にする
@@ -16312,21 +16407,26 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const status = document.getElementById('boardStatus');
     const body = document.getElementById('boardBodyInput').value.trim();
     const title = document.getElementById('boardTitleInput').value.trim();
-    // スレッドはタイトルか画像があれば本文が空でも投稿可(親スレ的な使い方)
-    if (!body && !title && boardRefs.length === 0) { status.textContent = 'タイトル・メッセージ・画像のいずれかを入力してください'; return; }
+    // スレッドはタイトルか画像・ファイルがあれば本文が空でも投稿可(親スレ的な使い方)
+    if (!body && !title && boardRefs.length === 0 && boardFiles.length === 0) { status.textContent = 'タイトル・メッセージ・画像・ファイルのいずれかを入力してください'; return; }
     status.textContent = '';
     btn.disabled = true;
     showLoading('送信中...');
     try {
+      const attachments = await uploadAttachmentList(boardFiles);
+      showLoading('送信中...');
       const result = await postAction({
         action: 'board',
         name: boardSubmitName(document.getElementById('boardNameInput')),
         title: document.getElementById('boardTitleInput').value,
         body: body,
-        images: boardRefs.map(function (r) { return r.dataUrl; })
+        images: boardRefs.map(function (r) { return r.dataUrl; }),
+        attachments: attachments
       });
       if (!result || !result.success) throw new Error((result && result.error) || '不明なエラー');
       if (result.message) { allBoard.push(result.message); markBoardThreadRead(result.message.id); }
+      boardFiles.length = 0;
+      boardFileStrip.render();
       document.getElementById('boardTitleInput').value = '';
       document.getElementById('boardBodyInput').value = '';
       resetAutogrow();
