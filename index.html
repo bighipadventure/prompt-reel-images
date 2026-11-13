@@ -1776,7 +1776,7 @@
   }
   .novel-scene-num{
     font-family:var(--font); font-size:11px; font-weight:600;
-    color:var(--accent); background:var(--accent-dim); border:1px solid var(--accent);
+    color:var(--ink); background:var(--surface-2); border:1px solid var(--line);
     border-radius:999px; padding:3px 10px;
   }
   .novel-scene-actions{ display:flex; align-items:center; gap:6px; margin-left:auto; flex-wrap:wrap; }
@@ -1791,11 +1791,12 @@
   .novel-dz{
     flex:0 0 180px; width:180px; min-height:110px;
     display:flex; align-items:center; justify-content:center; text-align:center;
-    background:var(--bg); border:1px dashed var(--line); border-radius:8px;
-    color:var(--ink-dim); font-size:11px; font-family:var(--font);
+    background:var(--field); border:2px dashed var(--line-strong); border-radius:8px;
+    color:var(--ink-dim); font-size:11px; font-family:var(--font); transition:border-color .15s ease, background .15s ease;
     cursor:pointer; overflow:hidden; padding:8px; position:relative;
   }
-  .novel-dz:hover, .novel-dz.dragover{ border-color:var(--accent); color:var(--accent); }
+  .novel-dz:hover{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 3%, var(--field)); }
+  .novel-dz.dragover{ border-color:var(--accent); border-style:solid; background:color-mix(in srgb, var(--accent) 7%, var(--field)); }
   .novel-dz img{ width:100%; height:100%; max-height:150px; object-fit:contain; border-radius:6px; display:block; }
   .novel-dz-clear{
     position:absolute; top:4px; right:4px; z-index:2;
@@ -1822,44 +1823,89 @@
   .novel-editor-head-btns{ display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; }
   .novel-editor-head-btns .novel-mini-btn{ padding:5px 10px; }
   .novel-dz-sub{ color:var(--ink-dim); font-size:10px; }
-  .novel-scene-band{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--line);
-  }
-  .novel-scene-band-num{ font-size:12.5px; font-weight:700; color:var(--ink); font-family:var(--font); }
   .novel-scene-title{ flex:1 1 180px; min-width:0; padding:4px 8px !important; font-size:12px !important; border-radius:6px; }
-  .novel-scene.is-scene-start{ margin-top:10px; }
   .novel-line-list .novel-line-row{ flex-direction:column; align-items:stretch; gap:4px; padding-bottom:6px; border-bottom:1px dashed var(--line); }
   .novel-line-list .novel-line-row:last-child{ border-bottom:none; padding-bottom:0; }
   .novel-line-main{ display:flex; align-items:center; gap:6px; }
   .novel-line-sounds{ display:flex; gap:6px; flex-wrap:wrap; padding-left:22px; }
   .novel-slot{
-    display:inline-flex; align-items:center; gap:4px; max-width:100%; min-width:0;
-    border:1px dashed var(--line); border-radius:6px; padding:2px 4px 2px 2px; background:var(--bg);
-    font-family:var(--font); font-size:11px;
+    display:flex; align-items:stretch; min-width:0; font-family:var(--font); font-size:11px;
+    border:1px solid var(--line); border-radius:6px; background:var(--surface-2); overflow:hidden;
   }
-  .novel-slot.dragover{ border-color:var(--accent); }
-  .novel-slot.has-file{ border-style:solid; border-color:var(--ink-dim); background:var(--surface); }
-  .novel-slot.is-waiting{ border-color:var(--danger); }
-  .novel-slot-tag{ flex:0 0 auto; font-size:10px; color:var(--ink-dim); padding:1px 5px; border-radius:4px; background:var(--surface-2); }
+  .novel-slot-tag{
+    flex:0 0 auto; display:flex; align-items:center; padding:0 9px; font-size:10.5px; color:var(--ink-dim);
+    white-space:nowrap; border-right:1px solid var(--line);
+  }
+  .novel-slot-drop{
+    flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:4px; margin:4px;
+    border:1px dashed var(--line-strong); border-radius:4px; background:var(--field); padding:1px 3px; min-height:24px; box-sizing:border-box;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .novel-slot-drop:hover, .novel-slot.dragover .novel-slot-drop{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 3%, var(--field)); }
+  .novel-slot.dragover .novel-slot-drop{ border-style:solid; }
+  .novel-slot.has-file .novel-slot-drop{ border-style:solid; border-color:var(--line); }
+  .novel-slot.is-waiting .novel-slot-drop{ border-color:color-mix(in srgb, var(--danger) 55%, var(--line-strong)); }
   .novel-slot-pick{
-    border:0; background:none; color:var(--ink-dim); font:inherit; cursor:pointer; padding:2px 2px;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px; text-align:left;
+    flex:1 1 auto; min-width:0; border:0; background:none; color:var(--ink-dim); font:inherit; font-size:11px; cursor:pointer; padding:3px 4px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; justify-content:flex-start; border-radius:3px;
   }
   .novel-slot.has-file .novel-slot-pick{ color:var(--ink); }
   .novel-slot.is-waiting .novel-slot-pick{ color:var(--danger); }
   .novel-slot-pick:hover{ color:var(--accent); }
   .novel-slot-btn{
     flex:0 0 auto; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
-    border-radius:4px; font-size:9px; padding:2px 5px; cursor:pointer; line-height:1.2;
+    border-radius:3px; font-size:9px; padding:2px 6px; cursor:pointer; line-height:1.2;
   }
   .novel-slot-btn.danger:hover{ border-color:var(--danger); color:var(--danger); }
   .novel-slot-btn:hover{ border-color:var(--accent); }
-  .novel-slot-loop{ font-size:10.5px; gap:3px; }
-  .novel-scene-side .novel-slot{ display:flex; flex-wrap:wrap; }
-  .novel-scene-side .novel-slot-pick{ flex:1 1 100px; max-width:none; }
-  .novel-slot-loop{ white-space:nowrap; }
-  .novel-dz-text{ line-height:1.6; }
+  .novel-slot-loop{ flex:0 0 auto; display:flex; align-items:center; padding:0 9px; font-size:10.5px; gap:4px; white-space:nowrap; border-left:1px solid var(--line); }
+  .novel-dz-text{ line-height:1.6; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .novel-dz-icon{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--control); color:var(--ink); margin-bottom:6px; }
+  .novel-dz-icon svg{ width:17px; height:17px; }
+  .novel-dz-title{ font-size:12px; font-weight:700; color:var(--ink); }
+  .novel-dz-text .novel-dz-hint{ margin-top:0; }
+  .novel-sgroup{ border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+  .novel-sgroup-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px 8px 0; border-bottom:1px solid var(--line); }
+  .novel-sgroup.is-collapsed .novel-sgroup-head{ border-bottom:none; }
+  .novel-sgroup.is-collapsed .novel-sgroup-body{ display:none; }
+  .novel-sgroup-toggle{ flex:0 0 auto; width:24px; height:24px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--ink); font-size:11px; line-height:1; cursor:pointer; padding:0; }
+  .novel-sgroup-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+  .novel-sgroup-num{ flex:0 0 auto; font-family:var(--font); font-size:13px; font-weight:700; color:var(--accent); }
+  .novel-sgroup-stat{ flex:0 0 auto; font-family:var(--font); font-size:11px; color:var(--ink-dim); }
+  .novel-sgroup-actions{ display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; }
+  .novel-sgroup-body{ display:flex; flex-direction:column; gap:10px; padding:10px 12px 12px; background:var(--bg); border-radius:0 0 10px 10px; }
+  .novel-sgroup-opts{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .novel-img-list{ display:flex; flex-direction:column; gap:10px; position:relative; }
+  .novel-add-img{
+    align-self:flex-start; font-family:var(--font); font-size:12px; color:var(--ink-dim);
+    background:transparent; border:1px dashed var(--line); border-radius:8px; padding:8px 14px; cursor:pointer;
+  }
+  .novel-add-img:hover{ border-color:var(--accent); color:var(--accent); }
+  .novel-grip{
+    flex:0 0 auto; align-self:stretch; width:28px; display:flex; align-items:center; justify-content:center;
+    color:var(--ink-dim); font-size:15px; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;
+  }
+  .novel-grip:hover{ color:var(--accent); }
+  .novel-scene-head .novel-grip{ margin-left:-12px; width:30px; }
+  .novel-line-main .novel-grip{ width:20px; align-self:center; }
+  #novelSceneList, .novel-img-list, .novel-line-list{ position:relative; }
+  .novel-sorting > *{ transition:transform .22s cubic-bezier(.2,.8,.3,1); }
+  .novel-sorting > .novel-lifted{ z-index:5; position:relative; transition:none; outline:2px solid var(--accent); outline-offset:-1px; }
+  .novel-line-list.novel-sorting > .novel-lifted{ background:var(--surface-2); border-radius:6px; }
+  body.novel-drag-active, body.novel-drag-active *{ cursor:grabbing !important; user-select:none; }
+  .novel-scene-side{ flex:0 0 200px; width:200px; gap:8px; }
+  .novel-scene-side .novel-dz{ aspect-ratio:16 / 10; min-height:0; padding:6px; }
+  .novel-scene-side .novel-dz img, .novel-scene-side .novel-dz video{ max-height:none; }
+  .novel-side-check{ padding:0 2px; }
+  .novel-scene-side .novel-slot{ display:grid; grid-template-columns:minmax(0,1fr) auto; }
+  .novel-scene-side .novel-slot-tag{ grid-row:1; grid-column:1; border-right:0; border-bottom:1px solid var(--line); padding:5px 9px; }
+  .novel-scene-side .novel-slot-loop{ grid-row:1; grid-column:2; border-left:0; border-bottom:1px solid var(--line); padding:5px 9px; }
+  .novel-scene-side .novel-slot-drop{ grid-row:2; grid-column:1 / 3; min-height:32px; }
+  .novel-line-sounds{ display:flex; flex-wrap:wrap; gap:6px 10px; padding-left:26px; }
+  .novel-line-sounds .novel-slot-voice{ flex:0 1 250px; }
+  .novel-line-sounds .novel-slot-sound{ flex:0 1 320px; }
+  .novel-line-sounds .novel-slot-tag{ min-width:3.6em; justify-content:center; }
+  .novel-sgroup-opts .novel-slot{ flex:0 1 360px; }
   .novel-start.is-loading{ cursor:wait; }
   /* 参考作品の選択欄。ノベル投稿モードのときだけ見出し行の右端に出す。
      .base-prompt-display は既定で flex:1 1 200px のため、そのままだと
@@ -3119,12 +3165,11 @@
             <input type="file" id="novelJsonInput" accept=".json,application/json" style="display:none;">
             <input type="file" id="novelBulkInput" accept="image/*,video/*,audio/*" multiple style="display:none;">
           </div>
-          <div class="novel-tools-note">素材の入れ方は2通りです。① JSON を読み込んでから「素材をまとめて追加」: JSON に書かれたファイル名と同じ素材だけが、書かれた場所に入ります(書かれていないファイルは入れません)。② 個別に入れる: 各画像の枠や「声」「効果音」「画像の音」「シーンの音」の欄をクリックするか、ファイルをドロップします。素材を入れない画像・行があってもかまいません。</div>
+          <div class="novel-tools-note">素材の入れ方は2通りです。① JSON を読み込んでから「素材をまとめて追加」: JSON に書かれたファイル名と同じ素材だけが、書かれた場所に入ります(書かれていないファイルは入れません)。② 個別に入れる: 各画像の枠や「音声」「効果音」「画像の音」「シーンの音」の欄をクリックするか、ファイルをドロップします。素材を入れない画像・行があってもかまいません。</div>
         </div>
         <div class="novel-scene-list" id="novelSceneList"></div>
         <div class="novel-empty-hint" id="novelEmptyHint">まだシーンがありません。「＋ シーンを追加」から作成するか、JSON を読み込んでください。</div>
         <div class="novel-editor-actions">
-          <button class="btn-ghost" type="button" id="novelAddImageBtn">＋ 画像を追加</button>
           <button class="btn-ghost" type="button" id="novelAddSceneBtn">＋ シーンを追加</button>
           <button class="btn-ghost" type="button" id="novelPreviewBtn">プレビューで動作確認</button>
           <span class="status" id="novelEditorStatus"></span>
@@ -4359,7 +4404,7 @@
       </div>
       <div class="qa-item novel-only">
         <div class="qa-q">ノベルゲームにセリフの音声や動画・BGM を付けるには？</div>
-        <div class="qa-a">シナリオは<b>シーン(場面)→ 画像(背景1枚ぶん)→ セリフ行</b>の3段で組みます。背景には画像のほか<b>動画やGIF</b>も入れられ(動画は「動画の音を流す」を選べます)、音は「シーンの音」(シーンの間ずっと)・「画像の音」(その画像の間)・「効果音」(その行)の3か所と、セリフごとの「声」(1行に1つ)を別々に設定できます。素材の入れ方は2通りです。①投稿画面右上の「テンプレートJSON」「AI向け仕様書(MD)」を AI に渡して JSON を作らせ、「JSONを読み込む」→「素材をまとめて追加」: <b>JSON に書かれたファイル名と同じ素材だけ</b>が書かれた場所に入り、書かれていないファイルは入りません。②個別に入れる: 画像の枠や「声」「効果音」「画像の音」「シーンの音」の欄をクリックするか、ファイルをドロップします。素材を入れない画像や行があってもかまいません。セリフのまとまりは、行の「✂」(この行から新しい画像に分ける)・「前の画像とつなげる」・「ここから新しいシーン」・「前のシーンとつなげる」で調整できます。投稿したゲームは、詳細画面の「ダウンロード(ZIP)」で、パソコンでそのまま遊べる形(index.html と素材)で保存できます。</div>
+        <div class="qa-a">シナリオは<b>シーン(場面)→ 画像(背景1枚ぶん)→ セリフ行</b>の3段で組みます。背景には画像のほか<b>動画やGIF</b>も入れられ(動画は「動画の音を流す」を選べます)、音は「シーンの音」(シーンの間ずっと)・「画像の音」(その画像の間)・「効果音」(その行)の3か所と、セリフごとの「音声」(1行に1つ)を別々に設定できます。素材の入れ方は2通りです。①投稿画面右上の「テンプレートJSON」「AI向け仕様書(MD)」を AI に渡して JSON を作らせ、「JSONを読み込む」→「素材をまとめて追加」: <b>JSON に書かれたファイル名と同じ素材だけ</b>が書かれた場所に入り、書かれていないファイルは入りません。②個別に入れる: 画像の枠や「音声」「効果音」「画像の音」「シーンの音」の欄をクリックするか、ファイルをドロップします。素材を入れない画像や行があってもかまいません。セリフのまとまりは、行の「✂」(この行から新しい画像に分ける)・「前の画像とつなげる」・「ここから新しいシーン」・「前のシーンとつなげる」で調整できます。投稿したゲームは、詳細画面の「ダウンロード(ZIP)」で、パソコンでそのまま遊べる形(index.html と素材)で保存できます。</div>
       </div>
 
       <div class="qa-item">
@@ -13974,8 +14019,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return '<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
       '<title>' + escapeHtml(title) + '</title>\n<style>\n' + novelExportCss() + '\n' +
-      'body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); }\n' +
-      '.novel-standalone{ max-width:1000px; margin:0 auto; padding:20px 16px 40px; }\n' +
+      'body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); color:var(--ink); font-family:var(--font); }\n' +
+      '.novel-standalone{ box-sizing:border-box; width:100%; max-width:min(1000px, max(360px, calc((100vh - 220px) * 16 / 9 + 32px))); padding:20px 16px; }\n' +
       '.novel-standalone h1{ font-size:16px; font-weight:600; margin:0 0 14px; }\n' +
       '</style>\n</head>\n<body>\n<div class="novel-standalone">\n<h1>' + escapeHtml(title) + '</h1>\n<div id="novel"></div>\n</div>\n' +
       '<script>\n' + novelScriptSafe(js) + '<\/script>\n</body>\n</html>\n';
@@ -14715,9 +14760,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     exportName: 'novel_scenario.json',
     templateName: 'novel_template.json',
     specName: 'novel_json_spec_for_ai.md',
-    slotEmpty: { voice: '声を選ぶ', sound: '効果音を選ぶ', imageSound: '画像の音を選ぶ', sceneSound: 'シーンの音を選ぶ' },
+    slotEmpty: { voice: 'ドラッグ&ドロップ / クリック', sound: 'ドラッグ&ドロップ / クリック', imageSound: 'ドラッグ&ドロップ / クリック', sceneSound: 'ドラッグ&ドロップ / クリック' },
+    groupRemove: 'このシーンの画像・セリフ・素材をすべて削除しますか？',
     slotWaiting: '待ち: {name}',
-    slotLabel: { voice: '声', sound: '効果音', imageSound: '画像の音', sceneSound: 'シーンの音' }
+    slotLabel: { voice: '音声', sound: '効果音', imageSound: '画像の音', sceneSound: 'シーンの音' }
   };
   const NOVEL_JSON_TEMPLATE = {
     format: 'prompt-reel-novel',
@@ -14940,9 +14986,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const label = f ? f.name : (slot.hint ? novelFillMsg(NOVEL_EDITOR_MSG.slotWaiting, { name: slot.hint }) : NOVEL_EDITOR_MSG.slotEmpty[kind]);
     return '<div class="novel-slot novel-slot-' + kind + (f ? ' has-file' : (slot.hint ? ' is-waiting' : '')) + '" data-slot="' + path + '">' +
       '<span class="novel-slot-tag">' + escapeHtml(NOVEL_EDITOR_MSG.slotLabel[kind]) + '</span>' +
-      '<button type="button" class="novel-slot-pick" data-slot-pick title="クリックで選ぶ / ここへドラッグ&ドロップ">' + escapeHtml(label) + '</button>' +
-      (f ? '<button type="button" class="novel-slot-btn" data-slot-play title="試聴">▶</button>' : '') +
-      (f || slot.hint ? '<button type="button" class="novel-slot-btn danger" data-slot-clear title="外す">✕</button>' : '') +
+      '<div class="novel-slot-drop">' +
+        '<button type="button" class="novel-slot-pick" data-slot-pick title="クリックで選ぶ / ここへドラッグ&ドロップ">' + escapeHtml(label) + '</button>' +
+        (f ? '<button type="button" class="novel-slot-btn" data-slot-play title="試聴">▶</button>' : '') +
+        (f || slot.hint ? '<button type="button" class="novel-slot-btn danger" data-slot-clear title="外す">✕</button>' : '') +
+      '</div>' +
       (withLoop ? '<label class="novel-check novel-slot-loop" title="くり返し再生"><input type="checkbox" data-slot-loop' + (slot.loop ? ' checked' : '') + '>くり返し</label>' : '') +
     '</div>';
   }
@@ -14966,7 +15014,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return '' +
       '<div class="novel-line-row" data-line-idx="' + li + '">' +
         '<div class="novel-line-main">' +
-          '<span class="novel-line-handle" data-line-handle title="ドラッグで並び替え">⠿</span>' +
+          '<span class="novel-line-handle novel-grip" data-line-handle title="ドラッグで並び替え">⠿</span>' +
           '<input type="text" class="novel-line-name" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-name placeholder="話者(空欄可)" value="' + escapeHtml(l.name || '') + '">' +
           '<input type="text" class="novel-line-text" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-text placeholder="セリフ・地の文" value="' + escapeHtml(l.text || '') + '">' +
           '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-split' + (li === 0 ? ' disabled' : '') + ' title="この行から新しい画像に分ける">✂</button>' +
@@ -14991,9 +15039,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function captureNovelFocus() {
     const el = document.activeElement;
     if (!el || !el.closest) return null;
+    if (el.hasAttribute('data-scene-title')) {
+      const grp = el.closest('.novel-sgroup');
+      return grp ? { scene: Number(grp.dataset.head), title: true, pos: el.selectionStart } : null;
+    }
     const card = el.closest('.novel-scene');
     if (!card) return null;
-    if (el.hasAttribute('data-scene-title')) return { scene: Number(card.dataset.sceneIdx), title: true, pos: el.selectionStart };
     const row = el.closest('.novel-line-row');
     if (!row) return null;
     const field = el.hasAttribute('data-line-name') ? 'name' : (el.hasAttribute('data-line-text') ? 'text' : null);
@@ -15008,7 +15059,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function restoreNovelFocus(snap) {
     if (!snap) return;
     const el = snap.title
-      ? document.querySelector('.novel-scene[data-scene-idx="' + snap.scene + '"] [data-scene-title]')
+      ? document.querySelector('.novel-sgroup[data-head="' + snap.scene + '"] [data-scene-title]')
       : document.querySelector('.novel-scene[data-scene-idx="' + snap.scene + '"] .novel-line-row[data-line-idx="' + snap.line + '"] [data-line-' + snap.field + ']');
     if (!el) return;
     el.focus();
@@ -15022,72 +15073,145 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           (novelSceneHasMedia(s)
             ? '<button class="novel-dz-clear" type="button" tabindex="-1" data-scene-clearimg title="画像・動画を外す">✕</button>' +
               '<span class="novel-dz-kind">' + novelKindLabel(s.kind) + '</span>' + novelSceneMediaHtml(s)
-            : '<div class="novel-dz-text">' + (s.imageName
-              ? '<span class="novel-dz-hint">待ち: ' + escapeHtml(s.imageName) + '</span><br>画像・動画・GIF をドロップ<br>またはクリック'
-              : '画像・動画・GIF<br>ドラッグ&ドロップ<br>またはクリック<br><span class="novel-dz-sub">(入れなくてもかまいません)</span>') + '</div>') +
+            : '<div class="novel-dz-text">' +
+                '<span class="novel-dz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>' +
+                (s.imageName ? '<span class="novel-dz-hint">待ち: ' + escapeHtml(s.imageName) + '</span>' : '<span class="novel-dz-title">画像・動画・GIF</span>') +
+                '<span class="novel-dz-sub">ドラッグ&ドロップ / クリック' + (s.imageName ? '' : '<br>(入れなくてもかまいません)') + '</span>' +
+              '</div>') +
         '</div>' +
         (s.kind === 'video' && novelSceneHasMedia(s)
-          ? '<label class="novel-check"><input type="checkbox" data-scene-bgsound' + (s.bgSound ? ' checked' : '') + '>動画の音を流す</label>'
+          ? '<label class="novel-check novel-side-check"><input type="checkbox" data-scene-bgsound' + (s.bgSound ? ' checked' : '') + '>動画の音を流す</label>'
           : '') +
         novelSlotHtml(s.sound, 'b' + bi + '.sound', true) +
       '</div>';
   }
 
-  function novelSceneNumbers() {
-    let n = 0;
-    return novelScenes.map(function (s, i) {
-      if (i === 0 || s.sceneStart) n++;
-      return n;
+  function novelGroupRanges() {
+    const out = [];
+    novelScenes.forEach(function (s, i) {
+      if (i === 0 || s.sceneStart) out.push({ start: i, end: i });
+      else out[out.length - 1].end = i;
     });
+    return out;
+  }
+
+  const novelCollapsed = new WeakSet();
+
+  function novelImageCardHtml(s, i, k) {
+    const lines = s.lines;
+    const filled = lines.filter(function (l) { return (l.name || '').trim() || (l.text || '').trim(); }).length;
+    const voiced = lines.filter(function (l) { return l.voice && l.voice.key; }).length;
+    return '' +
+      '<div class="novel-scene" data-scene-idx="' + i + '">' +
+        '<div class="novel-scene-head">' +
+          '<span class="novel-grip" data-img-grip title="ドラッグで並び替え">⠿</span>' +
+          '<span class="novel-scene-num">画像 ' + (k + 1) + '</span>' +
+          '<span class="novel-scene-count">' + filled + '行' + (voiced ? ' / 音声 ' + voiced : '') + '</span>' +
+          '<div class="novel-scene-actions">' +
+            (k > 0 ? '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-start title="この画像から新しいシーンにする">ここから新しいシーン</button>' : '') +
+            (k > 0 ? '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-merge title="この画像のセリフを、前の画像の続きにする">前の画像とつなげる</button>' : '') +
+            '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-dup title="この画像を複製">複製</button>' +
+            '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-scene-remove>削除</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="novel-scene-body">' +
+          novelSceneSideHtml(s, i) +
+          '<div class="novel-scene-fields">' +
+            '<div class="novel-line-list" data-line-list>' +
+              lines.map(function (l, li) { return novelLineRowHtml(l, li, lines.length, i); }).join('') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function novelGroupHtml(g, gi) {
+    const head = novelScenes[g.start];
+    const collapsed = novelCollapsed.has(head);
+    let imgs = '';
+    let lineCount = 0;
+    for (let i = g.start; i <= g.end; i++) {
+      imgs += novelImageCardHtml(novelScenes[i], i, i - g.start);
+      lineCount += novelScenes[i].lines.filter(function (l) { return (l.name || '').trim() || (l.text || '').trim(); }).length;
+    }
+    return '' +
+      '<div class="novel-sgroup' + (collapsed ? ' is-collapsed' : '') + '" data-group="' + gi + '" data-head="' + g.start + '">' +
+        '<div class="novel-sgroup-head">' +
+          '<span class="novel-grip" data-group-grip title="ドラッグでシーンを並び替え">⠿</span>' +
+          '<button type="button" class="novel-sgroup-toggle" tabindex="-1" data-group-toggle title="' + (collapsed ? 'ひらく' : 'たたむ') + '">' + (collapsed ? '▸' : '▾') + '</button>' +
+          '<span class="novel-sgroup-num">シーン ' + (gi + 1) + '</span>' +
+          '<input type="text" class="novel-scene-title" data-pm-skip autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" data-scene-title placeholder="シーンの名前(任意・画面には出ません)" value="' + escapeHtml(head.sceneTitle || '') + '">' +
+          '<span class="novel-sgroup-stat">画像 ' + (g.end - g.start + 1) + '・' + lineCount + '行</span>' +
+          '<div class="novel-sgroup-actions">' +
+            (gi > 0 ? '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-unstart title="このシーンを前のシーンの続きにする">前のシーンとつなげる</button>' : '') +
+            '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-group-remove>シーンを削除</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="novel-sgroup-body">' +
+          '<div class="novel-sgroup-opts">' + novelSlotHtml(head.sceneSound, 'b' + g.start + '.sceneSound', true) + '</div>' +
+          '<div class="novel-img-list" data-img-list>' + imgs + '</div>' +
+          '<button type="button" class="novel-add-img" data-group-addimg>＋ このシーンに画像を追加</button>' +
+        '</div>' +
+      '</div>';
   }
 
   function renderNovelSceneList() {
     const listEl = document.getElementById('novelSceneList');
     const hintEl = document.getElementById('novelEmptyHint');
-    if (!listEl) return;
+    if (!listEl || novelDragging) return;
     const snap = captureNovelFocus();
     if (novelScenes[0]) novelScenes[0].sceneStart = true;
     novelScenes.forEach(ensureTrailingBlankLine);
     hintEl.style.display = novelScenes.length ? 'none' : '';
-    const sceneNos = novelSceneNumbers();
-    listEl.innerHTML = novelScenes.map(function (s, i) {
-      const lines = s.lines;
-      const filled = lines.filter(function (l) { return (l.name || '').trim() || (l.text || '').trim(); }).length;
-      const voiced = lines.filter(function (l) { return l.voice && l.voice.key; }).length;
-      const head = s.sceneStart
-        ? '<div class="novel-scene-band">' +
-            '<span class="novel-scene-band-num">シーン ' + sceneNos[i] + '</span>' +
-            '<input type="text" class="novel-scene-title" data-pm-skip autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" data-scene-title placeholder="シーンの名前(任意・画面には出ません)" value="' + escapeHtml(s.sceneTitle || '') + '">' +
-            novelSlotHtml(s.sceneSound, 'b' + i + '.sceneSound', true) +
-            '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-unstart' + (i === 0 ? ' disabled' : '') + ' title="このシーンを前のシーンの続きにする">前のシーンとつなげる</button>' +
-          '</div>'
-        : '';
-      return '' +
-        '<div class="novel-scene' + (s.sceneStart ? ' is-scene-start' : '') + '" data-scene-idx="' + i + '">' +
-          head +
-          '<div class="novel-scene-head">' +
-            '<span class="novel-scene-handle" data-scene-handle title="ドラッグで並び替え">⠿</span>' +
-            '<span class="novel-scene-num">画像 ' + (i + 1) + '</span>' +
-            '<span class="novel-scene-count">' + filled + '行' + (voiced ? ' / 声 ' + voiced : '') + '</span>' +
-            '<div class="novel-scene-actions">' +
-              (s.sceneStart ? '' : '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-start title="この画像から新しいシーンにする">ここから新しいシーン</button>') +
-              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-merge' + (i === 0 || s.sceneStart ? ' disabled' : '') + ' title="この画像のセリフを、前の画像の続きにする">前の画像とつなげる</button>' +
-              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-up' + (i === 0 ? ' disabled' : '') + '>↑ 上へ</button>' +
-              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-down' + (i === novelScenes.length - 1 ? ' disabled' : '') + '>↓ 下へ</button>' +
-              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-dup title="この画像を複製">複製</button>' +
-              '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-scene-remove>削除</button>' +
-            '</div>' +
-          '</div>' +
-          '<div class="novel-scene-body">' +
-            novelSceneSideHtml(s, i) +
-            '<div class="novel-scene-fields">' +
-              '<div class="novel-line-list" data-line-list>' +
-                lines.map(function (l, li) { return novelLineRowHtml(l, li, lines.length, i); }).join('') +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-    }).join('');
+    const groups = novelGroupRanges();
+    listEl.innerHTML = groups.map(novelGroupHtml).join('');
+
+    listEl.querySelectorAll('.novel-sgroup').forEach(function (groupEl) {
+      const g = groups[Number(groupEl.dataset.group)];
+      const head = novelScenes[g.start];
+      const titleEl = groupEl.querySelector('[data-scene-title]');
+      titleEl.addEventListener('input', function () { head.sceneTitle = titleEl.value; });
+      groupEl.querySelector('[data-group-toggle]').addEventListener('click', function () {
+        const on = !novelCollapsed.has(head);
+        if (on) novelCollapsed.add(head); else novelCollapsed.delete(head);
+        groupEl.classList.toggle('is-collapsed', on);
+        this.textContent = on ? '▸' : '▾';
+        this.title = on ? 'ひらく' : 'たたむ';
+      });
+      const unstartBtn = groupEl.querySelector('[data-scene-unstart]');
+      if (unstartBtn) unstartBtn.addEventListener('click', function () { novelSetSceneStart(g.start, false); });
+      groupEl.querySelector('[data-group-remove]').addEventListener('click', function () {
+        const used = novelScenes.slice(g.start, g.end + 1).some(function (b) {
+          return novelSceneHasMedia(b) || b.lines.some(novelLineFilled) || novelBlockHasSound(b);
+        });
+        if (used && !window.confirm(NOVEL_EDITOR_MSG.groupRemove)) return;
+        novelScenes.splice(g.start, g.end - g.start + 1);
+        if (novelScenes[g.start]) novelScenes[g.start].sceneStart = true;
+        renderNovelSceneList();
+      });
+      groupEl.querySelector('[data-group-addimg]').addEventListener('click', function () {
+        novelScenes.splice(g.end + 1, 0, novelBlankScene(false));
+        renderNovelSceneList();
+      });
+      groupEl.querySelector('[data-group-grip]').addEventListener('pointerdown', function (e) {
+        novelLiveDrag(e, groupEl, listEl, '.novel-sgroup', 'group', function (order) {
+          const ranges = novelGroupRanges();
+          const next = [];
+          order.forEach(function (gi) {
+            const r = ranges[gi];
+            for (let i = r.start; i <= r.end; i++) next.push(novelScenes[i]);
+          });
+          next.forEach(function (b, i) { if (i === 0) b.sceneStart = true; });
+          novelScenes = next;
+        });
+      });
+      const imgList = groupEl.querySelector('[data-img-list]');
+      imgList.querySelectorAll(':scope > .novel-scene').forEach(function (card) {
+        card.querySelector('[data-img-grip]').addEventListener('pointerdown', function (e) {
+          novelLiveDrag(e, card, imgList, '.novel-scene', 'scene-idx', function (order) { novelReorderImages(g, order); });
+        });
+      });
+    });
 
     listEl.querySelectorAll('.novel-scene').forEach(function (card) {
       const idx = Number(card.dataset.sceneIdx);
@@ -15144,7 +15268,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           novelScenes[idx].lines.splice(li, 1);
           renderNovelSceneList();
         });
-        wireNovelLineDrag(row, idx, li);
+        const lineList = cardEl.querySelector('[data-line-list]');
+        row.querySelector('[data-line-handle]').addEventListener('pointerdown', function (e) {
+          novelLiveDrag(e, row, lineList, '.novel-line-row', 'line-idx', function (order) {
+            const lines = novelScenes[sceneIdx].lines;
+            novelScenes[sceneIdx].lines = order.map(function (i) { return lines[i]; });
+          });
+        });
       }
 
       // 末尾に空行を1行だけ足し、その行のDOMだけを追加する(既存の入力欄には触らない)
@@ -15176,29 +15306,29 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           const voiced = lines.filter(function (l) { return l.voice && l.voice.key; }).length;
           badge.textContent = lines.filter(function (l) {
             return (l.name || '').trim() || (l.text || '').trim();
-          }).length + '行' + (voiced ? ' / 声 ' + voiced : '');
+          }).length + '行' + (voiced ? ' / 音声 ' + voiced : '');
         }
       }
 
-      const titleEl = card.querySelector('[data-scene-title]');
-      if (titleEl) titleEl.addEventListener('input', function () { novelScenes[idx].sceneTitle = titleEl.value; });
-      const unstartBtn = card.querySelector('[data-scene-unstart]');
-      if (unstartBtn) unstartBtn.addEventListener('click', function () { novelSetSceneStart(idx, false); });
       const startBtn = card.querySelector('[data-scene-start]');
       if (startBtn) startBtn.addEventListener('click', function () { novelSetSceneStart(idx, true); });
-      card.querySelector('[data-scene-merge]').addEventListener('click', function () { novelMergeScene(idx); });
-      card.querySelector('[data-scene-up]').addEventListener('click', function () { novelMoveScene(idx, -1); });
-      card.querySelector('[data-scene-down]').addEventListener('click', function () { novelMoveScene(idx, 1); });
+      const mergeBtn = card.querySelector('[data-scene-merge]');
+      if (mergeBtn) mergeBtn.addEventListener('click', function () { novelMergeScene(idx); });
       card.querySelector('[data-scene-dup]').addEventListener('click', function () {
         // 画像は同じURL/データを共有するので、複製してもアップロードは増えない
         novelScenes.splice(idx + 1, 0, novelCopyScene(novelScenes[idx]));
         renderNovelSceneList();
       });
-      wireNovelSceneDrag(card, idx);
       card.querySelector('[data-scene-remove]').addEventListener('click', function () {
         const wasStart = novelScenes[idx].sceneStart;
-        novelScenes.splice(idx, 1);
-        if (wasStart && novelScenes[idx] && !novelScenes[idx].sceneStart) novelScenes[idx].sceneStart = true;
+        const removed = novelScenes.splice(idx, 1)[0];
+        const nextBlock = novelScenes[idx];
+        if (wasStart && nextBlock && !nextBlock.sceneStart) {
+          nextBlock.sceneStart = true;
+          nextBlock.sceneTitle = removed.sceneTitle;
+          nextBlock.sceneSound = removed.sceneSound;
+          if (novelCollapsed.has(removed)) novelCollapsed.add(nextBlock);
+        }
         renderNovelSceneList();
       });
       const clearBtn = card.querySelector('[data-scene-clearimg]');
@@ -15214,6 +15344,113 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       wireNovelSceneDropzone(card.querySelector('[data-scene-dz]'), idx);
     });
     restoreNovelFocus(snap);
+  }
+
+  function novelReorderImages(g, order) {
+    const blocks = order.map(function (i) { return novelScenes[i]; });
+    const oldHead = novelScenes[g.start];
+    const newHead = blocks[0];
+    if (oldHead !== newHead) {
+      newHead.sceneStart = true;
+      oldHead.sceneStart = false;
+      ['sceneTitle', 'sceneSound'].forEach(function (k) { const t = newHead[k]; newHead[k] = oldHead[k]; oldHead[k] = t; });
+      if (novelCollapsed.has(oldHead)) { novelCollapsed.delete(oldHead); novelCollapsed.add(newHead); }
+    }
+    Array.prototype.splice.apply(novelScenes, [g.start, blocks.length].concat(blocks));
+  }
+
+  // ===== NOVEL LIVE REORDER =====
+  let novelDragging = false;
+
+  function novelLiveDrag(e, srcEl, container, selector, key, apply) {
+    if (novelDragging || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    novelDragging = true;
+    const attr = 'data-' + key;
+    function units() { return Array.prototype.filter.call(container.children, function (el) { return el.matches(selector); }); }
+    const before = units().map(function (el) { return el.getAttribute(attr); }).join(',');
+    const grabOffset = e.clientY - srcEl.getBoundingClientRect().top;
+    let lastY = e.clientY;
+    let raf = 0;
+    container.classList.add('novel-sorting');
+    document.body.classList.add('novel-drag-active');
+    srcEl.classList.add('novel-lifted');
+
+    function pointerIn() { return lastY - container.getBoundingClientRect().top; }
+
+    function reorder() {
+      const all = units();
+      const others = all.filter(function (el) { return el !== srcEl; });
+      if (!others.length) return;
+      const p = pointerIn() - grabOffset + srcEl.offsetHeight / 2;
+      let idx = 0;
+      others.forEach(function (el) { if (el.offsetTop + el.offsetHeight / 2 < p) idx++; });
+      if (idx === all.indexOf(srcEl)) return;
+      const top = container.getBoundingClientRect().top;
+      const visual = others.map(function (el) { return el.getBoundingClientRect().top - top; });
+      const ref = idx < others.length ? others[idx] : others[others.length - 1].nextSibling;
+      container.insertBefore(srcEl, ref);
+      others.forEach(function (el, i) {
+        const d = visual[i] - el.offsetTop;
+        el.style.transition = 'none';
+        el.style.transform = d ? 'translateY(' + d + 'px)' : '';
+      });
+      container.getBoundingClientRect();
+      others.forEach(function (el) { el.style.transition = ''; el.style.transform = ''; });
+    }
+
+    function place() {
+      const all = units();
+      const top = srcEl.offsetTop;
+      const lo = all[0].offsetTop;
+      const last = all[all.length - 1];
+      const hi = last.offsetTop + last.offsetHeight - srcEl.offsetHeight;
+      const want = Math.max(lo, Math.min(hi, pointerIn() - grabOffset));
+      srcEl.style.transform = 'translateY(' + (want - top) + 'px)';
+    }
+
+    function update() { reorder(); place(); }
+
+    function tick() {
+      raf = 0;
+      const edge = 60;
+      let dy = 0;
+      if (lastY < edge) dy = -Math.min(20, Math.ceil((edge - lastY) / 3));
+      else if (lastY > window.innerHeight - edge) dy = Math.min(20, Math.ceil((lastY - (window.innerHeight - edge)) / 3));
+      if (!dy) return;
+      window.scrollBy(0, dy);
+      update();
+      raf = requestAnimationFrame(tick);
+    }
+
+    function onMove(ev) {
+      lastY = ev.clientY;
+      update();
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+
+    function finish(ok) {
+      if (raf) cancelAnimationFrame(raf);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onCancel);
+      document.body.classList.remove('novel-drag-active');
+      srcEl.classList.remove('novel-lifted');
+      srcEl.style.transform = '';
+      setTimeout(function () {
+        container.classList.remove('novel-sorting');
+        novelDragging = false;
+        const order = units().map(function (el) { return Number(el.getAttribute(attr)); });
+        if (ok && order.join(',') !== before) apply(order);
+        renderNovelSceneList();
+      }, 230);
+    }
+    function onUp() { finish(true); }
+    function onCancel() { finish(false); }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
   }
 
   // ===== NOVEL SOUND SLOTS =====
@@ -15310,47 +15547,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     s.file = null; s.objUrl = ''; s.size = 0; s.name = ''; s.uploadId = '';
   }
 
-  /* 会話行のドラッグ並び替え。入力欄のテキスト選択を壊さないよう、
-     ハンドルを押している間だけ行を draggable にする。 */
-  let novelDragFrom = null;
-  function wireNovelLineDrag(row, sceneIdx, lineIdx) {
-    const handle = row.querySelector('[data-line-handle]');
-    if (!handle) return;
-    handle.addEventListener('mousedown', function () { row.setAttribute('draggable', 'true'); });
-    handle.addEventListener('touchstart', function () { row.setAttribute('draggable', 'true'); }, { passive: true });
-    row.addEventListener('dragstart', function (e) {
-      novelDragFrom = { scene: sceneIdx, line: lineIdx };
-      row.classList.add('dragging');
-      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(lineIdx)); } catch (err) {}
-    });
-    row.addEventListener('dragend', function () {
-      row.removeAttribute('draggable');
-      row.classList.remove('dragging');
-      document.querySelectorAll('.novel-line-row.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
-      novelDragFrom = null;
-    });
-    row.addEventListener('dragover', function (e) {
-      if (!novelDragFrom || novelDragFrom.scene !== sceneIdx) return;   // 同じシーン内のみ
-      e.preventDefault();
-      try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
-      row.classList.add('drop-target');
-    });
-    row.addEventListener('dragleave', function () { row.classList.remove('drop-target'); });
-    row.addEventListener('drop', function (e) {
-      if (!novelDragFrom || novelDragFrom.scene !== sceneIdx) return;
-      e.preventDefault();
-      const from = novelDragFrom.line;
-      const to = lineIdx;
-      novelDragFrom = null;
-      row.classList.remove('drop-target');
-      if (from === to) return;
-      const lines = novelScenes[sceneIdx].lines;
-      const moved = lines.splice(from, 1)[0];
-      lines.splice(to, 0, moved);
-      renderNovelSceneList();
-    });
-  }
-
   function novelMoveLine(sceneIdx, lineIdx, delta) {
     const lines = novelScenes[sceneIdx].lines;
     const to = lineIdx + delta;
@@ -15365,68 +15561,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function focusNovelLine(sceneIdx, lineIdx) {
     const el = document.querySelector('.novel-scene[data-scene-idx="' + sceneIdx + '"] .novel-line-row[data-line-idx="' + lineIdx + '"] [data-line-text]');
     if (el) el.focus();
-  }
-
-  /* シーンのドラッグ並び替え。会話行と同じく、ハンドルを押している間だけ draggable にする。
-     dragover/drop はカード個別ではなく一覧コンテナへ委譲する(カード内の input などの上に
-     落とされてもドロップを取りこぼさないようにするため)。 */
-  let novelSceneDragFrom = null;
-  function wireNovelSceneDrag(card, sceneIdx) {
-    const handle = card.querySelector('[data-scene-handle]');
-    if (!handle) return;
-    handle.addEventListener('mousedown', function () { card.setAttribute('draggable', 'true'); });
-    handle.addEventListener('touchstart', function () { card.setAttribute('draggable', 'true'); }, { passive: true });
-    card.addEventListener('dragstart', function (e) {
-      novelSceneDragFrom = sceneIdx;
-      card.classList.add('dragging');
-      e.stopPropagation();
-      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'scene' + sceneIdx); } catch (err) {}
-    });
-    card.addEventListener('dragend', function () {
-      card.removeAttribute('draggable');
-      card.classList.remove('dragging');
-      document.querySelectorAll('.novel-scene.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
-      novelSceneDragFrom = null;
-    });
-  }
-
-  (function wireNovelSceneListDrop() {
-    const listEl = document.getElementById('novelSceneList');
-    if (!listEl) return;
-    function targetIdx(e) {
-      const card = e.target && e.target.closest ? e.target.closest('.novel-scene') : null;
-      return card ? Number(card.dataset.sceneIdx) : null;
-    }
-    listEl.addEventListener('dragover', function (e) {
-      if (novelSceneDragFrom === null) return;
-      e.preventDefault();
-      try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
-      const to = targetIdx(e);
-      listEl.querySelectorAll('.novel-scene').forEach(function (el) {
-        el.classList.toggle('drop-target', to !== null && Number(el.dataset.sceneIdx) === to && to !== novelSceneDragFrom);
-      });
-    });
-    listEl.addEventListener('drop', function (e) {
-      if (novelSceneDragFrom === null) return;
-      e.preventDefault();
-      const from = novelSceneDragFrom;
-      const to = targetIdx(e);
-      novelSceneDragFrom = null;
-      listEl.querySelectorAll('.novel-scene').forEach(function (el) { el.classList.remove('drop-target'); });
-      if (to === null || from === to) return;
-      const moved = novelScenes.splice(from, 1)[0];
-      novelScenes.splice(to, 0, moved);
-      renderNovelSceneList();
-    });
-  })();
-
-  function novelMoveScene(idx, delta) {
-    const to = idx + delta;
-    if (to < 0 || to >= novelScenes.length) return;
-    const tmp = novelScenes[idx];
-    novelScenes[idx] = novelScenes[to];
-    novelScenes[to] = tmp;
-    renderNovelSceneList();
   }
 
   function wireNovelSceneDropzone(dz, idx) {
@@ -15823,10 +15957,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   document.getElementById('novelAddSceneBtn').addEventListener('click', function () {
     novelScenes.push(novelBlankScene(true));
-    renderNovelSceneList();
-  });
-  document.getElementById('novelAddImageBtn').addEventListener('click', function () {
-    novelScenes.push(novelBlankScene(!novelScenes.length));
     renderNovelSceneList();
   });
   (function wireNovelTools() {
