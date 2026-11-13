@@ -1804,6 +1804,63 @@
   }
   .novel-dz-clear:hover{ border-color:var(--danger); color:var(--danger); }
   .novel-scene-fields{ flex:1 1 260px; min-width:0; display:flex; flex-direction:column; gap:8px; }
+  .novel-scene-side{ flex:0 0 180px; width:180px; display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .novel-scene-side .novel-dz{ flex:0 0 auto; width:auto; }
+  .novel-dz video{ width:100%; height:100%; max-height:150px; object-fit:contain; border-radius:6px; display:block; }
+  .novel-dz-kind{
+    position:absolute; top:4px; left:4px; z-index:2;
+    background:rgba(0,0,0,.65); color:#fff; border-radius:6px; font-size:10px; padding:2px 6px;
+  }
+  .novel-dz-hint{ display:inline-block; margin-top:6px; color:var(--ink); word-break:break-all; }
+  .novel-check{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-dim); font-family:var(--font); cursor:pointer; }
+  .novel-check input{ margin:0; }
+  .novel-tools{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+  .novel-tools-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .novel-tools-note{ font-size:11px; line-height:1.6; color:var(--ink-dim); font-family:var(--font); }
+  .novel-editor-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:18px 0 8px; }
+  .novel-editor-head .field-label{ margin:0; }
+  .novel-editor-head-btns{ display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; }
+  .novel-editor-head-btns .novel-mini-btn{ padding:5px 10px; }
+  .novel-dz-sub{ color:var(--ink-dim); font-size:10px; }
+  .novel-scene-band{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--line);
+  }
+  .novel-scene-band-num{ font-size:12.5px; font-weight:700; color:var(--ink); font-family:var(--font); }
+  .novel-scene-title{ flex:1 1 180px; min-width:0; padding:4px 8px !important; font-size:12px !important; border-radius:6px; }
+  .novel-scene.is-scene-start{ margin-top:10px; }
+  .novel-line-list .novel-line-row{ flex-direction:column; align-items:stretch; gap:4px; padding-bottom:6px; border-bottom:1px dashed var(--line); }
+  .novel-line-list .novel-line-row:last-child{ border-bottom:none; padding-bottom:0; }
+  .novel-line-main{ display:flex; align-items:center; gap:6px; }
+  .novel-line-sounds{ display:flex; gap:6px; flex-wrap:wrap; padding-left:22px; }
+  .novel-slot{
+    display:inline-flex; align-items:center; gap:4px; max-width:100%; min-width:0;
+    border:1px dashed var(--line); border-radius:6px; padding:2px 4px 2px 2px; background:var(--bg);
+    font-family:var(--font); font-size:11px;
+  }
+  .novel-slot.dragover{ border-color:var(--accent); }
+  .novel-slot.has-file{ border-style:solid; border-color:var(--ink-dim); background:var(--surface); }
+  .novel-slot.is-waiting{ border-color:var(--danger); }
+  .novel-slot-tag{ flex:0 0 auto; font-size:10px; color:var(--ink-dim); padding:1px 5px; border-radius:4px; background:var(--surface-2); }
+  .novel-slot-pick{
+    border:0; background:none; color:var(--ink-dim); font:inherit; cursor:pointer; padding:2px 2px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px; text-align:left;
+  }
+  .novel-slot.has-file .novel-slot-pick{ color:var(--ink); }
+  .novel-slot.is-waiting .novel-slot-pick{ color:var(--danger); }
+  .novel-slot-pick:hover{ color:var(--accent); }
+  .novel-slot-btn{
+    flex:0 0 auto; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+    border-radius:4px; font-size:9px; padding:2px 5px; cursor:pointer; line-height:1.2;
+  }
+  .novel-slot-btn.danger:hover{ border-color:var(--danger); color:var(--danger); }
+  .novel-slot-btn:hover{ border-color:var(--accent); }
+  .novel-slot-loop{ font-size:10.5px; gap:3px; }
+  .novel-scene-side .novel-slot{ display:flex; flex-wrap:wrap; }
+  .novel-scene-side .novel-slot-pick{ flex:1 1 100px; max-width:none; }
+  .novel-slot-loop{ white-space:nowrap; }
+  .novel-dz-text{ line-height:1.6; }
+  .novel-start.is-loading{ cursor:wait; }
   /* 参考作品の選択欄。ノベル投稿モードのときだけ見出し行の右端に出す。
      .base-prompt-display は既定で flex:1 1 200px のため、そのままだと
      チップが単独の行へ折り返されて左寄せになる。ここでは幅を内容なりにし、
@@ -3047,10 +3104,27 @@
       </div>
 
       <div id="novelEditorField" style="display:none;">
-        <label class="field-label" style="margin:18px 0 6px;">シナリオ(シーンを順に並べます)</label>
+        <div class="novel-editor-head">
+          <label class="field-label">シナリオ(シーン → 画像 → セリフ行)</label>
+          <div class="novel-editor-head-btns">
+            <button class="novel-mini-btn" type="button" id="novelTemplateBtn" title="AI に渡す JSON の見本をダウンロードします">テンプレートJSON</button>
+            <button class="novel-mini-btn" type="button" id="novelSpecBtn" title="AI に JSON を書かせるための仕様書(Markdown)をダウンロードします">AI向け仕様書(MD)</button>
+          </div>
+        </div>
+        <div class="novel-tools">
+          <div class="novel-tools-row">
+            <button class="btn-ghost" type="button" id="novelJsonImportBtn" title="シーン・画像・セリフと、使う素材のファイル名を書いた JSON を読み込みます">JSONを読み込む</button>
+            <button class="btn-ghost" type="button" id="novelJsonExportBtn" title="いまのシナリオを JSON で保存します(空のときは見本)">JSONを書き出す</button>
+            <button class="btn-ghost" type="button" id="novelBulkAddBtn" title="JSON に書かれたファイル名の素材だけを、書かれた場所に入れます">素材をまとめて追加(JSONの指定どおり)</button>
+            <input type="file" id="novelJsonInput" accept=".json,application/json" style="display:none;">
+            <input type="file" id="novelBulkInput" accept="image/*,video/*,audio/*" multiple style="display:none;">
+          </div>
+          <div class="novel-tools-note">素材の入れ方は2通りです。① JSON を読み込んでから「素材をまとめて追加」: JSON に書かれたファイル名と同じ素材だけが、書かれた場所に入ります(書かれていないファイルは入れません)。② 個別に入れる: 各画像の枠や「声」「効果音」「画像の音」「シーンの音」の欄をクリックするか、ファイルをドロップします。素材を入れない画像・行があってもかまいません。</div>
+        </div>
         <div class="novel-scene-list" id="novelSceneList"></div>
-        <div class="novel-empty-hint" id="novelEmptyHint">まだシーンがありません。「＋ シーンを追加」から作成してください。</div>
+        <div class="novel-empty-hint" id="novelEmptyHint">まだシーンがありません。「＋ シーンを追加」から作成するか、JSON を読み込んでください。</div>
         <div class="novel-editor-actions">
+          <button class="btn-ghost" type="button" id="novelAddImageBtn">＋ 画像を追加</button>
           <button class="btn-ghost" type="button" id="novelAddSceneBtn">＋ シーンを追加</button>
           <button class="btn-ghost" type="button" id="novelPreviewBtn">プレビューで動作確認</button>
           <span class="status" id="novelEditorStatus"></span>
@@ -3928,7 +4002,7 @@
       </div>
       <div class="feature-item novel-only">
         <div class="feature-name">ノベルゲーム投稿</div>
-        <div class="feature-desc">背景画像とセリフを並べて、簡単なノベルゲーム(紙芝居)を作って共有します。1シーンにつき背景画像を1枚選び、その上に話者名とセリフを何行でも足せます。話者名を空欄にすると地の文になります。投稿済みの画像作品を「参考にした投稿作品」に選べば、その画像を再アップロードせずにそのまま背景として使えます。「ノベルゲーム」タブに並びます。</div>
+        <div class="feature-desc">背景とセリフを並べて、簡単なノベルゲーム(紙芝居)を作って共有します。1シーンにつき背景を1枚(画像・動画・GIF)選び、その上に話者名とセリフを何行でも足せます。各セリフには声を、シーン・画像・セリフ行ごとに BGM・環境音・効果音を付けられます。話者名を空欄にすると地の文になります。投稿済みの画像作品を「参考にした投稿作品」に選べば、その画像を再アップロードせずにそのまま背景として使えます。「ノベルゲーム」タブに並びます。</div>
       </div>
       <div class="feature-item">
         <div class="feature-name">プロンプト例の投稿</div>
@@ -3963,7 +4037,7 @@
       </div>
       <div class="feature-item novel-only">
         <div class="feature-name">ノベルゲーム</div>
-        <div class="feature-desc">投稿されたノベルゲームが並びます。開くと「▶ クリックして開始」が出るので、押すと再生が始まります。画面をクリックすると次のセリフへ進み、表示の途中で押すと残りをすぐ表示します。「AUTO」で自動送り、「ログ」でそれまでのセリフを読み返せます(新しいものが上に並びます)。セリフが絵と重なって見えにくいときは「セリフを下に出す」を押すと、セリフが画像の下に移動して絵が全部見えるようになります。</div>
+        <div class="feature-desc">投稿されたノベルゲームが並びます。開くと「▶ クリックして開始」が出るので、押すと再生が始まります。画面をクリックすると次のセリフへ進み、表示の途中で押すと残りをすぐ表示します。「AUTO」で自動送り、「ログ」でそれまでのセリフを読み返せます(新しいものが上に並びます)。音声つきの作品は、開始を押すと画像・動画・音声をすべて読み込んでから始まるので、途中で読み込み待ちになりません。AUTO はセリフの声が鳴り終わってから次へ進みます。「音声 ON/OFF」でまとめて音を消せます。「ダウンロード(ZIP)」で、パソコンでそのまま遊べる形に保存できます。セリフが絵と重なって見えにくいときは「セリフを下に出す」を押すと、セリフが画像の下に移動して絵が全部見えるようになります。</div>
       </div>
       <div class="feature-item opt-only-tab-prompt">
         <div class="feature-name">プロンプト例</div>
@@ -4282,6 +4356,10 @@
       <div class="qa-item novel-only">
         <div class="qa-q">ノベルゲームはどうやって作りますか？</div>
         <div class="qa-a">「投稿」タブで「ノベルゲームを投稿」を選ぶと、シナリオの編集欄が出ます。右上の「参考にした投稿作品」で投稿済みの画像作品を選ぶと、<b>その作品の画像がそのままシーンの背景に流し込まれます</b>。この方法なら画像を新しくアップロードしないのでドライブの容量を使いません。シーンの画像を変えたいときは、そのシーンの画像枠に別の画像をドラッグ&amp;ドロップするか、枠をクリックして選び直してください。同じ画像で会話を続けたいときは「複製」でシーンごとコピーできます(画像は共有されるので容量は増えません)。なお、参考作品から流し込んだ画像は<b>元の作品のもの</b>なので、このノベルゲームを削除しても元の画像は消えません。自分でアップロードした画像だけが、ゲームの削除と一緒に消えます。もちろん「＋ シーンを追加」でシーンを増やし、各シーンの左側に背景画像を1枚ドラッグ&amp;ドロップ(またはクリックして選択)することもできます。背景画像を設定しないシーンは<b>黒い画面にセリフだけ</b>が表示されるので、場面転換や独白などに使えます(画面の大きさは直前の画像、無ければ直後の画像に合わせます)。右側の行に話者名とセリフを入力すると、その下に空行が自動で足されるので、続けて何行でも書けます。話者名を空欄にすると、名前を出さない地の文になります。TABキーで「話者→セリフ→次の行の話者」と移動でき、Enterキーでも次の行へ進めます。行の並び替えは左端の点マークをドラッグするか、↑↓ボタンで行えます。シーンそのものの並び替えも、シーン見出し左の点マークをドラッグするか「↑上へ」「↓下へ」で行えます。投稿前に「プレビューで動作確認」を押すと、保存せずにその場で実際の動きを確認できます。</div>
+      </div>
+      <div class="qa-item novel-only">
+        <div class="qa-q">ノベルゲームにセリフの音声や動画・BGM を付けるには？</div>
+        <div class="qa-a">シナリオは<b>シーン(場面)→ 画像(背景1枚ぶん)→ セリフ行</b>の3段で組みます。背景には画像のほか<b>動画やGIF</b>も入れられ(動画は「動画の音を流す」を選べます)、音は「シーンの音」(シーンの間ずっと)・「画像の音」(その画像の間)・「効果音」(その行)の3か所と、セリフごとの「声」(1行に1つ)を別々に設定できます。素材の入れ方は2通りです。①投稿画面右上の「テンプレートJSON」「AI向け仕様書(MD)」を AI に渡して JSON を作らせ、「JSONを読み込む」→「素材をまとめて追加」: <b>JSON に書かれたファイル名と同じ素材だけ</b>が書かれた場所に入り、書かれていないファイルは入りません。②個別に入れる: 画像の枠や「声」「効果音」「画像の音」「シーンの音」の欄をクリックするか、ファイルをドロップします。素材を入れない画像や行があってもかまいません。セリフのまとまりは、行の「✂」(この行から新しい画像に分ける)・「前の画像とつなげる」・「ここから新しいシーン」・「前のシーンとつなげる」で調整できます。投稿したゲームは、詳細画面の「ダウンロード(ZIP)」で、パソコンでそのまま遊べる形(index.html と素材)で保存できます。</div>
       </div>
 
       <div class="qa-item">
@@ -11283,7 +11361,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (novelMode) {
       const filledScenes = novelScenes.filter(function (s) {
         const hasText = (s.lines || []).some(function (l) { return (l.text || '').trim() || (l.name || '').trim(); });
-        return hasText || s.dataUrl || s.bg;
+        return hasText || novelSceneHasMedia(s) || novelBlockHasSound(s);
       });
       if (!filledScenes.length) missing.push([document.getElementById('novelEditorField'), 'シーン']);
     } else if (!file && !editing) {
@@ -12158,7 +12236,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           : '') +
         '<div class="image-actions-btns">' +
           '<div class="modal-counts">' + countBadgesHtml(p) + '</div>' +
-          (p.type === 'novel' ? '' : '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>') +
+          (p.type === 'novel' ? '<button class="btn-ghost" type="button" id="novelZipBtn" title="パソコンでそのまま遊べる形(再生用の HTML と画像・動画・音声)を ZIP で保存します">' + NOVEL_ZIP_MSG.button + '</button>' : '<button class="btn-ghost" type="button" id="downloadBtn">ダウンロード</button>') +
           (hasVariants && p.type !== 'novel' && p.type !== 'video' ? '<button class="btn-ghost" type="button" id="bulkDownloadBtn" title="差分を含めた ' + imageSet.length + ' 枚を ZIP でまとめて保存します">一括ダウンロード</button>' : '') +
           '<button class="btn-ghost" type="button" id="shareBtn">共有</button>' +
         '</div>' +
@@ -12195,6 +12273,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     destroyActiveNovelPlayer();
     if (p.type === 'novel') {
       activeNovelPlayer = createNovelPlayer(document.getElementById('novelDetailMount'), novelScenarioOf(p), { requireStart: true });
+      wireNovelZipButton(document.getElementById('novelZipBtn'), p);
     }
 
     wireAttachmentsBlock(modalBody, p);
@@ -13100,22 +13179,45 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   /* ====================================================================
      ノベルゲーム: シナリオ取得ヘルパー
      1シーン = 背景画像1枚 + 複数の会話行。
-     settings.scenario = [{ bg, lines: [{ name, text }, ...] }, ...]
+     settings.scenario = [{ sceneStart, sceneTitle, sceneSound, bg, bgKind, bgSound, sound, lines: [{ name, text, voice, sound }, ...] }, ...]
+     1要素 = 画像1枚ぶんのまとまり。sceneStart の要素から次の sceneStart の手前までが1シーン。
      旧形式 { bg, name, text }(1シーン1行)も読めるよう正規化する。
      ==================================================================== */
+  const NOVEL_BG_KINDS = ['image', 'gif', 'video'];
+  function novelBool(v, dflt) { return v === undefined || v === null || v === '' ? dflt : v === true; }
+  function normalizeNovelLine(l) {
+    l = l || {};
+    return {
+      name: l.name || '', text: l.text || '',
+      voice: l.voice || '', voiceName: l.voiceName || '', voiceSize: Number(l.voiceSize) || 0,
+      sound: l.sound || '', soundName: l.soundName || '', soundSize: Number(l.soundSize) || 0, soundLoop: novelBool(l.soundLoop, false)
+    };
+  }
   function normalizeNovelScene(s) {
-    if (!s || typeof s !== 'object') return { bg: '', lines: [] };
+    if (!s || typeof s !== 'object') return normalizeNovelScene({});
+    const legacyBgm = !s.sound && !s.soundName && (s.bgm || s.bgmName);
+    const base = {
+      sceneStart: s.sceneStart === true,
+      sceneTitle: s.sceneTitle || '',
+      sceneSound: s.sceneSound || '', sceneSoundName: s.sceneSoundName || '', sceneSoundSize: Number(s.sceneSoundSize) || 0,
+      sceneSoundLoop: novelBool(s.sceneSoundLoop, true),
+      bg: s.bg || '',
+      own: s.own === true,
+      bgKind: NOVEL_BG_KINDS.indexOf(s.bgKind) !== -1 ? s.bgKind : 'image',
+      bgSize: Number(s.bgSize) || 0,
+      bgName: s.bgName || '',
+      bgSound: s.bgSound === true,
+      sound: legacyBgm ? (s.bgm || '') : (s.sound || ''),
+      soundName: legacyBgm ? (s.bgmName || '') : (s.soundName || ''),
+      soundSize: Number(legacyBgm ? s.bgmSize : s.soundSize) || 0,
+      soundLoop: novelBool(legacyBgm ? s.bgmLoop : s.soundLoop, true)
+    };
     if (Array.isArray(s.lines)) {
-      return {
-        bg: s.bg || '',
-        own: s.own === true,
-        lines: s.lines.map(function (l) {
-          return { name: (l && l.name) || '', text: (l && l.text) || '' };
-        })
-      };
+      base.lines = s.lines.map(normalizeNovelLine);
+      return base;
     }
-    // 旧形式: 1シーンにつき話者+セリフが1組だけ
-    return { bg: s.bg || '', own: s.own === true, lines: [{ name: s.name || '', text: s.text || '' }] };
+    base.lines = [normalizeNovelLine({ name: s.name, text: s.text })];
+    return base;
   }
   function novelScenarioOf(p) {
     const s = p && p.settings;
@@ -13141,14 +13243,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   // 再生用: 全シーンの会話行を1本の配列へ展開する(背景は直近のシーンのものを引き継ぐ)
   function novelStepsOf(scenario) {
     const steps = [];
-    (scenario || []).map(normalizeNovelScene).forEach(function (sc) {
-      const lines = sc.lines.length ? sc.lines : [{ name: '', text: '' }];
+    let sceneNo = -1;
+    let head = null;
+    (scenario || []).map(normalizeNovelScene).forEach(function (sc, bi) {
+      if (bi === 0 || sc.sceneStart) { sceneNo++; head = sc; }
+      const lines = sc.lines.length ? sc.lines : [normalizeNovelLine()];
       lines.forEach(function (l) {
-        steps.push({ bg: sc.bg || '', name: l.name || '', text: l.text || '' });
+        steps.push({
+          scene: sceneNo, block: bi, sceneTitle: head.sceneTitle,
+          sceneSound: head.sceneSound, sceneSoundSize: head.sceneSoundSize, sceneSoundName: head.sceneSoundName, sceneSoundLoop: head.sceneSoundLoop,
+          bg: sc.bg || '', bgKind: sc.bgKind, bgSize: sc.bgSize, bgName: sc.bgName, bgSound: sc.bgSound,
+          imgSound: sc.sound, imgSoundSize: sc.soundSize, imgSoundName: sc.soundName, imgSoundLoop: sc.soundLoop,
+          name: l.name || '', text: l.text || '', voice: l.voice, voiceSize: l.voiceSize, voiceName: l.voiceName,
+          lineSound: l.sound, lineSoundSize: l.soundSize, lineSoundName: l.soundName, lineSoundLoop: l.soundLoop
+        });
       });
     });
     return steps.filter(function (st, i) {
-      return st.bg || st.text || st.name || i === 0;
+      return st.bg || st.text || st.name || st.voice || st.lineSound || st.imgSound || st.sceneSound || i === 0;
     });
   }
 
@@ -13163,10 +13275,118 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      ==================================================================== */
   const NOVEL_IMG_DIMS = {};     // 画像URL -> {w,h} の実寸キャッシュ
   const NOVEL_AUTO_INTERVAL = 2500;
+  const NOVEL_AUTO_AFTER_VOICE = 700;
+  const NOVEL_VOLUME = { scene: 0.5, image: 0.6, se: 0.9, voice: 1 };
+  const NOVEL_LOCAL_WAIT_MS = 8000;
   const NOVEL_TYPE_SPEED = 75;   // 1文字あたりのミリ秒
   const NOVEL_LINE_GAP = 220;    // 次のテキストを打ち始めるまでの間(ms)
   const NOVEL_FADE_MS = 450;     // 背景フェードの片道の長さ(ms)
   const NOVEL_RESIZE_PAUSE = 260; // 暗転中に枠の比率を変えてから絵を出すまでの間(ms)
+  const NOVEL_SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+  const NOVEL_MSG = {
+    loading: '素材を読み込み中… {done} / {total}',
+    loadingFile: '素材を読み込み中… {done} / {total}({pct}%)',
+    loadFailed: '読み込めなかった素材が {n} 件あります。そのまま始めます',
+    soundOn: '音声 ON',
+    soundOff: '音声 OFF'
+  };
+
+  // ===== NOVEL ASSET PRELOAD =====
+  function novelFillMsg(tpl, vars) {
+    return String(tpl).replace(/\{(\w+)\}/g, function (m, k) { return vars[k] !== undefined ? vars[k] : m; });
+  }
+  function novelAssetsOf(steps) {
+    const list = [];
+    const seen = {};
+    function add(url, size, kind, name) {
+      if (!url || seen[url]) return;
+      seen[url] = true;
+      list.push({ url: url, size: Number(size) || 0, kind: kind, name: name || '' });
+    }
+    steps.forEach(function (st) {
+      add(st.bg, st.bgSize, st.bgKind || 'image', st.bgName);
+      add(st.voice, st.voiceSize, 'audio', st.voiceName);
+      add(st.sceneSound, st.sceneSoundSize, 'audio', st.sceneSoundName);
+      add(st.imgSound, st.imgSoundSize, 'audio', st.imgSoundName);
+      add(st.lineSound, st.lineSoundSize, 'audio', st.lineSoundName);
+    });
+    return list;
+  }
+  function novelLoadImage(url) {
+    return new Promise(function (resolve) {
+      const img = new Image();
+      img.onload = function () {
+        NOVEL_IMG_DIMS[url] = { w: img.naturalWidth, h: img.naturalHeight };
+        resolve(true);
+      };
+      img.onerror = function () { resolve(false); };
+      img.src = url;
+    });
+  }
+  function novelLoadMediaEl(url, kind) {
+    return new Promise(function (resolve) {
+      const el = document.createElement(kind === 'video' ? 'video' : 'audio');
+      let settled = false;
+      const timer = setTimeout(function () { finish(true); }, NOVEL_LOCAL_WAIT_MS);
+      function finish(ok) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        el.removeAttribute('src');
+        resolve(ok);
+      }
+      el.preload = 'auto';
+      el.muted = true;
+      el.oncanplaythrough = function () { finish(true); };
+      el.onerror = function () { finish(false); };
+      el.src = url;
+      try { el.load(); } catch (e) {}
+    });
+  }
+  function novelAssetMime(a) {
+    if (a.kind === 'gif') return 'image/gif';
+    return ATTACH_MEDIA_MIME[attachmentExt(a.name)] || '';
+  }
+  async function novelLoadAsset(a, onBytes) {
+    const id = /^(data|blob):/i.test(a.url) ? '' : driveFileIdFromUrl(a.url);
+    if (a.kind === 'image' || (a.kind === 'gif' && !id)) {
+      if (!(await novelLoadImage(a.url))) throw new Error('image');
+      return '';
+    }
+    if (!id || !(a.size > 0)) {
+      if (!(await novelLoadMediaEl(a.url, a.kind))) throw new Error('media');
+      return '';
+    }
+    const parts = [];
+    await relayRead(id, a.size, function (bytes) { parts.push(bytes); }, onBytes);
+    return URL.createObjectURL(new Blob(parts, { type: novelAssetMime(a) }));
+  }
+  async function preloadNovelAssets(steps, onProgress) {
+    const assets = novelAssetsOf(steps);
+    const map = {};
+    const created = [];
+    let done = 0;
+    let failed = 0;
+    function report(pct) { if (onProgress) onProgress(done, assets.length, pct); }
+    async function one(a, track) {
+      try {
+        const url = await novelLoadAsset(a, track ? function (got, total) { report(total ? Math.floor(got * 100 / total) : 0); } : null);
+        if (url) { map[a.url] = url; created.push(url); }
+      } catch (err) {
+        console.error(err);
+        failed++;
+      }
+      done++;
+      report();
+    }
+    report();
+    const images = assets.filter(function (a) { return a.kind === 'image'; });
+    const relayed = assets.filter(function (a) { return a.kind !== 'image'; });
+    const imageJob = Promise.all(images.map(function (a) { return one(a, false); }));
+    for (const a of relayed) await one(a, true);
+    await imageJob;
+    return { map: map, created: created, failed: failed };
+  }
 
   function createNovelPlayer(mountEl, scenario, opts) {
     opts = opts || {};
@@ -13185,8 +13405,13 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     let typing = false;
     let fullText = '';
     let logOpen = false;
-    // 詳細モーダルでは開いた瞬間に始まらないよう、最初の1クリックまで待つ
-    let started = !opts.requireStart;
+    let started = false;
+    let loading = false;
+    let destroyed = false;
+    let assetMap = {};
+    let createdUrls = [];
+    let soundOn = true;
+    let voicePlaying = false;
 
     mountEl.innerHTML = '' +
       '<div class="novel-player">' +
@@ -13194,7 +13419,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<img class="novel-stage-img" data-novel-img alt="背景">' +
           '<img class="novel-stage-img novel-stage-img-next" data-novel-img-next alt="" aria-hidden="true">' +
           '<div class="novel-progress" data-novel-progress></div>' +
-          '<div class="novel-start" data-novel-start><span class="novel-start-btn">▶ クリックして開始</span></div>' +
+          '<div class="novel-start" data-novel-start><span class="novel-start-btn" data-novel-start-label>▶ クリックして開始</span></div>' +
           '<div class="novel-msgwin" data-novel-msgwin>' +
             '<div class="novel-speaker" data-novel-speaker></div>' +
             '<div class="novel-line" data-novel-line></div>' +
@@ -13208,6 +13433,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<button class="novel-ctrl-btn" type="button" data-novel-auto>AUTO</button>' +
           '<button class="novel-ctrl-btn" type="button" data-novel-log>ログ</button>' +
           '<button class="novel-ctrl-btn" type="button" data-novel-textpos title="セリフを画像の上に重ねるか、画像の下に出すか切り替えます">セリフを下に出す</button>' +
+          '<button class="novel-ctrl-btn active" type="button" data-novel-sound title="セリフの音声・シーンの音声・動画の音をまとめて切り替えます">' + NOVEL_MSG.soundOn + '</button>' +
         '</div>' +
         '<div class="novel-log" data-novel-loglist style="display:none;"></div>' +
       '</div>';
@@ -13225,9 +13451,22 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const logBtn = mountEl.querySelector('[data-novel-log]');
     const logListEl = mountEl.querySelector('[data-novel-loglist]');
     const startEl = mountEl.querySelector('[data-novel-start]');
+    const startLabelEl = mountEl.querySelector('[data-novel-start-label]');
     const msgwinEl = mountEl.querySelector('[data-novel-msgwin]');
     const msgOutEl = mountEl.querySelector('[data-novel-msgout]');
     const textPosBtn = mountEl.querySelector('[data-novel-textpos]');
+    const soundBtn = mountEl.querySelector('[data-novel-sound]');
+    const voiceEl = new Audio();
+    voiceEl.preload = 'auto';
+    function makeChannel(volume) {
+      const el = new Audio();
+      el.preload = 'auto';
+      return { el: el, url: '', volume: volume };
+    }
+    const sceneCh = makeChannel(NOVEL_VOLUME.scene);
+    const imageCh = makeChannel(NOVEL_VOLUME.image);
+    const seCh = makeChannel(NOVEL_VOLUME.se);
+    const channels = [sceneCh, imageCh, seCh];
 
     let shownBg = null;        // 表示中(または切替先)の背景URL
     let fadeTimer = null;
@@ -13236,11 +13475,43 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     let transitionDone = null; // 切替完了後に実行する処理(本文の再生開始など)
     let hasShown = false;
 
+    function res(url) { return (url && assetMap[url]) || url || ''; }
+    function mediaW(el) { return el.videoWidth || el.naturalWidth || 0; }
+    function mediaH(el) { return el.videoHeight || el.naturalHeight || 0; }
+    function isVideoEl(el) { return el && el.tagName === 'VIDEO'; }
+    function clearLayer(el) {
+      if (isVideoEl(el)) {
+        el.pause();
+        el.removeAttribute('src');
+        try { el.load(); } catch (e) {}
+      } else {
+        el.removeAttribute('src');
+      }
+    }
+    function layerFor(el, tag) {
+      if (el.tagName.toLowerCase() === tag) return el;
+      const n = document.createElement(tag);
+      n.className = el.className;
+      if (tag === 'video') {
+        n.loop = true;
+        n.playsInline = true;
+        n.setAttribute('playsinline', '');
+        n.preload = 'auto';
+      } else {
+        n.alt = '';
+      }
+      el.replaceWith(n);
+      return n;
+    }
+    function muteFront() {
+      if (isVideoEl(frontEl)) frontEl.muted = true;
+    }
+
     // 背景画像の実寸からアスペクト比を求め、ステージへ反映する(レターボックスを出さない)。
     // 縦長画像で画面をはみ出さないよう高さに上限を設け、その場合は比率を保ったまま幅を詰める。
     function applyStageAspect(fromEl) {
       const src = fromEl || frontEl;
-      applyAspectFromSize(src.naturalWidth, src.naturalHeight);
+      applyAspectFromSize(mediaW(src), mediaH(src));
     }
     let lastAspectUrl = '';
     function onResize() {
@@ -13261,7 +13532,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         if (token !== undefined && token !== fadeToken) return;
         applyAspectFromSize(probe.naturalWidth, probe.naturalHeight);
       };
-      probe.src = url;
+      probe.src = res(url);
     }
     // ステージの高さ上限。画面からはみ出さないよう、下のコントロール行の分も差し引く。
     function stageMaxHeight() {
@@ -13300,7 +13571,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
     /* 背景は直接クロスフェードせず、いったん黒へフェードアウトしてから次の画像へフェードインする。
        枠の比率は真っ黒の間に切り替える。切替中に別の切替が来たら fadeToken で古い処理を捨てる。 */
-    function setBackground(bg, sizeBg, done) {
+    function setBackground(media, sizeBg, done) {
+      const bg = media ? media.url : '';
       // 同じ背景への切替が進行中なら、完了後の処理だけ差し替える
       if (bg === shownBg && transitioning) { transitionDone = done || null; return; }
       if (bg === shownBg && !transitioning) { applyAspectFromUrl(sizeBg, ++fadeToken); if (done) done(); return; }
@@ -13314,34 +13586,46 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       // 画像なしのシーン: 黒のまま会話文だけ出す。枠の大きさは近くの画像に合わせる。
       if (!bg) {
         transitioning = true;
+        muteFront();
         frontEl.classList.remove('is-visible');   // 表示中の絵があれば黒へフェードアウト
         backEl.classList.remove('is-visible');
-        backEl.removeAttribute('src');
+        clearLayer(backEl);
         hasShown = false;
         applyAspectFromUrl(sizeBg, token);
-        fadeTimer = setTimeout(function () { finishTransition(token); }, hadImage ? NOVEL_FADE_MS : 0);
+        fadeTimer = setTimeout(function () {
+          if (token === fadeToken && isVideoEl(frontEl)) frontEl.pause();
+          finishTransition(token);
+        }, hadImage ? NOVEL_FADE_MS : 0);
         return;
       }
 
       transitioning = true;
       let revealed = false;
+      const isVideo = media.kind === 'video';
 
       function reveal() {
         if (token !== fadeToken || revealed) return;
         revealed = true;                   // onload と同期呼び出しの二重実行を防ぐ
         backEl.onload = null;
+        backEl.onloadeddata = null;
         backEl.onerror = null;
         // 真っ黒のうちに次の画像の比率へ枠を作り替え、少し置いてから絵を出す
         applyStageAspect(backEl);
         lastAspectUrl = bg;
-        if (backEl.naturalWidth > 0) NOVEL_IMG_DIMS[bg] = { w: backEl.naturalWidth, h: backEl.naturalHeight };
+        if (mediaW(backEl) > 0) NOVEL_IMG_DIMS[bg] = { w: mediaW(backEl), h: mediaH(backEl) };
         fadeTimer = setTimeout(function () {
           if (token !== fadeToken) return;
+          if (isVideoEl(backEl)) {
+            backEl.muted = !(media.sound && soundOn);
+            try { backEl.currentTime = 0; } catch (e) {}
+            const pr = backEl.play();
+            if (pr && pr.catch) pr.catch(function () {});
+          }
           backEl.classList.add('is-visible');
           // 表と裏を入れ替える(このとき旧・表はすでに非表示なので src を外してよい)
           const tmp = frontEl; frontEl = backEl; backEl = tmp;
           backEl.classList.remove('is-visible');
-          backEl.removeAttribute('src');
+          clearLayer(backEl);
           hasShown = true;
           fadeTimer = setTimeout(function () { finishTransition(token); }, NOVEL_FADE_MS);
         }, hasShown ? NOVEL_RESIZE_PAUSE : 0);
@@ -13349,14 +13633,23 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
       function loadThenReveal() {
         if (token !== fadeToken) return;
-        backEl.onload = function () { reveal(); };
+        backEl = layerFor(backEl, isVideo ? 'video' : 'img');
         backEl.onerror = function () { reveal(); };
-        backEl.setAttribute('src', bg);
+        if (isVideo) {
+          backEl.muted = true;
+          backEl.onloadeddata = function () { reveal(); };
+          backEl.setAttribute('src', res(bg));
+          if (backEl.readyState >= 2) reveal();
+          return;
+        }
+        backEl.onload = function () { reveal(); };
+        backEl.setAttribute('src', res(bg));
         if (backEl.complete && backEl.naturalWidth > 0) reveal();
       }
 
       // 初回は暗転を挟まずそのまま出す
       if (!hasShown) { loadThenReveal(); return; }
+      muteFront();
       frontEl.classList.remove('is-visible');   // まず黒へ
       fadeTimer = setTimeout(function () {
         if (token !== fadeToken) return;
@@ -13366,8 +13659,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     // 背景画像はシーンごとに独立。画像を指定していないシーンは黒背景のまま会話文だけ出す。
-    function currentBg(i) {
-      return (scenes[i] && scenes[i].bg) || '';
+    function currentMedia(i) {
+      const s = scenes[i];
+      if (!s || !s.bg) return null;
+      return { url: s.bg, kind: s.bgKind || 'image', sound: s.bgSound === true };
     }
     // 画面サイズの基準にする画像。まず手前(直前)を探し、無ければ後ろ(直後)を探す。
     function sizeBgFor(i) {
@@ -13380,22 +13675,85 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       return '';
     }
 
+    // ===== NOVEL AUDIO =====
+    function stopVoice() {
+      voicePlaying = false;
+      voiceEl.pause();
+    }
+    function playVoice(s) {
+      stopVoice();
+      if (!s.voice) return;
+      voicePlaying = true;
+      voiceEl.src = res(s.voice);
+      voiceEl.muted = !soundOn;
+      const pr = voiceEl.play();
+      if (pr && pr.catch) pr.catch(function () { onVoiceEnd(); });
+    }
+    function onVoiceEnd() {
+      if (!voicePlaying) return;
+      voicePlaying = false;
+      scheduleAuto();
+    }
+    voiceEl.addEventListener('ended', onVoiceEnd);
+    voiceEl.addEventListener('error', onVoiceEnd);
+    function chPlay(ch, url, loop, restart) {
+      if (!restart && url === ch.url) return;
+      ch.url = url || '';
+      ch.el.pause();
+      if (!url) return;
+      ch.el.src = res(url);
+      ch.el.loop = !!loop;
+      ch.el.volume = ch.volume;
+      ch.el.muted = !soundOn;
+      try { ch.el.currentTime = 0; } catch (e) {}
+      const pr = ch.el.play();
+      if (pr && pr.catch) pr.catch(function () {});
+    }
+    function chStop(ch) {
+      ch.url = '';
+      ch.el.pause();
+    }
+    function stopAllSounds() { channels.forEach(chStop); }
+    function syncSounds(s) {
+      chPlay(sceneCh, s.sceneSound, s.sceneSoundLoop);
+      chPlay(imageCh, s.imgSound, s.imgSoundLoop);
+      if (s.lineSound) chPlay(seCh, s.lineSound, s.lineSoundLoop, true);
+      else if (seCh.el.loop) chStop(seCh);
+    }
+    function unlockAudio() {
+      [voiceEl].concat(channels.map(function (c) { return c.el; })).forEach(function (el) {
+        el.src = NOVEL_SILENT_WAV;
+        const pr = el.play();
+        if (pr && pr.then) pr.then(function () { el.pause(); }).catch(function () {});
+      });
+    }
+    function applySound() {
+      voiceEl.muted = !soundOn;
+      channels.forEach(function (c) { c.el.muted = !soundOn; });
+      const s = scenes[index] || {};
+      if (isVideoEl(frontEl) && shownBg) frontEl.muted = !(s.bgSound && soundOn);
+      soundBtn.classList.toggle('active', soundOn);
+      soundBtn.textContent = soundOn ? NOVEL_MSG.soundOn : NOVEL_MSG.soundOff;
+    }
+
     function render() {
       const s = scenes[index] || {};
       // 前の行の残りが暗転中に流れ込まないよう、まず必ず止めて消す
       stopTyping();
       clearAutoTimer();
+      stopVoice();
       lineEl.textContent = '';
       if (!started) {
-        setBackground(currentBg(index), sizeBgFor(index));
-        speakerEl.textContent = '\u00A0';
+        const first = currentMedia(index);
+        setBackground(first && first.kind === 'image' ? first : null, sizeBgFor(index));
+        speakerEl.textContent = ' ';
         speakerEl.classList.add('is-empty');
         msgwinEl.classList.remove('has-speaker');
         progressEl.textContent = '';
         return;
       }
       // 話者名も暗転が明けてから出す(先行表示されるのを防ぐ)
-      speakerEl.textContent = '\u00A0';
+      speakerEl.textContent = ' ';
       speakerEl.classList.add('is-empty');
       // 話者名の有無で配置が変わる(あり=上詰め固定 / なし=天地中央)ので先に反映しておく
       msgwinEl.classList.toggle('has-speaker', !!s.name);
@@ -13403,20 +13761,39 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       prevBtn.disabled = index === 0;
       nextBtn.disabled = index >= scenes.length - 1;
       if (logOpen) renderLog();
+      if ((s.sceneSound || '') !== sceneCh.url) chStop(sceneCh);
+      if ((s.imgSound || '') !== imageCh.url) chStop(imageCh);
+      if (seCh.el.loop && (scenes[index - 1] || {}).block !== s.block) chStop(seCh);
       // 背景の暗転を挟む場合は、切り替わりきってから話者名と本文を出し始める
-      setBackground(currentBg(index), sizeBgFor(index), function () {
-        speakerEl.textContent = s.name || '\u00A0';
+      setBackground(currentMedia(index), sizeBgFor(index), function () {
+        speakerEl.textContent = s.name || ' ';
         speakerEl.classList.toggle('is-empty', !s.name);
         msgwinEl.classList.toggle('has-speaker', !!s.name);
+        syncSounds(s);
+        playVoice(s);
         startTyping(s.text || '');
       });
     }
 
     function beginPlayback() {
       if (started) return true;
-      started = true;
-      if (startEl) startEl.remove();
-      render();
+      if (loading || destroyed) return false;
+      loading = true;
+      unlockAudio();
+      startEl.classList.add('is-loading');
+      startLabelEl.textContent = novelFillMsg(NOVEL_MSG.loading, { done: 0, total: novelAssetsOf(scenes).length });
+      preloadNovelAssets(scenes, function (done, total, pct) {
+        startLabelEl.textContent = novelFillMsg(pct === undefined ? NOVEL_MSG.loading : NOVEL_MSG.loadingFile, { done: done, total: total, pct: pct });
+      }).then(function (r) {
+        if (destroyed) { r.created.forEach(function (u) { URL.revokeObjectURL(u); }); return; }
+        assetMap = r.map;
+        createdUrls = r.created;
+        loading = false;
+        started = true;
+        startEl.remove();
+        render();
+        if (r.failed) progressEl.textContent = novelFillMsg(NOVEL_MSG.loadFailed, { n: r.failed });
+      });
       return false;
     }
 
@@ -13454,10 +13831,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     function clearAutoTimer() {
       if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
     }
-    // AUTOは「表示しきってから一定秒」で次へ進む
+    // AUTOは「表示しきって、セリフの音声も鳴り終わってから」次へ進む
     function scheduleAuto() {
       clearAutoTimer();
-      if (autoOn && index < scenes.length - 1) autoTimer = setTimeout(next, NOVEL_AUTO_INTERVAL);
+      if (!started || !autoOn || typing || transitioning || voicePlaying) return;
+      if (index >= scenes.length - 1) return;
+      autoTimer = setTimeout(next, (scenes[index] || {}).voice ? NOVEL_AUTO_AFTER_VOICE : NOVEL_AUTO_INTERVAL);
     }
 
     function renderLog() {
@@ -13484,7 +13863,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       autoBtn.classList.toggle('active', autoOn);
       autoBtn.textContent = 'AUTO';
       clearAutoTimer();
-      if (autoOn && !typing) scheduleAuto();
+      if (autoOn) scheduleAuto();
     }
 
     // 表示途中なら全文表示、表示済みなら次へ
@@ -13496,8 +13875,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
     prevBtn.addEventListener('click', function () { if (!beginPlayback()) return; setAuto(false); go(index - 1); });
     nextBtn.addEventListener('click', function () { if (!beginPlayback()) return; if (finishTyping()) return; setAuto(false); next(); });
-    restartBtn.addEventListener('click', function () { beginPlayback(); setAuto(false); go(0); });
+    restartBtn.addEventListener('click', function () { if (!beginPlayback()) return; setAuto(false); stopAllSounds(); go(0); });
     autoBtn.addEventListener('click', function () { if (!beginPlayback()) { setAuto(true); return; } setAuto(!autoOn); });
+    soundBtn.addEventListener('click', function () { soundOn = !soundOn; applySound(); });
     // セリフを画像に重ねるか、画像の下に出すかを切り替える
     let textOutside = false;
     function applyTextPosition() {
@@ -13521,15 +13901,189 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
 
     render();
-    return { destroy: function () {
-      fadeToken++;
-      transitionDone = null;
-      transitioning = false;
-      clearAutoTimer();
-      stopTyping();
-      if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
-      window.removeEventListener('resize', onResize);
-    } };
+    if (!opts.requireStart) beginPlayback();
+    return {
+      destroy: function () {
+        destroyed = true;
+        fadeToken++;
+        transitionDone = null;
+        transitioning = false;
+        clearAutoTimer();
+        stopTyping();
+        stopVoice();
+        stopAllSounds();
+        voiceEl.removeAttribute('src');
+        channels.forEach(function (c) { c.el.removeAttribute('src'); });
+        [frontEl, backEl].forEach(clearLayer);
+        if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+        window.removeEventListener('resize', onResize);
+        createdUrls.forEach(function (u) { URL.revokeObjectURL(u); });
+        createdUrls = [];
+      },
+      state: function () {
+        return {
+          started: started, index: index, total: scenes.length, typing: typing, voicePlaying: voicePlaying, auto: autoOn, soundOn: soundOn,
+          assets: Object.keys(assetMap).length, scene: (scenes[index] || {}).scene,
+          sceneSound: sceneCh.url, imageSound: imageCh.url, lineSound: seCh.url, lineSoundPlaying: !!seCh.url && !seCh.el.paused && !seCh.el.ended
+        };
+      }
+    };
+  }
+
+  // ===== NOVEL OFFLINE ZIP =====
+  const NOVEL_ZIP_MSG = {
+    button: 'ダウンロード(ZIP)',
+    preparing: '素材を準備中 {done}/{total}',
+    failed: '受け取れなかった素材が {n} 件あります。それ以外で ZIP を作りました: {names}',
+    readme: 'index.html をブラウザで開くと再生できます。media フォルダは index.html と同じ場所に置いたままにしてください。\r\nscenario.json は Prompt Reel の「JSONを読み込む」で読み込めるシナリオです(media の中のファイル名で書いてあります)。\r\n'
+  };
+  const NOVEL_EXPORT_FUNCS = function () {
+    return [escapeHtml, attachmentExt, driveFileIdFromUrl, novelBool, normalizeNovelLine, normalizeNovelScene, novelStepsOf, novelFillMsg,
+      novelAssetsOf, novelLoadImage, novelLoadMediaEl, novelAssetMime, novelLoadAsset, preloadNovelAssets, createNovelPlayer];
+  };
+  function novelExportConsts() {
+    return {
+      NOVEL_BG_KINDS: NOVEL_BG_KINDS, NOVEL_IMG_DIMS: {}, NOVEL_AUTO_INTERVAL: NOVEL_AUTO_INTERVAL, NOVEL_AUTO_AFTER_VOICE: NOVEL_AUTO_AFTER_VOICE,
+      NOVEL_VOLUME: NOVEL_VOLUME, NOVEL_LOCAL_WAIT_MS: NOVEL_LOCAL_WAIT_MS, NOVEL_TYPE_SPEED: NOVEL_TYPE_SPEED, NOVEL_LINE_GAP: NOVEL_LINE_GAP,
+      NOVEL_FADE_MS: NOVEL_FADE_MS, NOVEL_RESIZE_PAUSE: NOVEL_RESIZE_PAUSE, NOVEL_SILENT_WAV: NOVEL_SILENT_WAV, NOVEL_MSG: NOVEL_MSG,
+      ATTACH_MEDIA_MIME: ATTACH_MEDIA_MIME
+    };
+  }
+  function novelExportCss() {
+    const out = [];
+    function keep(rule) {
+      const text = rule.cssText || '';
+      if (rule.type === 1) return /novel-|^:root/.test(rule.selectorText || '');
+      if (rule.type === 4) return /novel-|:root/.test(text);
+      return false;
+    }
+    Array.from(document.styleSheets).forEach(function (sheet) {
+      let rules = [];
+      try { rules = Array.from(sheet.cssRules || []); } catch (e) { return; }
+      rules.forEach(function (r) { if (keep(r)) out.push(r.cssText); });
+    });
+    return out.join('\n');
+  }
+  function novelScriptSafe(text) { return String(text).replace(/<\/(script)/gi, '<\\/$1'); }
+  function buildNovelStandaloneHtml(title, scenario) {
+    const consts = novelExportConsts();
+    const js = Object.keys(consts).map(function (k) { return 'const ' + k + ' = ' + JSON.stringify(consts[k]) + ';'; }).join('\n') + '\n' +
+      NOVEL_EXPORT_FUNCS().map(function (f) { return f.toString(); }).join('\n\n') + '\n' +
+      'const SCENARIO = ' + JSON.stringify(scenario) + ';\n' +
+      'document.addEventListener("DOMContentLoaded", function () { createNovelPlayer(document.getElementById("novel"), SCENARIO, { requireStart: true }); });\n';
+    return '<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<title>' + escapeHtml(title) + '</title>\n<style>\n' + novelExportCss() + '\n' +
+      'body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); }\n' +
+      '.novel-standalone{ max-width:1000px; margin:0 auto; padding:20px 16px 40px; }\n' +
+      '.novel-standalone h1{ font-size:16px; font-weight:600; margin:0 0 14px; }\n' +
+      '</style>\n</head>\n<body>\n<div class="novel-standalone">\n<h1>' + escapeHtml(title) + '</h1>\n<div id="novel"></div>\n</div>\n' +
+      '<script>\n' + novelScriptSafe(js) + '<\/script>\n</body>\n</html>\n';
+  }
+  function novelZipExt(name, blob, kind) {
+    const fromName = attachmentExt(name);
+    if (fromName) return '.' + fromName;
+    const byType = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif', 'video/mp4': '.mp4', 'video/webm': '.webm',
+      'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'audio/x-wav': '.wav', 'audio/ogg': '.ogg', 'audio/mp4': '.m4a' }[blob.type];
+    return byType || (kind === 'audio' ? '.wav' : '.png');
+  }
+  async function novelFetchMedia(url, size) {
+    const id = driveFileIdFromUrl(url) || driveFileId(url);
+    if (id && size > 0) {
+      const parts = [];
+      await relayRead(id, size, function (b) { parts.push(b); });
+      return new Blob(parts);
+    }
+    return await fetchImageBlob(url);
+  }
+  async function downloadNovelZip(p, onProgress) {
+    const scenario = (p.settings && Array.isArray(p.settings.scenario) ? p.settings.scenario : []).map(normalizeNovelScene);
+    const items = [];
+    const byUrl = {};
+    function want(url, size, name, kind) {
+      if (!url) return;
+      if (!byUrl[url]) { byUrl[url] = { url: url, size: size, name: name, kind: kind, path: '' }; items.push(byUrl[url]); }
+    }
+    scenario.forEach(function (sc) {
+      want(sc.bg, sc.bgSize, sc.bgName, sc.bgKind);
+      want(sc.sceneSound, sc.sceneSoundSize, sc.sceneSoundName, 'audio');
+      want(sc.sound, sc.soundSize, sc.soundName, 'audio');
+      sc.lines.forEach(function (l) {
+        want(l.voice, l.voiceSize, l.voiceName, 'audio');
+        want(l.sound, l.soundSize, l.soundName, 'audio');
+      });
+    });
+    const files = [];
+    const failed = [];
+    const usedNames = {};
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (onProgress) onProgress(i, items.length);
+      try {
+        const blob = await novelFetchMedia(it.url, it.size);
+        const base = safeFileName(String(it.name || '').replace(/\.[A-Za-z0-9]+$/, '') || (it.kind === 'audio' ? 'sound' : 'image'));
+        let name = 'media/' + String(i + 1).padStart(3, '0') + '_' + base + novelZipExt(it.name, blob, it.kind);
+        if (usedNames[name]) name = name.replace(/(\.[^.]*)$/, '_' + i + '$1');
+        usedNames[name] = true;
+        it.path = name;
+        files.push({ name: name, data: new Uint8Array(await blob.arrayBuffer()) });
+      } catch (err) {
+        console.error(err);
+        failed.push(it.name || it.url);
+      }
+    }
+    if (onProgress) onProgress(items.length, items.length);
+    function local(url) { return url && byUrl[url] ? byUrl[url].path : ''; }
+    function fileName(url) { const p2 = local(url); return p2 ? p2.replace(/^media\//, '') : ''; }
+    const offline = scenario.map(function (sc) {
+      const o = {
+        sceneStart: sc.sceneStart, sceneTitle: sc.sceneTitle,
+        sceneSound: local(sc.sceneSound), sceneSoundLoop: sc.sceneSoundLoop,
+        bg: local(sc.bg), bgKind: sc.bgKind, bgSound: sc.bgSound,
+        sound: local(sc.sound), soundLoop: sc.soundLoop,
+        lines: sc.lines.map(function (l) {
+          return { name: l.name, text: l.text, voice: local(l.voice), sound: local(l.sound), soundLoop: l.soundLoop };
+        })
+      };
+      return o;
+    });
+    const scenes = [];
+    scenario.forEach(function (sc, i) {
+      if (i === 0 || sc.sceneStart || !scenes.length) scenes.push({ title: sc.sceneTitle || '', sound: fileName(sc.sceneSound), soundLoop: sc.sceneSoundLoop, images: [] });
+      const img = { image: fileName(sc.bg), sound: fileName(sc.sound), soundLoop: sc.soundLoop, lines: [] };
+      if (sc.bgKind === 'video') img.videoSound = sc.bgSound;
+      img.lines = sc.lines.map(function (l) { return { speaker: l.name, text: l.text, voice: fileName(l.voice), sound: fileName(l.sound), soundLoop: l.soundLoop }; });
+      scenes[scenes.length - 1].images.push(img);
+    });
+    const title = p.title || 'novel';
+    const enc = new TextEncoder();
+    files.unshift(
+      { name: 'index.html', data: enc.encode(buildNovelStandaloneHtml(title, offline)) },
+      { name: 'scenario.json', data: enc.encode(JSON.stringify({ format: 'prompt-reel-novel', version: 2, title: title, scenes: scenes }, null, 2)) },
+      { name: 'README.txt', data: enc.encode(NOVEL_ZIP_MSG.readme) }
+    );
+    saveBlobAs(buildStoredZip(files), safeFileName(title) + '.zip');
+    countDownload(p);
+    return { failed: failed, files: files.length };
+  }
+  function wireNovelZipButton(btn, p) {
+    if (!btn) return;
+    btn.addEventListener('click', async function () {
+      if (btn.dataset.busy) return;
+      btn.dataset.busy = '1';
+      try {
+        const r = await downloadNovelZip(p, function (done, total) {
+          btn.textContent = novelFillMsg(NOVEL_ZIP_MSG.preparing, { done: done, total: total });
+        });
+        if (r.failed.length) alert(novelFillMsg(NOVEL_ZIP_MSG.failed, { n: r.failed.length, names: r.failed.join('、') }));
+      } catch (err) {
+        console.error(err);
+        alert('ダウンロードに失敗しました: ' + (err.message || err));
+      } finally {
+        btn.textContent = NOVEL_ZIP_MSG.button;
+        delete btn.dataset.busy;
+      }
+    });
   }
 
   let activeNovelPlayer = null;
@@ -14140,6 +14694,123 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      既存URLをそのまま背景に使うため、容量を消費しない。 */
   let novelRefImages = [];
 
+  let novelFiles = {};
+  let novelFileSeq = 0;
+  const novelEditorAudio = new Audio();
+  const NOVEL_SETTINGS_MAX_CHARS = 45000;
+  const NOVEL_EDITOR_MSG = {
+    jsonReplace: 'いまの内容(画像 {n} 枚ぶん)を、JSON の内容で置き換えますか？\n(素材は、JSON に同じファイル名が書かれているものだけ引き継ぎます)',
+    jsonLoaded: 'JSON から シーン {scenes}・画像 {blocks}・セリフ {lines} 行を読み込みました。{linked}',
+    jsonKept: '追加済みの素材 {n} 件を、JSON の指定どおりに入れました。',
+    jsonBad: 'ノベルゲームの JSON として読めませんでした: {err}',
+    jsonNoLines: 'JSON にセリフが見つかりませんでした。scenes → images → lines(speaker / text / voice)の形にしてください',
+    bulkNoJson: 'まとめて追加は、読み込んだ JSON に書かれたファイル名の素材だけを入れます。先に「JSONを読み込む」で JSON を読み込んでください',
+    bulkDone: '{n} 件を JSON の指定どおりに入れました。',
+    bulkRejected: 'JSON に書かれていないため入れなかったファイル: {names}',
+    bulkNothing: 'JSON に書かれたファイル名と一致する素材がありませんでした。',
+    mediaBad: '画像・動画・GIF のファイルを選んでください',
+    audioBad: '音声ファイルを選んでください',
+    mergeFirst: '先頭の画像は前とつなげられません',
+    tooLong: 'シナリオが長すぎて保存できません(約 {n} 文字。上限は約 {max} 文字)。投稿を分けてください',
+    exportName: 'novel_scenario.json',
+    templateName: 'novel_template.json',
+    specName: 'novel_json_spec_for_ai.md',
+    slotEmpty: { voice: '声を選ぶ', sound: '効果音を選ぶ', imageSound: '画像の音を選ぶ', sceneSound: 'シーンの音を選ぶ' },
+    slotWaiting: '待ち: {name}',
+    slotLabel: { voice: '声', sound: '効果音', imageSound: '画像の音', sceneSound: 'シーンの音' }
+  };
+  const NOVEL_JSON_TEMPLATE = {
+    format: 'prompt-reel-novel',
+    version: 2,
+    title: '作品のタイトル',
+    scenes: [
+      {
+        title: '雨の帰り道',
+        sound: 'rain_loop.mp3',
+        soundLoop: true,
+        images: [
+          {
+            image: 'scene01_street.png',
+            sound: '',
+            lines: [
+              { speaker: '', text: '雨の音だけが響いている。', voice: '', sound: '' },
+              { speaker: 'アヤ', text: 'ねえ、聞こえる？', voice: 'aya_001.wav', sound: '' }
+            ]
+          },
+          {
+            image: 'scene01_closeup.mp4',
+            videoSound: false,
+            sound: 'heartbeat.wav',
+            soundLoop: true,
+            lines: [
+              { speaker: 'ユウ', text: 'うん、ちゃんと聞こえてるよ。', voice: 'yu_001.wav', sound: '' },
+              { speaker: '', text: '遠くで雷が鳴った。', voice: '', sound: 'thunder.wav', soundLoop: false }
+            ]
+          }
+        ]
+      },
+      {
+        title: '翌朝',
+        sound: 'morning_bgm.mp3',
+        images: [
+          {
+            image: '',
+            lines: [
+              { speaker: '', text: '(画像を入れないと、黒い画面にセリフだけが出ます)', voice: '' }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+  const NOVEL_AI_SPEC_MD = [
+    '# Prompt Reel ノベルゲーム JSON 仕様(AI 向け)',
+    '',
+    'この仕様に従って、ノベルゲームのシナリオを **JSON だけ** で出力してください。前後に説明文やコードブロック記号を付けないでください。文字コードは UTF-8、コメントは書けません。',
+    '',
+    '## 全体の形',
+    '',
+    '```',
+    '{',
+    '  "format": "prompt-reel-novel",',
+    '  "version": 2,',
+    '  "title": "作品のタイトル",',
+    '  "scenes": [ シーン, シーン, ... ]',
+    '}',
+    '```',
+    '',
+    '## 3つの階層',
+    '',
+    '| 階層 | 意味 | 書ける項目 |',
+    '|---|---|---|',
+    '| シーン (`scenes[]`) | 場面のいちばん大きなまとまり。場所や時間が変わるところで区切る | `title`(場面名・画面には出ない)、`sound`(シーンの間ずっと流す音: BGM など)、`soundLoop`(くり返すか。既定 true)、`images` |',
+    '| 画像 (`images[]`) | 背景1枚(画像・動画・GIF)ぶんのまとまり | `image`(背景のファイル名。空なら黒い画面)、`videoSound`(動画の音を流すか。既定 false)、`sound`(この画像の間だけ流す音: 環境音など)、`soundLoop`(既定 true)、`lines` |',
+    '| セリフ行 (`lines[]`) | 1回のクリックで出る文章 | `speaker`(話者名。空なら地の文)、`text`(セリフ・地の文)、`voice`(このセリフの声の音声ファイル名)、`sound`(この行で鳴らす効果音)、`soundLoop`(既定 false) |',
+    '',
+    '## ルール',
+    '',
+    '- `voice` は **1つのセリフに1つ** です。声の無い行は `""` にします。',
+    '- `voice` と `sound` は別のものです。`voice` はセリフの声、`sound` は効果音・BGM・環境音です。',
+    '- 音の重なり方: シーンの `sound` と画像の `sound` と行の `sound` と `voice` は同時に鳴らせます。シーンの音はシーンが変わるまで、画像の音は次の画像に変わるまで鳴り続けます(同じファイル名なら途切れずに続きます)。行の `sound` は、くり返しなし(既定)なら最後まで鳴り、くり返しありなら次の画像に移ると止まります。',
+    '- 自動送りは、文章を出し終えて `voice` が鳴り終わってから次の行へ進みます。',
+    '- 画像を入れない(`image` を空にする)場面があってもかまいません。全部の画像・行に素材を入れる必要はありません。',
+    '- ファイル名は、あとで実際に用意するファイルと **拡張子まで同じ** にしてください(大文字・小文字は区別しません)。書いた名前のファイルだけが、指定した場所に自動で入ります。',
+    '- 使えるファイル: 背景 = png / jpg / webp / gif / mp4 / webm、音声 = wav / mp3 / ogg / m4a / flac。',
+    '- ファイル名は、場面と順番が分かる名前にすると管理しやすくなります(例: `aya_001.wav`, `scene02_room.png`)。同じファイル名を何か所に書いてもかまいません。',
+    '- 1つの作品は、セリフが数百行程度までにしてください(長すぎると保存できません)。',
+    '',
+    '## 例',
+    '',
+    '```json',
+    JSON.stringify(NOVEL_JSON_TEMPLATE, null, 2),
+    '```',
+    '',
+    '## AI への頼み方の例',
+    '',
+    '> 上の仕様に従って、〇〇な話のノベルゲームの JSON を作ってください。シーンは3つ、セリフは全部で30行くらい。登場人物はアヤとユウ。声は全セリフに付け、ファイル名は「話者のローマ字_3桁の通し番号.wav」にしてください。背景は各シーン1〜2枚で、ファイル名は「sceneNN_内容.png」にしてください。',
+    ''
+  ].join('\n');
+
   function imagesOfPost(p) {
     if (!p) return [];
     const out = [];
@@ -14158,53 +14829,173 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     // 選択直後だけ、空のシーンへ自動で流し込む
     if (opts.autofill && novelRefImages.length) {
       const isBlank = function (s) {
-        return !s.bg && !s.dataUrl && !(s.lines || []).some(function (l) { return (l.name || '').trim() || (l.text || '').trim(); });
+        return !novelSceneHasMedia(s) && !(s.lines || []).some(function (l) { return (l.name || '').trim() || (l.text || '').trim(); });
       };
       if (novelScenes.every(isBlank)) {
-        novelScenes = novelRefImages.map(function (url) {
+        novelScenes = novelRefImages.map(function (url, i) {
           // 借り物の画像なので own は立てない(この投稿を削除しても元画像は消さない)
-          return { bg: url, dataUrl: '', mime: '', own: false, lines: [novelBlankLine()] };
+          return Object.assign(novelBlankScene(i === 0), { bg: url });
         });
       } else {
         novelScenes.forEach(function (s, i) {
-          if (!s.bg && !s.dataUrl && novelRefImages[i]) { s.bg = novelRefImages[i]; s.own = false; }
+          if (!novelSceneHasMedia(s) && novelRefImages[i]) { s.bg = novelRefImages[i]; s.kind = 'image'; s.own = false; }
         });
       }
     }
     renderNovelSceneList();
   }
 
-  function novelBlankLine() { return { name: '', text: '' }; }
-  function novelBlankScene() { return { bg: '', dataUrl: '', mime: '', own: false, lines: [novelBlankLine()] }; }
+  // ===== NOVEL EDITOR MODEL =====
+  function novelSlot(loop) { return { key: '', hint: '', loop: !!loop }; }
+  function novelBlankLine() { return { name: '', text: '', voice: novelSlot(false), sound: novelSlot(false) }; }
+  function novelBlankScene(sceneStart) {
+    return {
+      sceneStart: !!sceneStart, sceneTitle: '', sceneSound: novelSlot(true),
+      bg: '', dataUrl: '', mime: '', own: false, kind: 'image', file: null, objUrl: '', size: 0, name: '', imageName: '',
+      bgSound: false, sound: novelSlot(true), uploadId: '',
+      lines: [novelBlankLine()]
+    };
+  }
+  function novelCopySlot(slot) { return Object.assign({}, slot); }
+  function novelCopyLine(l) { return { name: l.name, text: l.text, voice: novelCopySlot(l.voice), sound: novelCopySlot(l.sound) }; }
+  function novelCopyScene(s) {
+    return Object.assign({}, s, {
+      sceneStart: false, sceneSound: novelCopySlot(s.sceneSound), sound: novelCopySlot(s.sound),
+      lines: (s.lines || []).map(novelCopyLine)
+    });
+  }
+  function novelSceneHasMedia(s) { return !!(s && (s.dataUrl || s.objUrl || s.bg)); }
+  function novelBlockHasSound(s) {
+    return !!(s && ((s.sound && (s.sound.key || s.sound.hint)) || (s.sceneSound && (s.sceneSound.key || s.sceneSound.hint))));
+  }
+  function novelLineFilled(l) {
+    return !!((l.name || '').trim() || (l.text || '').trim() || (l.voice && (l.voice.key || l.voice.hint)) || (l.sound && (l.sound.key || l.sound.hint)));
+  }
+  function novelNameKey(name) { return String(name || '').trim().toLowerCase(); }
+  function novelFile(key) { return (key && novelFiles[key]) || null; }
+  function novelAddFile(entry) {
+    const key = 'f' + (++novelFileSeq);
+    novelFiles[key] = Object.assign({ key: key, name: '', size: 0, file: null, objUrl: '', url: '', uploadId: '' }, entry);
+    return key;
+  }
+  function novelFileFromLocal(f) {
+    return novelAddFile({ name: f.name, size: f.size, file: f, objUrl: URL.createObjectURL(f) });
+  }
+  function novelIsAudioFile(f) {
+    return !!f && (String(f.type || '').indexOf('audio/') === 0 || /^(mp3|wav|ogg|oga|flac|m4a|aac|opus|weba)$/.test(attachmentExt(f.name)));
+  }
+  function novelIsMediaFile(f) {
+    const t = String((f && f.type) || '');
+    return t.indexOf('image/') === 0 || t.indexOf('video/') === 0;
+  }
+  function novelAllSlots() {
+    const out = [];
+    novelScenes.forEach(function (s, bi) {
+      if (bi === 0 || s.sceneStart) out.push({ slot: s.sceneSound, path: 'b' + bi + '.sceneSound' });
+      out.push({ slot: s.sound, path: 'b' + bi + '.sound' });
+      (s.lines || []).forEach(function (l, li) {
+        out.push({ slot: l.voice, path: 'b' + bi + '.l' + li + '.voice' });
+        out.push({ slot: l.sound, path: 'b' + bi + '.l' + li + '.sound' });
+      });
+    });
+    return out;
+  }
+  function novelSlotAt(path) {
+    const m = /^b(\d+)\.(?:l(\d+)\.)?(\w+)$/.exec(String(path || ''));
+    if (!m) return null;
+    const s = novelScenes[Number(m[1])];
+    if (!s) return null;
+    const holder = m[2] !== undefined ? (s.lines || [])[Number(m[2])] : s;
+    return holder && holder[m[3]] && typeof holder[m[3]] === 'object' ? holder[m[3]] : null;
+  }
+  function novelSlotKind(path) {
+    if (/\.voice$/.test(path)) return 'voice';
+    if (/\.sceneSound$/.test(path)) return 'sceneSound';
+    return /\.l\d+\./.test(path) ? 'sound' : 'imageSound';
+  }
 
-  function novelSceneThumbSrc(s) { return s.dataUrl || s.bg || ''; }
+  // ===== NOVEL AUDIO PREVIEW =====
+  function novelPlayFile(key) {
+    const f = novelFile(key);
+    if (!f) return;
+    if (!f.objUrl && f.url) {
+      const id = driveFileIdFromUrl(f.url);
+      if (!id || !(f.size > 0)) return;
+      const parts = [];
+      relayRead(id, f.size, function (b) { parts.push(b); }).then(function () {
+        f.objUrl = URL.createObjectURL(new Blob(parts, { type: ATTACH_MEDIA_MIME[attachmentExt(f.name)] || '' }));
+        novelPlayFile(key);
+      }).catch(function (err) { console.error(err); });
+      return;
+    }
+    novelEditorAudio.pause();
+    novelEditorAudio.src = f.objUrl;
+    const pr = novelEditorAudio.play();
+    if (pr && pr.catch) pr.catch(function () {});
+  }
 
-  function novelLineRowHtml(l, li, total) {
+  function novelSlotHtml(slot, path, withLoop) {
+    const kind = novelSlotKind(path);
+    const f = novelFile(slot.key);
+    const label = f ? f.name : (slot.hint ? novelFillMsg(NOVEL_EDITOR_MSG.slotWaiting, { name: slot.hint }) : NOVEL_EDITOR_MSG.slotEmpty[kind]);
+    return '<div class="novel-slot novel-slot-' + kind + (f ? ' has-file' : (slot.hint ? ' is-waiting' : '')) + '" data-slot="' + path + '">' +
+      '<span class="novel-slot-tag">' + escapeHtml(NOVEL_EDITOR_MSG.slotLabel[kind]) + '</span>' +
+      '<button type="button" class="novel-slot-pick" data-slot-pick title="クリックで選ぶ / ここへドラッグ&ドロップ">' + escapeHtml(label) + '</button>' +
+      (f ? '<button type="button" class="novel-slot-btn" data-slot-play title="試聴">▶</button>' : '') +
+      (f || slot.hint ? '<button type="button" class="novel-slot-btn danger" data-slot-clear title="外す">✕</button>' : '') +
+      (withLoop ? '<label class="novel-check novel-slot-loop" title="くり返し再生"><input type="checkbox" data-slot-loop' + (slot.loop ? ' checked' : '') + '>くり返し</label>' : '') +
+    '</div>';
+  }
+
+  function novelSceneThumbSrc(s) {
+    if (s.dataUrl) return s.dataUrl;
+    if (s.objUrl) return s.objUrl;
+    if (!s.bg) return '';
+    return s.kind === 'image' ? s.bg : imageSrcFor(s.bg, 'w320');
+  }
+  function novelSceneMediaHtml(s) {
+    const src = novelSceneThumbSrc(s);
+    if (!src) return '';
+    if (s.kind === 'video' && s.objUrl) return '<video src="' + escapeHtml(src) + '" muted loop autoplay playsinline></video>';
+    return '<img src="' + escapeHtml(src) + '" alt="背景">';
+  }
+  function novelKindLabel(kind) { return kind === 'video' ? '動画' : (kind === 'gif' ? 'GIF' : '画像'); }
+
+  function novelLineRowHtml(l, li, total, bi) {
+    const base = 'b' + bi + '.l' + li;
     return '' +
       '<div class="novel-line-row" data-line-idx="' + li + '">' +
-        '<span class="novel-line-handle" data-line-handle title="ドラッグで並び替え">⠿</span>' +
-        '<input type="text" class="novel-line-name" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-name placeholder="話者(空欄可)" value="' + escapeHtml(l.name || '') + '">' +
-        '<input type="text" class="novel-line-text" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-text placeholder="セリフ・地の文" value="' + escapeHtml(l.text || '') + '">' +
-        '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-up' + (li === 0 ? ' disabled' : '') + ' title="上へ">↑</button>' +
-        '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-down' + (li === total - 1 ? ' disabled' : '') + ' title="下へ">↓</button>' +
-        '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-line-remove' + (total <= 1 ? ' disabled' : '') + ' title="この行を削除">✕</button>' +
+        '<div class="novel-line-main">' +
+          '<span class="novel-line-handle" data-line-handle title="ドラッグで並び替え">⠿</span>' +
+          '<input type="text" class="novel-line-name" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-name placeholder="話者(空欄可)" value="' + escapeHtml(l.name || '') + '">' +
+          '<input type="text" class="novel-line-text" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-text placeholder="セリフ・地の文" value="' + escapeHtml(l.text || '') + '">' +
+          '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-split' + (li === 0 ? ' disabled' : '') + ' title="この行から新しい画像に分ける">✂</button>' +
+          '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-up' + (li === 0 ? ' disabled' : '') + ' title="上へ">↑</button>' +
+          '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-down' + (li === total - 1 ? ' disabled' : '') + ' title="下へ">↓</button>' +
+          '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-line-remove' + (total <= 1 ? ' disabled' : '') + ' title="この行を削除">✕</button>' +
+        '</div>' +
+        '<div class="novel-line-sounds">' +
+          novelSlotHtml(l.voice, base + '.voice', false) +
+          novelSlotHtml(l.sound, base + '.sound', true) +
+        '</div>' +
       '</div>';
   }
 
   // 末尾には常に空行を1行だけ確保する(入力すると自動でさらに1行増える)
   function ensureTrailingBlankLine(scene) {
     if (!scene.lines || !scene.lines.length) { scene.lines = [novelBlankLine()]; return; }
-    const last = scene.lines[scene.lines.length - 1];
-    if ((last.name || '').trim() || (last.text || '').trim()) scene.lines.push(novelBlankLine());
+    if (novelLineFilled(scene.lines[scene.lines.length - 1])) scene.lines.push(novelBlankLine());
   }
 
   // 再描画でフォーカスとキャレット位置が飛ばないよう記録・復元する
   function captureNovelFocus() {
     const el = document.activeElement;
     if (!el || !el.closest) return null;
-    const row = el.closest('.novel-line-row');
     const card = el.closest('.novel-scene');
-    if (!row || !card) return null;
+    if (!card) return null;
+    if (el.hasAttribute('data-scene-title')) return { scene: Number(card.dataset.sceneIdx), title: true, pos: el.selectionStart };
+    const row = el.closest('.novel-line-row');
+    if (!row) return null;
     const field = el.hasAttribute('data-line-name') ? 'name' : (el.hasAttribute('data-line-text') ? 'text' : null);
     if (!field) return null;
     return {
@@ -14216,10 +15007,38 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
   function restoreNovelFocus(snap) {
     if (!snap) return;
-    const el = document.querySelector('.novel-scene[data-scene-idx="' + snap.scene + '"] .novel-line-row[data-line-idx="' + snap.line + '"] [data-line-' + snap.field + ']');
+    const el = snap.title
+      ? document.querySelector('.novel-scene[data-scene-idx="' + snap.scene + '"] [data-scene-title]')
+      : document.querySelector('.novel-scene[data-scene-idx="' + snap.scene + '"] .novel-line-row[data-line-idx="' + snap.line + '"] [data-line-' + snap.field + ']');
     if (!el) return;
     el.focus();
     try { el.setSelectionRange(snap.pos, snap.pos); } catch (e) {}
+  }
+
+  function novelSceneSideHtml(s, bi) {
+    return '' +
+      '<div class="novel-scene-side">' +
+        '<div class="novel-dz" data-scene-dz>' +
+          (novelSceneHasMedia(s)
+            ? '<button class="novel-dz-clear" type="button" tabindex="-1" data-scene-clearimg title="画像・動画を外す">✕</button>' +
+              '<span class="novel-dz-kind">' + novelKindLabel(s.kind) + '</span>' + novelSceneMediaHtml(s)
+            : '<div class="novel-dz-text">' + (s.imageName
+              ? '<span class="novel-dz-hint">待ち: ' + escapeHtml(s.imageName) + '</span><br>画像・動画・GIF をドロップ<br>またはクリック'
+              : '画像・動画・GIF<br>ドラッグ&ドロップ<br>またはクリック<br><span class="novel-dz-sub">(入れなくてもかまいません)</span>') + '</div>') +
+        '</div>' +
+        (s.kind === 'video' && novelSceneHasMedia(s)
+          ? '<label class="novel-check"><input type="checkbox" data-scene-bgsound' + (s.bgSound ? ' checked' : '') + '>動画の音を流す</label>'
+          : '') +
+        novelSlotHtml(s.sound, 'b' + bi + '.sound', true) +
+      '</div>';
+  }
+
+  function novelSceneNumbers() {
+    let n = 0;
+    return novelScenes.map(function (s, i) {
+      if (i === 0 || s.sceneStart) n++;
+      return n;
+    });
   }
 
   function renderNovelSceneList() {
@@ -14227,34 +15046,43 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const hintEl = document.getElementById('novelEmptyHint');
     if (!listEl) return;
     const snap = captureNovelFocus();
+    if (novelScenes[0]) novelScenes[0].sceneStart = true;
     novelScenes.forEach(ensureTrailingBlankLine);
     hintEl.style.display = novelScenes.length ? 'none' : '';
+    const sceneNos = novelSceneNumbers();
     listEl.innerHTML = novelScenes.map(function (s, i) {
-      const src = novelSceneThumbSrc(s);
       const lines = s.lines;
       const filled = lines.filter(function (l) { return (l.name || '').trim() || (l.text || '').trim(); }).length;
+      const voiced = lines.filter(function (l) { return l.voice && l.voice.key; }).length;
+      const head = s.sceneStart
+        ? '<div class="novel-scene-band">' +
+            '<span class="novel-scene-band-num">シーン ' + sceneNos[i] + '</span>' +
+            '<input type="text" class="novel-scene-title" data-pm-skip autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" data-scene-title placeholder="シーンの名前(任意・画面には出ません)" value="' + escapeHtml(s.sceneTitle || '') + '">' +
+            novelSlotHtml(s.sceneSound, 'b' + i + '.sceneSound', true) +
+            '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-unstart' + (i === 0 ? ' disabled' : '') + ' title="このシーンを前のシーンの続きにする">前のシーンとつなげる</button>' +
+          '</div>'
+        : '';
       return '' +
-        '<div class="novel-scene" data-scene-idx="' + i + '">' +
+        '<div class="novel-scene' + (s.sceneStart ? ' is-scene-start' : '') + '" data-scene-idx="' + i + '">' +
+          head +
           '<div class="novel-scene-head">' +
             '<span class="novel-scene-handle" data-scene-handle title="ドラッグで並び替え">⠿</span>' +
-            '<span class="novel-scene-num">シーン ' + (i + 1) + '</span>' +
-            '<span class="novel-scene-count">' + filled + '行</span>' +
+            '<span class="novel-scene-num">画像 ' + (i + 1) + '</span>' +
+            '<span class="novel-scene-count">' + filled + '行' + (voiced ? ' / 声 ' + voiced : '') + '</span>' +
             '<div class="novel-scene-actions">' +
+              (s.sceneStart ? '' : '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-start title="この画像から新しいシーンにする">ここから新しいシーン</button>') +
+              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-merge' + (i === 0 || s.sceneStart ? ' disabled' : '') + ' title="この画像のセリフを、前の画像の続きにする">前の画像とつなげる</button>' +
               '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-up' + (i === 0 ? ' disabled' : '') + '>↑ 上へ</button>' +
               '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-down' + (i === novelScenes.length - 1 ? ' disabled' : '') + '>↓ 下へ</button>' +
-              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-dup title="このシーンを画像ごと複製">複製</button>' +
+              '<button class="novel-mini-btn" type="button" tabindex="-1" data-scene-dup title="この画像を複製">複製</button>' +
               '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-scene-remove>削除</button>' +
             '</div>' +
           '</div>' +
           '<div class="novel-scene-body">' +
-            '<div class="novel-dz" data-scene-dz>' +
-              (src
-                ? '<button class="novel-dz-clear" type="button" tabindex="-1" data-scene-clearimg title="画像を外す">✕</button><img src="' + escapeHtml(src) + '" alt="背景">'
-                : '背景画像<br>ドラッグ&ドロップ<br>またはクリック') +
-            '</div>' +
+            novelSceneSideHtml(s, i) +
             '<div class="novel-scene-fields">' +
               '<div class="novel-line-list" data-line-list>' +
-                lines.map(function (l, li) { return novelLineRowHtml(l, li, lines.length); }).join('') +
+                lines.map(function (l, li) { return novelLineRowHtml(l, li, lines.length, i); }).join('') +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -14308,6 +15136,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           }
           focusNovelLine(idx, Math.min(li + 1, novelScenes[idx].lines.length - 1));
         });
+        row.querySelector('[data-line-split]').addEventListener('click', function () { novelSplitScene(idx, li); });
         row.querySelector('[data-line-up]').addEventListener('click', function () { novelMoveLine(idx, li, -1); });
         row.querySelector('[data-line-down]').addEventListener('click', function () { novelMoveLine(idx, li, 1); });
         row.querySelector('[data-line-remove]').addEventListener('click', function () {
@@ -14325,7 +15154,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const listEl2 = cardEl.querySelector('[data-line-list]');
         const li = lines.length - 1;
         const temp = document.createElement('div');
-        temp.innerHTML = novelLineRowHtml(lines[li], li, lines.length);
+        temp.innerHTML = novelLineRowHtml(lines[li], li, lines.length, sceneIdx);
         const row = temp.firstChild;
         listEl2.appendChild(row);
         wireNovelLineRow(cardEl, row, sceneIdx);
@@ -14340,45 +15169,145 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           row.querySelector('[data-line-up]').disabled = i === 0;
           row.querySelector('[data-line-down]').disabled = i === rows.length - 1;
           row.querySelector('[data-line-remove]').disabled = rows.length <= 1;
+          row.querySelector('[data-line-split]').disabled = i === 0;
         });
         const badge = cardEl.querySelector('.novel-scene-count');
         if (badge) {
+          const voiced = lines.filter(function (l) { return l.voice && l.voice.key; }).length;
           badge.textContent = lines.filter(function (l) {
             return (l.name || '').trim() || (l.text || '').trim();
-          }).length + '行';
+          }).length + '行' + (voiced ? ' / 声 ' + voiced : '');
         }
       }
 
+      const titleEl = card.querySelector('[data-scene-title]');
+      if (titleEl) titleEl.addEventListener('input', function () { novelScenes[idx].sceneTitle = titleEl.value; });
+      const unstartBtn = card.querySelector('[data-scene-unstart]');
+      if (unstartBtn) unstartBtn.addEventListener('click', function () { novelSetSceneStart(idx, false); });
+      const startBtn = card.querySelector('[data-scene-start]');
+      if (startBtn) startBtn.addEventListener('click', function () { novelSetSceneStart(idx, true); });
+      card.querySelector('[data-scene-merge]').addEventListener('click', function () { novelMergeScene(idx); });
       card.querySelector('[data-scene-up]').addEventListener('click', function () { novelMoveScene(idx, -1); });
       card.querySelector('[data-scene-down]').addEventListener('click', function () { novelMoveScene(idx, 1); });
       card.querySelector('[data-scene-dup]').addEventListener('click', function () {
-        const s = novelScenes[idx];
         // 画像は同じURL/データを共有するので、複製してもアップロードは増えない
-        novelScenes.splice(idx + 1, 0, {
-          bg: s.bg, dataUrl: s.dataUrl, mime: s.mime, own: s.own === true,
-          lines: (s.lines || []).map(function (l) { return { name: l.name || '', text: l.text || '' }; })
-        });
+        novelScenes.splice(idx + 1, 0, novelCopyScene(novelScenes[idx]));
         renderNovelSceneList();
       });
       wireNovelSceneDrag(card, idx);
       card.querySelector('[data-scene-remove]').addEventListener('click', function () {
+        const wasStart = novelScenes[idx].sceneStart;
         novelScenes.splice(idx, 1);
+        if (wasStart && novelScenes[idx] && !novelScenes[idx].sceneStart) novelScenes[idx].sceneStart = true;
         renderNovelSceneList();
       });
       const clearBtn = card.querySelector('[data-scene-clearimg]');
       if (clearBtn) {
         clearBtn.addEventListener('click', function (e) {
           e.stopPropagation();
-          novelScenes[idx].bg = '';
-          novelScenes[idx].dataUrl = '';
-          novelScenes[idx].mime = '';
-          novelScenes[idx].own = false;
+          novelClearSceneMedia(novelScenes[idx]);
           renderNovelSceneList();
         });
       }
+      const soundBox = card.querySelector('[data-scene-bgsound]');
+      if (soundBox) soundBox.addEventListener('change', function () { novelScenes[idx].bgSound = soundBox.checked; });
       wireNovelSceneDropzone(card.querySelector('[data-scene-dz]'), idx);
     });
     restoreNovelFocus(snap);
+  }
+
+  // ===== NOVEL SOUND SLOTS =====
+  function novelPickAudio(onFile) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'audio/*';
+    input.addEventListener('change', function () {
+      if (input.files && input.files[0]) onFile(input.files[0]);
+    });
+    input.click();
+  }
+  function novelSetSlotFile(path, file) {
+    const slot = novelSlotAt(path);
+    if (!slot) return;
+    if (!novelIsAudioFile(file)) { document.getElementById('novelEditorStatus').textContent = NOVEL_EDITOR_MSG.audioBad; return; }
+    slot.key = novelFileFromLocal(file);
+    slot.hint = '';
+    renderNovelSceneList();
+  }
+  (function wireNovelSlots() {
+    const listEl = document.getElementById('novelSceneList');
+    if (!listEl) return;
+    function slotOf(e) {
+      const box = e.target && e.target.closest ? e.target.closest('[data-slot]') : null;
+      return box && listEl.contains(box) ? box : null;
+    }
+    listEl.addEventListener('click', function (e) {
+      const box = slotOf(e);
+      if (!box) return;
+      const path = box.dataset.slot;
+      const slot = novelSlotAt(path);
+      if (!slot) return;
+      if (e.target.closest('[data-slot-pick]')) novelPickAudio(function (f) { novelSetSlotFile(path, f); });
+      else if (e.target.closest('[data-slot-play]')) novelPlayFile(slot.key);
+      else if (e.target.closest('[data-slot-clear]')) { slot.key = ''; slot.hint = ''; renderNovelSceneList(); }
+    });
+    listEl.addEventListener('change', function (e) {
+      const box = slotOf(e);
+      if (!box || !e.target.hasAttribute('data-slot-loop')) return;
+      const slot = novelSlotAt(box.dataset.slot);
+      if (slot) slot.loop = e.target.checked;
+    });
+    listEl.addEventListener('dragover', function (e) {
+      const box = slotOf(e);
+      if (!box) return;
+      e.preventDefault();
+      box.classList.add('dragover');
+    });
+    listEl.addEventListener('dragleave', function (e) {
+      const box = slotOf(e);
+      if (box) box.classList.remove('dragover');
+    });
+    listEl.addEventListener('drop', function (e) {
+      const box = slotOf(e);
+      if (!box) return;
+      e.preventDefault();
+      e.stopPropagation();
+      box.classList.remove('dragover');
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) novelSetSlotFile(box.dataset.slot, f);
+    });
+  })();
+
+  function novelSetSceneStart(idx, on) {
+    if (idx === 0 && !on) return;
+    const s = novelScenes[idx];
+    if (!s) return;
+    s.sceneStart = !!on;
+    renderNovelSceneList();
+  }
+  function novelSplitScene(idx, li) {
+    const s = novelScenes[idx];
+    if (!s || li <= 0) return;
+    const next = novelBlankScene(false);
+    next.lines = s.lines.splice(li);
+    novelScenes.splice(idx + 1, 0, next);
+    renderNovelSceneList();
+  }
+  function novelMergeScene(idx) {
+    if (idx <= 0 || novelScenes[idx].sceneStart) { document.getElementById('novelEditorStatus').textContent = NOVEL_EDITOR_MSG.mergeFirst; return; }
+    const prev = novelScenes[idx - 1];
+    const cur = novelScenes[idx];
+    prev.lines = prev.lines.filter(novelLineFilled).concat(cur.lines);
+    if (!novelSceneHasMedia(prev) && !prev.imageName && (novelSceneHasMedia(cur) || cur.imageName)) {
+      ['bg', 'dataUrl', 'mime', 'own', 'kind', 'file', 'objUrl', 'size', 'name', 'imageName', 'bgSound', 'uploadId'].forEach(function (k) { prev[k] = cur[k]; });
+    }
+    if (!prev.sound.key && !prev.sound.hint) prev.sound = cur.sound;
+    novelScenes.splice(idx, 1);
+    renderNovelSceneList();
+  }
+  function novelClearSceneMedia(s) {
+    s.bg = ''; s.dataUrl = ''; s.mime = ''; s.own = false; s.kind = 'image';
+    s.file = null; s.objUrl = ''; s.size = 0; s.name = ''; s.uploadId = '';
   }
 
   /* 会話行のドラッグ並び替え。入力欄のテキスト選択を壊さないよう、
@@ -14505,7 +15434,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     dz.addEventListener('click', function () {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = 'image/*';
+      input.accept = 'image/*,video/*';
       input.addEventListener('change', function () {
         if (input.files && input.files[0]) novelSetSceneImage(idx, input.files[0]);
       });
@@ -14515,19 +15444,35 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     dz.addEventListener('dragleave', function () { dz.classList.remove('dragover'); });
     dz.addEventListener('drop', function (e) {
       e.preventDefault();
+      e.stopPropagation();
       dz.classList.remove('dragover');
       const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if (f && f.type.indexOf('image/') === 0) novelSetSceneImage(idx, f);
+      if (!f) return;
+      if (novelIsMediaFile(f)) novelSetSceneImage(idx, f);
+      else document.getElementById('novelEditorStatus').textContent = NOVEL_EDITOR_MSG.mediaBad;
     });
   }
 
+  async function novelApplySceneMedia(s, file) {
+    const type = String(file.type || '');
+    novelClearSceneMedia(s);
+    s.name = file.name;
+    s.size = file.size;
+    s.own = true;   // 自分でアップロードした画像
+    if (type.indexOf('video/') === 0 || type === 'image/gif') {
+      s.kind = type === 'image/gif' ? 'gif' : 'video';
+      s.file = file;
+      s.objUrl = URL.createObjectURL(file);
+      return;
+    }
+    s.kind = 'image';
+    s.dataUrl = await fileToBase64(file);
+    s.mime = type || 'image/png';
+  }
   async function novelSetSceneImage(idx, file) {
     try {
-      const dataUrl = await fileToBase64(file);
-      novelScenes[idx].dataUrl = dataUrl;
-      novelScenes[idx].mime = file.type || 'image/png';
-      novelScenes[idx].bg = '';
-      novelScenes[idx].own = true;   // 自分でアップロードした画像
+      await novelApplySceneMedia(novelScenes[idx], file);
+      novelScenes[idx].imageName = '';
       renderNovelSceneList();
     } catch (err) {
       console.error(err);
@@ -14535,62 +15480,378 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
+  // ===== NOVEL BULK ADD (JSON ONLY) =====
+  function novelHasJsonHints() {
+    return novelScenes.some(function (s) { return s.imageName; }) ||
+      novelAllSlots().some(function (x) { return x.slot.hint; });
+  }
+  async function novelAddFilesByJson(fileList) {
+    const statusEl = document.getElementById('novelEditorStatus');
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    if (!novelHasJsonHints()) { statusEl.textContent = NOVEL_EDITOR_MSG.bulkNoJson; return; }
+    let placed = 0;
+    const rejected = [];
+    for (const f of files) {
+      const key = novelNameKey(f.name);
+      let used = false;
+      if (novelIsMediaFile(f)) {
+        for (const s of novelScenes) {
+          if (s.imageName && novelNameKey(s.imageName) === key) {
+            await novelApplySceneMedia(s, f);
+            s.imageName = f.name;
+            used = true;
+          }
+        }
+      } else if (novelIsAudioFile(f)) {
+        let fileKey = '';
+        novelAllSlots().forEach(function (x) {
+          if (!x.slot.hint || novelNameKey(x.slot.hint) !== key) return;
+          if (!fileKey) fileKey = novelFileFromLocal(f);
+          x.slot.key = fileKey;
+          x.slot.hint = '';
+          used = true;
+        });
+      }
+      if (used) placed++;
+      else rejected.push(f.name);
+    }
+    const notes = [];
+    notes.push(placed ? novelFillMsg(NOVEL_EDITOR_MSG.bulkDone, { n: placed }) : NOVEL_EDITOR_MSG.bulkNothing);
+    if (rejected.length) notes.push(novelFillMsg(NOVEL_EDITOR_MSG.bulkRejected, { names: rejected.join('、') }));
+    statusEl.textContent = notes.join(' ');
+    renderNovelSceneList();
+  }
+
+  // ===== NOVEL JSON =====
+  function novelPick(obj, keys) {
+    for (let i = 0; i < keys.length; i++) {
+      const v = obj[keys[i]];
+      if (v !== undefined && v !== null && v !== '') return v;
+    }
+    return '';
+  }
+  function novelHintSlot(name, loop) {
+    const s = novelSlot(loop);
+    s.hint = String(name || '');
+    return s;
+  }
+  function novelLoopOf(obj, keys, dflt) {
+    const v = novelPick(obj, keys);
+    return v === '' ? dflt : v === true;
+  }
+  function novelJsonLine(l) {
+    if (typeof l === 'string') return Object.assign(novelBlankLine(), { text: l });
+    l = l || {};
+    return {
+      name: String(novelPick(l, ['speaker', 'name', 'character', 'chara']) || ''),
+      text: String(novelPick(l, ['text', 'line', 'serif', 'dialogue', 'message']) || ''),
+      voice: novelHintSlot(novelPick(l, ['voice', 'voiceFile']), false),
+      sound: novelHintSlot(novelPick(l, ['sound', 'se', 'soundEffect']), novelLoopOf(l, ['soundLoop', 'loop'], false))
+    };
+  }
+  function novelJsonBlock(img, lines, legacySoundKeys) {
+    const b = novelBlankScene(false);
+    img = img || {};
+    b.imageName = String(novelPick(img, ['image', 'imageName', 'bg', 'background', 'video']) || '');
+    b.bgSound = novelPick(img, ['videoSound', 'bgSound']) === true;
+    b.sound = novelHintSlot(novelPick(img, legacySoundKeys || ['sound', 'ambient']), novelLoopOf(img, ['soundLoop', 'bgmLoop', 'loop'], true));
+    b.lines = lines.length ? lines : [novelBlankLine()];
+    return b;
+  }
+  function parseNovelJson(data) {
+    if (data && Array.isArray(data.scenes)) {
+      const blocks = [];
+      data.scenes.forEach(function (sc) {
+        sc = sc || {};
+        const images = Array.isArray(sc.images) ? sc.images : null;
+        let first;
+        if (images) {
+          images.forEach(function (img, k) {
+            const b = novelJsonBlock(img, ((img && img.lines) || []).map(novelJsonLine));
+            if (k === 0) first = b;
+            blocks.push(b);
+          });
+          if (!first) { first = novelBlankScene(false); blocks.push(first); }
+          first.sceneSound = novelHintSlot(novelPick(sc, ['sound', 'bgm']), novelLoopOf(sc, ['soundLoop', 'loop'], true));
+        } else {
+          first = novelJsonBlock(sc, (sc.lines || sc.dialogues || []).map(novelJsonLine), ['bgm', 'ambient']);
+          first.sceneSound = novelSlot(true);
+          blocks.push(first);
+        }
+        first.sceneStart = true;
+        first.sceneTitle = String(sc.title || '');
+      });
+      return blocks;
+    }
+    const flat = Array.isArray(data) ? data : (data && (data.lines || data.dialogues || data.script));
+    if (!Array.isArray(flat)) throw new Error('scenes または lines がありません');
+    const blocks = [];
+    let cur = null;
+    flat.forEach(function (raw) {
+      const o = raw && typeof raw === 'object' ? raw : {};
+      const newScene = !cur || o.newScene === true || o.break === true || (o.scene !== undefined && o.scene !== cur.sceneKey);
+      const newImage = newScene || !!novelPick(o, ['image', 'imageName', 'bg', 'background', 'video']);
+      if (newImage) {
+        cur = novelJsonBlock(o, [], ['imageSound']);
+        cur.lines = [];
+        cur.sceneStart = newScene;
+        cur.sceneKey = o.scene !== undefined ? o.scene : (blocks.length ? blocks[blocks.length - 1].sceneKey : undefined);
+        blocks.push(cur);
+      }
+      cur.lines.push(novelJsonLine(raw));
+    });
+    blocks.forEach(function (b) { delete b.sceneKey; if (!b.lines.length) b.lines = [novelBlankLine()]; });
+    return blocks;
+  }
+  function novelEditorIsBlank() {
+    return novelScenes.every(function (s) {
+      return !novelSceneHasMedia(s) && !novelBlockHasSound(s) && !s.imageName && !(s.lines || []).some(novelLineFilled);
+    });
+  }
+  function importNovelJsonText(text) {
+    const statusEl = document.getElementById('novelEditorStatus');
+    let blocks;
+    try {
+      blocks = parseNovelJson(JSON.parse(text));
+    } catch (err) {
+      statusEl.textContent = novelFillMsg(NOVEL_EDITOR_MSG.jsonBad, { err: err.message || err });
+      return false;
+    }
+    const lineCount = blocks.reduce(function (n, s) { return n + s.lines.filter(function (l) { return l.text || l.name; }).length; }, 0);
+    if (!lineCount) { statusEl.textContent = NOVEL_EDITOR_MSG.jsonNoLines; return false; }
+    if (!novelEditorIsBlank() && !window.confirm(novelFillMsg(NOVEL_EDITOR_MSG.jsonReplace, { n: novelScenes.length }))) return false;
+    const oldMedia = {};
+    novelScenes.forEach(function (s) {
+      const key = novelNameKey(s.name || s.imageName);
+      if (key && novelSceneHasMedia(s)) oldMedia[key] = s;
+    });
+    const oldAudio = {};
+    Object.keys(novelFiles).forEach(function (k) { oldAudio[novelNameKey(novelFiles[k].name)] = k; });
+    let kept = 0;
+    blocks.forEach(function (b) {
+      const old = oldMedia[novelNameKey(b.imageName)];
+      if (old) {
+        ['bg', 'dataUrl', 'mime', 'own', 'kind', 'file', 'objUrl', 'size', 'name', 'uploadId'].forEach(function (k) { b[k] = old[k]; });
+        kept++;
+      }
+    });
+    novelScenes = blocks;
+    novelAllSlots().forEach(function (x) {
+      const k = x.slot.hint && oldAudio[novelNameKey(x.slot.hint)];
+      if (k) { x.slot.key = k; x.slot.hint = ''; kept++; }
+    });
+    const sceneCount = blocks.filter(function (b, i) { return i === 0 || b.sceneStart; }).length;
+    statusEl.textContent = novelFillMsg(NOVEL_EDITOR_MSG.jsonLoaded, {
+      scenes: sceneCount, blocks: blocks.length, lines: lineCount,
+      linked: kept ? novelFillMsg(NOVEL_EDITOR_MSG.jsonKept, { n: kept }) : ''
+    });
+    const titleEl = document.getElementById('titleInput');
+    try {
+      const data = JSON.parse(text);
+      if (titleEl && !titleEl.value.trim() && data && typeof data.title === 'string') titleEl.value = data.title;
+    } catch (e) {}
+    renderNovelSceneList();
+    return true;
+  }
+  function novelSlotName(slot) {
+    const f = novelFile(slot && slot.key);
+    return f ? f.name : ((slot && slot.hint) || '');
+  }
+  function buildNovelJson() {
+    if (novelEditorIsBlank()) return NOVEL_JSON_TEMPLATE;
+    const titleEl = document.getElementById('titleInput');
+    const scenes = [];
+    novelScenes.forEach(function (s, i) {
+      if (i === 0 || s.sceneStart || !scenes.length) {
+        scenes.push({ title: s.sceneTitle || '', sound: novelSlotName(s.sceneSound), soundLoop: s.sceneSound.loop !== false, images: [] });
+      }
+      const img = { image: s.name || s.imageName || '' };
+      if (s.kind === 'video') img.videoSound = s.bgSound === true;
+      img.sound = novelSlotName(s.sound);
+      if (img.sound) img.soundLoop = s.sound.loop !== false;
+      img.lines = (s.lines || []).filter(novelLineFilled).map(function (l) {
+        const o = { speaker: l.name || '', text: l.text || '', voice: novelSlotName(l.voice), sound: novelSlotName(l.sound) };
+        if (o.sound) o.soundLoop = l.sound.loop === true;
+        return o;
+      });
+      scenes[scenes.length - 1].images.push(img);
+    });
+    return { format: 'prompt-reel-novel', version: 2, title: titleEl ? titleEl.value : '', scenes: scenes };
+  }
+  function novelSafeName(name) { return String(name || '').trim().replace(/[\\/:*?"<>|]/g, '_'); }
+  function exportNovelJson() {
+    const title = novelSafeName(document.getElementById('titleInput').value);
+    saveBlobAs(new Blob([JSON.stringify(buildNovelJson(), null, 2)], { type: 'application/json' }), title ? title + '.json' : NOVEL_EDITOR_MSG.exportName);
+  }
+
   function resetNovelEditor() {
-    novelScenes = [novelBlankScene()];   // 空のシーンを1つ残して、すぐ書き始められるようにする
+    novelScenes = [novelBlankScene(true)];   // 空のシーンを1つ残して、すぐ書き始められるようにする
     novelRefImages = [];
+    novelFiles = {};
+    novelEditorAudio.pause();
     document.getElementById('novelEditorStatus').textContent = '';
     renderNovelSceneList();
   }
 
   // 編集時: 保存済みシナリオをエディタへ復元する
   function loadNovelScenesFrom(p) {
-    novelScenes = novelScenarioOf(p).map(function (s) {
-      return {
+    novelFiles = {};
+    const byUrl = {};
+    function slotFrom(url, name, size, loop) {
+      const slot = novelSlot(loop);
+      if (url) {
+        if (!byUrl[url]) byUrl[url] = novelAddFile({ name: name || 'audio', size: Number(size) || 0, url: url });
+        slot.key = byUrl[url];
+      } else if (name) {
+        slot.hint = name;
+      }
+      return slot;
+    }
+    novelScenes = novelScenarioOf(p).map(function (s, i) {
+      return Object.assign(novelBlankScene(i === 0 || s.sceneStart), {
+        sceneTitle: s.sceneTitle || '',
+        sceneSound: slotFrom(s.sceneSound, s.sceneSoundName, s.sceneSoundSize, s.sceneSoundLoop),
         bg: s.bg || '',
-        dataUrl: '',
-        mime: '',
         own: s.own === true,
-        lines: s.lines.length ? s.lines.map(function (l) { return { name: l.name || '', text: l.text || '' }; }) : [novelBlankLine()]
-      };
+        kind: s.bgKind || 'image',
+        size: s.bgSize || 0,
+        name: s.bg ? (s.bgName || '') : '',
+        imageName: s.bg ? '' : (s.bgName || ''),
+        bgSound: s.bgSound === true,
+        sound: slotFrom(s.sound, s.soundName, s.soundSize, s.soundLoop),
+        lines: s.lines.length ? s.lines.map(function (l) {
+          return {
+            name: l.name || '', text: l.text || '',
+            voice: slotFrom(l.voice, l.voiceName, l.voiceSize, false),
+            sound: slotFrom(l.sound, l.soundName, l.soundSize, l.soundLoop)
+          };
+        }) : [novelBlankLine()]
+      });
     });
     renderNovelSceneList();
   }
 
   function novelCleanLines(lines) {
     return (lines || [])
-      .map(function (l) { return { name: (l.name || '').trim(), text: l.text || '' }; })
-      .filter(function (l) { return l.name || (l.text || '').trim(); });
+      .map(function (l) { return { name: (l.name || '').trim(), text: l.text || '', voice: l.voice, sound: l.sound }; })
+      .filter(novelLineFilled);
+  }
+
+  async function novelUploadFile(holder, file, label) {
+    if (holder.uploadId) return holder.uploadId;
+    modelUploading = true;
+    try {
+      holder.uploadId = await uploadModelFile(file, function (done, total) {
+        showLoading(label + ' ' + (total ? Math.floor(done * 100 / total) : 0) + '%');
+      }, { purpose: 'attachment', mime: file.type });
+    } finally {
+      modelUploading = false;
+    }
+    return holder.uploadId;
+  }
+
+  function novelSlotFields(slot, prefix, out, withLoop, idOf) {
+    const f = novelFile(slot && slot.key);
+    if (f) {
+      out[prefix + 'Name'] = f.name;
+      if (f.file) out[prefix + 'UploadId'] = idOf(f);
+      else { out[prefix] = f.url; out[prefix + 'Size'] = f.size; }
+    } else if (slot && slot.hint) {
+      out[prefix + 'Name'] = slot.hint;
+    }
+    if (withLoop && (f || (slot && slot.hint))) out[prefix + 'Loop'] = !!slot.loop;
+  }
+  function buildNovelScenarioShape(idOf, bgIdOf) {
+    const firstIdxOf = {};
+    return novelScenes.map(function (s, i) {
+      const entry = { bg: (s.dataUrl || s.file) ? '' : (s.bg || ''), own: (s.dataUrl || s.file) ? true : (s.own === true), bgKind: s.kind || 'image' };
+      if (i === 0 || s.sceneStart) {
+        entry.sceneStart = true;
+        if (s.sceneTitle) entry.sceneTitle = s.sceneTitle;
+        novelSlotFields(s.sceneSound, 'sceneSound', entry, true, idOf);
+      }
+      if (s.name || s.imageName) entry.bgName = s.name || s.imageName;
+      if (s.kind === 'video') entry.bgSound = s.bgSound === true;
+      if (s.bg && !s.file && !s.dataUrl && s.size) entry.bgSize = s.size;
+      if (s.file) entry.bgUploadId = bgIdOf(s);
+      else if (s.dataUrl && firstIdxOf[s.dataUrl] !== undefined) entry.copyOf = firstIdxOf[s.dataUrl];
+      else if (s.dataUrl) firstIdxOf[s.dataUrl] = i;
+      novelSlotFields(s.sound, 'sound', entry, true, idOf);
+      entry.lines = novelCleanLines(s.lines).map(function (l) {
+        const out = { name: l.name, text: l.text };
+        novelSlotFields(l.voice, 'voice', out, false, idOf);
+        novelSlotFields(l.sound, 'sound', out, true, idOf);
+        return out;
+      });
+      return entry;
+    });
   }
 
   // 送信用: シナリオ本体と、未アップロード画像(インデックス付き)に分ける
   async function buildNovelPayloadParts() {
-    const novelImages = [];
-    const firstIdxOf = {};   // 同じ画像を複製したときに二重アップロードしないための対応表
-    const scenario = [];
+    const placeholder = 'x'.repeat(40);
+    const estimate = JSON.stringify({ scenario: buildNovelScenarioShape(function () { return placeholder; }, function () { return placeholder; }) }).length;
+    if (estimate > NOVEL_SETTINGS_MAX_CHARS) throw new Error(novelFillMsg(NOVEL_EDITOR_MSG.tooLong, { n: estimate, max: NOVEL_SETTINGS_MAX_CHARS }));
+    const usedFiles = [];
+    novelAllSlots().forEach(function (x) {
+      const f = novelFile(x.slot.key);
+      if (f && f.file && usedFiles.indexOf(f) === -1) usedFiles.push(f);
+    });
+    for (let i = 0; i < usedFiles.length; i++) {
+      await novelUploadFile(usedFiles[i], usedFiles[i].file, '音声をアップロード中(' + (i + 1) + '/' + usedFiles.length + ')');
+    }
+    const mediaIdOf = {};
     for (let i = 0; i < novelScenes.length; i++) {
       const s = novelScenes[i];
-      // own: この投稿が自分でアップロードした画像かどうか(削除時に消してよいかの判断に使う)
-      const entry = { bg: s.dataUrl ? '' : (s.bg || ''), own: s.dataUrl ? true : (s.own === true), lines: novelCleanLines(s.lines) };
-      if (s.dataUrl) {
-        if (firstIdxOf[s.dataUrl] === undefined) {
-          firstIdxOf[s.dataUrl] = i;
-          const up = await prepareUploadPayload(s.dataUrl, function (n1, n2) {
-            showLoading('シーン画像をアップロード中(' + (i + 1) + '/' + novelScenes.length + ')' + (n2 > 1 ? ' (' + n1 + '/' + n2 + ')' : ''));
-          });
-          novelImages.push(Object.assign({ index: i, imageMime: s.mime || 'image/png', imageName: 'novel_scene_' + (i + 1) }, up));
-        } else {
-          entry.copyOf = firstIdxOf[s.dataUrl];   // 先に上げた同じ画像を使い回す
-        }
-      }
-      scenario.push(entry);
+      if (!s.file) continue;
+      if (!mediaIdOf[s.objUrl]) mediaIdOf[s.objUrl] = await novelUploadFile(s, s.file, '画像' + (i + 1) + 'の' + novelKindLabel(s.kind) + 'をアップロード中');
+      s.uploadId = mediaIdOf[s.objUrl];
+    }
+    const novelImages = [];
+    const scenario = buildNovelScenarioShape(function (f) { return f.uploadId; }, function (s) { return s.uploadId; });
+    for (let i = 0; i < novelScenes.length; i++) {
+      const s = novelScenes[i];
+      if (!s.dataUrl || scenario[i].copyOf !== undefined) continue;
+      const up = await prepareUploadPayload(s.dataUrl, function (n1, n2) {
+        showLoading('画像をアップロード中(' + (i + 1) + '/' + novelScenes.length + ')' + (n2 > 1 ? ' (' + n1 + '/' + n2 + ')' : ''));
+      });
+      novelImages.push(Object.assign({ index: i, imageMime: s.mime || 'image/png', imageName: 'novel_scene_' + (i + 1) }, up));
     }
     return { scenario: scenario, novelImages: novelImages };
   }
 
   document.getElementById('novelAddSceneBtn').addEventListener('click', function () {
-    novelScenes.push(novelBlankScene());
+    novelScenes.push(novelBlankScene(true));
     renderNovelSceneList();
   });
+  document.getElementById('novelAddImageBtn').addEventListener('click', function () {
+    novelScenes.push(novelBlankScene(!novelScenes.length));
+    renderNovelSceneList();
+  });
+  (function wireNovelTools() {
+    const jsonInput = document.getElementById('novelJsonInput');
+    const bulkInput = document.getElementById('novelBulkInput');
+    document.getElementById('novelJsonImportBtn').addEventListener('click', function () { jsonInput.click(); });
+    jsonInput.addEventListener('change', function () {
+      const f = jsonInput.files && jsonInput.files[0];
+      jsonInput.value = '';
+      if (!f) return;
+      f.text().then(importNovelJsonText);
+    });
+    document.getElementById('novelJsonExportBtn').addEventListener('click', exportNovelJson);
+    document.getElementById('novelBulkAddBtn').addEventListener('click', function () {
+      if (!novelHasJsonHints()) { document.getElementById('novelEditorStatus').textContent = NOVEL_EDITOR_MSG.bulkNoJson; return; }
+      bulkInput.click();
+    });
+    bulkInput.addEventListener('change', function () { const files = Array.from(bulkInput.files || []); bulkInput.value = ''; novelAddFilesByJson(files); });
+    document.getElementById('novelTemplateBtn').addEventListener('click', function () {
+      saveBlobAs(new Blob([JSON.stringify(NOVEL_JSON_TEMPLATE, null, 2)], { type: 'application/json' }), NOVEL_EDITOR_MSG.templateName);
+    });
+    document.getElementById('novelSpecBtn').addEventListener('click', function () {
+      saveBlobAs(new Blob([NOVEL_AI_SPEC_MD], { type: 'text/markdown' }), NOVEL_EDITOR_MSG.specName);
+    });
+  })();
 
   /* ---------- ノベルゲーム: プレビュー(サーバー未保存のまま再生) ---------- */
   const novelPreviewOverlay = document.getElementById('novelPreviewOverlay');
@@ -14601,16 +15862,37 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     document.getElementById('novelPreviewMount').innerHTML = '';
     novelPreviewOverlay.classList.remove('open');
   }
+  function novelPreviewScenario() {
+    const shape = buildNovelScenarioShape(function () { return ''; }, function () { return ''; });
+    function fill(slot, prefix, out) {
+      const f = novelFile(slot && slot.key);
+      if (!f) return;
+      out[prefix] = f.objUrl || f.url;
+      out[prefix + 'Size'] = f.size;
+      out[prefix + 'Name'] = f.name;
+    }
+    return shape.map(function (entry, i) {
+      const s = novelScenes[i];
+      entry.bg = s.dataUrl || s.objUrl || s.bg || '';
+      entry.bgSize = s.size;
+      if (entry.sceneStart) fill(s.sceneSound, 'sceneSound', entry);
+      fill(s.sound, 'sound', entry);
+      const lines = novelCleanLines(s.lines);
+      entry.lines.forEach(function (out, li) {
+        fill(lines[li].voice, 'voice', out);
+        fill(lines[li].sound, 'sound', out);
+      });
+      return entry;
+    });
+  }
   document.getElementById('novelPreviewBtn').addEventListener('click', function () {
     const statusEl = document.getElementById('novelEditorStatus');
     if (!novelScenes.length) { statusEl.textContent = 'シーンを1つ以上追加してください'; return; }
     statusEl.textContent = '';
-    // 未アップロードのBase64をそのまま bg に流し込むので、サーバーアクセスなしで再生できる
-    const scenario = novelScenes.map(function (s) {
-      return { bg: s.dataUrl || s.bg || '', lines: novelCleanLines(s.lines) };
-    });
+    novelEditorAudio.pause();
+    // 未アップロードのファイルはブラウザ内の URL をそのまま使うので、サーバーアクセスなしで再生できる
     novelPreviewOverlay.classList.add('open');
-    novelPreviewPlayer = createNovelPlayer(document.getElementById('novelPreviewMount'), scenario);
+    novelPreviewPlayer = createNovelPlayer(document.getElementById('novelPreviewMount'), novelPreviewScenario());
   });
   document.getElementById('novelPreviewCloseBtn').addEventListener('click', closeNovelPreview);
   wireOverlayDismiss(novelPreviewOverlay, function () { closeNovelPreview(); });
