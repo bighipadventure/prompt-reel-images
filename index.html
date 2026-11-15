@@ -8081,6 +8081,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       record = await stillmotionStoreDo('readonly', function (st) { return st.get(key); });
     } catch (e) { console.error('Stillmotion データの読み込みに失敗:', e); }
     switchTab('post');
+    if (kind === 'stillsheet' && record && record.meta && record.meta.mode === 'novel') { await importStillsheetNovel(record, key); return; }
     if (kind === 'stillmange' || kind === 'stillsheet') { await importStillmangeRecord(record, key, kind); return; }
     if (!record || !record.blob) {
       showStillmotionNotice('Stillmotion から受け取る動画が見つかりませんでした。もう一度 Stillmotion の「Prompt Reel に投稿」を押してください。');
@@ -8148,6 +8149,36 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     cleanupStillmotionRecords(key);
     const refNote = await autoSelectStillmangeReference(record.meta && record.meta.base);
     if (refNote && stillmotionImportKey === key) showStillmotionNotice(baseNotice + ' ' + refNote);
+  }
+
+  /* Stillsheet の「ノベルゲーム」から受け取る。シナリオ(JSON v2)を「ノベルゲームを投稿」のエディタに読み込み、
+     画像・動画・音声のファイルを、JSON に書かれたファイル名でそれぞれの場所に入れる。 */
+  async function importStillsheetNovel(record, key) {
+    if (!options.tabNovel) {
+      alert('いまはノベルゲームの投稿が無効になっているため、Stillsheet から受け取れません。管理者に確認してください。');
+      return;
+    }
+    if (isEditingImagePost()) await cancelAdminEdit(false);
+    resetImageForm();
+    setPostMode('novel');
+    if (!importNovelJsonText(String(record.meta.json || ''))) {
+      showStillmotionNotice('Stillsheet から受け取ったノベルゲームを読み込めませんでした。もう一度 Stillsheet の「Prompt Reel に投稿」を押してください。');
+      return;
+    }
+    const files = ((record && record.images) || []).filter(function (x) { return x && x.blob; }).map(function (x, i) {
+      return new File([x.blob], x.name || ('stillsheet_' + (i + 1)), { type: x.mime || x.blob.type || '' });
+    });
+    if (files.length) await novelAddFilesByJson(files);
+    const memoEl = document.getElementById('memoInput');
+    if (memoEl && !memoEl.value.trim() && record.meta.synopsis) {
+      memoEl.value = record.meta.synopsis;
+      memoEl.dispatchEvent(new Event('input'));
+    }
+    stillmotionImportKey = key;
+    const c = record.meta.counts || {};
+    showStillmotionNotice('Stillsheet からノベルゲーム(画像 ' + (c.images || 0) + '・動画 ' + (c.videos || 0) + '・音声 ' + (c.voices || 0) + ')を受け取りました。'
+      + 'シーンと素材を確認し、タイトル・タグ・ジャンルを入れて「投稿する」を押してください。');
+    cleanupStillmotionRecords(key);
   }
 
   function fillStillsheetText(meta) {
