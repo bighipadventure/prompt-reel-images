@@ -1956,6 +1956,7 @@
   .novel-scene.drop-target{ outline:1px dashed var(--accent); outline-offset:2px; }
   .novel-line-handle:hover{ color:var(--accent); }
   .novel-line-row.dragging{ opacity:.45; }
+  .novel-line-row.novel-line-moving{ outline:2px dashed var(--accent); outline-offset:2px; border-radius:6px; background:var(--surface-2); }
   .novel-line-row.drop-target{ outline:1px dashed var(--accent); outline-offset:2px; border-radius:6px; }
   .novel-editor-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
   .novel-empty-hint{
@@ -15045,12 +15046,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return '' +
       '<div class="novel-line-row" data-line-idx="' + li + '">' +
         '<div class="novel-line-main">' +
-          '<span class="novel-line-handle novel-grip" data-line-handle title="ドラッグで並び替え">⠿</span>' +
+          '<span class="novel-line-handle novel-grip" data-line-handle title="ドラッグで移動(ほかの画像・シーンへも移せます)">⠿</span>' +
           '<input type="text" class="novel-line-name" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-name placeholder="話者(空欄可)" value="' + escapeHtml(l.name || '') + '">' +
           '<input type="text" class="novel-line-text" data-pm-skip autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" data-line-text placeholder="セリフ・地の文" value="' + escapeHtml(l.text || '') + '">' +
           '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-split' + (li === 0 ? ' disabled' : '') + ' title="この行から新しい画像に分ける">✂</button>' +
-          '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-up' + (li === 0 ? ' disabled' : '') + ' title="上へ">↑</button>' +
-          '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-down' + (li === total - 1 ? ' disabled' : '') + ' title="下へ">↓</button>' +
+          '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-up' + (li === 0 && bi === 0 ? ' disabled' : '') + ' title="上へ(先頭の行は前の画像の最後へ)">↑</button>' +
+          '<button class="novel-mini-btn" type="button" tabindex="-1" data-line-down' + (li === total - 1 && bi === novelScenes.length - 1 ? ' disabled' : '') + ' title="下へ(最後の行は次の画像の先頭へ)">↓</button>' +
           '<button class="novel-mini-btn danger" type="button" tabindex="-1" data-line-remove' + (total <= 1 ? ' disabled' : '') + ' title="この行を削除">✕</button>' +
         '</div>' +
         '<div class="novel-line-sounds">' +
@@ -15299,12 +15300,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           novelScenes[idx].lines.splice(li, 1);
           renderNovelSceneList();
         });
-        const lineList = cardEl.querySelector('[data-line-list]');
         row.querySelector('[data-line-handle]').addEventListener('pointerdown', function (e) {
-          novelLiveDrag(e, row, lineList, '.novel-line-row', 'line-idx', function (order) {
-            const lines = novelScenes[sceneIdx].lines;
-            novelScenes[sceneIdx].lines = order.map(function (i) { return lines[i]; });
-          });
+          novelLineDrag(e, row);
         });
       }
 
@@ -15327,8 +15324,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         const lines = novelScenes[sceneIdx].lines;
         const rows = cardEl.querySelectorAll('.novel-line-row');
         rows.forEach(function (row, i) {
-          row.querySelector('[data-line-up]').disabled = i === 0;
-          row.querySelector('[data-line-down]').disabled = i === rows.length - 1;
+          row.querySelector('[data-line-up]').disabled = i === 0 && sceneIdx === 0;
+          row.querySelector('[data-line-down]').disabled = i === rows.length - 1 && sceneIdx === novelScenes.length - 1;
           row.querySelector('[data-line-remove]').disabled = rows.length <= 1;
           row.querySelector('[data-line-split]').disabled = i === 0;
         });
@@ -15581,12 +15578,98 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function novelMoveLine(sceneIdx, lineIdx, delta) {
     const lines = novelScenes[sceneIdx].lines;
     const to = lineIdx + delta;
-    if (to < 0 || to >= lines.length) return;
+    const restBlank = delta > 0 && lines.slice(lineIdx + 1).every(function (l) { return !novelLineFilled(l); });
+    if (to < 0 || to >= lines.length || restBlank) {
+      const other = novelScenes[sceneIdx + delta];
+      if (!other) return;
+      let at = 0;
+      if (delta < 0) {
+        at = other.lines.length;
+        while (at > 0 && !novelLineFilled(other.lines[at - 1])) at--;
+      }
+      novelTransferLine(sceneIdx, lineIdx, sceneIdx + delta, at);
+      return;
+    }
     const tmp = lines[lineIdx];
     lines[lineIdx] = lines[to];
     lines[to] = tmp;
     renderNovelSceneList();
     focusNovelLine(sceneIdx, to);
+  }
+
+  // 行を別の画像(シーンをまたいでも可)の at 番目へ移す
+  function novelTransferLine(fromIdx, lineIdx, toIdx, at) {
+    const from = novelScenes[fromIdx], to = novelScenes[toIdx];
+    if (!from || !to) return;
+    const line = from.lines.splice(lineIdx, 1)[0];
+    const pos = Math.max(0, Math.min(at, to.lines.length));
+    to.lines.splice(pos, 0, line);
+    if (!from.lines.length) from.lines.push(novelBlankLine());
+    renderNovelSceneList();
+    focusNovelLine(toIdx, pos);
+  }
+
+  // 行の取っ手をドラッグして、ほかの画像・シーンの行の間へも移せる
+  function novelLineDrag(e, srcEl) {
+    if (novelDragging || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    novelDragging = true;
+    const fromIdx = Number(srcEl.closest('.novel-scene').dataset.sceneIdx);
+    const fromLine = Number(srcEl.dataset.lineIdx);
+    let lastX = e.clientX, lastY = e.clientY, raf = 0;
+    document.body.classList.add('novel-drag-active');
+    srcEl.classList.add('novel-lifted', 'novel-line-moving');
+
+    function place() {
+      const hit = document.elementFromPoint(lastX, lastY);
+      const card = hit && hit.closest('.novel-scene');
+      const list = (card && card.querySelector('[data-line-list]')) || srcEl.parentElement;
+      const rows = Array.prototype.filter.call(list.children, function (el) { return el.matches('.novel-line-row') && el !== srcEl; });
+      let idx = 0;
+      rows.forEach(function (el) { const r = el.getBoundingClientRect(); if (r.top + r.height / 2 < lastY) idx++; });
+      const ref = rows[idx] || null;
+      if (srcEl.parentElement !== list || srcEl.nextElementSibling !== ref) list.insertBefore(srcEl, ref);
+    }
+
+    function tick() {
+      raf = 0;
+      const edge = 60;
+      let dy = 0;
+      if (lastY < edge) dy = -Math.min(20, Math.ceil((edge - lastY) / 3));
+      else if (lastY > window.innerHeight - edge) dy = Math.min(20, Math.ceil((lastY - (window.innerHeight - edge)) / 3));
+      if (!dy) return;
+      window.scrollBy(0, dy);
+      place();
+      raf = requestAnimationFrame(tick);
+    }
+
+    function onMove(ev) {
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      place();
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+
+    function finish(ok) {
+      if (raf) cancelAnimationFrame(raf);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onCancel);
+      document.body.classList.remove('novel-drag-active');
+      srcEl.classList.remove('novel-lifted', 'novel-line-moving');
+      novelDragging = false;
+      const card = srcEl.closest('.novel-scene');
+      const toIdx = card ? Number(card.dataset.sceneIdx) : fromIdx;
+      const at = Array.prototype.filter.call(srcEl.parentElement.children, function (el) { return el.matches('.novel-line-row'); }).indexOf(srcEl);
+      if (ok && (toIdx !== fromIdx || at !== fromLine)) novelTransferLine(fromIdx, fromLine, toIdx, at);
+      else renderNovelSceneList();
+    }
+    function onUp() { finish(true); }
+    function onCancel() { finish(false); }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
   }
 
   function focusNovelLine(sceneIdx, lineIdx) {
