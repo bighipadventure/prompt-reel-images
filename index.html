@@ -1956,7 +1956,6 @@
   .novel-scene.drop-target{ outline:1px dashed var(--accent); outline-offset:2px; }
   .novel-line-handle:hover{ color:var(--accent); }
   .novel-line-row.dragging{ opacity:.45; }
-  .novel-line-row.novel-line-moving{ outline:2px dashed var(--accent); outline-offset:2px; border-radius:6px; background:var(--surface-2); }
   .novel-line-row.drop-target{ outline:1px dashed var(--accent); outline-offset:2px; border-radius:6px; }
   .novel-editor-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
   .novel-empty-hint{
@@ -2048,6 +2047,9 @@
   .novel-ctrl-btn:disabled{ opacity:.4; cursor:default; }
   .novel-ctrl-btn:disabled:hover{ border-color:var(--line); color:var(--ink); }
   .novel-ctrl-btn.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
+  .novel-volume{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font); font-size:12px; color:var(--ink-dim); }
+  .novel-volume input[type="range"]{ width:110px; accent-color:var(--accent); cursor:pointer; }
+  .novel-volume-pct{ min-width:3.2em; text-align:right; font-variant-numeric:tabular-nums; }
   .novel-log{
     max-height:240px; overflow-y:auto; background:var(--surface-2);
     border:1px solid var(--line); border-radius:10px; padding:12px;
@@ -13354,6 +13356,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   const NOVEL_AUTO_INTERVAL = 2500;
   const NOVEL_AUTO_AFTER_VOICE = 1500;
   const NOVEL_VOLUME = { scene: 0.5, image: 0.6, se: 0.9, voice: 1 };
+  // プレイ画面の音量バー(全体の音量)。最後に選んだ値をこのブラウザに残し、次に開いたゲームにも使う
+  const NOVEL_MASTER_VOLUME = { key: 'promptReelNovelVolume', def: 0.5, step: 0.05 };
   const NOVEL_LOCAL_WAIT_MS = 8000;
   const NOVEL_TYPE_SPEED = 75;   // 1文字あたりのミリ秒
   const NOVEL_LINE_GAP = 220;    // 次のテキストを打ち始めるまでの間(ms)
@@ -13364,6 +13368,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     loading: '素材を読み込み中… {done} / {total}',
     loadingFile: '素材を読み込み中… {done} / {total}({pct}%)',
     loadFailed: '読み込めなかった素材が {n} 件あります。そのまま始めます',
+    volume: '音量',
+    volumeTitle: '音量(次に開くゲームにも引き継ぎます)',
     soundOn: '音声 ON',
     soundOff: '音声 OFF'
   };
@@ -13489,6 +13495,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     let createdUrls = [];
     let soundOn = true;
     let voicePlaying = false;
+    let masterVol = NOVEL_MASTER_VOLUME.def;
+    try {
+      const saved = localStorage.getItem(NOVEL_MASTER_VOLUME.key);
+      if (saved !== null && Number(saved) >= 0 && Number(saved) <= 1) masterVol = Number(saved);
+    } catch (e) {}
 
     mountEl.innerHTML = '' +
       '<div class="novel-player">' +
@@ -13511,6 +13522,9 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           '<button class="novel-ctrl-btn" type="button" data-novel-log>ログ</button>' +
           '<button class="novel-ctrl-btn" type="button" data-novel-textpos title="セリフを画像の上に重ねるか、画像の下に出すか切り替えます">セリフを下に出す</button>' +
           '<button class="novel-ctrl-btn active" type="button" data-novel-sound title="セリフの音声・シーンの音声・動画の音をまとめて切り替えます">' + NOVEL_MSG.soundOn + '</button>' +
+          '<label class="novel-volume" title="' + NOVEL_MSG.volumeTitle + '"><span>' + NOVEL_MSG.volume + '</span>' +
+            '<input type="range" min="0" max="1" step="' + NOVEL_MASTER_VOLUME.step + '" value="' + masterVol + '" data-novel-volume aria-label="' + NOVEL_MSG.volume + '">' +
+            '<span class="novel-volume-pct" data-novel-volume-pct>' + Math.round(masterVol * 100) + '%</span></label>' +
         '</div>' +
         '<div class="novel-log" data-novel-loglist style="display:none;"></div>' +
       '</div>';
@@ -13533,6 +13547,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const msgOutEl = mountEl.querySelector('[data-novel-msgout]');
     const textPosBtn = mountEl.querySelector('[data-novel-textpos]');
     const soundBtn = mountEl.querySelector('[data-novel-sound]');
+    const volumeEl = mountEl.querySelector('[data-novel-volume]');
+    const volumePctEl = mountEl.querySelector('[data-novel-volume-pct]');
     const voiceEl = new Audio();
     voiceEl.preload = 'auto';
     function makeChannel(volume) {
@@ -13694,6 +13710,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           if (token !== fadeToken) return;
           if (isVideoEl(backEl)) {
             backEl.muted = !(media.sound && soundOn);
+            backEl.volume = masterVol;
             try { backEl.currentTime = 0; } catch (e) {}
             const pr = backEl.play();
             if (pr && pr.catch) pr.catch(function () {});
@@ -13780,7 +13797,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (!url) return;
       ch.el.src = res(url);
       ch.el.loop = !!loop;
-      ch.el.volume = ch.volume;
+      ch.el.volume = ch.volume * masterVol;
       ch.el.muted = !soundOn;
       try { ch.el.currentTime = 0; } catch (e) {}
       const pr = ch.el.play();
@@ -13812,6 +13829,18 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       soundBtn.classList.toggle('active', soundOn);
       soundBtn.textContent = soundOn ? NOVEL_MSG.soundOn : NOVEL_MSG.soundOff;
     }
+    function applyVolume() {
+      voiceEl.volume = NOVEL_VOLUME.voice * masterVol;
+      channels.forEach(function (c) { c.el.volume = c.volume * masterVol; });
+      [frontEl, backEl].forEach(function (el) { if (isVideoEl(el)) el.volume = masterVol; });
+      volumePctEl.textContent = Math.round(masterVol * 100) + '%';
+    }
+    volumeEl.addEventListener('input', function () {
+      masterVol = Math.max(0, Math.min(1, Number(volumeEl.value) || 0));
+      try { localStorage.setItem(NOVEL_MASTER_VOLUME.key, String(masterVol)); } catch (e) {}
+      applyVolume();
+    });
+    applyVolume();
 
     function render() {
       const s = scenes[index] || {};
@@ -14000,6 +14029,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       state: function () {
         return {
           started: started, index: index, total: scenes.length, typing: typing, voicePlaying: voicePlaying, auto: autoOn, soundOn: soundOn,
+          volume: masterVol, voiceVolume: voiceEl.volume, sceneVolume: sceneCh.el.volume,
           assets: Object.keys(assetMap).length, scene: (scenes[index] || {}).scene,
           sceneSound: sceneCh.url, imageSound: imageCh.url, lineSound: seCh.url, lineSoundPlaying: !!seCh.url && !seCh.el.paused && !seCh.el.ended
         };
@@ -14021,7 +14051,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function novelExportConsts() {
     return {
       NOVEL_BG_KINDS: NOVEL_BG_KINDS, NOVEL_IMG_DIMS: {}, NOVEL_AUTO_INTERVAL: NOVEL_AUTO_INTERVAL, NOVEL_AUTO_AFTER_VOICE: NOVEL_AUTO_AFTER_VOICE,
-      NOVEL_VOLUME: NOVEL_VOLUME, NOVEL_LOCAL_WAIT_MS: NOVEL_LOCAL_WAIT_MS, NOVEL_TYPE_SPEED: NOVEL_TYPE_SPEED, NOVEL_LINE_GAP: NOVEL_LINE_GAP,
+      NOVEL_VOLUME: NOVEL_VOLUME, NOVEL_MASTER_VOLUME: NOVEL_MASTER_VOLUME, NOVEL_LOCAL_WAIT_MS: NOVEL_LOCAL_WAIT_MS, NOVEL_TYPE_SPEED: NOVEL_TYPE_SPEED, NOVEL_LINE_GAP: NOVEL_LINE_GAP,
       NOVEL_FADE_MS: NOVEL_FADE_MS, NOVEL_RESIZE_PAUSE: NOVEL_RESIZE_PAUSE, NOVEL_SILENT_WAV: NOVEL_SILENT_WAV, NOVEL_MSG: NOVEL_MSG,
       ATTACH_MEDIA_MIME: ATTACH_MEDIA_MIME
     };
@@ -15609,7 +15639,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     focusNovelLine(toIdx, pos);
   }
 
-  // 行の取っ手をドラッグして、ほかの画像・シーンの行の間へも移せる
+  // 行の取っ手をドラッグして、ほかの画像・シーンの行の間へも移せる(掲示板の並べ替えと同じく、つかんだ行が指についてきて、ほかの行がすべるように入れ替わる)
   function novelLineDrag(e, srcEl) {
     if (novelDragging || (e.pointerType === 'mouse' && e.button !== 0)) return;
     e.preventDefault();
@@ -15617,20 +15647,51 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     novelDragging = true;
     const fromIdx = Number(srcEl.closest('.novel-scene').dataset.sceneIdx);
     const fromLine = Number(srcEl.dataset.lineIdx);
-    let lastX = e.clientX, lastY = e.clientY, raf = 0;
+    const grabOffset = e.clientY - srcEl.getBoundingClientRect().top;
+    const lists = Array.prototype.slice.call(document.querySelectorAll('#novelSceneList [data-line-list]'));
+    let lastX = e.clientX, lastY = e.clientY, raf = 0, shift = 0;
+    lists.forEach(function (l) { l.classList.add('novel-sorting'); });
     document.body.classList.add('novel-drag-active');
     srcEl.classList.add('novel-lifted', 'novel-line-moving');
 
-    function place() {
+    function rowsOf(list) { return Array.prototype.filter.call(list.children, function (el) { return el.matches('.novel-line-row') && el !== srcEl; }); }
+
+    function listAt() {
+      srcEl.style.visibility = 'hidden';
       const hit = document.elementFromPoint(lastX, lastY);
-      const card = hit && hit.closest('.novel-scene');
-      const list = (card && card.querySelector('[data-line-list]')) || srcEl.parentElement;
-      const rows = Array.prototype.filter.call(list.children, function (el) { return el.matches('.novel-line-row') && el !== srcEl; });
-      let idx = 0;
-      rows.forEach(function (el) { const r = el.getBoundingClientRect(); if (r.top + r.height / 2 < lastY) idx++; });
-      const ref = rows[idx] || null;
-      if (srcEl.parentElement !== list || srcEl.nextElementSibling !== ref) list.insertBefore(srcEl, ref);
+      srcEl.style.visibility = '';
+      const card = hit && hit.closest('#novelSceneList .novel-scene');
+      return (card && card.querySelector('[data-line-list]')) || srcEl.parentElement;
     }
+
+    function reorder() {
+      const list = listAt();
+      const rows = rowsOf(list);
+      const p = lastY - list.getBoundingClientRect().top;
+      let idx = 0;
+      rows.forEach(function (el) { if (el.offsetTop + el.offsetHeight / 2 < p) idx++; });
+      const ref = rows[idx] || null;
+      if (srcEl.parentElement === list && srcEl.nextElementSibling === ref) return;
+      const moving = (list === srcEl.parentElement ? rows : rows.concat(rowsOf(srcEl.parentElement)));
+      const visual = moving.map(function (el) { return el.getBoundingClientRect().top; });
+      list.insertBefore(srcEl, ref);
+      moving.forEach(function (el) { el.style.transition = 'none'; el.style.transform = ''; });
+      const natural = moving.map(function (el) { return el.getBoundingClientRect().top; });
+      moving.forEach(function (el, i) {
+        const d = visual[i] - natural[i];
+        el.style.transform = d ? 'translateY(' + d + 'px)' : '';
+      });
+      document.body.getBoundingClientRect();
+      moving.forEach(function (el) { el.style.transition = ''; el.style.transform = ''; });
+    }
+
+    function place() {
+      const natural = srcEl.getBoundingClientRect().top - shift;
+      shift = lastY - grabOffset - natural;
+      srcEl.style.transform = 'translateY(' + shift + 'px)';
+    }
+
+    function update() { reorder(); place(); }
 
     function tick() {
       raf = 0;
@@ -15640,14 +15701,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       else if (lastY > window.innerHeight - edge) dy = Math.min(20, Math.ceil((lastY - (window.innerHeight - edge)) / 3));
       if (!dy) return;
       window.scrollBy(0, dy);
-      place();
+      update();
       raf = requestAnimationFrame(tick);
     }
 
     function onMove(ev) {
       lastX = ev.clientX;
       lastY = ev.clientY;
-      place();
+      update();
       if (!raf) raf = requestAnimationFrame(tick);
     }
 
@@ -15658,12 +15719,16 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       document.removeEventListener('pointercancel', onCancel);
       document.body.classList.remove('novel-drag-active');
       srcEl.classList.remove('novel-lifted', 'novel-line-moving');
-      novelDragging = false;
+      srcEl.style.transform = '';
       const card = srcEl.closest('.novel-scene');
       const toIdx = card ? Number(card.dataset.sceneIdx) : fromIdx;
       const at = Array.prototype.filter.call(srcEl.parentElement.children, function (el) { return el.matches('.novel-line-row'); }).indexOf(srcEl);
-      if (ok && (toIdx !== fromIdx || at !== fromLine)) novelTransferLine(fromIdx, fromLine, toIdx, at);
-      else renderNovelSceneList();
+      setTimeout(function () {
+        lists.forEach(function (l) { l.classList.remove('novel-sorting'); });
+        novelDragging = false;
+        if (ok && (toIdx !== fromIdx || at !== fromLine)) novelTransferLine(fromIdx, fromLine, toIdx, at);
+        else renderNovelSceneList();
+      }, 230);
     }
     function onUp() { finish(true); }
     function onCancel() { finish(false); }
