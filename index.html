@@ -1907,6 +1907,12 @@
   .novel-line-sounds .novel-slot-tag{ min-width:3.6em; justify-content:center; }
   .novel-sgroup-opts .novel-slot{ flex:0 1 360px; }
   .novel-start.is-loading{ cursor:wait; }
+  .novel-start.is-loading .novel-start-btn{ display:inline-flex; align-items:center; gap:10px; }
+  .novel-start.is-loading .novel-start-btn::before{
+    content:''; flex:none; width:18px; height:18px; box-sizing:border-box; border-radius:50%;
+    border:2px solid rgba(255,255,255,.3); border-top-color:#fff; animation:novel-spin .8s linear infinite;
+  }
+  @keyframes novel-spin{ to{ transform:rotate(360deg); } }
   /* 参考作品の選択欄。ノベル投稿モードのときだけ見出し行の右端に出す。
      .base-prompt-display は既定で flex:1 1 200px のため、そのままだと
      チップが単独の行へ折り返されて左寄せになる。ここでは幅を内容なりにし、
@@ -14062,6 +14068,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const text = rule.cssText || '';
       if (rule.type === 1) return /novel-|^:root/.test(rule.selectorText || '');
       if (rule.type === 4) return /novel-|:root/.test(text);
+      if (rule.type === 7) return /^novel-/.test(rule.name || '');
       return false;
     }
     Array.from(document.styleSheets).forEach(function (sheet) {
