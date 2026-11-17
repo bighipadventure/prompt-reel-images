@@ -1946,6 +1946,8 @@
   .novel-line-row input[type="text"]{ padding:5px 9px; font-size:12.5px; border-radius:6px; }
   .novel-line-name{ flex:0 0 110px; width:110px; min-width:0; }
   .novel-line-text{ flex:1 1 auto; min-width:0; }
+  /* セリフの絵文字(Irodori-TTS の話し方の指定)は、デザインの白黒表示にせず、元の絵文字で出す */
+  .novel-line-text, .novel-line, .novel-speaker, .novel-log-text, .novel-log-name{ font-variant-emoji:emoji; }
   .novel-line-row .novel-mini-btn{ flex:0 0 auto; padding:4px 7px; line-height:1; }
   .novel-line-row .novel-mini-btn:disabled{ opacity:.35; cursor:default; }
   .novel-line-row .novel-mini-btn:disabled:hover{ border-color:var(--line); color:var(--ink-dim); }
