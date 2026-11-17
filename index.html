@@ -1100,6 +1100,23 @@
   .modal-tags-row .modal-counts .dislike-btn{ padding: 6px 14px 6px 11px; font-size: 12px; }
   .modal-tags-row .modal-counts .btn-icon{ width: 14px; height: 14px; }
   .modal-tags-row .modal-counts .count-badge{ font-size: 12px; }
+  .detail-audio-row{ margin-bottom:12px; }
+  .detail-audio{ flex:0 0 auto; display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .detail-audio-play{
+    font-family:var(--font); font-size:12px; white-space:nowrap; cursor:pointer;
+    background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:5px 12px;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .detail-audio-play:hover{ border-color:var(--accent); color:var(--accent); }
+  .detail-audio-play.is-playing{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
+  .detail-audio-play.is-loading::before{
+    content:''; width:12px; height:12px; box-sizing:border-box; border-radius:50%;
+    border:2px solid var(--line); border-top-color:var(--accent); animation:spin .8s linear infinite;
+  }
+  .detail-audio-select{
+    font-family:var(--font); font-size:12px; max-width:180px; cursor:pointer;
+    background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:5px 8px;
+  }
   .kv-list{ display:grid; grid-template-columns: minmax(110px, 150px) minmax(0, 1fr); font-size:13px; }
   .kv-key, .kv-val{ padding:9px 12px; border-bottom:1px solid var(--line); min-width:0; }
   .kv-key{ color:var(--ink-dim); font-size:12px; background:var(--section-head); border-right:1px solid var(--line); display:flex; align-items:center; }
@@ -12167,6 +12184,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function openModal(p) {
+    stopDetailAudio();
     if (p && p.type === 'model') { openModelModal(p); return; }
     clearNotifyForActiveTab();
     openDetailPostId = p.id;
@@ -12311,7 +12329,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         '</div>' +
       '</div>' +
       '<div class="modal-meta"><span>' + formatDateTime(p.timestamp) + '</span><span class="meta-author">投稿者: ' + authorHtml(p) + '</span></div>' +
-      '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+      detailTagsRowHtml(p, '<div class="row-tags">' + sortJa((p.tags || []).slice()).map(function (t) { return '<span class="tag" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>'; }).join('') + '</div>') +
       '<div class="modal-image" id="detailImageWrap">' + (p.type === 'novel' ? '<div id="novelDetailMount"></div>' : (p.type === 'video' ? (isImageMediaPost(p) ? gifPlayerHtml(imageSet[0].imageUrl) : videoPlayerHtml(imageSet[0].imageUrl)) : detailImageHtml(imageSet[0]))) + '</div>' +
       '<div class="image-actions-row' + (hasVariants ? ' has-variants' : '') + '">' +
         (hasVariants
@@ -12364,6 +12382,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
 
     wireAttachmentsBlock(modalBody, p);
+    wireDetailAudio(modalBody, p);
     modalBody.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
         // data-copytext は本文をそのまま持つ(キャラクターごとのコピー用)。
@@ -12507,6 +12526,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   function closeModal() {
+    stopDetailAudio();
     openDetailPostId = null;
     detailOpenSeq++;
     modalBody.style.minHeight = '';
@@ -14199,6 +14219,101 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         btn.textContent = NOVEL_ZIP_MSG.button;
         delete btn.dataset.busy;
       }
+    });
+  }
+
+  // ===== DETAIL ATTACHED AUDIO =====
+  // 画像・動画の詳細で、添付資料の音声をくり返し再生する(動画の音とは別に鳴る。動画がミュートなら添付の音声だけ)
+  const DETAIL_AUDIO = { volume: 0.5, play: '▶ 音声', stop: '■ 停止', loading: '読み込み中 {pct}%', failed: '音声を読み込めませんでした', title: '添付資料の音声をくり返し再生します(画像・動画を見ながら聞けます)', selectTitle: '再生する音声を選ぶ' };
+  let detailAudio = null;
+
+  function detailAudioList(p) {
+    if (!p || p.type === 'novel') return [];
+    return (p.attachments || []).filter(function (a) { return attachmentPreviewKind(a) === 'audio'; });
+  }
+
+  function detailTagsRowHtml(p, tagsHtml) {
+    const list = detailAudioList(p);
+    if (!list.length) return tagsHtml;
+    return '<div class="modal-tags-row detail-audio-row">' + tagsHtml +
+      '<div class="detail-audio">' +
+        '<button type="button" class="detail-audio-play" data-audio-play aria-pressed="false" title="' + escapeHtml(DETAIL_AUDIO.title) + '">' + DETAIL_AUDIO.play + '</button>' +
+        (list.length > 1 ? '<select class="detail-audio-select" data-audio-select title="' + escapeHtml(DETAIL_AUDIO.selectTitle) + '" aria-label="' + escapeHtml(DETAIL_AUDIO.selectTitle) + '">' +
+          list.map(function (a, i) { return '<option value="' + i + '">' + escapeHtml(a.name) + '</option>'; }).join('') + '</select>' : '') +
+      '</div></div>';
+  }
+
+  function stopDetailAudio() {
+    if (!detailAudio) return;
+    detailAudio.seq++;
+    detailAudio.el.pause();
+    detailAudio.el.removeAttribute('src');
+    Object.keys(detailAudio.urls).forEach(function (k) { URL.revokeObjectURL(detailAudio.urls[k]); });
+    detailAudio = null;
+  }
+
+  function wireDetailAudio(root, p) {
+    const list = detailAudioList(p);
+    const btn = root.querySelector('[data-audio-play]');
+    if (!list.length || !btn) return;
+    const select = root.querySelector('[data-audio-select]');
+    const el = new Audio();
+    el.loop = true;
+    el.volume = DETAIL_AUDIO.volume;
+    const st = { el: el, urls: {}, seq: 0, playing: false };
+    detailAudio = st;
+
+    function show(text, state) {
+      btn.textContent = text;
+      btn.classList.toggle('is-loading', state === 'loading');
+      btn.classList.toggle('is-playing', state === 'playing');
+      btn.setAttribute('aria-pressed', state === 'playing' ? 'true' : 'false');
+    }
+    async function urlOf(i) {
+      if (st.urls[i]) return st.urls[i];
+      const a = list[i];
+      const size = Number(a.size) || 0;
+      const parts = [];
+      await relayRead(driveFileIdFromUrl(a.url), size, function (bytes) { parts.push(bytes); }, function (done) {
+        if (detailAudio === st) show(novelFillMsg(DETAIL_AUDIO.loading, { pct: size ? Math.floor(done * 100 / size) : 0 }), 'loading');
+      });
+      st.urls[i] = URL.createObjectURL(new Blob(parts, { type: ATTACH_MEDIA_MIME[attachmentExt(a.name)] || '' }));
+      return st.urls[i];
+    }
+    async function play() {
+      const seq = ++st.seq;
+      const i = select ? Number(select.value) || 0 : 0;
+      show(novelFillMsg(DETAIL_AUDIO.loading, { pct: 0 }), 'loading');
+      try {
+        const url = await urlOf(i);
+        if (seq !== st.seq || detailAudio !== st) return;
+        if (el.getAttribute('src') !== url) el.src = url;
+        await el.play();
+        if (seq !== st.seq) return;
+        st.playing = true;
+        show(DETAIL_AUDIO.stop, 'playing');
+      } catch (err) {
+        console.error(err);
+        if (seq !== st.seq) return;
+        st.playing = false;
+        show(DETAIL_AUDIO.play, '');
+        btn.title = DETAIL_AUDIO.failed + ': ' + (err.message || err);
+      }
+    }
+    function stop() {
+      st.seq++;
+      st.playing = false;
+      el.pause();
+      show(DETAIL_AUDIO.play, '');
+    }
+    btn.addEventListener('click', function () {
+      if (st.playing || btn.classList.contains('is-loading')) stop();
+      else play();
+    });
+    if (select) select.addEventListener('change', function () {
+      el.pause();
+      try { el.currentTime = 0; } catch (e) {}
+      if (st.playing || btn.classList.contains('is-loading')) play();
     });
   }
 
