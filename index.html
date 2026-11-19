@@ -37,6 +37,9 @@
     --accent: #1b1b1b;
     --accent-hover: #3a3a3a;
     --on-accent: #ffffff;
+    --primary: #0096fa;
+    --primary-hover: #0a84d6;
+    --on-primary: #ffffff;
     --accent-dim: #e2e2e2;
     --line: rgba(0, 0, 0, .10);
     --line-strong: #d4d4d4;
@@ -79,6 +82,9 @@
       --disabled-ink: #7a7a7a;
       --accent: #f1f1f1;
       --accent-hover: #ffffff;
+      --primary: #0096fa;
+      --primary-hover: #33aaff;
+      --on-primary: #ffffff;
       --on-accent: #111111;
       --accent-dim: #3a3a3a;
       --line: rgba(255, 255, 255, .12);
@@ -1101,22 +1107,73 @@
   .modal-tags-row .modal-counts .btn-icon{ width: 14px; height: 14px; }
   .modal-tags-row .modal-counts .count-badge{ font-size: 12px; }
   .detail-audio-row{ margin-bottom:12px; }
-  .detail-audio{ flex:0 0 auto; display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .detail-audio{ flex:0 0 auto; display:flex; align-items:center; gap:6px; margin-left:auto; position:relative; }
+  .detail-audio{ --detail-audio-bar-w:350px; --detail-audio-fade:22px; }
+  .detail-audio-main{ position:relative; display:flex; }
+  .detail-audio-main{ --detail-audio-face:var(--surface-2); }
+  .detail-audio-main:has(.is-playing){ --detail-audio-face:var(--accent-dim); }
+  .detail-audio-main .detail-audio-play{ position:relative; z-index:4; }
+  .detail-audio-main .detail-audio-play::after{
+    content:''; position:absolute; right:100%; top:0; bottom:0; width:var(--detail-audio-fade); pointer-events:none; opacity:0; transition:opacity .2s ease;
+    background:linear-gradient(to left, var(--detail-audio-face), transparent);
+  }
+  .detail-audio-bar{
+    position:absolute; right:0; top:0; bottom:0; z-index:3; box-sizing:border-box; width:100%; overflow:hidden; visibility:hidden;
+    border:1px solid var(--line); border-radius:8px; background:var(--surface-2);
+    transition:width .2s ease, visibility 0s linear .2s;
+  }
+  .detail-audio-main:has(.is-playing) .detail-audio-bar{ background:var(--detail-audio-face); border-color:var(--accent); }
+  .detail-audio:hover .detail-audio-bar, .detail-audio.is-held .detail-audio-bar, .detail-audio:has(:focus-visible) .detail-audio-bar{
+    width:calc(100% + var(--detail-audio-bar-w)); visibility:visible; transition:width .2s ease, visibility 0s;
+    border-color:var(--accent);
+  }
+  .detail-audio:hover .detail-audio-main .detail-audio-play, .detail-audio.is-held .detail-audio-main .detail-audio-play, .detail-audio:has(:focus-visible) .detail-audio-main .detail-audio-play{
+    background:var(--detail-audio-face); background-clip:padding-box; border-color:transparent;
+  }
+  .detail-audio:hover .detail-audio-main .detail-audio-play::after, .detail-audio.is-held .detail-audio-main .detail-audio-play::after, .detail-audio:has(:focus-visible) .detail-audio-main .detail-audio-play::after{ opacity:1; }
+  .detail-audio-bar-in{
+    position:absolute; left:0; top:0; bottom:0; width:var(--detail-audio-bar-w); box-sizing:border-box; display:flex; align-items:center; gap:8px;
+    padding:0 calc(var(--detail-audio-fade) + 4px) 0 12px; color:var(--ink-dim); opacity:0; transition:opacity .15s ease;
+    font-family:var(--font); font-size:11px; font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .detail-audio:hover .detail-audio-bar-in, .detail-audio.is-held .detail-audio-bar-in, .detail-audio:has(:focus-visible) .detail-audio-bar-in{ opacity:1; transition:opacity .15s ease .08s; }
+  .detail-audio-bar-in input[type="range"]{ margin:0; accent-color:var(--accent); cursor:pointer; min-width:0; }
+  .detail-audio-bar-in input[type="range"]:disabled{ cursor:default; opacity:.5; }
+  .detail-audio-seek{ flex:1 1 auto; }
+  .detail-audio-vol{ flex:0 0 64px; width:64px; }
+  .detail-audio-vol-icon{ width:14px; height:14px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .detail-audio-play{
     font-family:var(--font); font-size:12px; white-space:nowrap; cursor:pointer;
     background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:5px 12px;
     display:inline-flex; align-items:center; gap:6px;
   }
-  .detail-audio-play:hover{ border-color:var(--accent); color:var(--accent); }
+  .detail-audio-play:hover{ color:var(--accent); }
   .detail-audio-play.is-playing{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
   .detail-audio-play.is-loading::before{
     content:''; width:12px; height:12px; box-sizing:border-box; border-radius:50%;
     border:2px solid var(--line); border-top-color:var(--accent); animation:spin .8s linear infinite;
   }
-  .detail-audio-select{
-    font-family:var(--font); font-size:12px; max-width:180px; cursor:pointer;
-    background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:5px 8px;
+  .detail-audio-pick-wrap{ position:relative; }
+  .detail-audio-pick{
+    font-family:var(--font); font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:5px 8px 5px 10px;
   }
+  .detail-audio-pick:hover, .detail-audio-pick[aria-expanded="true"]{ border-color:var(--accent); }
+  .detail-audio-pick-name{ max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .detail-audio-chev{ width:14px; height:14px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:rotate .15s ease; }
+  .detail-audio-pick[aria-expanded="true"] .detail-audio-chev{ rotate:180deg; }
+  .detail-audio-menu{
+    position:absolute; right:0; top:calc(100% + 4px); z-index:20; min-width:100%; max-width:320px; max-height:240px; overflow:auto;
+    margin:0; padding:4px; list-style:none; box-sizing:border-box;
+    background:var(--surface-2); border-radius:var(--radius-s); box-shadow:var(--shadow-high);
+  }
+  .detail-audio-menu[hidden]{ display:none; }
+  .detail-audio-opt{
+    display:block; width:100%; text-align:left; font-family:var(--font); font-size:12px; color:var(--ink); cursor:pointer;
+    background:transparent; border:0; border-radius:6px; padding:6px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .detail-audio-opt:hover{ background:var(--control-hover); }
+  .detail-audio-opt[aria-selected="true"]{ background:var(--accent); color:var(--on-accent); }
   .kv-list{ display:grid; grid-template-columns: minmax(110px, 150px) minmax(0, 1fr); font-size:13px; }
   .kv-key, .kv-val{ padding:9px 12px; border-bottom:1px solid var(--line); min-width:0; }
   .kv-key{ color:var(--ink-dim); font-size:12px; background:var(--section-head); border-right:1px solid var(--line); display:flex; align-items:center; }
@@ -2923,8 +2980,8 @@
   .admin-btn.on, .service-toggle button.active, .tag-index-tab.active{ background: var(--accent-dim); color: var(--ink); border-color: transparent; }
   .btn-ghost.btn-danger{ background: transparent; border-color: var(--danger); color: var(--danger); }
   .btn-ghost.btn-danger:hover{ background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
-  .btn-submit{ background: var(--accent); color: var(--on-accent); border-radius: var(--radius-s); }
-  .btn-submit:hover{ background: var(--accent-hover); opacity: 1; }
+  .btn-submit{ background: var(--primary); color: var(--on-primary); border-radius: var(--radius-s); }
+  .btn-submit:hover{ background: var(--primary-hover); opacity: 1; }
   /* 押したときの縮みは scale で付ける(transform だと translateY(-50%) で中央に置いたボタンが下へ跳ぶ) */
   button:active:not(:disabled){ scale: .98; }
   .settings-toggle{ color: var(--ink); }
@@ -14224,8 +14281,14 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   // ===== DETAIL ATTACHED AUDIO =====
   // 画像・動画の詳細で、添付資料の音声をくり返し再生する(動画の音とは別に鳴る。動画がミュートなら添付の音声だけ)
-  const DETAIL_AUDIO = { volume: 0.5, play: '▶ 音声', stop: '■ 停止', loading: '読み込み中 {pct}%', failed: '音声を読み込めませんでした', title: '添付資料の音声をくり返し再生します(画像・動画を見ながら聞けます)', selectTitle: '再生する音声を選ぶ' };
+  const DETAIL_AUDIO = { volume: 0.5, play: '▶ 音声', stop: '■ 停止', loading: '読み込み中 {pct}%', failed: '音声を読み込めませんでした', title: '添付資料の音声をくり返し再生します(画像・動画を見ながら聞けます)', selectTitle: '再生する音声を選ぶ', seekLabel: '再生位置', volumeLabel: '音量', volumeStep: 0.05 };
   let detailAudio = null;
+  let detailAudioVolume = DETAIL_AUDIO.volume;
+
+  function detailAudioTime(sec) {
+    const t = Math.max(0, Math.floor(Number(sec) || 0));
+    return Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2);
+  }
 
   function detailAudioList(p) {
     if (!p || p.type === 'novel') return [];
@@ -14236,10 +14299,22 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const list = detailAudioList(p);
     if (!list.length) return tagsHtml;
     return '<div class="modal-tags-row detail-audio-row">' + tagsHtml +
-      '<div class="detail-audio">' +
-        '<button type="button" class="detail-audio-play" data-audio-play aria-pressed="false" title="' + escapeHtml(DETAIL_AUDIO.title) + '">' + DETAIL_AUDIO.play + '</button>' +
-        (list.length > 1 ? '<select class="detail-audio-select" data-audio-select title="' + escapeHtml(DETAIL_AUDIO.selectTitle) + '" aria-label="' + escapeHtml(DETAIL_AUDIO.selectTitle) + '">' +
-          list.map(function (a, i) { return '<option value="' + i + '">' + escapeHtml(a.name) + '</option>'; }).join('') + '</select>' : '') +
+      '<div class="detail-audio"><div class="detail-audio-main">' +
+        '<div class="detail-audio-bar"><div class="detail-audio-bar-in">' +
+          '<span data-audio-now>0:00</span>' +
+          '<input type="range" class="detail-audio-seek" data-audio-seek min="0" max="0" step="0.01" value="0" disabled aria-label="' + escapeHtml(DETAIL_AUDIO.seekLabel) + '">' +
+          '<span data-audio-total>0:00</span>' +
+          '<svg class="detail-audio-vol-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.4 18.4a9 9 0 0 0 0-12.8"/></svg>' +
+          '<input type="range" class="detail-audio-vol" data-audio-vol min="0" max="1" step="' + DETAIL_AUDIO.volumeStep + '" value="' + detailAudioVolume + '" aria-label="' + escapeHtml(DETAIL_AUDIO.volumeLabel) + '">' +
+        '</div></div>' +
+        '<button type="button" class="detail-audio-play" data-audio-play aria-pressed="false" title="' + escapeHtml(DETAIL_AUDIO.title) + '">' + DETAIL_AUDIO.play + '</button></div>' +
+        (list.length > 1 ? '<div class="detail-audio-pick-wrap">' +
+          '<button type="button" class="detail-audio-pick" data-audio-pick aria-haspopup="listbox" aria-expanded="false" title="' + escapeHtml(DETAIL_AUDIO.selectTitle) + '">' +
+            '<span class="detail-audio-pick-name" data-audio-pick-name>' + escapeHtml(list[0].name) + '</span>' +
+            '<svg class="detail-audio-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>' +
+          '<div class="detail-audio-menu" data-audio-menu role="listbox" aria-label="' + escapeHtml(DETAIL_AUDIO.selectTitle) + '" hidden>' +
+            list.map(function (a, i) { return '<button type="button" class="detail-audio-opt" role="option" data-audio-opt="' + i + '" aria-selected="' + (i === 0) + '" title="' + escapeHtml(a.name) + '">' + escapeHtml(a.name) + '</button>'; }).join('') +
+          '</div></div>' : '') +
       '</div></div>';
   }
 
@@ -14256,12 +14331,58 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     const list = detailAudioList(p);
     const btn = root.querySelector('[data-audio-play]');
     if (!list.length || !btn) return;
-    const select = root.querySelector('[data-audio-select]');
+    const pickBtn = root.querySelector('[data-audio-pick]');
+    const menu = root.querySelector('[data-audio-menu]');
+    let current = 0;
     const el = new Audio();
     el.loop = true;
-    el.volume = DETAIL_AUDIO.volume;
+    el.volume = detailAudioVolume;
     const st = { el: el, urls: {}, seq: 0, playing: false };
     detailAudio = st;
+    const box = btn.closest('.detail-audio');
+    const seek = root.querySelector('[data-audio-seek]');
+    const vol = root.querySelector('[data-audio-vol]');
+    const nowEl = root.querySelector('[data-audio-now]');
+    const totalEl = root.querySelector('[data-audio-total]');
+    let seeking = false;
+
+    function paintTime() {
+      const d = isFinite(el.duration) ? el.duration : 0;
+      seek.max = String(d);
+      seek.disabled = !d;
+      if (!seeking) seek.value = String(el.currentTime || 0);
+      nowEl.textContent = detailAudioTime(seeking ? seek.value : el.currentTime);
+      totalEl.textContent = detailAudioTime(d);
+    }
+    el.addEventListener('loadedmetadata', paintTime);
+    el.addEventListener('durationchange', paintTime);
+    el.addEventListener('timeupdate', paintTime);
+    el.addEventListener('emptied', paintTime);
+    seek.addEventListener('input', function () {
+      seeking = true;
+      nowEl.textContent = detailAudioTime(seek.value);
+    });
+    seek.addEventListener('change', function () {
+      seeking = false;
+      try { el.currentTime = Number(seek.value) || 0; } catch (e) {}
+      paintTime();
+    });
+    vol.addEventListener('input', function () {
+      detailAudioVolume = Number(vol.value);
+      el.volume = detailAudioVolume;
+    });
+    function release() {
+      box.classList.remove('is-held');
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+    }
+    [seek, vol].forEach(function (r) {
+      r.addEventListener('pointerdown', function () {
+        box.classList.add('is-held');
+        window.addEventListener('pointerup', release);
+        window.addEventListener('pointercancel', release);
+      });
+    });
 
     function show(text, state) {
       btn.textContent = text;
@@ -14282,7 +14403,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
     async function play() {
       const seq = ++st.seq;
-      const i = select ? Number(select.value) || 0 : 0;
+      const i = current;
       show(novelFillMsg(DETAIL_AUDIO.loading, { pct: 0 }), 'loading');
       try {
         const url = await urlOf(i);
@@ -14310,10 +14431,39 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (st.playing || btn.classList.contains('is-loading')) stop();
       else play();
     });
-    if (select) select.addEventListener('change', function () {
+    if (!pickBtn) return;
+    function closeMenu() {
+      menu.hidden = true;
+      pickBtn.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener('keydown', onKey, true);
+    }
+    function onOutside(e) {
+      if (!e.target.closest || !e.target.closest('.detail-audio-pick-wrap') || !root.contains(e.target)) closeMenu();
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.stopPropagation(); closeMenu(); pickBtn.focus(); }
+    }
+    pickBtn.addEventListener('click', function () {
+      if (!menu.hidden) { closeMenu(); return; }
+      menu.hidden = false;
+      pickBtn.setAttribute('aria-expanded', 'true');
+      document.addEventListener('pointerdown', onOutside, true);
+      document.addEventListener('keydown', onKey, true);
+    });
+    menu.addEventListener('click', function (e) {
+      const opt = e.target.closest('[data-audio-opt]');
+      if (!opt) return;
+      closeMenu();
+      const i = Number(opt.dataset.audioOpt) || 0;
+      if (i === current) return;
+      current = i;
+      root.querySelector('[data-audio-pick-name]').textContent = list[i].name;
+      menu.querySelectorAll('[data-audio-opt]').forEach(function (o) { o.setAttribute('aria-selected', String(Number(o.dataset.audioOpt) === i)); });
       el.pause();
-      try { el.currentTime = 0; } catch (e) {}
-      if (st.playing || btn.classList.contains('is-loading')) play();
+      if (st.playing || btn.classList.contains('is-loading')) { play(); return; }
+      el.removeAttribute('src');
+      el.load();
     });
   }
 
