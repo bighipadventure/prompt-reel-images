@@ -11435,11 +11435,24 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }, true);
 
   /* ---------- 投稿処理 ---------- */
+  /* ファイルを読めなかったときのエラー。FileReader の error イベントをそのまま reject すると
+     画面に「[object ProgressEvent]」としか出ないため、何が起きたか分かる文にする。
+     NotReadableError は、選んだあとにファイルが上書き・移動・削除されたときに出る
+     (Chrome は選んだ時点のファイルと中身が変わると読ませない)。 */
+  function fileReadError(file, reader) {
+    const name = (file && file.name) ? '「' + file.name + '」' : '';
+    const code = reader && reader.error ? reader.error.name : '';
+    if (code === 'NotReadableError' || code === 'NotFoundError') {
+      return new Error('ファイル' + name + 'を読み込めませんでした。選んだあとにファイルが上書き・移動されたようです。ファイルを選び直してから、もう一度投稿してください。');
+    }
+    return new Error('ファイル' + name + 'を読み込めませんでした' + (code ? '(' + code + ')' : '') + '。ファイルを選び直してから、もう一度お試しください。');
+  }
+
   function fileToBase64(file) {
     return new Promise(function (resolve, reject) {
       const reader = new FileReader();
       reader.onload = function () { resolve(reader.result); };
-      reader.onerror = reject;
+      reader.onerror = function () { reject(fileReadError(file, reader)); };
       reader.readAsDataURL(file);
     });
   }
@@ -11555,6 +11568,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       const isFix = editingFix || (!editing && mode === 'fix');
       const isVideo = editingVideo || (!editing && mode === 'video');
       const isNovel = novelMode;
+      // メインの画像・動画は、時間のかかる添付ファイル(音声など)・ノベルの素材を送る前に読んでおく。
+      // 以前は送り終えてから読んでいたため、数分かかる間にファイルが上書きされると読めなくなり、
+      // 添付ファイルを付けたときだけ投稿に失敗しやすかった。
+      const mainDataUrl = file ? await fileToBase64(file) : '';
       const novelParts = isNovel ? await buildNovelPayloadParts() : null;
       const payload = {
         title: document.getElementById('titleInput').value,
@@ -11589,8 +11606,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
         payload.mainImageUrl = mainExistingUrl;
       }
       if (file) {
-        const dataUrl = await fileToBase64(file);
-        Object.assign(payload, await prepareUploadPayload(dataUrl, function (i, n) {
+        Object.assign(payload, await prepareUploadPayload(mainDataUrl, function (i, n) {
           showLoading(n > 1 ? '画像をアップロード中... (' + i + '/' + n + ')' : '画像をアップロード中...');
         }));
         payload.imageMime = file.type;
@@ -17115,10 +17131,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
           ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', REF_JPEG_QUALITY));
         };
-        img.onerror = reject;
+        img.onerror = function () { reject(new Error('画像' + (file && file.name ? '「' + file.name + '」' : '') + 'を開けませんでした。画像ファイルか確かめてください。')); };
         img.src = reader.result;
       };
-      reader.onerror = reject;
+      reader.onerror = function () { reject(fileReadError(file, reader)); };
       reader.readAsDataURL(file);
     });
   }
@@ -19806,7 +19822,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     return new Promise(function (resolve, reject) {
       const reader = new FileReader();
       reader.onload = function () { const str = String(reader.result); resolve(str.slice(str.indexOf(',') + 1)); };
-      reader.onerror = function () { reject(reader.error); };
+      reader.onerror = function () { const e = fileReadError(blob, reader); e.readErrorName = reader.error ? reader.error.name : ''; reject(e); };
       reader.readAsDataURL(blob);
     });
   }
@@ -19821,8 +19837,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     onProgress(0, file.size);
     while (offset < file.size) {
       let r = null;
+      let data;
       try {
-        const data = await blobToBase64(file.slice(offset, offset + chunkBytes));
+        data = await blobToBase64(file.slice(offset, offset + chunkBytes));
+      } catch (err) {
+        // ファイルを読めないのは通信の問題ではなく、やり直しても直らないので、すぐに止める
+        // (file.slice した断片には名前が無いので、元のファイル名で作り直す)
+        throw fileReadError(file, { error: { name: err && err.readErrorName } });
+      }
+      try {
         r = await postAction({ action: 'modelUploadChunk', uploadId: start.uploadId, offset: offset, data: data });
       } catch (err) {
         console.error(err);
