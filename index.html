@@ -3070,9 +3070,23 @@
   .modal-image .video-frame .video-loading .spinner{ border-top-color: var(--loading); }
   .dl-wrap input, .dl-wrap input[type="text"]{ background: transparent; border-radius: 0; }
   .cart-bar{ background: var(--surface); }
-  .link-card.has-url{ cursor: pointer; transition: border-color .12s ease, background .12s ease; }
-  .link-card.has-url:hover{ border-color: var(--line-strong); background: var(--surface); }
+  .link-card.has-url{ cursor: pointer; }
   .link-card.has-url:hover .link-url{ text-decoration: underline; }
+  /* ===== 押せるカードのマウスオーバー(作品一覧のカード .row と同じ見た目にそろえる) =====
+     リンク集・掲示板のスレッド・プロンプトデータバンク・はじめてガイドの目次・お知らせの一覧。
+     明るい面に、濃い 1px の線を内側に重ねて縁取る(影は付けない) */
+  .link-card.has-url, .board-thread, .databank-row, .guide-toc-link, .announce-list-item{
+    transition: background .12s ease, border-color .12s ease, box-shadow .12s ease;
+  }
+  .link-card.has-url:hover, .board-thread:hover, .databank-row:hover, .guide-toc-link:hover, .announce-list-item:hover{
+    background: var(--card-hover); border-color: var(--card-hover-line); box-shadow: inset 0 0 0 1px var(--card-hover-line); transform: none;
+  }
+  /* 押しても開かないもの(スレッドを開いた画面の本体・編集中のスレッド)は強調しない */
+  .board-thread.board-thread-detail:hover{ background: var(--surface-2); border-color: var(--line); box-shadow: none; }
+  .board-thread.is-editing:hover{ background: none; border-color: transparent; box-shadow: none; }
+  /* カートに入れたデータバンクの行は、マウスを置いても「入れた」見た目のまま */
+  .databank-row.in-cart:hover{ background: var(--accent-dim); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  body.db-cart-mode .databank-row:not(.in-cart):hover{ border-color: var(--accent); }
   .inline-icon{ width: 15px; height: 15px; vertical-align: -2px; filter: invert(1); }
   @media (prefers-color-scheme: dark){ .inline-icon{ filter: none; } }
 
