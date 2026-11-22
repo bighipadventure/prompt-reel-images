@@ -498,7 +498,7 @@
   /* 並び順行の右端に寄せるトグル群(ボタン同士は詰める) */
   .row-right-toggles{ display:flex; align-items:center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
 
-  #postTagCloud, #tagCloud, #pTagCloud, #pBrowseTagCloud{ display: contents; }
+  #tagCloud, #pBrowseTagCloud{ display: contents; }
   .tag-cloud-wrap{ display:flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .show-all-tags{
     font-family: var(--font); font-size: 12px;
@@ -857,7 +857,7 @@
   }
   .btn-ja:hover{ background: rgba(154, 154, 154, .32); color: var(--ink); }
   /* 「原文」表示中(active)も、切替前と同じグレー系のままにする */
-  .btn-ja.active{ background: rgba(154, 154, 154, .32); color: var(--ink); border-color: rgba(154, 154, 154, .5); }
+  .btn-ja.active{ background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   /* 日本語に差し替えて表示している単語(色は変えず白のまま) */
   .prompt-word.is-ja{ color: var(--ink); }
 
@@ -2128,7 +2128,7 @@
   .novel-ctrl-btn:hover{ border-color:var(--accent); color:var(--accent); }
   .novel-ctrl-btn:disabled{ opacity:.4; cursor:default; }
   .novel-ctrl-btn:disabled:hover{ border-color:var(--line); color:var(--ink); }
-  .novel-ctrl-btn.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
+  .novel-ctrl-btn.active{ background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
   .novel-volume{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font); font-size:12px; color:var(--ink-dim); }
   .novel-volume input[type="range"]{ width:110px; accent-color:var(--accent); cursor:pointer; }
   .novel-volume-pct{ min-width:3.2em; text-align:right; font-variant-numeric:tabular-nums; }
@@ -2977,7 +2977,7 @@
   .tab-btn.active, .post-mode-btn.active, .opt-group-tab.active, .tabs.show-more .tab-more-btn{ background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .tab-more-menu, .dl-menu{ border: none; border-radius: var(--radius-l); box-shadow: var(--shadow-high); }
   .admin-btn, .btn-ghost, .modal-close, .search-toggle-btn{ border-radius: var(--radius-s); }
-  .admin-btn.on, .service-toggle button.active, .tag-index-tab.active{ background: var(--accent-dim); color: var(--ink); border-color: transparent; }
+  .admin-btn.on, .service-toggle button.active, .tag-index-tab.active{ background: var(--accent); color: var(--on-accent); border-color: transparent; }
   .btn-ghost.btn-danger{ background: transparent; border-color: var(--danger); color: var(--danger); }
   .btn-ghost.btn-danger:hover{ background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
   .btn-submit{ background: var(--primary); color: var(--on-primary); border-radius: var(--radius-s); }
@@ -2991,8 +2991,9 @@
   .mode-toggle{ background: var(--control); border-color: transparent; border-radius: var(--radius-s); padding: 2px; gap: 2px; }
   .mode-toggle button{ background: transparent; color: var(--ink-dim); border-radius: 8px; }
   .mode-toggle button:hover{ color: var(--ink); }
-  .mode-toggle button.active{ background: var(--surface); color: var(--ink); box-shadow: var(--shadow-low); }
-  .seg-filter button.active .seg-count{ color: var(--ink); }
+  /* 選択中は塗りつぶしではっきり示す(タブ・並び順と同じ。ライトは黒地に白、ダークは白地に黒) */
+  .mode-toggle button.active{ background: var(--accent); color: var(--on-accent); box-shadow: none; }
+  .seg-filter button.active .seg-count{ color: var(--on-accent); }
 
   .sort-chip, .head-toggle, .tag-pill, .row-tags .tag, .clear-tags, .show-all-tags{ border-color: transparent; background: var(--control); color: var(--ink); }
   .sort-chip:hover, .head-toggle:hover, .tag-pill:hover, .clear-tags:hover, .show-all-tags:hover, .list .row-tags .tag:hover{ background: var(--control-hover); border-color: transparent; color: var(--ink); }
@@ -3354,13 +3355,12 @@
 
       <div class="req-field" id="tagsField">
       <div class="field-head-row">
-        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
+        <label class="field-label" style="margin:0;">タグ(「タグ一覧」から選ぶか、入力して追加)</label>
         <button class="clear-tags" type="button" id="clearPostTagsBtn">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud-wrap" id="postTagWrap"><div class="tag-cloud" id="postTagCloud"></div>
-      <button class="show-all-tags" type="button" id="showAllTagsBtn" style="display:none;">全て表示</button></div>
-      <div class="tag-row" style="margin-top:10px;">
+      <div class="tag-row">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="newTagInput" data-pm-skip placeholder="新しいタグを入力して追加(既存タグから予測変換)">
+        <button class="btn-ghost" id="openTagListBtn" type="button">タグ一覧</button>
         <button class="btn-ghost" id="addNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="selectedTags"></div>
@@ -3436,13 +3436,12 @@
 
       <div class="req-field" id="pTagsField">
       <div class="field-head-row">
-        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
+        <label class="field-label" style="margin:0;">タグ(「タグ一覧」から選ぶか、入力して追加)</label>
         <button class="clear-tags" type="button" id="pClearTagsBtn">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud-wrap" id="pTagWrap"><div class="tag-cloud" id="pTagCloud"></div>
-      <button class="show-all-tags" type="button" id="pShowAllTagsBtn" style="display:none;">全て表示</button></div>
-      <div class="tag-row" style="margin-top:10px;">
+      <div class="tag-row">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="pNewTagInput" data-pm-skip placeholder="新しいタグを入力して追加">
+        <button class="btn-ghost" id="pOpenTagListBtn" type="button">タグ一覧</button>
         <button class="btn-ghost" id="pAddNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="pSelectedTags"></div>
@@ -3542,12 +3541,12 @@
 
       <div class="req-field" id="mTagsField">
       <div class="field-head-row">
-        <label class="field-label" style="margin:0;">タグ(クリックで選択 / もう一度クリックで解除)</label>
+        <label class="field-label" style="margin:0;">タグ(「タグ一覧」から選ぶか、入力して追加)</label>
         <button class="clear-tags" type="button" id="mClearTagsBtn">タグ選択をクリア</button>
       </div>
-      <div class="tag-cloud" id="mTagCloud"></div>
-      <div class="tag-row" style="margin-top:10px;">
+      <div class="tag-row">
         <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" id="mNewTagInput" data-pm-skip placeholder="新しいタグを入力して追加">
+        <button class="btn-ghost" id="mOpenTagListBtn" type="button">タグ一覧</button>
         <button class="btn-ghost" id="mAddNewTagBtn" type="button">追加</button>
       </div>
       <div class="chips" id="mSelectedTags"></div>
@@ -4227,7 +4226,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">タグ</div>
-        <div class="feature-desc">既存のタグはクリックで付け外しでき、新しいタグは入力欄から追加できます。タグは画像投稿とプロンプト例で共通のプールなので、みんなが使っている言葉に合わせると探しやすくなります。<strong>タグは必須です</strong>。1つも選ばずに投稿しようとすると、投稿できずに「タグを1つ以上選択してください」と表示されます(修正依頼の投稿でも同じです)。</div>
+        <div class="feature-desc">既存のタグは入力欄の横の「タグ一覧」を押すと一覧が開き、クリックで付け外しできます。新しいタグは入力欄から追加できます。Stillmotion・Stillmange・Stillsheet から受け取った投稿には、そのアプリ名(Irodori-TTS で作った音声を使ったときは「Irodori TTS」も)のタグが最初から付いています。タグは画像投稿とプロンプト例で共通のプールなので、みんなが使っている言葉に合わせると探しやすくなります。<strong>タグは必須です</strong>。1つも選ばずに投稿しようとすると、投稿できずに「タグを1つ以上選択してください」と表示されます(修正依頼の投稿でも同じです)。</div>
       </div>
       <div class="feature-item opt-only-author">
         <div class="feature-name">投稿者名</div>
@@ -6557,6 +6556,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   </div>
 </div>
 
+<div class="modal-overlay" id="mTagModalOverlay">
+  <div class="modal">
+    <button class="modal-close" type="button" id="mTagModalCloseBtn">✕ 閉じる</button>
+    <h3 class="modal-title">タグを選択</h3>
+    <p class="tag-modal-hint">クリックで選択 / もう一度クリックで解除</p>
+    <div class="tag-cloud" id="mTagModalCloud"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pBrowseTagModalOverlay">
   <div class="modal">
     <button class="modal-close" type="button" id="pBrowseTagModalCloseBtn">✕ 閉じる</button>
@@ -8160,6 +8168,20 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
+  /* Still アプリから受け取った投稿に、アプリ名と使ったツールのタグを最初から付けておく。
+     アプリ名は受け取りの種類(?import=)から決め、使ったツール(Irodori TTS など)は送り側が record.tags に入れてくる。
+     送り側の古い版から受け取ったときも、アプリ名のタグだけは付く。付けるのは決まった名前だけ。 */
+  const IMPORT_APP_TAGS = { stillmotion: 'Stillmotion', stillmange: 'Stillmange', stillsheet: 'Stillsheet' };
+  const IMPORT_ALLOWED_TAGS = ['Stillmotion', 'Stillmange', 'Stillsheet', 'Irodori TTS'];
+  function applyImportTags(kind, record) {
+    const extra = record && Array.isArray(record.tags) ? record.tags : [];
+    [IMPORT_APP_TAGS[kind]].concat(extra).forEach(function (t) {
+      const tag = String(t || '').trim();
+      if (IMPORT_ALLOWED_TAGS.indexOf(tag) !== -1 && !selectedTags.includes(tag)) selectedTags.push(tag);
+    });
+    renderChips();
+  }
+
   async function receiveImport(kind, key) {
     let record = null;
     try {
@@ -8183,6 +8205,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       imageInput.dispatchEvent(new Event('change'));
     } catch (e) { console.error(e); }
     if (record.meta) applyStillmotionMeta(record.meta);
+    applyImportTags('stillmotion', record);
     stillmotionImportKey = key;
     const baseNotice = 'Stillmotion から動画を受け取りました。タイトル・タグ・「動画の元になった画像作品」などを確認して「投稿する」を押してください。';
     showStillmotionNotice(baseNotice);
@@ -8219,6 +8242,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       if (!variantMode) setVariantMode(true);
       await addVariantFiles(files.slice(1));
     }
+    applyImportTags(kind, record);
     stillmotionImportKey = key;
     if (sheet) fillStillsheetText(record.meta);
     const isMoss = record.meta && record.meta.mode === 'moss';
@@ -8254,6 +8278,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       return new File([x.blob], x.name || ('stillsheet_' + (i + 1)), { type: x.mime || x.blob.type || '' });
     });
     if (files.length) await novelAddFilesByJson(files);
+    applyImportTags('stillsheet', record);
     const memoEl = document.getElementById('memoInput');
     if (memoEl && !memoEl.value.trim() && record.meta.synopsis) {
       memoEl.value = record.meta.synopsis;
@@ -11193,8 +11218,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
 
   /* ---------- 投稿フォームのタグ選択 ---------- */
   const selectedTagsEl = document.getElementById('selectedTags');
-  const postTagCloud = document.getElementById('postTagCloud');
-  const showAllTagsBtn = document.getElementById('showAllTagsBtn');
   const POST_TAG_MAX_ROWS = 2;
   const BROWSE_TAG_MAX_ROWS = 2;
 
@@ -11204,17 +11227,11 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     renderChips();
   }
 
+  /* 投稿フォームのタグは「タグ一覧」ボタンのモーダルから選ぶ(入力欄の上にタグを並べる表示はやめた)。
+     ここでは、モーダルが開いていれば選択の状態を描き直すだけ。 */
   function rebuildPostTagCloud() {
-    const tags = allUniqueTags();
-    postTagCloud.innerHTML = shuffledTagOrder('postForm', tags).map(function (t) {
-      const cls = selectedTags.includes(t) ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-
-    postTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () { toggleSelectedTag(pill.dataset.tag); });
-    });
-    applyPostTagClamp();
+    const overlay = document.getElementById('tagModalOverlay');
+    if (overlay && overlay.classList.contains('open')) renderTagModalCloud();
   }
 
   function applyTagCloudClamp(container, btn, maxRows) {
@@ -11249,7 +11266,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
   }
 
-  function applyPostTagClamp() { applyTagCloudClamp(postTagCloud, showAllTagsBtn, POST_TAG_MAX_ROWS); }
+  function applyPostTagClamp() { /* 投稿フォームにはタグの並びが無くなったので、何もしない */ }
   function applyBrowseTagClamp() { applyTagCloudClamp(tagCloud, showAllBrowseTagsBtn, BROWSE_TAG_MAX_ROWS); }
 
   // ===== 検索エリアの表示/非表示 =====
@@ -11330,7 +11347,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function openTagModal() { renderTagModalCloud(); openOverlay(tagModalOverlay); }
   function closeTagModal() { tagModalOverlay.classList.remove('open'); }
 
-  showAllTagsBtn.addEventListener('click', openTagModal);
+  document.getElementById('openTagListBtn').addEventListener('click', openTagModal);
   document.getElementById('tagModalCloseBtn').addEventListener('click', closeTagModal);
   wireOverlayDismiss(tagModalOverlay, function () { closeTagModal(); });
 
@@ -12800,7 +12817,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeModelPicker(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDbUsageModal(); closeLikedListModal(); closeVariantPanelModal(); }
+    if (e.key === 'Escape') { closeModal(); closeTagModal(); closeBrowseTagModal(); closePTagModal(); closeMTagModal(); closePBrowseTagModal(); closeFullImageModal(); closeBasePromptModal(); closeModelPicker(); closeParentModal(); closeRequestModal(); closeFixRequestModal(); closeRefLightbox(); closeAdminAuthModal(); closeCommentModal(); closeAdminOptionsModal(); closeDbUsageModal(); closeLikedListModal(); closeVariantPanelModal(); }
   });
 
   /* ===== グッド一覧モーダル =====
@@ -15068,8 +15085,6 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   }
 
   /* ===== PROMPT FEATURE ===== */
-  const pTagCloud = document.getElementById('pTagCloud');
-  const pShowAllTagsBtn = document.getElementById('pShowAllTagsBtn');
   const pSelectedTagsEl = document.getElementById('pSelectedTags');
   const pBrowseTagCloud = document.getElementById('pBrowseTagCloud');
   const pShowAllBrowseTagsBtn = document.getElementById('pShowAllBrowseTagsBtn');
@@ -16620,18 +16635,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (idx === -1) pSelectedTags.push(t); else pSelectedTags.splice(idx, 1);
     renderPromptChips();
   }
+  // タグは「タグ一覧」ボタンのモーダルから選ぶ。モーダルが開いていれば選択の状態を描き直す
   function rebuildPromptFormTagCloud() {
-    const tags = allUniquePromptTags();
-    pTagCloud.innerHTML = shuffledTagOrder('promptForm', tags).map(function (t) {
-      const cls = pSelectedTags.includes(t) ? ' state-include' : '';
-      return '<span class="tag-pill' + cls + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-    pTagCloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () { toggleSelectedPromptTag(pill.dataset.tag); });
-    });
-    applyPromptFormTagClamp();
+    const overlay = document.getElementById('pTagModalOverlay');
+    if (overlay && overlay.classList.contains('open')) renderPTagModalCloud();
   }
-  function applyPromptFormTagClamp() { applyTagCloudClamp(pTagCloud, pShowAllTagsBtn, 2); }
+  function applyPromptFormTagClamp() { /* 投稿フォームにはタグの並びが無くなったので、何もしない */ }
   function renderPromptChips() {
     pSelectedTagsEl.innerHTML = pSelectedTags.map(function (t, i) {
       return '<span class="chip">' + escapeHtml(t) + '<button type="button" data-idx="' + i + '">×</button></span>';
@@ -16666,7 +16675,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   function openPTagModal() { renderPTagModalCloud(); openOverlay(pTagModalOverlay); }
   function closePTagModal() { pTagModalOverlay.classList.remove('open'); }
 
-  pShowAllTagsBtn.addEventListener('click', openPTagModal);
+  document.getElementById('pOpenTagListBtn').addEventListener('click', openPTagModal);
   document.getElementById('pTagModalCloseBtn').addEventListener('click', closePTagModal);
   wireOverlayDismiss(pTagModalOverlay, function () { closePTagModal(); });
 
@@ -19657,20 +19666,27 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
-  function renderModelFormTags() {
-    const cloud = document.getElementById('mTagCloud');
+  /* タグは「タグ一覧」ボタンのモーダルから選ぶ(画像・プロンプトの投稿フォームと同じ) */
+  function renderMTagModalCloud() {
     const pool = sortJa(Array.from(new Set(modelTagPool().concat(mSelectedTags))));
-    cloud.innerHTML = pool.map(function (t) {
-      return '<span class="tag-pill' + (mSelectedTags.includes(t) ? ' state-include' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
-    }).join('') || '<span style="color:var(--ink-dim); font-size:12px; font-family:inherit;">タグはまだありません</span>';
-    cloud.querySelectorAll('.tag-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const t = pill.dataset.tag;
+    renderIndexedTagCloud(document.getElementById('mTagModalCloud'), pool,
+      function (t) { return mSelectedTags.includes(t); },
+      function (t) {
         const idx = mSelectedTags.indexOf(t);
         if (idx === -1) mSelectedTags.push(t); else mSelectedTags.splice(idx, 1);
         renderModelFormTags();
       });
-    });
+  }
+  function closeMTagModal() { document.getElementById('mTagModalOverlay').classList.remove('open'); }
+  document.getElementById('mOpenTagListBtn').addEventListener('click', function () {
+    renderMTagModalCloud();
+    openOverlay(document.getElementById('mTagModalOverlay'));
+  });
+  document.getElementById('mTagModalCloseBtn').addEventListener('click', closeMTagModal);
+  wireOverlayDismiss(document.getElementById('mTagModalOverlay'), function () { closeMTagModal(); });
+
+  function renderModelFormTags() {
+    if (document.getElementById('mTagModalOverlay').classList.contains('open')) renderMTagModalCloud();
     const chips = document.getElementById('mSelectedTags');
     chips.innerHTML = mSelectedTags.map(function (t, i) {
       return '<span class="chip">' + escapeHtml(t) + '<button type="button" data-idx="' + i + '">×</button></span>';
