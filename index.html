@@ -41,6 +41,8 @@
     --primary-hover: #0a84d6;
     --on-primary: #ffffff;
     --accent-dim: #e2e2e2;
+    --chip-bg: #3a5475;
+    --chip-ink: #ffffff;
     --line: rgba(0, 0, 0, .10);
     --line-strong: #d4d4d4;
     --control: rgba(0, 0, 0, .06);
@@ -87,6 +89,8 @@
       --on-primary: #ffffff;
       --on-accent: #111111;
       --accent-dim: #3a3a3a;
+      --chip-bg: #2b4260;
+      --chip-ink: #ffffff;
       --line: rgba(255, 255, 255, .12);
       --line-strong: #525252;
       --control: rgba(255, 255, 255, .10);
@@ -3003,9 +3007,12 @@
   .sort-chip .order-badge{ background: var(--on-accent); color: var(--accent); }
   .head-toggle.active .head-toggle-dot{ background: var(--on-accent); }
   .tag-pill.state-exclude{ background: var(--danger-dim); color: var(--danger); border-color: transparent; text-decoration: none; }
-  .chip{ background: var(--accent-dim); color: var(--ink); border-color: transparent; }
-  .chip button{ color: var(--ink-dim); }
-  .chip button:hover{ color: var(--ink); }
+  .chip{ background: var(--chip-bg); color: var(--chip-ink); border-color: transparent; }
+  .chip button{ color: color-mix(in srgb, var(--chip-ink) 65%, transparent); }
+  .chip button:hover{ color: var(--chip-ink); }
+  .chips .chip{ background: var(--accent-dim); color: var(--ink); }
+  .chips .chip button{ color: var(--ink-dim); }
+  .chips .chip button:hover{ color: var(--ink); }
 
   .like-btn, .dislike-btn{ background: var(--control); border-color: transparent; }
   .like-btn.liked{ background: var(--danger-dim); border-color: transparent; }
