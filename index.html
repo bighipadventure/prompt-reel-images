@@ -3053,6 +3053,20 @@
     .btn-icon, .vote-icon, .cart-icon, .fab-cart-icon, .like-btn .btn-icon, .dislike-btn .btn-icon, .board-vote-btn .vote-icon{ filter: none; }
     .fab-cart.active .fab-cart-icon{ filter: invert(1); }
   }
+  .like-btn, .dislike-btn{ touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+  .like-btn:hover, .dislike-btn:hover{ color: var(--ink-dim); border-color: transparent; }
+  @media (hover: hover){
+    .like-btn:hover, .dislike-btn:hover{ background: var(--control-hover); }
+  }
+  @media (hover: none){
+    .like-btn:hover .btn-icon, .dislike-btn:hover .btn-icon{ opacity: .45; filter: grayscale(1) invert(1); }
+  }
+  @media (hover: none) and (prefers-color-scheme: dark){
+    .like-btn:hover .btn-icon, .dislike-btn:hover .btn-icon{ filter: grayscale(1); }
+  }
+  .like-btn.liked, .like-btn.liked:hover{ background: var(--like); color: var(--on-danger); border-color: transparent; }
+  .dislike-btn.disliked, .dislike-btn.disliked:hover{ background: var(--primary); color: var(--on-primary); border-color: transparent; }
+  .like-btn.liked .btn-icon, .dislike-btn.disliked .btn-icon{ opacity: 1; filter: none; }
   .spinner{ border-color: var(--line-strong); border-top-color: var(--accent); }
   .spinner.red{ border-top-color: var(--danger); }
 
@@ -13032,7 +13046,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      小さなチャンクに分けて何回かに分けて送り、サーバー側で結合してもらう。 */
   const UPLOAD_CHUNK_SIZE = 7 * 1024 * 1024;        // 1回に送るbase64文字数
   const UPLOAD_CHUNK_THRESHOLD = 7 * 1024 * 1024;   // これ以下ならこれまで通り1回で送る
-  const UPLOAD_PARALLEL = 3;                        // 同時に送るチャンク数
+  const UPLOAD_PARALLEL = 3;
+  const VOTE_SEND_DELAY_MS = 400;                        // 同時に送るチャンク数
   async function prepareUploadPayload(dataUrl, onProgress) {
     const commaIdx = dataUrl.indexOf(',');
     const b64 = commaIdx === -1 ? dataUrl : dataUrl.slice(commaIdx + 1);
@@ -13092,7 +13107,49 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     });
   }
 
-  async function toggleLike(id) {
+  const votePending = {};
+
+  function queueVote(id, kind, delta) {
+    const key = kind + ':' + id;
+    const q = votePending[key] || (votePending[key] = { net: 0, seq: 0, timer: 0 });
+    q.net += delta;
+    q.seq++;
+    clearTimeout(q.timer);
+    q.timer = setTimeout(function () { sendVote(id, kind); }, VOTE_SEND_DELAY_MS);
+  }
+
+  async function sendVote(id, kind) {
+    const q = votePending[kind + ':' + id];
+    const p = countTargetOf(id);
+    if (!q || !p) return;
+    const delta = q.net;
+    const seq = q.seq;
+    q.net = 0;
+    if (!delta) return;
+    const countKey = kind === 'like' ? 'likeCount' : 'dislikeCount';
+    try {
+      const result = await postAction({ action: kind, id: id, delta: delta });
+      if (result && typeof result[countKey] === 'number' && q.seq === seq && q.net === 0) {
+        p[countKey] = result[countKey];
+        updateCountUI(id);
+      }
+      if (p.type === 'dlmodel') modelVotes[id] = { likeCount: p.likeCount, dislikeCount: p.dislikeCount };
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  window.addEventListener('pagehide', function () {
+    Object.keys(votePending).forEach(function (key) {
+      const q = votePending[key];
+      if (!q.net) return;
+      clearTimeout(q.timer);
+      const at = key.indexOf(':');
+      sendVote(key.slice(at + 1), key.slice(0, at));
+    });
+  });
+
+  function toggleLike(id) {
     const p = countTargetOf(id);
     if (!p) return;
     const currentlyLiked = !!likedPosts[id];
@@ -13102,20 +13159,10 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     saveLiked();
     p.likeCount = Math.max(0, (Number(p.likeCount) || 0) + delta);
     updateCountUI(id);
-
-    try {
-      const result = await postAction({ action: 'like', id: id, delta: delta });
-      if (result && typeof result.likeCount === 'number') {
-        p.likeCount = result.likeCount;
-        updateCountUI(id);
-      }
-      if (p.type === 'dlmodel') modelVotes[id] = { likeCount: p.likeCount, dislikeCount: p.dislikeCount };
-    } catch (err) {
-      console.error(err);
-    }
+    queueVote(id, 'like', delta);
   }
 
-  async function toggleDislike(id) {
+  function toggleDislike(id) {
     const p = countTargetOf(id);
     if (!p) return;
     const currentlyDisliked = !!dislikedPosts[id];
@@ -13125,17 +13172,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     saveDisliked();
     p.dislikeCount = Math.max(0, (Number(p.dislikeCount) || 0) + delta);
     updateCountUI(id);
-
-    try {
-      const result = await postAction({ action: 'dislike', id: id, delta: delta });
-      if (result && typeof result.dislikeCount === 'number') {
-        p.dislikeCount = result.dislikeCount;
-        updateCountUI(id);
-      }
-      if (p.type === 'dlmodel') modelVotes[id] = { likeCount: p.likeCount, dislikeCount: p.dislikeCount };
-    } catch (err) {
-      console.error(err);
-    }
+    queueVote(id, 'dislike', delta);
 
     // しきい値に到達したら一覧・詳細から消える(非管理者)。表示を更新する。
     if (p.type !== 'dlmodel' && isHiddenByDislike(p)) {
