@@ -12350,13 +12350,28 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       usedDl.sort(function (a, b) { return (a.kind === 'LoRA') - (b.kind === 'LoRA') || a.name.localeCompare(b.name, 'ja', { numeric: true }); });
     }
     const usedModelCount = usedModels.length + usedDl.length;
-    const usedModelBlock = (usedModelCount && options.model)
-      ? '<div class="linked-works-head">使用したモデル(' + usedModelCount + '件)</div>' +
-        '<div class="list" id="usedModelWorks">' + usedModels.map(function (mp) {
-            return modelRowHtml(mp, { counts: false, thumbHtml: ownImageThumbHtml(p, [usedModelKey(mp.modelFile && mp.modelFile.name), usedModelKey(mp.title)].filter(Boolean)) });
-          }).join('') +
-          usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false, thumbHtml: ownImageThumbHtml(p, entryKeys(e)) }); }).join('') + '</div>'
-      : '';
+    const holders = postContentHolders(p);
+    const usedAt = function (keys) {
+      return holders.map(function (h, i) {
+        return holderModelKeys(h, i === 0 && p.type === 'video').some(function (k) { return keys.indexOf(k) !== -1; }) ? i : -1;
+      }).filter(function (i) { return i >= 0; });
+    };
+    const modelUseVars = usedModels.map(function (mp) { return usedAt([usedModelKey(mp.modelFile && mp.modelFile.name), usedModelKey(mp.title)].filter(Boolean)); })
+      .concat(usedDl.map(function (e) { return usedAt(entryKeys(e)); }));
+    const splitModels = hasVariants && modelUseVars.some(function (vars) { return vars.length && vars.length < holders.length; });
+    const usedModelRows = usedModels.map(function (mp) {
+        return modelRowHtml(mp, { counts: false, thumbHtml: ownImageThumbHtml(p, [usedModelKey(mp.modelFile && mp.modelFile.name), usedModelKey(mp.title)].filter(Boolean)) });
+      }).join('') +
+      usedDl.map(function (e, i) { return dlModelRowHtml(e, i, { counts: false, thumbHtml: ownImageThumbHtml(p, entryKeys(e)) }); }).join('');
+    const usedModelBlock = !(usedModelCount && options.model)
+      ? ''
+      : splitModels
+        ? '<div class="linked-works-head" id="usedModelHead" data-label="表示作品で使用したモデル">表示作品で使用したモデル(' + usedModelCount + '件)</div>' +
+          '<div class="list" id="usedModelWorks">' + usedModelRows + '</div>' +
+          '<div class="linked-works-head" id="otherModelHead" data-label="他差分画像で使用したモデル">他差分画像で使用したモデル(0件)</div>' +
+          '<div class="list" id="otherModelWorks"></div>'
+        : '<div class="linked-works-head">使用したモデル(' + usedModelCount + '件)</div>' +
+          '<div class="list" id="usedModelWorks">' + usedModelRows + '</div>';
 
     const parent = p.parentId
       ? imagePosts.find(function (ip) { return String(ip.id) === String(p.parentId); })
@@ -12560,6 +12575,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
             settingsBlock.style.display = entries ? '' : 'none';
           }
           modalBody.querySelectorAll('.variant-switch-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          splitModelRows();
         });
       });
       // □2以降の画像はモーダルを開いた時点で読み込みを開始しておく(切替を即時にするため)
@@ -12601,6 +12617,26 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       wireModelRows(usedModelWorks);
       usedModelWorks.querySelectorAll('[data-dl-i]').forEach(function (row) {
         row.addEventListener('click', function () { openDlModelModal(usedDl[Number(row.dataset.dlI)]); });
+      });
+      Array.prototype.forEach.call(usedModelWorks.children, function (row, i) { row.dataset.modelIdx = i; });
+      splitModelRows();
+    }
+
+    function splitModelRows() {
+      const cur = document.getElementById('usedModelWorks');
+      const other = document.getElementById('otherModelWorks');
+      if (!cur || !other) return;
+      const rows = Array.prototype.slice.call(cur.children).concat(Array.prototype.slice.call(other.children))
+        .sort(function (a, b) { return Number(a.dataset.modelIdx) - Number(b.dataset.modelIdx); });
+      rows.forEach(function (row) {
+        const vars = modelUseVars[Number(row.dataset.modelIdx)] || [];
+        (!vars.length || vars.indexOf(curVar) !== -1 ? cur : other).appendChild(row);
+      });
+      [[cur, 'usedModelHead'], [other, 'otherModelHead']].forEach(function (pair) {
+        const head = document.getElementById(pair[1]);
+        const n = pair[0].children.length;
+        head.textContent = head.dataset.label + '(' + n + '件)';
+        head.style.display = pair[0].style.display = n ? '' : 'none';
       });
     }
 
@@ -12733,13 +12769,63 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (pb) pb.addEventListener('click', function (e) { e.stopPropagation(); navToPost(pb.dataset.targetId); });
     if (nb) nb.addEventListener('click', function (e) { e.stopPropagation(); navToPost(nb.dataset.targetId); });
     window.addEventListener('resize', positionModalNav);
-    document.addEventListener('keydown', function (e) {
-      if (!modalOverlay.classList.contains('open') || !modalOverlay.classList.contains('has-post-nav')) return;
-      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || '')) return;
-      if (e.key === 'ArrowLeft') { var t = pb && pb.dataset.targetId; if (t) { e.preventDefault(); navToPost(t); } }
-      else if (e.key === 'ArrowRight') { var t2 = nb && nb.dataset.targetId; if (t2) { e.preventDefault(); navToPost(t2); } }
-    });
   })();
+
+  // ===== キーボードで移動(左右=差分 / 上下=前後の作品) =====
+  let navSourceRow = null;
+  document.addEventListener('click', function (e) {
+    const row = e.target.closest && e.target.closest('.row[data-id]');
+    if (row && !row.closest('#modalOverlay, #fullImageOverlay')) navSourceRow = row;
+  }, true);
+
+  function stepVariantButtons(buttons, dir) {
+    const list = Array.prototype.slice.call(buttons);
+    if (list.length < 2) return false;
+    const next = list[list.findIndex(function (b) { return b.classList.contains('active'); }) + dir];
+    if (next) next.click();
+    return true;
+  }
+
+  function stepSourceRow(dir) {
+    if (!navSourceRow || !navSourceRow.isConnected || !navSourceRow.parentElement) return false;
+    const rows = Array.prototype.filter.call(navSourceRow.parentElement.children, function (r) {
+      return r.matches('.row[data-id]') && r.offsetParent !== null;
+    });
+    const target = rows[rows.indexOf(navSourceRow) + dir];
+    if (!target) return false;
+    navSourceRow = target;
+    if (target.scrollIntoView) target.scrollIntoView({ block: 'center' });
+    target.click();
+    return true;
+  }
+
+  function stepModalNav(dir) {
+    if (!modalOverlay.classList.contains('has-post-nav')) return false;
+    const btn = document.getElementById(dir < 0 ? 'modalNavPrev' : 'modalNavNext');
+    const id = btn && btn.dataset.targetId;
+    if (!id) return false;
+    navToPost(id);
+    return true;
+  }
+
+  function topOverlay() {
+    const el = document.elementFromPoint(Math.round(window.innerWidth / 2), Math.round(window.innerHeight / 2));
+    return el && el.closest ? el.closest('.modal-overlay.open') : null;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (!/^Arrow(Left|Right|Up|Down)$/.test(e.key)) return;
+    const t = e.target;
+    if (t && (/^(INPUT|TEXTAREA|SELECT|VIDEO|AUDIO)$/.test(t.tagName || '') || t.isContentEditable)) return;
+    const top = topOverlay();
+    if (top !== modalOverlay && top !== fullImageOverlay) return;
+    const horizontal = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+    const dir = (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : 1;
+    const variants = top === fullImageOverlay ? fullImageVariants.querySelectorAll('.fiv-btn') : modalBody.querySelectorAll('.variant-switch-btn');
+    const handled = (horizontal && stepVariantButtons(variants, dir)) || stepSourceRow(dir) || (top === modalOverlay && stepModalNav(dir));
+    if (handled) e.preventDefault();
+  });
 
   wireOverlayDismiss(modalOverlay, closeModal);
 
