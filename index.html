@@ -4261,7 +4261,7 @@
       </div>
       <div class="feature-item">
         <div class="feature-name">タグ</div>
-        <div class="feature-desc">既存のタグは入力欄の横の「タグ一覧」を押すと一覧が開き、クリックで付け外しできます。新しいタグは入力欄から追加できます。Stillmotion・Stillmange・Stillsheet から受け取った投稿には、そのアプリ名(Irodori-TTS で作った音声を使ったときは「Irodori TTS」も)のタグが最初から付いています。タグは画像投稿とプロンプト例で共通のプールなので、みんなが使っている言葉に合わせると探しやすくなります。<strong>タグは必須です</strong>。1つも選ばずに投稿しようとすると、投稿できずに「タグを1つ以上選択してください」と表示されます(修正依頼の投稿でも同じです)。</div>
+        <div class="feature-desc">既存のタグは入力欄の横の「タグ一覧」を押すと一覧が開き、クリックで付け外しできます。新しいタグは入力欄から追加できます。Stillmotion・Stillmange・Stillsheet・Stillframe から受け取った投稿には、そのアプリ名(Irodori-TTS で作った音声を使ったときは「Irodori TTS」も)のタグが最初から付いています。タグは画像投稿とプロンプト例で共通のプールなので、みんなが使っている言葉に合わせると探しやすくなります。<strong>タグは必須です</strong>。1つも選ばずに投稿しようとすると、投稿できずに「タグを1つ以上選択してください」と表示されます(修正依頼の投稿でも同じです)。</div>
       </div>
       <div class="feature-item opt-only-author">
         <div class="feature-name">投稿者名</div>
@@ -8165,15 +8165,15 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     if (key === null) {
       const params = new URLSearchParams(location.search);
       kind = params.get('import');
-      if (kind !== 'stillmotion' && kind !== 'stillmange' && kind !== 'stillsheet') return;
+      if (kind !== 'stillmotion' && kind !== 'stillmange' && kind !== 'stillsheet' && kind !== 'stillframe') return;
       key = params.get('key') || '';
       // 再読み込みで二重に取り込まないよう、URL から受け取り用のパラメータを外す
       params.delete('import');
       params.delete('key');
       history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
     }
-    const imageKind = kind === 'stillmange' || kind === 'stillsheet';
-    const imageApp = kind === 'stillsheet' ? 'Stillsheet' : 'Stillmange';
+    const imageKind = kind === 'stillmange' || kind === 'stillsheet' || kind === 'stillframe';
+    const imageApp = kind === 'stillsheet' ? 'Stillsheet' : kind === 'stillframe' ? 'Stillframe' : 'Stillmange';
     if (imageKind && !options.tabPost) {
       alert('いまは投稿が無効になっているため、' + imageApp + ' から受け取れません。管理者に確認してください。');
       return;
@@ -8188,10 +8188,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
       stillmotionPendingKey = key;
       stillmotionPendingKind = kind;
       document.getElementById('loginGate').classList.remove('hidden');
-      showLoginGate({ message: kind === 'stillsheet' ? 'Stillsheet から受け取った画像を投稿するには、ログインが必要です。' : kind === 'stillmange' ? 'Stillmange から受け取った漫画を投稿するには、ログインが必要です。' : 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
+      showLoginGate({ message: kind === 'stillframe' ? 'Stillframe から受け取った画像を投稿するには、ログインが必要です。' : kind === 'stillsheet' ? 'Stillsheet から受け取った画像を投稿するには、ログインが必要です。' : kind === 'stillmange' ? 'Stillmange から受け取った漫画を投稿するには、ログインが必要です。' : 'Stillmotion から受け取った動画を投稿するには、ログインが必要です。' });
       return;
     }
-    lockForImport(kind === 'stillsheet'
+    lockForImport(kind === 'stillframe'
+      ? 'Stillframe から受け取った画像を読み込んでいます…'
+      : kind === 'stillsheet'
       ? 'Stillsheet から受け取った画像を読み込み、元になった作品を探しています…'
       : kind === 'stillmange'
       ? 'Stillmange から受け取った漫画を読み込み、元になった作品を探しています…'
@@ -8206,8 +8208,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
   /* Still アプリから受け取った投稿に、アプリ名と使ったツールのタグを最初から付けておく。
      アプリ名は受け取りの種類(?import=)から決め、使ったツール(Irodori TTS など)は送り側が record.tags に入れてくる。
      送り側の古い版から受け取ったときも、アプリ名のタグだけは付く。付けるのは決まった名前だけ。 */
-  const IMPORT_APP_TAGS = { stillmotion: 'Stillmotion', stillmange: 'Stillmange', stillsheet: 'Stillsheet' };
-  const IMPORT_ALLOWED_TAGS = ['Stillmotion', 'Stillmange', 'Stillsheet', 'Irodori TTS'];
+  const IMPORT_APP_TAGS = { stillmotion: 'Stillmotion', stillmange: 'Stillmange', stillsheet: 'Stillsheet', stillframe: 'Stillframe' };
+  const IMPORT_ALLOWED_TAGS = ['Stillmotion', 'Stillmange', 'Stillsheet', 'Stillframe', 'Irodori TTS'];
   function applyImportTags(kind, record) {
     const extra = record && Array.isArray(record.tags) ? record.tags : [];
     [IMPORT_APP_TAGS[kind]].concat(extra).forEach(function (t) {
@@ -8224,7 +8226,7 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     } catch (e) { console.error('Stillmotion データの読み込みに失敗:', e); }
     switchTab('post');
     if (kind === 'stillsheet' && record && record.meta && record.meta.mode === 'novel') { await importStillsheetNovel(record, key); return; }
-    if (kind === 'stillmange' || kind === 'stillsheet') { await importStillmangeRecord(record, key, kind); return; }
+    if (kind === 'stillmange' || kind === 'stillsheet' || kind === 'stillframe') { await importStillmangeRecord(record, key, kind); return; }
     if (!record || !record.blob) {
       showStillmotionNotice('Stillmotion から受け取る動画が見つかりませんでした。もう一度 Stillmotion の「Prompt Reel に投稿」を押してください。');
       return;
@@ -8255,7 +8257,8 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
      各画像の生成情報(PNG の parameters)も手動のドロップと同じく自動で読み取られる。 */
   async function importStillmangeRecord(record, key, kind) {
     const sheet = kind === 'stillsheet';
-    const appLabel = sheet ? 'Stillsheet' : 'Stillmange';
+    const frame = kind === 'stillframe';
+    const appLabel = sheet ? 'Stillsheet' : frame ? 'Stillframe' : 'Stillmange';
     const images = ((record && record.images) || []).filter(function (x) { return x && x.blob; });
     if (!images.length) {
       showStillmotionNotice(appLabel + ' から受け取る画像が見つかりませんでした。もう一度 ' + appLabel + ' の「Prompt Reel に投稿」を押してください。');
@@ -8279,9 +8282,12 @@ non_diegetic_music: ...(BGM。無ければ N/A)</div>
     }
     applyImportTags(kind, record);
     stillmotionImportKey = key;
-    if (sheet) fillStillsheetText(record.meta);
+    if (sheet || frame) fillStillsheetText(record.meta);
     const isMoss = record.meta && record.meta.mode === 'moss';
-    const baseNotice = sheet
+    const baseNotice = frame
+      ? 'Stillframe から画像 ' + files.length + ' 枚' + (files.length > 1 ? '(□1〜)' : '') + 'を受け取りました。'
+        + '生成情報は画像から自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。'
+      : sheet
       ? 'Stillsheet から、シーンごとに選んだ画像 ' + files.length + ' 枚(□1〜)を受け取りました。'
         + '各画像の生成情報は自動で入っています。タイトル・タグ・ジャンルを確認して「投稿する」を押してください。'
       : isMoss
